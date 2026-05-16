@@ -42,92 +42,100 @@ export async function POST(
       );
     }
 
-    // Проверяем, не записан ли уже пользователь
-    const existingEnrollment = await db.enrollment.findUnique({
-      where: {
-        userId_courseId: {
-          userId,
-          courseId,
+    // Wrap enrollment logic in a transaction to prevent race conditions
+    // when a user sends multiple concurrent requests.
+    const result = await db.$transaction(async (tx) => {
+      // Проверяем, не записан ли уже пользователь (inside transaction for atomicity)
+      const existingEnrollment = await tx.enrollment.findUnique({
+        where: {
+          userId_courseId: {
+            userId,
+            courseId,
+          },
         },
-      },
-    });
+      });
 
-    if (existingEnrollment) {
-      if (existingEnrollment.status === "active") {
-        return NextResponse.json(
-          { error: "Вы уже записаны на этот курс" },
-          { status: 400 }
-        );
+      if (existingEnrollment) {
+        if (existingEnrollment.status === "active") {
+          return { error: "Вы уже записаны на этот курс", status: 400 as const };
+        }
+        if (existingEnrollment.status === "cancelled") {
+          // Переподписка
+          await tx.enrollment.update({
+            where: { id: existingEnrollment.id },
+            data: {
+              status: "active",
+              progress: 0,
+              enrolledAt: new Date(),
+            },
+          });
+
+          // Обновляем счётчик студентов
+          await tx.course.update({
+            where: { id: courseId },
+            data: { studentCount: { increment: 1 } },
+          });
+
+          return { message: "Вы успешно повторно записаны на курс", status: 200 as const };
+        }
       }
-      if (existingEnrollment.status === "cancelled") {
-        // Переподписка
-        await db.enrollment.update({
-          where: { id: existingEnrollment.id },
+
+      // Для бесплатных курсов — автоматическая запись
+      if (course.price === 0) {
+        const enrollment = await tx.enrollment.create({
           data: {
+            userId,
+            courseId,
             status: "active",
             progress: 0,
-            enrolledAt: new Date(),
           },
         });
 
         // Обновляем счётчик студентов
-        await db.course.update({
+        await tx.course.update({
           where: { id: courseId },
           data: { studentCount: { increment: 1 } },
         });
 
-        return NextResponse.json(
-          { message: "Вы успешно повторно записаны на курс" },
-          { status: 200 }
-        );
+        return {
+          message: "Вы успешно записаны на бесплатный курс",
+          enrollment,
+          status: 201 as const,
+        };
       }
-    }
 
-    // Для бесплатных курсов — автоматическая запись
-    if (course.price === 0) {
-      const enrollment = await db.enrollment.create({
+      // Для платных курсов — создаём платеж
+      const payment = await tx.payment.create({
         data: {
           userId,
           courseId,
-          status: "active",
-          progress: 0,
+          amount: course.price,
+          currency: course.currency,
+          status: "pending",
+          paymentMethod: "sbp", // по умолчанию
         },
       });
 
-      // Обновляем счётчик студентов
-      await db.course.update({
-        where: { id: courseId },
-        data: { studentCount: { increment: 1 } },
-      });
-
-      return NextResponse.json(
-        { message: "Вы успешно записаны на бесплатный курс", enrollment },
-        { status: 201 }
-      );
-    }
-
-    // Для платных курсов — создаём платеж
-    const payment = await db.payment.create({
-      data: {
-        userId,
-        courseId,
-        amount: course.price,
-        currency: course.currency,
-        status: "pending",
-        paymentMethod: "sbp", // по умолчанию
-      },
-    });
-
-    return NextResponse.json(
-      {
+      return {
         message: "Для записи на платный курс необходимо оплатить",
         requiresPayment: true,
         paymentId: payment.id,
         amount: course.price,
         currency: course.currency,
-      },
-      { status: 200 }
-    );
+        status: 200 as const,
+      };
+    });
+
+    // Return response based on transaction result
+    if ("error" in result) {
+      return NextResponse.json(
+        { error: result.error },
+        { status: result.status }
+      );
+    }
+
+    const { status, ...responseData } = result;
+    return NextResponse.json(responseData, { status });
   } catch (error) {
     console.error("Ошибка записи на курс:", error);
     return NextResponse.json(

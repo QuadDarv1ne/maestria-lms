@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import type { ExtendedSession } from "@/lib/auth";
 import { z } from "zod";
 
 const updateProgressSchema = z.object({
@@ -54,16 +55,18 @@ export async function GET(
     // Проверяем доступ
     let isEnrolled = false;
     let progressData = null;
-    let sessionUser = null;
+    let sessionUser: { id: string } | null = null;
 
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as ExtendedSession | null;
     if (session?.user) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      sessionUser = session.user as any;
+      const userId = session.user.id;
+      if (!userId) {
+        return NextResponse.json({ error: "Ошибка аутентификации" }, { status: 401 });
+      }
       const enrollment = await db.enrollment.findUnique({
         where: {
           userId_courseId: {
-            userId: sessionUser.id,
+            userId,
             courseId,
           },
         },
@@ -74,11 +77,13 @@ export async function GET(
       progressData = await db.progress.findUnique({
         where: {
           userId_lessonId: {
-            userId: sessionUser.id,
+            userId,
             lessonId,
           },
         },
       });
+
+      sessionUser = { id: userId };
     }
 
     // Если урок не бесплатный и пользователь не записан — доступ запрещён

@@ -25,12 +25,12 @@ export function CourseImage({
   const [failed, setFailed] = useState(false);
 
   const cdnUrl = resolveCourseImageUrl(src);
-  const fallbackUrl = getLocalFallbackImage(identifier);
+  const fallbackUrl = getLocalFallbackImage(identifier ?? null);
 
   // If no URL at all, render nothing (parent should show placeholder)
   if (!cdnUrl && !fallbackUrl) return null;
 
-  const finalSrc = failed ? fallbackUrl : cdnUrl;
+  const finalSrc = (failed ? fallbackUrl : cdnUrl) as string;
 
   return (
     <img
