@@ -60,7 +60,9 @@ export async function GET(
   }
 }
 
-// PUT: Обновить статус платежа (только для авторизованных пользователей)
+// PUT: Обновить статус платежа (только для администраторов).
+// Обычные пользователи не могут менять статус платежа — это предотвращает
+// ситуацию, когда пользователь сам одобряет свой платёж и получает бесплатный доступ.
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -76,8 +78,15 @@ export async function PUT(
       );
     }
 
-    const userId = (session.user as { id?: string }).id;
     const userRole = (session.user as { role?: string }).role;
+
+    // Только администраторы могут менять статус платежа
+    if (userRole !== "admin") {
+      return NextResponse.json(
+        { error: "Доступ запрещён" },
+        { status: 403 }
+      );
+    }
 
     const payment = await db.payment.findUnique({
       where: { id },
@@ -87,14 +96,6 @@ export async function PUT(
       return NextResponse.json(
         { error: "Платёж не найден" },
         { status: 404 }
-      );
-    }
-
-    // Проверяем, что платёж принадлежит пользователю или пользователь — админ
-    if (payment.userId !== userId && userRole !== "admin") {
-      return NextResponse.json(
-        { error: "Доступ запрещён" },
-        { status: 403 }
       );
     }
 

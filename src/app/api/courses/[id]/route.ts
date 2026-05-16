@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, Prisma } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import type { ExtendedSession } from "@/lib/auth";
 
 // GET: Детальная информация о курсе
 export const revalidate = 60;
@@ -87,23 +88,19 @@ export async function GET(
     }
 
     // Проверяем доступ к неопубликованным курсам
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as ExtendedSession | null;
     if (!course.isPublished) {
-      if (!session?.user) {
+      if (!session?.user?.id) {
         return NextResponse.json(
           { error: "Курс недоступен" },
           { status: 403 }
         );
       }
-      const userId = (session.user as { id?: string }).id;
-      if (!userId) {
-        return NextResponse.json({ error: "Ошибка аутентификации" }, { status: 401 });
-      }
-      const userRole = (session.user as { role?: string }).role;
+      const userRole = session.user.role;
       const isEnrolled = await db.enrollment.findUnique({
-        where: { userId_courseId: { userId, courseId: id } },
+        where: { userId_courseId: { userId: session.user.id, courseId: id } },
       });
-      const isOwner = course.teacherId === userId;
+      const isOwner = course.teacherId === session.user.id;
       if (userRole !== "admin" && userRole !== "teacher" && !isEnrolled && !isOwner) {
         return NextResponse.json(
           { error: "Курс недоступен" },
@@ -114,33 +111,31 @@ export async function GET(
 
     // Проверяем, авторизован ли пользователь и записан ли он на курс
     let userEnrollment = null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let userProgress: any[] = [];
+    type LessonProgress = { lessonId: string; completed: boolean };
+    let userProgress: LessonProgress[] = [];
 
-    if (session?.user) {
-      const userId = (session.user as { id?: string }).id;
-      if (userId) {
-        userEnrollment = await db.enrollment.findUnique({
-          where: {
-            userId_courseId: {
-              userId,
-              courseId: id,
-            },
+    if (session?.user?.id) {
+      userEnrollment = await db.enrollment.findUnique({
+        where: {
+          userId_courseId: {
+            userId: session.user.id,
+            courseId: id,
           },
-        });
+        },
+      });
 
-        // Если пользователь записан, получаем прогресс по урокам
-        if (userEnrollment) {
-          const lessonIds = course.modules.flatMap((m) =>
-            m.lessons.map((l) => l.id)
-          );
-          userProgress = await db.progress.findMany({
-            where: {
-              userId,
-              lessonId: { in: lessonIds },
-            },
-          });
-        }
+      // Если пользователь записан, получаем прогресс по урокам
+      if (userEnrollment) {
+        const lessonIds = course.modules.flatMap((m) =>
+          m.lessons.map((l) => l.id)
+        );
+        userProgress = await db.progress.findMany({
+          where: {
+            userId: session.user.id,
+            lessonId: { in: lessonIds },
+          },
+          select: { lessonId: true, completed: true },
+        });
       }
     }
 
@@ -168,15 +163,15 @@ export async function GET(
       user: review.user,
     }));
 
+    // Быстрый lookup прогресса по lessonId
+    const progressMap = new Map(userProgress.map((p) => [p.lessonId, p.completed]));
+
     // Добавляем прогресс к урокам для записанных пользователей
     const modulesWithProgress = course.modules.map((module) => ({
       ...module,
       lessons: module.lessons.map((lesson) => ({
         ...lesson,
-        completed: userProgress.find(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (p: any) => p.lessonId === lesson.id
-        )?.completed || false,
+        completed: progressMap.get(lesson.id) || false,
       })),
     }));
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import type { ExtendedSession } from "@/lib/auth";
 
 // GET: Get paginated reviews for a course
 export const revalidate = 60;
@@ -84,7 +85,7 @@ export async function POST(
     const { id: courseId } = await params;
 
     // Check authentication
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as ExtendedSession | null;
     if (!session?.user) {
       return NextResponse.json(
         { error: "Необходимо авторизоваться" },
@@ -92,7 +93,7 @@ export async function POST(
       );
     }
 
-    const userId = (session.user as { id?: string }).id;
+    const userId = session.user.id;
     if (!userId) {
       return NextResponse.json({ error: "Ошибка аутентификации" }, { status: 401 });
     }
@@ -156,66 +157,74 @@ export async function POST(
 
     let review;
 
-    if (existingReview) {
-      // Update existing review
-      review = await db.review.update({
-        where: { id: existingReview.id },
-        data: {
-          rating,
-          comment: comment || null,
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              image: true,
+    // Wrap review creation/update AND rating recalculation in a single transaction
+    // to prevent race conditions when multiple users submit reviews concurrently.
+    const result = await db.$transaction(async (tx) => {
+      let r;
+
+      if (existingReview) {
+        // Update existing review
+        r = await tx.review.update({
+          where: { id: existingReview.id },
+          data: {
+            rating,
+            comment: comment || null,
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                image: true,
+              },
             },
           },
-        },
-      });
-    } else {
-      // Create new review
-      review = await db.review.create({
-        data: {
-          userId,
-          courseId,
-          rating,
-          comment: comment || null,
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              image: true,
+        });
+      } else {
+        // Create new review
+        r = await tx.review.create({
+          data: {
+            userId,
+            courseId,
+            rating,
+            comment: comment || null,
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                image: true,
+              },
             },
           },
+        });
+      }
+
+      // Recalculate course rating average and review count (inside transaction)
+      const stats = await tx.review.aggregate({
+        where: { courseId },
+        _avg: { rating: true },
+        _count: { rating: true },
+      });
+
+      await tx.course.update({
+        where: { id: courseId },
+        data: {
+          rating: stats._avg.rating ?? 0,
+          reviewCount: stats._count.rating,
         },
       });
-    }
 
-    // Recalculate course rating average and review count
-    const stats = await db.review.aggregate({
-      where: { courseId },
-      _avg: { rating: true },
-      _count: { rating: true },
-    });
-
-    await db.course.update({
-      where: { id: courseId },
-      data: {
-        rating: stats._avg.rating ?? 0,
-        reviewCount: stats._count.rating,
-      },
+      return { review: r, wasUpdated: !!existingReview };
     });
 
     return NextResponse.json(
       {
-        review,
-        updated: !!existingReview,
+        review: result.review,
+        updated: result.wasUpdated,
       },
-      { status: existingReview ? 200 : 201 }
+      { status: result.wasUpdated ? 200 : 201 }
     );
   } catch (error) {
     console.error("Ошибка создания отзыва:", error);

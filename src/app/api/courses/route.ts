@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, Prisma } from "@/lib/db";
 
 // GET: Список всех опубликованных курсов с фильтрами
 export const revalidate = 60; // Cache for 60 seconds
@@ -16,8 +16,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     // Строим условия фильтрации
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {
+    const where: Prisma.CourseWhereInput = {
       isPublished: true,
     };
 
@@ -44,17 +43,16 @@ export async function GET(request: NextRequest) {
     }
 
     // Сортировка
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const orderByMap: Record<string, any> = {
-      popular: { enrollments: "desc" },
-      new: { createdAt: "desc" },
-      rating: { rating: "desc" },
-      priceAsc: { price: "asc" },
-      priceDesc: { price: "desc" },
+    const orderByMap: Record<string, Prisma.CourseOrderByWithRelationInput> = {
+      popular: { studentCount: Prisma.SortOrder.desc },
+      new: { createdAt: Prisma.SortOrder.desc },
+      rating: { rating: Prisma.SortOrder.desc },
+      priceAsc: { price: Prisma.SortOrder.asc },
+      priceDesc: { price: Prisma.SortOrder.desc },
     };
-    const orderBy = [
-      { isFeatured: "desc" },
-      ...(sortBy && orderByMap[sortBy] ? [orderByMap[sortBy]] : [{ createdAt: "desc" }]),
+    const orderBy: Prisma.CourseOrderByWithRelationInput[] = [
+      { isFeatured: Prisma.SortOrder.desc },
+      ...(sortBy && orderByMap[sortBy] ? [orderByMap[sortBy]] : [{ createdAt: Prisma.SortOrder.desc }]),
     ];
 
     // Получаем курсы с дополнительной информацией
