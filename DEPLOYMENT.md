@@ -127,7 +127,7 @@ server {
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
 
     # CSP для РФ
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://iili.io https://freeimage.host; font-src 'self';" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://iili.io https://freeimage.host https://api.dicebear.com; font-src 'self';" always;
 
     location / {
         proxy_pass http://127.0.0.1:3000;

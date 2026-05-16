@@ -240,12 +240,20 @@ export function HomePage() {
                 >
                   <CardContent className="p-0">
                     {/* Обложка курса */}
-                    <div className="relative h-40 bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
-                      {course.category?.icon && (
+                    <div className="relative h-40 flex items-center justify-center overflow-hidden bg-gradient-to-br from-blue-500 to-violet-600">
+                      {course.image ? (
+                        <img
+                          src={course.image}
+                          alt={course.title}
+                          className="absolute inset-0 w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      ) : course.category?.icon ? (
                         <span className="text-5xl opacity-50">
                           {course.category.icon}
                         </span>
-                      )}
+                      ) : null}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
                       {course.price === 0 && (
                         <Badge className="absolute top-3 left-3 bg-green-500 text-white border-0">
                           Бесплатно

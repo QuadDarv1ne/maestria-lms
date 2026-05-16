@@ -32,6 +32,7 @@ import {
 import { toast } from "sonner";
 
 import { ReviewForm } from "@/components/ReviewForm";
+import { CourseImage } from "@/components/CourseImage";
 interface LessonItem {
   id: string;
   title: string;
@@ -292,7 +293,19 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
   return (
     <div>
       {/* Заголовок курса */}
-      <section className="bg-gradient-to-br from-blue-800 to-violet-800 text-white">
+      <section className="relative bg-gradient-to-br from-blue-800 to-violet-800 text-white overflow-hidden">
+        {course.image && (
+          <>
+            <CourseImage
+              src={course.image}
+              alt={course.title}
+              className="absolute inset-0 w-full h-full object-cover opacity-30"
+              identifier={course.id}
+              loading="eager"
+            />
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-900/80 to-violet-900/80" />
+          </>
+        )}
         <div className="container mx-auto px-4 py-8 md:py-12">
           <div className="flex items-center gap-2 mb-4">
             <Button

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="360" fill="url(#g)"/>
+  <g transform="translate(290,120)" fill="white" opacity="0.3">
+    <path d="M30 10L0 0v60l30 10 30-10V0L30 10zm0 4L54 22v48L30 62 6 70V22L30 14z"/>
+  </g>
+  <text x="320" y="210" text-anchor="middle" fill="white" font-family="system-ui,sans-serif" font-size="18" font-weight="600" opacity="0.7">Preview Unavailable</text>
+</svg>
