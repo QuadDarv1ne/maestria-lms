@@ -11,7 +11,6 @@ const enable2FASchema = z.object({
 
 const verify2FASchema = z.object({
   code: z.string().length(6, "Код должен содержать 6 цифр"),
-  secret: z.string().min(1, "Секрет обязателен"),
 });
 
 const disable2FASchema = z.object({
@@ -78,7 +77,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       message: "Отсканируйте QR-код в приложении-аутентификаторе и введите код для подтверждения",
-      secret,
       otpauthUrl,
     }, { status: 200 });
   } catch (error) {
@@ -105,7 +103,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const { code, secret } = validation.data;
+    const { code } = validation.data;
     const userId = (session.user as { id?: string }).id;
 
     const user = await db.user.findUnique({ where: { id: userId } });
@@ -114,14 +112,14 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
     }
 
-    if (user.twoFactorSecret !== secret) {
-      return NextResponse.json({ error: "Неверный секрет" }, { status: 400 });
+    if (!user.twoFactorSecret) {
+      return NextResponse.json({ error: "Сначала включите 2FA" }, { status: 400 });
     }
 
-    // Проверяем TOTP-код с помощью otplib
+    // Проверяем TOTP-код с помощью otplib, используя секрет из БД
     let isValid = false;
     try {
-      isValid = authenticator.verify({ token: code, secret });
+      isValid = authenticator.verify({ token: code, secret: user.twoFactorSecret });
     } catch {
       // Невалидный формат токена
     }

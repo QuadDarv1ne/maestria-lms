@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions, ExtendedSession } from "@/lib/auth";
 import { z } from "zod";
 
 const updateUserSchema = z.object({
@@ -14,8 +15,8 @@ const updateUserSchema = z.object({
 // GET: Все пользователи с пагинацией
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as { role?: string }).role !== "admin") {
+    const session = await getServerSession(authOptions) as ExtendedSession | null;
+    if (!session?.user || session.user.role !== "admin") {
       return NextResponse.json(
         { error: "Доступ запрещён. Требуются права администратора" },
         { status: 403 }
@@ -29,8 +30,7 @@ export async function GET(request: NextRequest) {
     const role = searchParams.get("role");
     const skip = (page - 1) * limit;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {};
+    const where: Prisma.UserWhereInput = {};
     if (role) where.role = role;
     if (search) {
       where.OR = [
@@ -87,8 +87,8 @@ export async function GET(request: NextRequest) {
 // PUT: Обновить пользователя (роль, статус)
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as { role?: string }).role !== "admin") {
+    const session = await getServerSession(authOptions) as ExtendedSession | null;
+    if (!session?.user || session.user.role !== "admin") {
       return NextResponse.json(
         { error: "Доступ запрещён. Требуются права администратора" },
         { status: 403 }
@@ -108,7 +108,7 @@ export async function PUT(request: NextRequest) {
     const { userId, ...updateData } = validation.data;
 
     // Проверяем, не пытается ли админ заблокировать сам себя
-    if (userId === (session.user as { id?: string }).id && updateData.isActive === false) {
+    if (userId === session.user.id && updateData.isActive === false) {
       return NextResponse.json(
         { error: "Нельзя заблокировать самого себя" },
         { status: 400 }

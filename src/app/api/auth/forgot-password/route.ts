@@ -109,14 +109,16 @@ export async function PUT(request: NextRequest) {
     // Хешируем новый пароль
     const passwordHash = await hashPassword(password);
 
-    // Обновляем пароль пользователя
-    await db.user.update({
-      where: { email },
-      data: { passwordHash },
-    });
-
-    // Удаляем использованный токен
-    await db.verificationToken.delete({ where: { token } });
+    // Атомарно: обновляем пароль и удаляем ВСЕ токены для этого email
+    await db.$transaction([
+      db.user.update({
+        where: { email },
+        data: { passwordHash },
+      }),
+      db.verificationToken.deleteMany({
+        where: { identifier: `reset-password:${email}` },
+      }),
+    ]);
 
     return NextResponse.json(
       { message: "Пароль успешно изменён" },

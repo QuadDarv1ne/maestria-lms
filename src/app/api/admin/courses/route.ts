@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions, ExtendedSession } from "@/lib/auth";
 
 // GET: Все курсы (включая неопубликованные) — для админов
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as { role?: string }).role !== "admin") {
+    const session = await getServerSession(authOptions) as ExtendedSession | null;
+    if (!session?.user || session.user.role !== "admin") {
       return NextResponse.json(
         { error: "Доступ запрещён. Требуются права администратора" },
         { status: 403 }
@@ -21,8 +22,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search");
     const skip = (page - 1) * limit;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {};
+    const where: Prisma.CourseWhereInput = {};
     if (status === "published") where.isPublished = true;
     if (status === "unpublished") where.isPublished = false;
     if (search) {
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
 // POST: Создать новый курс с модулями и уроками
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(authOptions) as ExtendedSession | null;
     if (!session?.user) {
       return NextResponse.json(
         { error: "Необходимо авторизоваться" },
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userRole = (session.user as { role?: string }).role;
+    const userRole = session.user.role;
     if (userRole !== "admin" && userRole !== "teacher") {
       return NextResponse.json(
         { error: "Доступ запрещён. Требуются права администратора или преподавателя" },
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userId = (session.user as { id?: string }).id;
+    const userId = session.user.id;
     if (!userId) {
       return NextResponse.json(
         { error: "Ошибка аутентификации" },
@@ -162,6 +162,23 @@ export async function POST(request: NextRequest) {
       if (cat) categoryConnect = cat.id;
     }
 
+    // Типы для входных данных модулей и уроков
+    type ModuleInput = {
+      title?: string;
+      description?: string;
+      sortOrder?: number;
+      lessons?: LessonInput[];
+    };
+    type LessonInput = {
+      title?: string;
+      type?: string;
+      content?: string;
+      videoUrl?: string;
+      duration?: string | number;
+      sortOrder?: number;
+      isFree?: boolean;
+    };
+
     // Создаём курс с модулями и уроками
     const course = await db.course.create({
       data: {
@@ -182,14 +199,12 @@ export async function POST(request: NextRequest) {
         categoryId: categoryConnect || null,
         teacherId: userId,
         modules: {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          create: modules.map((mod: any, mIdx: number) => ({
+          create: (modules as ModuleInput[]).map((mod, mIdx) => ({
             title: mod.title || `Модуль ${mIdx + 1}`,
             description: mod.description || null,
             sortOrder: mod.sortOrder || mIdx + 1,
             lessons: {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              create: (mod.lessons || []).map((lesson: any, lIdx: number) => ({
+              create: (mod.lessons || []).map((lesson, lIdx) => ({
                 title: lesson.title || `Урок ${lIdx + 1}`,
                 type: lesson.type || "text",
                 content: lesson.content || null,

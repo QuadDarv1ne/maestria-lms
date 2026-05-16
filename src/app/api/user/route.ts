@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions, ExtendedSession } from "@/lib/auth";
 import { z } from "zod";
 
 const updateProfileSchema = z.object({
@@ -14,7 +15,7 @@ const updateProfileSchema = z.object({
 // GET: Профиль текущего пользователя
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(authOptions) as ExtendedSession | null;
     if (!session?.user) {
       return NextResponse.json(
         { error: "Необходимо авторизоваться" },
@@ -22,7 +23,7 @@ export async function GET() {
       );
     }
 
-    const userId = (session.user as { id?: string }).id;
+    const userId = session.user.id;
 
     const user = await db.user.findUnique({
       where: { id: userId },
@@ -104,7 +105,7 @@ export async function GET() {
 // PUT: Обновить профиль
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(authOptions) as ExtendedSession | null;
     if (!session?.user) {
       return NextResponse.json(
         { error: "Необходимо авторизоваться" },
@@ -112,7 +113,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const userId = (session.user as { id?: string }).id;
+    const userId = session.user.id;
     const body = await request.json();
     const validation = updateProfileSchema.safeParse(body);
 
@@ -123,8 +124,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const updateData: any = {};
+    const updateData: Prisma.UserUpdateInput = {};
     if (validation.data.name !== undefined) updateData.name = validation.data.name;
     if (validation.data.bio !== undefined) updateData.bio = validation.data.bio;
     if (validation.data.phone !== undefined) updateData.phone = validation.data.phone;
