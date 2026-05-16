@@ -1,0 +1,160 @@
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+
+// GET: Статус платежа
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: "Необходимо авторизоваться" },
+        { status: 401 }
+      );
+    }
+
+    const userId = (session.user as any).id;
+
+    const payment = await db.payment.findUnique({
+      where: { id },
+      include: {
+        course: {
+          select: {
+            id: true,
+            title: true,
+            image: true,
+            price: true,
+          },
+        },
+      },
+    });
+
+    if (!payment) {
+      return NextResponse.json(
+        { error: "Платёж не найден" },
+        { status: 404 }
+      );
+    }
+
+    // Проверяем, что платёж принадлежит пользователю (или пользователь — админ)
+    if (payment.userId !== userId && (session.user as any).role !== "admin") {
+      return NextResponse.json(
+        { error: "Доступ запрещён" },
+        { status: 403 }
+      );
+    }
+
+    return NextResponse.json({ payment }, { status: 200 });
+  } catch (error) {
+    console.error("Ошибка получения платежа:", error);
+    return NextResponse.json(
+      { error: "Внутренняя ошибка сервера" },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT: Обновить статус платежа (вебхук / имитация подтверждения)
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+
+    const payment = await db.payment.findUnique({
+      where: { id },
+    });
+
+    if (!payment) {
+      return NextResponse.json(
+        { error: "Платёж не найден" },
+        { status: 404 }
+      );
+    }
+
+    const body = await request.json();
+    const { status } = body;
+
+    if (!["completed", "failed", "refunded"].includes(status)) {
+      return NextResponse.json(
+        { error: "Неверный статус платежа" },
+        { status: 400 }
+      );
+    }
+
+    // Обновляем статус платежа
+    const updatedPayment = await db.payment.update({
+      where: { id },
+      data: { status },
+    });
+
+    // Если платёж завершён успешно — записываем пользователя на курс
+    if (status === "completed" && payment.status === "pending") {
+      // Проверяем, не записан ли уже
+      const existingEnrollment = await db.enrollment.findUnique({
+        where: {
+          userId_courseId: {
+            userId: payment.userId,
+            courseId: payment.courseId,
+          },
+        },
+      });
+
+      if (!existingEnrollment) {
+        await db.enrollment.create({
+          data: {
+            userId: payment.userId,
+            courseId: payment.courseId,
+            status: "active",
+            progress: 0,
+          },
+        });
+
+        // Обновляем счётчик студентов
+        await db.course.update({
+          where: { id: payment.courseId },
+          data: { studentCount: { increment: 1 } },
+        });
+      } else if (existingEnrollment.status !== "active") {
+        await db.enrollment.update({
+          where: { id: existingEnrollment.id },
+          data: {
+            status: "active",
+            progress: 0,
+            enrolledAt: new Date(),
+          },
+        });
+      }
+    }
+
+    // Если платёж возвращён — отменяем запись
+    if (status === "refunded") {
+      await db.enrollment.updateMany({
+        where: {
+          userId: payment.userId,
+          courseId: payment.courseId,
+          status: "active",
+        },
+        data: { status: "cancelled" },
+      });
+    }
+
+    return NextResponse.json(
+      { message: "Статус платежа обновлён", payment: updatedPayment },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Ошибка обновления платежа:", error);
+    return NextResponse.json(
+      { error: "Внутренняя ошибка сервера" },
+      { status: 500 }
+    );
+  }
+}

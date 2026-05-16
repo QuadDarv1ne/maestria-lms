@@ -1,0 +1,252 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============ AUTH (NextAuth.js) ============
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  passwordHash  String?
+  image         String?
+  role          String    @default("student") // student, teacher, admin
+  bio           String?
+  phone         String?
+  twoFactorEnabled  Boolean @default(false)
+  twoFactorSecret   String?
+  emailVerified     DateTime?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  enrollments   Enrollment[]
+  reviews       Review[]
+  certificates  Certificate[]
+  payments      Payment[]
+  progress      Progress[]
+  teacherCourses Course[]  @relation("TeacherCourses")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ============ COURSES ============
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  icon        String?
+  color       String?
+  sortOrder   Int      @default(0)
+  courses     Course[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String
+  shortDesc   String?
+  image       String?
+  price       Float    @default(0)
+  oldPrice    Float?
+  currency    String   @default("RUB")
+  level       String   @default("beginner") // beginner, intermediate, advanced
+  duration    String?  // e.g. "8 недель"
+  language    String   @default("ru")
+  isPublished Boolean  @default(false)
+  isFeatured  Boolean  @default(false)
+  hasCertificate Boolean @default(true)
+  rating      Float    @default(0)
+  reviewCount Int      @default(0)
+  studentCount Int     @default(0)
+  tags        String?  // comma-separated
+  requirements String? // JSON array string
+  whatYouLearn String? // JSON array string
+
+  categoryId  String?
+  category    Category?  @relation(fields: [categoryId], references: [id])
+  teacherId   String
+  teacher     User       @relation("TeacherCourses", fields: [teacherId], references: [id])
+  modules     Module[]
+  enrollments Enrollment[]
+  reviews     Review[]
+  certificates Certificate[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Module {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  sortOrder   Int      @default(0)
+  courseId     String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons     Lesson[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Lesson {
+  id          String   @id @default(cuid())
+  title       String
+  type        String   @default("video") // video, text, quiz, coding, assignment
+  content     String?  // HTML/Markdown content
+  videoUrl    String?
+  duration    Int      @default(0) // minutes
+  sortOrder   Int      @default(0)
+  isFree      Boolean  @default(false)
+  moduleId    String
+  module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  assignments Assignment[]
+  progress    Progress[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Assignment {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  type        String   @default("quiz") // quiz, coding, text
+  options     String?  // JSON: quiz options
+  correctAnswer String?
+  points      Int      @default(10)
+  lessonId    String
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============ ENROLLMENT & PROGRESS ============
+
+model Enrollment {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId  String
+  status    String   @default("active") // active, completed, cancelled
+  progress  Float    @default(0) // percentage 0-100
+  enrolledAt DateTime @default(now())
+  completedAt DateTime?
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+}
+
+model Progress {
+  id          String   @id @default(cuid())
+  userId      String
+  lessonId    String
+  completed   Boolean  @default(false)
+  score       Int?
+  timeSpent   Int      @default(0) // seconds
+  lastAccessed DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+}
+
+// ============ REVIEWS ============
+
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int      // 1-5
+  comment   String?
+  userId    String
+  courseId  String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, courseId])
+}
+
+// ============ PAYMENTS ============
+
+model Payment {
+  id              String   @id @default(cuid())
+  userId          String
+  courseId        String
+  amount          Float
+  currency        String   @default("RUB")
+  status          String   @default("pending") // pending, completed, failed, refunded
+  paymentMethod   String   // sbp, yookassa, tinkoff, card
+  paymentProvider String?
+  transactionId   String?
+  paymentData     String?  // JSON: additional payment data
+  user            User     @relation(fields: [userId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ============ CERTIFICATES ============
+
+model Certificate {
+  id          String   @id @default(cuid())
+  userId      String
+  courseId    String
+  certificateNumber String @unique
+  issuedAt    DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+}
