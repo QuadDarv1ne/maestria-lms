@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
     const level = searchParams.get("level");
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "12");
+    const sortBy = searchParams.get("sortBy") || "new";
     const skip = (page - 1) * limit;
 
     // Строим условия фильтрации
@@ -38,6 +39,19 @@ export async function GET(request: NextRequest) {
         { shortDesc: { contains: search } },
       ];
     }
+
+    // Сортировка
+    const orderByMap: Record<string, any> = {
+      popular: { enrollments: "desc" },
+      new: { createdAt: "desc" },
+      rating: { rating: "desc" },
+      priceAsc: { price: "asc" },
+      priceDesc: { price: "desc" },
+    };
+    const orderBy = [
+      { isFeatured: "desc" },
+      ...(sortBy && orderByMap[sortBy] ? [orderByMap[sortBy]] : [{ createdAt: "desc" }]),
+    ];
 
     // Получаем курсы с дополнительной информацией
     const [courses, total] = await Promise.all([
@@ -78,10 +92,7 @@ export async function GET(request: NextRequest) {
             },
           },
         },
-        orderBy: [
-          { isFeatured: "desc" },
-          { createdAt: "desc" },
-        ],
+        orderBy,
         skip,
         take: limit,
       }),

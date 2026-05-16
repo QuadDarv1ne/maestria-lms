@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -297,7 +296,7 @@ export function Header() {
             <Button
               size="sm"
               className="bg-blue-700 hover:bg-blue-800 text-white"
-              onClick={() => (window.location.hash = "login")}
+              onClick={() => navigate("login")}
             >
               {t("nav.login", locale)}
             </Button>
@@ -460,7 +459,7 @@ export function Header() {
             <Button
               className="w-full bg-blue-700 hover:bg-blue-800 text-white"
               onClick={() => {
-                window.location.hash = "login";
+                navigate("login");
                 setSidebarOpen(false);
               }}
             >

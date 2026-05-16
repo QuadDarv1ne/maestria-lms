@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";

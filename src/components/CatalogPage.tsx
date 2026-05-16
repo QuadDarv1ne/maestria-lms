@@ -56,6 +56,7 @@ export function CatalogPage() {
   const { navigate, courseFilters, setCourseFilters, locale } = useAppStore();
   const [courses, setCourses] = useState<CourseCard[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 12,
@@ -120,14 +121,18 @@ export function CatalogPage() {
         if (res.ok) {
           const data = await res.json();
           setCourses(data.courses || []);
+          setError(null);
           setPagination((prev) => ({
             ...prev,
             total: data.pagination?.total || 0,
             totalPages: data.pagination?.totalPages || 0,
           }));
+        } else {
+          setError("Ошибка загрузки курсов");
         }
       } catch (e) {
         console.error("Ошибка загрузки курсов:", e);
+        setError("Не удалось подключиться к серверу");
       } finally {
         setLoading(false);
       }
@@ -337,6 +342,17 @@ export function CatalogPage() {
               </CardContent>
             </Card>
           ))}
+        </div>
+      ) : error && sortedCourses.length === 0 ? (
+        <div className="text-center py-16">
+          <X className="w-16 h-16 text-red-400 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">{error}</h3>
+          <p className="text-muted-foreground mb-4">
+            {t("catalog.noResultsHint", locale)}
+          </p>
+          <Button onClick={() => { setError(null); setPagination((prev) => ({ ...prev, page: prev.page })); }}>
+            {t("common.retry", locale) || "Повторить"}
+          </Button>
         </div>
       ) : sortedCourses.length === 0 ? (
         <div className="text-center py-16">
