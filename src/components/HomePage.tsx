@@ -12,14 +12,8 @@ import {
   Award,
   Star,
   Clock,
-  Zap,
   ArrowRight,
   TrendingUp,
-  Code2,
-  Gamepad2,
-  BarChart3,
-  Smartphone,
-  Cpu,
 } from "lucide-react";
 import { CoursePromoCarousel } from "@/components/CoursePromoCarousel";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
@@ -77,15 +71,6 @@ export function HomePage() {
     advanced: "bg-red-100 text-red-700",
   };
 
-  const categoryIcons: Record<string, React.ReactNode> = {
-    python: <Code2 className="w-6 h-6" />,
-    "web-development": <Zap className="w-6 h-6" />,
-    roblox: <Gamepad2 className="w-6 h-6" />,
-    "cpp-csharp": <Cpu className="w-6 h-6" />,
-    "data-science": <BarChart3 className="w-6 h-6" />,
-    "mobile-development": <Smartphone className="w-6 h-6" />,
-  };
-
   const defaultCategories = [
     { id: "1", name: "Программирование на Python", slug: "python", icon: "🐍", color: "#3776AB", description: "Курсы по Python" },
     { id: "2", name: "Веб-разработка", slug: "web-development", icon: "🌐", color: "#F7DF1E", description: "HTML, CSS, JS" },
@@ -137,9 +122,9 @@ export function HomePage() {
           {/* Статистика */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12">
             {[
-              { icon: <BookOpen className="w-5 h-5" />, value: 34, suffix: "+", label: "Курсов" },
-              { icon: <Users className="w-5 h-5" />, value: 12000, suffix: "+", label: "Студентов" },
-              { icon: <Award className="w-5 h-5" />, value: 1000, suffix: "+", label: "Сертификатов" },
+              { icon: <BookOpen className="w-5 h-5" />, value: 34, suffix: "+", label: "Курсов", decimals: 0 },
+              { icon: <Users className="w-5 h-5" />, value: 12000, suffix: "+", label: "Студентов", decimals: 0 },
+              { icon: <Award className="w-5 h-5" />, value: 1000, suffix: "+", label: "Сертификатов", decimals: 0 },
               { icon: <Star className="w-5 h-5" />, value: 4.8, suffix: "", label: "Средняя оценка", decimals: 1 },
             ].map((stat, i) => (
               <div
@@ -152,7 +137,7 @@ export function HomePage() {
                     <AnimatedCounter
                       end={stat.value}
                       suffix={stat.suffix}
-                      decimals={(stat as any).decimals || 0}
+                      decimals={stat.decimals || 0}
                       duration={2000}
                     />
                   </span>
@@ -182,7 +167,7 @@ export function HomePage() {
               onClick={() => {
                 navigate("catalog");
                 useAppStore.setState({
-                  courseFilters: { category: cat.slug, search: "", level: "" },
+                  courseFilters: { category: cat.slug, search: "", level: "", sortBy: "popular" as const, freeOnly: false },
                 });
               }}
             >

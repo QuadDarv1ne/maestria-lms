@@ -31,10 +31,6 @@ import {
   Flame,
   Bookmark,
   BookmarkCheck,
-  Calendar,
-  TrendingUp,
-  Zap,
-  Star,
   Target,
   Activity,
 } from "lucide-react";
@@ -168,10 +164,12 @@ export function ProfilePage() {
       });
       if (res.ok) {
         const data = await res.json();
-        setUser({
-          ...user!,
-          name: data.user.name,
-        });
+        if (user) {
+          setUser({
+            ...user,
+            name: data.user.name,
+          });
+        }
         setProfile((prev) =>
           prev ? { ...prev, ...data.user } : prev
         );
@@ -181,7 +179,7 @@ export function ProfilePage() {
         const data = await res.json();
         toast.error(data.error || "Ошибка обновления");
       }
-    } catch (e) {
+    } catch {
       toast.error("Ошибка обновления профиля");
     }
   };
@@ -189,7 +187,7 @@ export function ProfilePage() {
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/signout", { method: "POST" });
-    } catch (e) {
+    } catch {
       // ok
     }
     logout();
@@ -245,7 +243,7 @@ export function ProfilePage() {
   let currentMonth = -1;
   let spanCount = 0;
 
-  activityData.forEach((d, i) => {
+  activityData.forEach((d, _i) => {
     const month = new Date(d.date).getMonth();
     if (month !== currentMonth) {
       if (currentMonth !== -1) {
@@ -424,7 +422,6 @@ export function ProfilePage() {
                       const dataIdx = weekIdx * weekSize + dayIdx;
                       const dayData = activityData[dataIdx];
                       if (!dayData) return <div key={dayIdx} className="w-[12px] h-[12px]" />;
-                      const dayName = getDayName(new Date(dayData.date).getDay());
                       return (
                         <Tooltip key={dayIdx}>
                           <TooltipTrigger asChild>
@@ -694,7 +691,3 @@ function getMonthShort(month: number): string {
   return months[month] || "";
 }
 
-function getDayName(day: number): string {
-  const days = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
-  return days[day] || "";
-}

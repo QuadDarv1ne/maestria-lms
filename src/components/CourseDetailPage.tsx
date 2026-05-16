@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
 import {
   Accordion,
   AccordionContent,
@@ -31,6 +30,33 @@ import {
   FileCheck,
 } from "lucide-react";
 import { toast } from "sonner";
+
+interface LessonItem {
+  id: string;
+  title: string;
+  type: string;
+  duration: number;
+  isFree: boolean;
+  completed?: boolean;
+  content?: string | null;
+  videoUrl?: string | null;
+}
+
+interface ModuleItem {
+  id: string;
+  title: string;
+  description?: string | null;
+  sortOrder: number;
+  lessons?: LessonItem[];
+}
+
+interface ReviewItem {
+  id: string;
+  rating: number;
+  comment?: string | null;
+  createdAt: string;
+  user?: { name: string | null; image: string | null };
+}
 import { ReviewForm } from "@/components/ReviewForm";
 
 interface CourseDetail {
@@ -66,8 +92,8 @@ interface CourseDetail {
     icon: string | null;
     color: string | null;
   };
-  modules: any[];
-  reviews: any[];
+  modules: ModuleItem[];
+  reviews: ReviewItem[];
   totalLessons: number;
   totalDuration: number;
   freeLessons: number;
@@ -82,7 +108,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string>("sbp");
-  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [reviewPagination, setReviewPagination] = useState({ page: 1, total: 0, totalPages: 0 });
 
   const favored = isFavorite(courseId);
@@ -99,38 +125,56 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
     advanced: "bg-red-100 text-red-700",
   };
 
-  const fetchCourse = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/courses/${courseId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setCourse(data.course);
-      }
-    } catch (e) {
-      console.error("Ошибка загрузки курса:", e);
-    } finally {
-      setLoading(false);
-    }
-  }, [courseId]);
-
-  const fetchReviews = useCallback(async (page = 1) => {
-    try {
-      const res = await fetch(`/api/courses/${courseId}/reviews?page=${page}&limit=10`);
-      if (res.ok) {
-        const data = await res.json();
-        setReviews(data.reviews || []);
-        setReviewPagination(data.pagination || { page, total: 0, totalPages: 0 });
-      }
-    } catch (e) {
-      console.error("Ошибка загрузки отзывов:", e);
-    }
-  }, [courseId]);
-
+  // Load course and reviews on mount / courseId change
   useEffect(() => {
-    fetchCourse();
-    fetchReviews();
-  }, [fetchCourse, fetchReviews]);
+    let cancelled = false;
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const [courseRes, reviewsRes] = await Promise.all([
+          fetch(`/api/courses/${courseId}`),
+          fetch(`/api/courses/${courseId}/reviews?page=1&limit=10`),
+        ]);
+        if (!cancelled) {
+          if (courseRes.ok) {
+            const data = await courseRes.json();
+            setCourse(data.course);
+          }
+          if (reviewsRes.ok) {
+            const data = await reviewsRes.json();
+            setReviews(data.reviews || []);
+            setReviewPagination(data.pagination || { page: 1, total: 0, totalPages: 0 });
+          }
+        }
+      } catch (e) {
+        if (!cancelled) {
+          console.error("Ошибка загрузки:", e);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    loadData();
+    return () => { cancelled = true; };
+  }, [courseId]);
+
+  const refetchCourse = async () => {
+    const courseRes = await fetch(`/api/courses/${courseId}`);
+    if (courseRes.ok) {
+      const courseData = await courseRes.json();
+      setCourse(courseData.course);
+    }
+  };
+
+  const showEnrollmentNotification = () => {
+    addNotification({
+      type: "enrollment",
+      title: "Запись на курс",
+      message: `Вы записались на курс "${course?.title}"`,
+      read: false,
+      link: `course/${courseId}`,
+    });
+  };
 
   const handleEnroll = async () => {
     if (!user) {
@@ -162,31 +206,19 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
 
             if (confirmRes.ok) {
               toast.success("Оплата прошла успешно! Вы записаны на курс.");
-              addNotification({
-                type: "enrollment",
-                title: "Запись на курс",
-                message: `Вы записались на курс "${course?.title}"`,
-                read: false,
-                link: `course/${courseId}`,
-              });
-              fetchCourse();
+              showEnrollmentNotification();
+              await refetchCourse();
             }
           }
         } else {
           toast.success(data.message);
-          addNotification({
-            type: "enrollment",
-            title: "Запись на курс",
-            message: `Вы записались на курс "${course?.title}"`,
-            read: false,
-            link: `course/${courseId}`,
-          });
-          fetchCourse();
+          showEnrollmentNotification();
+          await refetchCourse();
         }
       } else {
         toast.error(data.error || "Ошибка записи на курс");
       }
-    } catch (e) {
+    } catch {
       toast.error("Произошла ошибка");
     } finally {
       setEnrolling(false);
@@ -207,7 +239,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
     if (navigator.share) {
       try {
         await navigator.share({ title: course?.title, url });
-      } catch {}
+      } catch { /* user cancelled share dialog — safe to ignore */ }
     } else {
       await navigator.clipboard.writeText(url);
       toast.success("Ссылка скопирована в буфер обмена");
@@ -252,7 +284,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
 
   // Rating breakdown
   const ratingBreakdown = [5, 4, 3, 2, 1].map(star => {
-    const count = reviews.filter((r: any) => r.rating === star).length;
+    const count = reviews.filter((r: ReviewItem) => r.rating === star).length;
     const pct = reviews.length > 0 ? Math.round((count / reviews.length) * 100) : 0;
     return { star, count, pct };
   });
@@ -530,7 +562,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                 Программа курса ({course.modules.length} модулей)
               </h2>
               <Accordion type="multiple" className="space-y-2">
-                {course.modules.map((module: any, mIdx: number) => (
+                {course.modules.map((module: ModuleItem, mIdx: number) => (
                   <AccordionItem
                     key={module.id}
                     value={module.id}
@@ -551,7 +583,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                     </AccordionTrigger>
                     <AccordionContent>
                       <div className="space-y-1 pb-2">
-                        {module.lessons?.map((lesson: any, lIdx: number) => {
+                        {module.lessons?.map((lesson: LessonItem, _lIdx: number) => {
                           const canAccess =
                             lesson.isFree || course.isEnrolled;
                           return (
@@ -688,7 +720,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
               {/* Список отзывов */}
               {reviews.length > 0 ? (
                 <div className="space-y-4">
-                  {reviews.map((review: any) => (
+                  {reviews.map((review: ReviewItem) => (
                     <Card key={review.id} className="border-0 shadow-sm">
                       <CardContent className="p-4">
                         <div className="flex items-center gap-3 mb-2">
@@ -743,9 +775,21 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                 <div className="mt-6">
                   <ReviewForm
                     courseId={courseId}
-                    onReviewSubmitted={() => {
-                      fetchCourse();
-                      fetchReviews();
+                    onReviewSubmitted={async () => {
+                      // Refetch course and reviews after new review
+                      const [courseRes, reviewsRes] = await Promise.all([
+                        fetch(`/api/courses/${courseId}`),
+                        fetch(`/api/courses/${courseId}/reviews?page=1&limit=10`),
+                      ]);
+                      if (courseRes.ok) {
+                        const d = await courseRes.json();
+                        setCourse(d.course);
+                      }
+                      if (reviewsRes.ok) {
+                        const d = await reviewsRes.json();
+                        setReviews(d.reviews || []);
+                        setReviewPagination(d.pagination || { page: 1, total: 0, totalPages: 0 });
+                      }
                     }}
                   />
                 </div>
