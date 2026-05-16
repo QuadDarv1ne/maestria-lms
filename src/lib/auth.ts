@@ -42,12 +42,10 @@ export const authOptions: NextAuthOptions = {
         }
 
         if (user.twoFactorEnabled && credentials.twoFactorCode) {
-          // Простая проверка TOTP — в продакшене использовать полноценный TOTP
-          if (credentials.twoFactorCode.length !== 6) {
+          const { authenticator } = await import("otplib");
+          if (!user.twoFactorSecret || !authenticator.verify({ token: credentials.twoFactorCode, secret: user.twoFactorSecret })) {
             throw new Error("Неверный код 2FA");
           }
-          // Для демо: принимаем любой 6-значный код, если 2FA включена
-          // В продакшене: проверять против TOTP секрета
         }
 
         if (!user.isActive) {

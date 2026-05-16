@@ -238,12 +238,20 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   logout: () => {
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.removeItem(FAVORITES_KEY);
+        window.localStorage.removeItem(NOTIFICATIONS_KEY);
+      } catch {}
+    }
     set({
       user: null,
       currentPage: "home",
       sidebarOpen: false,
       currentCourseId: null,
       currentLessonId: null,
+      favorites: [],
+      notifications: [],
     });
   },
 }));

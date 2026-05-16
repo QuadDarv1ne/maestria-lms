@@ -237,12 +237,18 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
     );
   }
 
-  const requirements = course.requirements
-    ? JSON.parse(course.requirements)
-    : [];
-  const whatYouLearn = course.whatYouLearn
-    ? JSON.parse(course.whatYouLearn)
-    : [];
+  // Безопасный парсинг JSON с fallback
+  function safeJsonParse<T>(str: string | null, fallback: T): T {
+    if (!str) return fallback;
+    try {
+      return JSON.parse(str) as T;
+    } catch {
+      return fallback;
+    }
+  }
+
+  const requirements = safeJsonParse<string[]>(course.requirements, []);
+  const whatYouLearn = safeJsonParse<string[]>(course.whatYouLearn, []);
 
   // Rating breakdown
   const ratingBreakdown = [5, 4, 3, 2, 1].map(star => {

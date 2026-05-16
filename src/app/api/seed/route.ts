@@ -7,6 +7,10 @@ import { authOptions } from "@/lib/auth";
 // POST: Заполнить базу данных демо-данными (только для администраторов)
 export async function POST() {
   try {
+    if (process.env.NODE_ENV === "production") {
+      return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
+    }
+
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: "Необходима авторизация" }, { status: 401 });
@@ -739,7 +743,7 @@ export async function POST() {
   } catch (error) {
     console.error("Ошибка заполнения БД:", error);
     return NextResponse.json(
-      { error: "Внутренняя ошибка сервера", details: String(error) },
+      { error: "Внутренняя ошибка сервера" },
       { status: 500 }
     );
   }

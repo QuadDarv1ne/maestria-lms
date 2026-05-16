@@ -84,8 +84,30 @@ export async function GET(
       );
     }
 
-    // Проверяем, авторизован ли пользователь и записан ли он на курс
+    // Проверяем доступ к неопубликованным курсам
     const session = await getServerSession(authOptions);
+    if (!course.isPublished) {
+      if (!session?.user) {
+        return NextResponse.json(
+          { error: "Курс недоступен" },
+          { status: 403 }
+        );
+      }
+      const userId = (session.user as any).id;
+      const userRole = (session.user as any).role;
+      const isEnrolled = await db.enrollment.findUnique({
+        where: { userId_courseId: { userId, courseId: id } },
+      });
+      const isOwner = course.teacherId === userId;
+      if (userRole !== "admin" && userRole !== "teacher" && !isEnrolled && !isOwner) {
+        return NextResponse.json(
+          { error: "Курс недоступен" },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Проверяем, авторизован ли пользователь и записан ли он на курс
     let userEnrollment = null;
     let userProgress: any[] = [];
 

@@ -215,7 +215,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Ошибка создания курса:", error);
     return NextResponse.json(
-      { error: "Внутренняя ошибка сервера", details: String(error) },
+      { error: "Внутренняя ошибка сервера" },
       { status: 500 }
     );
   }

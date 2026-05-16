@@ -133,12 +133,20 @@ export function CatalogPage() {
       }
     };
     fetchCourses();
-  }, [courseFilters, pagination.page, pagination.limit]);
+  }, [courseFilters.category, courseFilters.search, courseFilters.level, courseFilters.sortBy, courseFilters.freeOnly, pagination.page, pagination.limit]);
 
   const handleSearch = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     setCourseFilters({ search: searchInput });
     setPagination((prev) => ({ ...prev, page: 1 }));
   }, [searchInput, setCourseFilters]);
+
+  const handleClearSearch = useCallback(() => {
+    setSearchInput("");
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setCourseFilters({ search: "" });
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  }, [setCourseFilters]);
 
   // Debounced live search
   useEffect(() => {

@@ -142,21 +142,39 @@ export async function GET(request: NextRequest) {
 
     const userId = (session.user as any).id;
 
-    const payments = await db.payment.findMany({
-      where: { userId },
-      include: {
-        course: {
-          select: {
-            id: true,
-            title: true,
-            image: true,
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+    const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "20")));
+    const skip = (page - 1) * limit;
+
+    const [payments, total] = await Promise.all([
+      db.payment.findMany({
+        where: { userId },
+        include: {
+          course: {
+            select: {
+              id: true,
+              title: true,
+              image: true,
+            },
           },
         },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      db.payment.count({ where: { userId } }),
+    ]);
 
-    return NextResponse.json({ payments }, { status: 200 });
+    return NextResponse.json({
+      payments,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    }, { status: 200 });
   } catch (error) {
     console.error("Ошибка получения платежей:", error);
     return NextResponse.json(

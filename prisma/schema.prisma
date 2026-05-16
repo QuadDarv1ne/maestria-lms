@@ -121,6 +121,10 @@ model Course {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([isPublished])
+  @@index([isFeatured, createdAt])
+  @@index([categoryId])
 }
 
 model Module {
@@ -199,6 +203,7 @@ model Progress {
   lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   @@unique([userId, lessonId])
+  @@index([userId, completed])
 }
 
 // ============ REVIEWS ============
@@ -216,6 +221,7 @@ model Review {
   updatedAt DateTime @updatedAt
 
   @@unique([userId, courseId])
+  @@index([courseId, createdAt])
 }
 
 // ============ PAYMENTS ============

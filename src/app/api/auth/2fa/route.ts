@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { z } from "zod";
+import { authenticator } from "otplib";
 
 const enable2FASchema = z.object({
   password: z.string().min(1, "Введите текущий пароль"),
@@ -17,12 +18,14 @@ const disable2FASchema = z.object({
   password: z.string().min(1, "Введите текущий пароль"),
 });
 
-// Простая функция генерации секрета для 2FA
+// Криптографически безопасная генерация секрета для 2FA
 function generateSecret(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
   let secret = '';
+  const randomValues = new Uint32Array(32);
+  crypto.getRandomValues(randomValues);
   for (let i = 0; i < 32; i++) {
-    secret += chars.charAt(Math.floor(Math.random() * chars.length));
+    secret += chars[randomValues[i] % chars.length];
   }
   return secret;
 }
@@ -115,9 +118,14 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Неверный секрет" }, { status: 400 });
     }
 
-    // Для демо: принимаем любой 6-значный код
-    // В продакшене: проверять код с помощью TOTP алгоритма
-    if (code.length !== 6 || !/^\d{6}$/.test(code)) {
+    // Проверяем TOTP-код с помощью otplib
+    let isValid = false;
+    try {
+      isValid = authenticator.verify({ token: code, secret });
+    } catch {
+      // Невалидный формат токена
+    }
+    if (!isValid) {
       return NextResponse.json({ error: "Неверный код подтверждения" }, { status: 400 });
     }
 

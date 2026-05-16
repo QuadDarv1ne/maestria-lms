@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { z } from "zod";
+
+const updateProgressSchema = z.object({
+  completed: z.boolean().optional(),
+  score: z.number().int().min(0).max(100).optional().nullable(),
+  timeSpent: z.number().int().min(0).optional(),
+});
 
 // GET: Получить содержимое шага (урока) с полной навигацией по курсу
 export async function GET(
@@ -193,7 +200,16 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { completed, score, timeSpent } = body;
+    const validation = updateProgressSchema.safeParse(body);
+
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: validation.error.errors[0]?.message || "Ошибка валидации" },
+        { status: 400 }
+      );
+    }
+
+    const { completed, score, timeSpent } = validation.data;
 
     // Обновляем или создаём прогресс
     const progress = await db.progress.upsert({

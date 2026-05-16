@@ -470,8 +470,6 @@ export function AdminPage() {
   const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [adminAuthenticated, setAdminAuthenticated] = useState(false);
-  const [adminPassword, setAdminPassword] = useState("");
   const [userSearch, setUserSearch] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState("all");
   const [refreshing, setRefreshing] = useState(false);
@@ -546,17 +544,6 @@ export function AdminPage() {
     toast.success("Данные обновлены");
   };
 
-  const handleAdminLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Простая проверка — пароль admin (в реальном проекте — через API)
-    if (adminPassword === "admin" || adminPassword === "Maestria2026") {
-      setAdminAuthenticated(true);
-      toast.success("Доступ к панели администратора разрешён");
-    } else {
-      toast.error("Неверный пароль администратора");
-    }
-  };
-
   // Вычисляемые значения
   const totalStudents = users.filter((u) => u.role === "student").length;
   const totalTeachers = users.filter((u) => u.role === "teacher").length;
@@ -589,57 +576,6 @@ export function AdminPage() {
           <div className="grid grid-cols-4 gap-4">{[1, 2, 3, 4].map((i) => <div key={i} className="h-24 bg-muted rounded-xl" />)}</div>
           <div className="h-64 bg-muted rounded-xl" />
         </div>
-      </div>
-    );
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════
-  // ЭКРАН ВХОДА В АДМИН-ПАНЕЛЬ
-  // ═══════════════════════════════════════════════════════════════════════
-  if (!adminAuthenticated) {
-    return (
-      <div className="min-h-[80vh] flex items-center justify-center px-4">
-        <Card className="w-full max-w-md border-0 shadow-xl">
-          <CardContent className="p-8">
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-700 to-violet-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                <Shield className="w-8 h-8 text-white" />
-              </div>
-              <h2 className="text-2xl font-bold">Закрытая панель</h2>
-              <p className="text-sm text-muted-foreground mt-2">
-                Введите пароль администратора для доступа к панели управления Maestria
-              </p>
-            </div>
-
-            <form onSubmit={handleAdminLogin} className="space-y-4">
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  type="password"
-                  placeholder="Пароль администратора"
-                  value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                  className="pl-10 h-12"
-                  autoFocus
-                />
-              </div>
-              <Button type="submit" className="w-full h-12 bg-gradient-to-r from-blue-700 to-violet-600 hover:from-blue-800 hover:to-violet-700 text-white font-semibold">
-                <Lock className="w-4 h-4 mr-2" />
-                Войти в панель
-              </Button>
-            </form>
-
-            <div className="mt-6 p-3 bg-muted/50 rounded-lg">
-              <p className="text-xs text-muted-foreground text-center">
-                Доступ только для администраторов платформы. Все действия логируются.
-              </p>
-            </div>
-
-            <Button variant="ghost" className="w-full mt-3" onClick={() => navigate("home")}>
-              <ChevronLeft className="w-4 h-4 mr-1" /> Вернуться на главную
-            </Button>
-          </CardContent>
-        </Card>
       </div>
     );
   }

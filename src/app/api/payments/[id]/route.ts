@@ -60,13 +60,24 @@ export async function GET(
   }
 }
 
-// PUT: Обновить статус платежа (вебхук / имитация подтверждения)
+// PUT: Обновить статус платежа (только для авторизованных пользователей)
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
+
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: "Необходимо авторизоваться" },
+        { status: 401 }
+      );
+    }
+
+    const userId = (session.user as any).id;
+    const userRole = (session.user as any).role;
 
     const payment = await db.payment.findUnique({
       where: { id },
@@ -76,6 +87,14 @@ export async function PUT(
       return NextResponse.json(
         { error: "Платёж не найден" },
         { status: 404 }
+      );
+    }
+
+    // Проверяем, что платёж принадлежит пользователю или пользователь — админ
+    if (payment.userId !== userId && userRole !== "admin") {
+      return NextResponse.json(
+        { error: "Доступ запрещён" },
+        { status: 403 }
       );
     }
 
@@ -89,62 +108,63 @@ export async function PUT(
       );
     }
 
-    // Обновляем статус платежа
-    const updatedPayment = await db.payment.update({
-      where: { id },
-      data: { status },
-    });
-
-    // Если платёж завершён успешно — записываем пользователя на курс
-    if (status === "completed" && payment.status === "pending") {
-      // Проверяем, не записан ли уже
-      const existingEnrollment = await db.enrollment.findUnique({
-        where: {
-          userId_courseId: {
-            userId: payment.userId,
-            courseId: payment.courseId,
-          },
-        },
+    // Атомарное обновление: статус платежа + запись на курс
+    const updatedPayment = await db.$transaction(async (tx) => {
+      const updated = await tx.payment.update({
+        where: { id },
+        data: { status },
       });
 
-      if (!existingEnrollment) {
-        await db.enrollment.create({
-          data: {
-            userId: payment.userId,
-            courseId: payment.courseId,
-            status: "active",
-            progress: 0,
+      // Если платёж завершён успешно — записываем на курс
+      if (status === "completed" && payment.status === "pending") {
+        const existingEnrollment = await tx.enrollment.findUnique({
+          where: {
+            userId_courseId: {
+              userId: payment.userId,
+              courseId: payment.courseId,
+            },
           },
         });
 
-        // Обновляем счётчик студентов
-        await db.course.update({
-          where: { id: payment.courseId },
-          data: { studentCount: { increment: 1 } },
-        });
-      } else if (existingEnrollment.status !== "active") {
-        await db.enrollment.update({
-          where: { id: existingEnrollment.id },
-          data: {
+        if (!existingEnrollment) {
+          await tx.enrollment.create({
+            data: {
+              userId: payment.userId,
+              courseId: payment.courseId,
+              status: "active",
+              progress: 0,
+            },
+          });
+          await tx.course.update({
+            where: { id: payment.courseId },
+            data: { studentCount: { increment: 1 } },
+          });
+        } else if (existingEnrollment.status !== "active") {
+          await tx.enrollment.update({
+            where: { id: existingEnrollment.id },
+            data: {
+              status: "active",
+              progress: 0,
+              enrolledAt: new Date(),
+            },
+          });
+        }
+      }
+
+      // Если платёж возвращён — отменяем запись
+      if (status === "refunded") {
+        await tx.enrollment.updateMany({
+          where: {
+            userId: payment.userId,
+            courseId: payment.courseId,
             status: "active",
-            progress: 0,
-            enrolledAt: new Date(),
           },
+          data: { status: "cancelled" },
         });
       }
-    }
 
-    // Если платёж возвращён — отменяем запись
-    if (status === "refunded") {
-      await db.enrollment.updateMany({
-        where: {
-          userId: payment.userId,
-          courseId: payment.courseId,
-          status: "active",
-        },
-        data: { status: "cancelled" },
-      });
-    }
+      return updated;
+    });
 
     return NextResponse.json(
       { message: "Статус платежа обновлён", payment: updatedPayment },
