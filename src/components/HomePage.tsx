@@ -24,16 +24,6 @@ import {
 import { CoursePromoCarousel } from "@/components/CoursePromoCarousel";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
 
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  icon: string | null;
-  color: string | null;
-  _count?: { courses: number };
-}
-
 interface CourseCard {
   id: string;
   title: string;
@@ -55,18 +45,14 @@ interface CourseCard {
 
 export function HomePage() {
   const { navigate } = useAppStore();
-  const [categories, setCategories] = useState<Category[]>([]);
   const [featuredCourses, setFeaturedCourses] = useState<CourseCard[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [catRes, courseRes] = await Promise.all([
-          fetch("/api/courses?limit=50"),
-          fetch("/api/courses?limit=6"),
-        ]);
-        if (catRes.ok) {
+        const courseRes = await fetch("/api/courses?limit=6");
+        if (courseRes.ok) {
           const data = await courseRes.json();
           setFeaturedCourses(data.courses || []);
         }

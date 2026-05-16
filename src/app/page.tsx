@@ -190,21 +190,6 @@ export default function Home() {
 
     loadSession();
 
-    // Автоматический сид БД при первом запуске
-    const seedDatabase = async () => {
-      try {
-        const res = await fetch("/api/seed", { method: "POST" });
-        if (res.ok) {
-          const data = await res.json();
-          console.log("✅ База данных заполнена:", data.message);
-        }
-      } catch (e) {
-        // БД уже заполнена или ошибка — не критично
-      }
-    };
-
-    seedDatabase();
-
     return () => {
       window.removeEventListener("hashchange", handleHashChange);
     };

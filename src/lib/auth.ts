@@ -87,7 +87,7 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/#login",
   },
-  secret: process.env.NEXTAUTH_SECRET || "maestro7it-secret-key-2024-super-secure",
+  secret: process.env.NEXTAUTH_SECRET,
 };
 
 export { hashPassword };

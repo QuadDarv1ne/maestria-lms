@@ -14,8 +14,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://maestria.edu";
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://maestria.edu"),
+  metadataBase: new URL(siteUrl),
   title: "Maestria — Обучающая платформа программирования",
   description:
     "Интерактивные курсы по программированию, веб-разработке, созданию игр в Roblox, Data Science. Учитесь в своём темпе с лучшими преподавателями.",
@@ -89,8 +91,8 @@ const jsonLd = {
   "@type": "EducationalOrganization",
   name: "Maestria",
   alternateName: "Maestria by Maestro7IT",
-  url: "https://maestria.edu",
-  logo: "https://maestria.edu/maestro7it-logo.png",
+  url: siteUrl,
+  logo: `${siteUrl}/maestro7it-logo.png`,
   description:
     "Интерактивные курсы по программированию, веб-разработке, созданию игр и Data Science.",
   email: "maksimqwe42@mail.ru",

@@ -1,10 +1,20 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
-// POST: Заполнить базу данных демо-данными
+// POST: Заполнить базу данных демо-данными (только для администраторов)
 export async function POST() {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Необходима авторизация" }, { status: 401 });
+    }
+    if ((session.user as any).role !== "admin") {
+      return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
+    }
+
     // Очистка базы данных перед заполнением
     try {
       await db.$executeRawUnsafe(`PRAGMA foreign_keys = OFF`);

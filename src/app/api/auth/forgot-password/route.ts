@@ -52,11 +52,10 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // В продакшене здесь отправить email с ссылкой для сброса
-    console.log(`Токен сброса пароля для ${email}: ${token}`);
+    // В продакшене здесь отправить email с ссылкой для сброса пароля
 
     return NextResponse.json(
-      { message: "Если аккаунт существует, на email будет отправлена инструкция по сбросу пароля", token },
+      { message: "Если аккаунт существует, на email будет отправлена инструкция по сбросу пароля" },
       { status: 200 }
     );
   } catch (error) {
