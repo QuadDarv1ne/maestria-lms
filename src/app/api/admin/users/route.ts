@@ -15,7 +15,7 @@ const updateUserSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== "admin") {
+    if (!session?.user || (session.user as { role?: string }).role !== "admin") {
       return NextResponse.json(
         { error: "Доступ запрещён. Требуются права администратора" },
         { status: 403 }
@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
     const role = searchParams.get("role");
     const skip = (page - 1) * limit;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {};
     if (role) where.role = role;
     if (search) {
@@ -87,7 +88,7 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== "admin") {
+    if (!session?.user || (session.user as { role?: string }).role !== "admin") {
       return NextResponse.json(
         { error: "Доступ запрещён. Требуются права администратора" },
         { status: 403 }
@@ -99,7 +100,7 @@ export async function PUT(request: NextRequest) {
 
     if (!validation.success) {
       return NextResponse.json(
-        { error: validation.error.errors[0]?.message || "Ошибка валидации" },
+        { error: validation.error.issues[0]?.message || "Ошибка валидации" },
         { status: 400 }
       );
     }
@@ -107,7 +108,7 @@ export async function PUT(request: NextRequest) {
     const { userId, ...updateData } = validation.data;
 
     // Проверяем, не пытается ли админ заблокировать сам себя
-    if (userId === (session.user as any).id && updateData.isActive === false) {
+    if (userId === (session.user as { id?: string }).id && updateData.isActive === false) {
       return NextResponse.json(
         { error: "Нельзя заблокировать самого себя" },
         { status: 400 }

@@ -22,7 +22,7 @@ export async function GET() {
       );
     }
 
-    const userId = (session.user as any).id;
+    const userId = (session.user as { id?: string }).id;
 
     const user = await db.user.findUnique({
       where: { id: userId },
@@ -112,17 +112,18 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const userId = (session.user as any).id;
+    const userId = (session.user as { id?: string }).id;
     const body = await request.json();
     const validation = updateProfileSchema.safeParse(body);
 
     if (!validation.success) {
       return NextResponse.json(
-        { error: validation.error.errors[0]?.message || "Ошибка валидации" },
+        { error: validation.error.issues[0]?.message || "Ошибка валидации" },
         { status: 400 }
       );
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: any = {};
     if (validation.data.name !== undefined) updateData.name = validation.data.name;
     if (validation.data.bio !== undefined) updateData.bio = validation.data.bio;

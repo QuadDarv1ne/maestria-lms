@@ -4,6 +4,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
 // GET: Get paginated reviews for a course
+export const revalidate = 60;
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -90,8 +92,10 @@ export async function POST(
       );
     }
 
-    const userId = (session.user as any).id;
-
+    const userId = (session.user as { id?: string }).id;
+    if (!userId) {
+      return NextResponse.json({ error: "Ошибка аутентификации" }, { status: 401 });
+    }
     // Parse and validate request body
     const body = await request.json();
     const { rating, comment } = body;

@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import {
@@ -9,7 +10,6 @@ import {
   MapPin,
   Crown,
   Play,
-  ExternalLink,
 } from "lucide-react";
 import type { Locale } from "@/lib/store";
 
@@ -250,7 +250,7 @@ export function Footer() {
           <div className="flex justify-center mt-4">
             <div className="inline-flex items-center gap-1.5">
               {localeLabels.map((item, idx) => (
-                <React.Fragment key={item.value}>
+                <Fragment key={item.value}>
                   {idx > 0 && <span className="text-muted-foreground/40 text-xs">|</span>}
                   <button
                     onClick={() => setLocale(item.value)}
@@ -262,7 +262,7 @@ export function Footer() {
                   >
                     {item.flag} {item.label}
                   </button>
-                </React.Fragment>
+                </Fragment>
               ))}
             </div>
           </div>

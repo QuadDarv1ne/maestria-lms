@@ -6,9 +6,7 @@ import { z } from "zod";
 
 const createPaymentSchema = z.object({
   courseId: z.string().min(1, "ID курса обязателен"),
-  paymentMethod: z.enum(["sbp", "yookassa", "tinkoff", "card"], {
-    errorMap: () => ({ message: "Выберите способ оплаты" }),
-  }),
+  paymentMethod: z.enum(["sbp", "yookassa", "tinkoff", "card"]),
 });
 
 // POST: Создать платёж
@@ -22,13 +20,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userId = (session.user as any).id;
+    const userId = (session.user as { id?: string }).id;
+    if (!userId) {
+      return NextResponse.json({ error: "Ошибка аутентификации" }, { status: 401 });
+    }
     const body = await request.json();
     const validation = createPaymentSchema.safeParse(body);
 
     if (!validation.success) {
       return NextResponse.json(
-        { error: validation.error.errors[0]?.message || "Ошибка валидации" },
+        { error: validation.error.issues[0]?.message || "Ошибка валидации" },
         { status: 400 }
       );
     }
@@ -140,7 +141,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const userId = (session.user as any).id;
+    const userId = (session.user as { id?: string }).id;
+    if (!userId) {
+      return NextResponse.json({ error: "Ошибка аутентификации" }, { status: 401 });
+    }
 
     const { searchParams } = new URL(request.url);
     const page = Math.max(1, parseInt(searchParams.get("page") || "1"));

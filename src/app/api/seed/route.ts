@@ -15,7 +15,7 @@ export async function POST() {
     if (!session?.user) {
       return NextResponse.json({ error: "Необходима авторизация" }, { status: 401 });
     }
-    if ((session.user as any).role !== "admin") {
+    if ((session.user as { role?: string }).role !== "admin") {
       return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
     }
 
@@ -26,7 +26,8 @@ export async function POST() {
       for (const table of tables) {
         await db.$executeRawUnsafe(`DELETE FROM "${table}"`);
       }
-      try { await db.$executeRawUnsafe(`DELETE FROM sqlite_sequence`); } catch {}
+      // sqlite_sequence may not exist if no AUTOINCREMENT tables were created
+      try { await db.$executeRawUnsafe(`DELETE FROM sqlite_sequence`); } catch { /* safe to ignore */ }
       await db.$executeRawUnsafe(`PRAGMA foreign_keys = ON`);
     } catch (cleanupError) {
       console.log('Cleanup note:', String(cleanupError));
@@ -100,7 +101,7 @@ export async function POST() {
     const adminPasswordHash = await hashPassword("admin123");
     const teacherPasswordHash = await hashPassword("teacher123");
 
-    const admin = await db.user.create({
+    const _admin = await db.user.create({
       data: {
         email: "admin@maestro7it.ru",
         name: "Дуплей Максим Игоревич",

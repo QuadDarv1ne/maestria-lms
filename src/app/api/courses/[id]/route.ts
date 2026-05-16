@@ -4,6 +4,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
 // GET: Детальная информация о курсе
+export const revalidate = 60;
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -93,8 +95,11 @@ export async function GET(
           { status: 403 }
         );
       }
-      const userId = (session.user as any).id;
-      const userRole = (session.user as any).role;
+      const userId = (session.user as { id?: string }).id;
+      if (!userId) {
+        return NextResponse.json({ error: "Ошибка аутентификации" }, { status: 401 });
+      }
+      const userRole = (session.user as { role?: string }).role;
       const isEnrolled = await db.enrollment.findUnique({
         where: { userId_courseId: { userId, courseId: id } },
       });
@@ -109,30 +114,33 @@ export async function GET(
 
     // Проверяем, авторизован ли пользователь и записан ли он на курс
     let userEnrollment = null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let userProgress: any[] = [];
 
     if (session?.user) {
-      const userId = (session.user as any).id;
-      userEnrollment = await db.enrollment.findUnique({
-        where: {
-          userId_courseId: {
-            userId,
-            courseId: id,
-          },
-        },
-      });
-
-      // Если пользователь записан, получаем прогресс по урокам
-      if (userEnrollment) {
-        const lessonIds = course.modules.flatMap((m) =>
-          m.lessons.map((l) => l.id)
-        );
-        userProgress = await db.progress.findMany({
+      const userId = (session.user as { id?: string }).id;
+      if (userId) {
+        userEnrollment = await db.enrollment.findUnique({
           where: {
-            userId,
-            lessonId: { in: lessonIds },
+            userId_courseId: {
+              userId,
+              courseId: id,
+            },
           },
         });
+
+        // Если пользователь записан, получаем прогресс по урокам
+        if (userEnrollment) {
+          const lessonIds = course.modules.flatMap((m) =>
+            m.lessons.map((l) => l.id)
+          );
+          userProgress = await db.progress.findMany({
+            where: {
+              userId,
+              lessonId: { in: lessonIds },
+            },
+          });
+        }
       }
     }
 
@@ -166,6 +174,7 @@ export async function GET(
       lessons: module.lessons.map((lesson) => ({
         ...lesson,
         completed: userProgress.find(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (p: any) => p.lessonId === lesson.id
         )?.completed || false,
       })),

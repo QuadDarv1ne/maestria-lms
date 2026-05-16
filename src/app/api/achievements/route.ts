@@ -4,6 +4,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
 // GET: Supplementary data for achievements calculation
+export const revalidate = 120;
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -14,7 +16,7 @@ export async function GET() {
       );
     }
 
-    const userId = (session.user as any).id;
+    const userId = (session.user as { id?: string }).id;
 
     // Count completed coding/assignment lessons from Progress
     const completedCodingLessons = await db.progress.findMany({

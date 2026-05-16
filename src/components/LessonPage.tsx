@@ -5,7 +5,6 @@ import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import {
   ArrowLeft,
   ArrowRight,
@@ -18,6 +17,22 @@ import {
   PenTool,
 } from "lucide-react";
 import { toast } from "sonner";
+
+interface AssignmentItem {
+  id: string;
+  title: string;
+  description: string;
+  type: string;
+  points: number;
+  correctAnswer?: string | null;
+  options?: string | null;
+}
+
+interface LessonProgress {
+  completed: boolean;
+  score?: number | null;
+  timeSpent: number;
+}
 
 interface LessonData {
   id: string;
@@ -34,8 +49,8 @@ interface LessonData {
     title: string;
     courseId: string;
   };
-  assignments: any[];
-  progress: any;
+  assignments: AssignmentItem[];
+  progress: LessonProgress | null;
   prevLessonId: string | null;
   nextLessonId: string | null;
 }
@@ -113,7 +128,7 @@ export function LessonPage({
           prev ? { ...prev, completed: true } : prev
         );
       }
-    } catch (e) {
+    } catch {
       toast.error("Ошибка обновления прогресса");
     } finally {
       setCompleting(false);
@@ -241,7 +256,7 @@ export function LessonPage({
                     {lesson.content}
                   </div>
                 )}
-                {lesson.assignments?.map((assignment: any) => (
+                {lesson.assignments?.map((assignment: AssignmentItem) => (
                   <Card key={assignment.id} className="mb-3 border shadow-sm">
                     <CardContent className="p-4">
                       <h4 className="font-semibold mb-2">

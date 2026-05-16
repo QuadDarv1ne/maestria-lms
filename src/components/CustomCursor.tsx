@@ -23,6 +23,7 @@ export function CustomCursor() {
   const isHoveringCard = useRef(false);
   const isHoveringButton = useRef(false);
   const isPressed = useRef(false);
+  const animateRef = useRef<(() => void) | null>(null);
 
   const animate = useCallback(() => {
     const lerp = isHoveringCard.current ? 0.18 : isHoveringButton.current ? 0.15 : 0.12;
@@ -58,8 +59,15 @@ export function CustomCursor() {
       }
     }
 
-    rafRef.current = requestAnimationFrame(animate);
+    rafRef.current = requestAnimationFrame(() => {
+      animateRef.current?.();
+    });
   }, []);
+
+  // Store the animate function in a ref so it can be called recursively
+  useEffect(() => {
+    animateRef.current = animate;
+  }, [animate]);
 
   useEffect(() => {
     // Проверяем тип указателя — только десктоп

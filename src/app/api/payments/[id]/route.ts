@@ -19,7 +19,7 @@ export async function GET(
       );
     }
 
-    const userId = (session.user as any).id;
+    const userId = (session.user as { id?: string }).id;
 
     const payment = await db.payment.findUnique({
       where: { id },
@@ -43,7 +43,7 @@ export async function GET(
     }
 
     // Проверяем, что платёж принадлежит пользователю (или пользователь — админ)
-    if (payment.userId !== userId && (session.user as any).role !== "admin") {
+    if (payment.userId !== userId && (session.user as { role?: string }).role !== "admin") {
       return NextResponse.json(
         { error: "Доступ запрещён" },
         { status: 403 }
@@ -76,8 +76,8 @@ export async function PUT(
       );
     }
 
-    const userId = (session.user as any).id;
-    const userRole = (session.user as any).role;
+    const userId = (session.user as { id?: string }).id;
+    const userRole = (session.user as { role?: string }).role;
 
     const payment = await db.payment.findUnique({
       where: { id },

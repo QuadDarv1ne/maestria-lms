@@ -9,7 +9,6 @@ import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import {
   ArrowLeft,
   ArrowRight,
@@ -24,14 +23,10 @@ import {
   ChevronRight,
   Menu,
   X,
-  BookOpen,
   Trophy,
-  Zap,
   Send,
   RotateCcw,
   Lightbulb,
-  Eye,
-  EyeOff,
   GraduationCap,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -202,8 +197,8 @@ export function StepViewerPage({
           // Calculate progress
           let totalLessons = 0;
           let completedLessons = 0;
-          const modules: ModuleStructure[] = (course.modules || []).map((m: any) => {
-            const lessons: LessonStructure[] = (m.lessons || []).map((l: any) => {
+          const modules: ModuleStructure[] = (course.modules || []).map((m: ModuleStructure) => {
+            const lessons: LessonStructure[] = (m.lessons || []).map((l: LessonStructure & { completed?: boolean }) => {
               totalLessons++;
               if (l.completed) completedLessons++;
               return {
@@ -261,7 +256,7 @@ export function StepViewerPage({
         if (courseStructure) {
           setCourseStructure((prev) => {
             if (!prev) return prev;
-            let completedLessons = prev.completedLessons + 1;
+            const completedLessons = prev.completedLessons + 1;
             return {
               ...prev,
               completedLessons,
@@ -276,7 +271,7 @@ export function StepViewerPage({
           }, 1200);
         }
       }
-    } catch (e) {
+    } catch {
       toast.error("Ошибка обновления прогресса");
     } finally {
       setCompleting(false);

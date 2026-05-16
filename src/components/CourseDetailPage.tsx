@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { ReviewForm } from "@/components/ReviewForm";
 interface LessonItem {
   id: string;
   title: string;
@@ -57,7 +58,6 @@ interface ReviewItem {
   createdAt: string;
   user?: { name: string | null; image: string | null };
 }
-import { ReviewForm } from "@/components/ReviewForm";
 
 interface CourseDetail {
   id: string;

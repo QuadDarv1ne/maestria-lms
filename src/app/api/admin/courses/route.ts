@@ -7,7 +7,7 @@ import { authOptions } from "@/lib/auth";
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== "admin") {
+    if (!session?.user || (session.user as { role?: string }).role !== "admin") {
       return NextResponse.json(
         { error: "Доступ запрещён. Требуются права администратора" },
         { status: 403 }
@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search");
     const skip = (page - 1) * limit;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {};
     if (status === "published") where.isPublished = true;
     if (status === "unpublished") where.isPublished = false;
@@ -85,7 +86,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userRole = (session.user as any).role;
+    const userRole = (session.user as { role?: string }).role;
     if (userRole !== "admin" && userRole !== "teacher") {
       return NextResponse.json(
         { error: "Доступ запрещён. Требуются права администратора или преподавателя" },
@@ -133,7 +134,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userId = (session.user as any).id;
+    const userId = (session.user as { id?: string }).id;
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Ошибка аутентификации" },
+        { status: 401 }
+      );
+    }
 
     // Проверяем уникальность slug
     const existingCourse = await db.course.findUnique({
@@ -175,11 +182,13 @@ export async function POST(request: NextRequest) {
         categoryId: categoryConnect || null,
         teacherId: userId,
         modules: {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           create: modules.map((mod: any, mIdx: number) => ({
             title: mod.title || `Модуль ${mIdx + 1}`,
             description: mod.description || null,
             sortOrder: mod.sortOrder || mIdx + 1,
             lessons: {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               create: (mod.lessons || []).map((lesson: any, lIdx: number) => ({
                 title: lesson.title || `Урок ${lIdx + 1}`,
                 type: lesson.type || "text",

@@ -19,8 +19,10 @@ export async function POST(
       );
     }
 
-    const userId = (session.user as any).id;
-
+    const userId = (session.user as { id?: string }).id;
+    if (!userId) {
+      return NextResponse.json({ error: "Ошибка аутентификации" }, { status: 401 });
+    }
     // Проверяем существование курса
     const course = await db.course.findUnique({
       where: { id: courseId },

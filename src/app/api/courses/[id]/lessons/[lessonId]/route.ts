@@ -58,6 +58,7 @@ export async function GET(
 
     const session = await getServerSession(authOptions);
     if (session?.user) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       sessionUser = session.user as any;
       const enrollment = await db.enrollment.findUnique({
         where: {
@@ -173,8 +174,10 @@ export async function POST(
       );
     }
 
-    const userId = (session.user as any).id;
-
+    const userId = (session.user as { id?: string }).id;
+    if (!userId) {
+      return NextResponse.json({ error: "Ошибка аутентификации" }, { status: 401 });
+    }
     // Проверяем запись на курс или бесплатность урока
     const lesson = await db.lesson.findUnique({
       where: { id: lessonId },
@@ -204,7 +207,7 @@ export async function POST(
 
     if (!validation.success) {
       return NextResponse.json(
-        { error: validation.error.errors[0]?.message || "Ошибка валидации" },
+        { error: validation.error.issues[0]?.message || "Ошибка валидации" },
         { status: 400 }
       );
     }

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
 // GET: Список всех опубликованных курсов с фильтрами
+export const revalidate = 60; // Cache for 60 seconds
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -14,6 +16,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     // Строим условия фильтрации
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {
       isPublished: true,
     };
@@ -41,6 +44,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Сортировка
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const orderByMap: Record<string, any> = {
       popular: { enrollments: "desc" },
       new: { createdAt: "desc" },

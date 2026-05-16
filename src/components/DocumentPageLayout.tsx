@@ -143,7 +143,7 @@ export function DocumentPageLayout({
             <CardContent className="p-6">
               <h2 className="font-semibold mb-3">{t("legal.toc", locale)}</h2>
               <ol className="list-decimal list-inside space-y-1.5 text-sm text-muted-foreground">
-                {tocItems.map((item, idx) => (
+                {tocItems.map((item, _idx) => (
                   <li key={item.id}>
                     <button
                       onClick={() =>

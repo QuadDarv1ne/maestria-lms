@@ -117,6 +117,7 @@ model Course {
   modules     Module[]
   enrollments Enrollment[]
   reviews     Review[]
+  payments    Payment[]
   certificates Certificate[]
 
   createdAt DateTime @default(now())
@@ -238,6 +239,7 @@ model Payment {
   transactionId   String?
   paymentData     String?  // JSON: additional payment data
   user            User     @relation(fields: [userId], references: [id])
+  course          Course   @relation(fields: [courseId], references: [id])
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }

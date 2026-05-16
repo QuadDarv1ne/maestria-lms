@@ -1,10 +1,11 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface PageTransitionProps {
-  children: React.ReactNode;
+  children: ReactNode;
   pageKey: string;
 }
 

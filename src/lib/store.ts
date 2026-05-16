@@ -242,7 +242,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       try {
         window.localStorage.removeItem(FAVORITES_KEY);
         window.localStorage.removeItem(NOTIFICATIONS_KEY);
-      } catch {}
+      } catch { /* safe to ignore — logout continues without clearing localStorage */ }
     }
     set({
       user: null,

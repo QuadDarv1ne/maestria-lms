@@ -50,7 +50,7 @@ export function Header() {
     try {
       await fetch("/api/auth/signout", { method: "POST" });
       logout();
-    } catch (e) {
+    } catch {
       logout();
     }
   };

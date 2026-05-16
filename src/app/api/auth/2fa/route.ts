@@ -50,12 +50,12 @@ export async function POST(request: NextRequest) {
 
     if (!validation.success) {
       return NextResponse.json(
-        { error: validation.error.errors[0]?.message || "Ошибка валидации" },
+        { error: validation.error.issues[0]?.message || "Ошибка валидации" },
         { status: 400 }
       );
     }
 
-    const userId = (session.user as any).id;
+    const userId = (session.user as { id?: string }).id;
     const user = await db.user.findUnique({ where: { id: userId } });
 
     if (!user) {
@@ -100,13 +100,13 @@ export async function PUT(request: NextRequest) {
 
     if (!validation.success) {
       return NextResponse.json(
-        { error: validation.error.errors[0]?.message || "Ошибка валидации" },
+        { error: validation.error.issues[0]?.message || "Ошибка валидации" },
         { status: 400 }
       );
     }
 
     const { code, secret } = validation.data;
-    const userId = (session.user as any).id;
+    const userId = (session.user as { id?: string }).id;
 
     const user = await db.user.findUnique({ where: { id: userId } });
 
@@ -155,12 +155,12 @@ export async function DELETE(request: NextRequest) {
 
     if (!validation.success) {
       return NextResponse.json(
-        { error: validation.error.errors[0]?.message || "Ошибка валидации" },
+        { error: validation.error.issues[0]?.message || "Ошибка валидации" },
         { status: 400 }
       );
     }
 
-    const userId = (session.user as any).id;
+    const userId = (session.user as { id?: string }).id;
 
     const user = await db.user.findUnique({ where: { id: userId } });
 

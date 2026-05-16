@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useEffect, useState, useCallback } from "react";
+import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -72,25 +73,36 @@ const promoCourses: PromoCourse[] = [
   { id: 34, title: "Написание курсовых и дипломных работ", description: "Полное руководство по написанию курсовых и дипломных работ: от выбора темы до защиты. ГОСТ, антиплагиат, оформление, презентация.", image: "https://iili.io/BpcZubn.jpg", url: "https://stepik.org/a/280000", tag: "Наука", tagColor: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300", level: "Начинающий", levelColor: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300", duration: "8 недель", rating: 4.8, isNew: true, isHot: true },
 ];
 
-/* Компонент изображения с blur-загрузчиком */
+/* Компонент изображения: Next.js Image для локальных, обычный img для внешних */
 function CourseImage({ src, alt }: { src: string; alt: string }) {
   const [loaded, setLoaded] = useState(false);
   const isExternal = src.startsWith("http");
 
   return (
     <div className="relative w-full h-full">
-      {/* Blur-заглушка */}
       {!loaded && (
         <div className="absolute inset-0 bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 animate-pulse" />
       )}
-      <img
-        src={src}
-        alt={alt}
-        className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-110 ${loaded ? "opacity-100" : "opacity-0"}`}
-        loading="lazy"
-        onLoad={() => setLoaded(true)}
-        {...(isExternal ? { crossOrigin: "anonymous" as const } : {})}
-      />
+      {isExternal ? (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src={src}
+          alt={alt}
+          className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-110 ${loaded ? "opacity-100" : "opacity-0"}`}
+          loading="lazy"
+          onLoad={() => setLoaded(true)}
+          crossOrigin="anonymous"
+        />
+      ) : (
+        <Image
+          src={src}
+          alt={alt}
+          fill
+          className={`object-cover transition-all duration-500 group-hover:scale-110 ${loaded ? "opacity-100" : "opacity-0"}`}
+          sizes="(max-width: 768px) 100vw, 400px"
+          onLoad={() => setLoaded(true)}
+        />
+      )}
     </div>
   );
 }

@@ -114,11 +114,11 @@ export function AuthDialogs() {
           const sessionData = await sessionRes.json();
           if (sessionData?.user) {
             setUser({
-              id: (sessionData.user as any).id,
+              id: (sessionData.user as { id?: string }).id || "",
               email: sessionData.user.email || "",
               name: sessionData.user.name || null,
               image: sessionData.user.image || null,
-              role: (sessionData.user as any).role || "student",
+              role: (sessionData.user as { role?: string }).role || "student",
             });
             toast.success(
               `Добро пожаловать, ${sessionData.user.name || "пользователь"}!`
@@ -127,7 +127,7 @@ export function AuthDialogs() {
         }
         closeDialog();
       }
-    } catch (e) {
+    } catch {
       toast.error("Ошибка входа. Попробуйте ещё раз.");
     } finally {
       setLoginLoading(false);
@@ -171,7 +171,7 @@ export function AuthDialogs() {
       } else {
         toast.error(data.error || "Ошибка регистрации");
       }
-    } catch (e) {
+    } catch {
       toast.error("Ошибка регистрации");
     } finally {
       setRegisterLoading(false);
@@ -194,7 +194,7 @@ export function AuthDialogs() {
       } else {
         toast.error(data.error || "Ошибка");
       }
-    } catch (e) {
+    } catch {
       toast.error("Ошибка отправки запроса");
     } finally {
       setForgotLoading(false);

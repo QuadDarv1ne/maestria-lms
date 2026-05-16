@@ -25,7 +25,6 @@ import {
   Target,
   Sparkles,
   Heart,
-  Lightbulb,
   GraduationCap,
 } from "lucide-react";
 

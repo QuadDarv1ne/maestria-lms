@@ -35,7 +35,7 @@ import { HelpPage } from "@/components/HelpPage";
 
 // Главный SPA-роутер для образовательной платформы Maestria by Maestro7IT
 function AppRouter() {
-  const { currentPage, navigate, theme } = useAppStore();
+  const { currentPage, theme } = useAppStore();
 
   // Применяем тему к <html> элементу глобально
   useEffect(() => {
@@ -182,15 +182,15 @@ export default function Home() {
           const session = await res.json();
           if (session?.user) {
             setUser({
-              id: (session.user as any).id || "",
+              id: (session.user as { id?: string }).id || "",
               email: session.user.email || "",
               name: session.user.name || null,
               image: session.user.image || null,
-              role: (session.user as any).role || "student",
+              role: (session.user as { role?: string }).role || "student",
             });
           }
         }
-      } catch (e) {
+      } catch {
         // Сессия не найдена — пользователь не авторизован
       }
     };

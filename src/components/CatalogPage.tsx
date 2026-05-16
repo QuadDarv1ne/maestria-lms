@@ -65,7 +65,7 @@ export function CatalogPage() {
   });
   const [searchInput, setSearchInput] = useState(courseFilters.search);
   const [showFilters, setShowFilters] = useState(false);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const levelLabels: Record<string, string> = {
     beginner: t("catalog.beginner", locale),
@@ -146,7 +146,7 @@ export function CatalogPage() {
     setPagination((prev) => ({ ...prev, page: 1 }));
   }, [searchInput, setCourseFilters]);
 
-  const handleClearSearch = useCallback(() => {
+  const _handleClearSearch = useCallback(() => {
     setSearchInput("");
     if (debounceRef.current) clearTimeout(debounceRef.current);
     setCourseFilters({ search: "" });

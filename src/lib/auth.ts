@@ -1,13 +1,36 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import type { JWT } from "next-auth/jwt";
+import type { Session } from "next-auth";
+import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 
-// Простая функция хеширования с использованием Web Crypto API
+interface ExtendedUser {
+  id: string;
+  role: string;
+}
+
+interface ExtendedJWT extends JWT {
+  role?: string;
+  id?: string;
+}
+
+interface ExtendedSession extends Session {
+  user: {
+    id?: string;
+    role?: string;
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  };
+}
+
 async function hashPassword(password: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password + 'maestro7it-salt-2024');
-  const hash = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+  return bcrypt.hash(password, 12);
+}
+
+async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  return bcrypt.compare(password, hash);
 }
 
 export const authOptions: NextAuthOptions = {
@@ -32,8 +55,8 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Неверный email или пароль");
         }
 
-        const passwordHash = await hashPassword(credentials.password);
-        if (passwordHash !== user.passwordHash) {
+        const isValid = await verifyPassword(credentials.password, user.passwordHash);
+        if (!isValid) {
           throw new Error("Неверный email или пароль");
         }
 
@@ -67,19 +90,19 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 дней
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }): Promise<ExtendedJWT> {
       if (user) {
-        token.role = (user as any).role;
-        token.id = user.id;
+        (token as ExtendedJWT).role = (user as ExtendedUser).role;
+        (token as ExtendedJWT).id = user.id;
       }
-      return token;
+      return token as ExtendedJWT;
     },
-    async session({ session, token }) {
+    async session({ session, token }): Promise<ExtendedSession> {
       if (session.user) {
-        (session.user as any).role = token.role;
-        (session.user as any).id = token.id;
+        (session.user as ExtendedSession["user"]).role = token.role as string | undefined;
+        (session.user as ExtendedSession["user"]).id = token.id as string | undefined;
       }
-      return session;
+      return session as ExtendedSession;
     },
   },
   pages: {

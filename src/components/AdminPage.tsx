@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,13 +40,11 @@ import {
   Monitor,
   Activity,
   Server,
-  Database,
   Zap,
   ArrowUpRight,
   ArrowDownRight,
   RefreshCw,
   Search,
-  Lock,
   ChevronLeft,
   ChevronRight,
   LayoutDashboard,
@@ -55,20 +53,14 @@ import {
   Wallet,
   LogOut,
   Menu,
-  X,
   AlertTriangle,
   GraduationCap,
   Award,
   Timer,
   BookCheck,
   PieChart,
-  Calendar,
-  Download,
-  Filter,
   UserCheck,
   UserX,
-  Mail,
-  MoreVertical,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -161,11 +153,11 @@ const demoAvgReadingTime = [24, 28, 22, 32, 27, 18, 15]; // минуты
 
 // Распределение по категориям курсов
 const demoCategoryDistribution = [
-  { name: "Программирование", value: 35, color: "#4f46e5" },
-  { name: "Веб-разработка", value: 25, color: "#7c3aed" },
-  { name: "Data Science", value: 18, color: "#f59e0b" },
-  { name: "Игры", value: 12, color: "#10b981" },
-  { name: "Другое", value: 10, color: "#6b7280" },
+  { label: "Программирование", value: 35, color: "#4f46e5" },
+  { label: "Веб-разработка", value: 25, color: "#7c3aed" },
+  { label: "Data Science", value: 18, color: "#f59e0b" },
+  { label: "Игры", value: 12, color: "#10b981" },
+  { label: "Другое", value: 10, color: "#6b7280" },
 ];
 
 // Результаты тестов по курсам
@@ -349,25 +341,17 @@ function BarChart({
 }
 
 /** Кольцевая диаграмма (Donut) */
-function DonutChart({
-  segments,
-  size = 180,
-  strokeWidth = 28,
-  centerLabel,
-  centerValue,
-}: {
-  segments: { value: number; color: string; name: string }[];
-  size?: number;
-  strokeWidth?: number;
-  centerLabel?: string;
-  centerValue?: string;
-}) {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
+// Pure function to compute donut chart arcs — extracted to avoid react-hooks/immutability warning
+function computeArcs(
+  segments: { value: number; color: string; label?: string; name?: string }[],
+  size: number,
+  strokeWidth: number
+) {
+  const circumference = 2 * Math.PI * ((size - strokeWidth) / 2);
   const total = segments.reduce((sum, s) => sum + s.value, 0) || 1;
 
   let offset = 0;
-  const arcs = segments.map((seg) => {
+  return segments.map((seg) => {
     const segLength = (seg.value / total) * circumference;
     const arc = {
       ...seg,
@@ -378,6 +362,23 @@ function DonutChart({
     offset += segLength;
     return arc;
   });
+}
+
+function DonutChart({
+  segments,
+  size = 180,
+  strokeWidth = 28,
+  centerLabel,
+  centerValue,
+}: {
+  segments: { value: number; color: string; label: string }[];
+  size?: number;
+  strokeWidth?: number;
+  centerLabel?: string;
+  centerValue?: string;
+}) {
+  const arcs = computeArcs(segments, size, strokeWidth);
+  const radius = (size - strokeWidth) / 2;
 
   return (
     <div className="flex items-center gap-4">
@@ -421,7 +422,7 @@ function DonutChart({
         {arcs.map((arc, i) => (
           <div key={i} className="flex items-center gap-2 text-sm">
             <div className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: arc.color }} />
-            <span className="text-muted-foreground truncate">{arc.name}</span>
+            <span className="text-muted-foreground truncate">{arc.label}</span>
             <span className="font-semibold ml-auto">{arc.percentage}%</span>
           </div>
         ))}
@@ -474,35 +475,38 @@ export function AdminPage() {
   const [userRoleFilter, setUserRoleFilter] = useState("all");
   const [refreshing, setRefreshing] = useState(false);
 
-  // Загрузка данных
-  const fetchData = useCallback(async () => {
-    try {
-      const [coursesRes, usersRes] = await Promise.all([
-        fetch("/api/admin/courses?limit=50"),
-        fetch("/api/admin/users?limit=50"),
-      ]);
-      if (coursesRes.ok) {
-        const data = await coursesRes.json();
-        setCourses(data.courses || []);
-      }
-      if (usersRes.ok) {
-        const data = await usersRes.json();
-        setUsers(data.users || []);
-      }
-    } catch (e) {
-      console.error("Ошибка загрузки данных:", e);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  // Load admin data on mount / user change
   useEffect(() => {
     if (!user || user.role !== "admin") {
       navigate("home");
       return;
     }
-    fetchData();
-  }, [user, navigate, fetchData]);
+    let cancelled = false;
+    const loadData = async () => {
+      try {
+        const [coursesRes, usersRes] = await Promise.all([
+          fetch("/api/admin/courses?limit=50"),
+          fetch("/api/admin/users?limit=50"),
+        ]);
+        if (!cancelled) {
+          if (coursesRes.ok) {
+            const data = await coursesRes.json();
+            setCourses(data.courses || []);
+          }
+          if (usersRes.ok) {
+            const data = await usersRes.json();
+            setUsers(data.users || []);
+          }
+        }
+      } catch (e) {
+        if (!cancelled) console.error("Ошибка загрузки данных:", e);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    loadData();
+    return () => { cancelled = true; };
+  }, [user, navigate]);
 
   // Обработчики
   const handleUserRoleChange = async (userId: string, role: string) => {
@@ -539,7 +543,22 @@ export function AdminPage() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchData();
+    try {
+      const [coursesRes, usersRes] = await Promise.all([
+        fetch("/api/admin/courses?limit=50"),
+        fetch("/api/admin/users?limit=50"),
+      ]);
+      if (coursesRes.ok) {
+        const data = await coursesRes.json();
+        setCourses(data.courses || []);
+      }
+      if (usersRes.ok) {
+        const data = await usersRes.json();
+        setUsers(data.users || []);
+      }
+    } catch (e) {
+      console.error("Ошибка загрузки данных:", e);
+    }
     setRefreshing(false);
     toast.success("Данные обновлены");
   };
@@ -596,7 +615,7 @@ export function AdminPage() {
     { id: "settings", label: "Настройки", icon: <Settings className="w-5 h-5" /> },
   ];
 
-  const SidebarContent = () => (
+  const renderSidebar = () => (
     <div className="flex flex-col h-full">
       {/* Логотип */}
       <div className="p-4 border-b border-sidebar-border">
@@ -895,9 +914,9 @@ export function AdminPage() {
                 <CardContent>
                   <DonutChart
                     segments={[
-                      { name: "Студенты", value: totalStudents, color: "#4f46e5" },
-                      { name: "Преподаватели", value: totalTeachers, color: "#f59e0b" },
-                      { name: "Администраторы", value: users.filter(u => u.role === "admin").length, color: "#7c3aed" },
+                      { label: "Студенты", value: totalStudents, color: "#4f46e5" },
+                      { label: "Преподаватели", value: totalTeachers, color: "#f59e0b" },
+                      { label: "Администраторы", value: users.filter(u => u.role === "admin").length, color: "#7c3aed" },
                     ]}
                     centerValue={users.length.toString()}
                     centerLabel="пользователей"
@@ -1152,9 +1171,9 @@ export function AdminPage() {
               <CardContent>
                 <DonutChart
                   segments={[
-                    { name: "Лёгкие (>80%)", value: 3, color: "#10b981" },
-                    { name: "Средние (60-80%)", value: 3, color: "#f59e0b" },
-                    { name: "Сложные (<60%)", value: 2, color: "#ef4444" },
+                    { label: "Лёгкие (>80%)", value: 3, color: "#10b981" },
+                    { label: "Средние (60-80%)", value: 3, color: "#f59e0b" },
+                    { label: "Сложные (<60%)", value: 2, color: "#ef4444" },
                   ]}
                   centerValue="8"
                   centerLabel="тестов"
@@ -1380,8 +1399,8 @@ export function AdminPage() {
                 <CardContent>
                   <DonutChart
                     segments={[
-                      { name: "Платные", value: courses.filter(c => c.price > 0).length || 1, color: "#4f46e5" },
-                      { name: "Бесплатные", value: courses.filter(c => c.price === 0).length || 1, color: "#10b981" },
+                      { label: "Платные", value: courses.filter(c => c.price > 0).length || 1, color: "#4f46e5" },
+                      { label: "Бесплатные", value: courses.filter(c => c.price === 0).length || 1, color: "#10b981" },
                     ]}
                     centerValue={courses.length.toString()}
                     centerLabel="курсов"
@@ -1746,7 +1765,7 @@ export function AdminPage() {
           sidebarCollapsed ? "w-[68px]" : "w-[260px]"
         }`}
       >
-        <SidebarContent />
+        {renderSidebar()}
         {/* Кнопка сворачивания */}
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -1762,7 +1781,7 @@ export function AdminPage() {
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileSidebarOpen(false)} />
           <aside className="absolute left-0 top-0 bottom-0 w-[260px] bg-sidebar border-r border-sidebar-border">
-            <SidebarContent />
+            {renderSidebar()}
           </aside>
         </div>
       )}
