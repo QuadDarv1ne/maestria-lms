@@ -8,6 +8,7 @@ import { HomePage } from "@/components/HomePage";
 import { CatalogPage } from "@/components/CatalogPage";
 import { CourseDetailPage } from "@/components/CourseDetailPage";
 import { StepViewerPage } from "@/components/StepViewerPage";
+import { LessonPage } from "@/components/LessonPage";
 import { ProfilePage } from "@/components/ProfilePage";
 import { AdminPage } from "@/components/AdminPage";
 import { AboutPage } from "@/components/AboutPage";
@@ -64,6 +65,12 @@ function AppRouter() {
         }
         if (segments.length >= 2 && segments[1]) {
           return <CourseDetailPage courseId={segments[1]} />;
+        }
+        return <CatalogPage />;
+
+      case 'lesson-simple':
+        if (segments.length >= 3) {
+          return <LessonPage courseId={segments[1]} lessonId={segments[2]} />;
         }
         return <CatalogPage />;
 
