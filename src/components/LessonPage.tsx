@@ -18,6 +18,40 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+function LessonVideo({ src }: { src: string }) {
+  const [error, setError] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  if (error) {
+    return (
+      <div className="bg-gray-900 rounded-lg aspect-video flex items-center justify-center mb-4">
+        <div className="text-center text-white">
+          <Play className="w-16 h-16 mx-auto mb-2 opacity-50" />
+          <p className="text-sm opacity-50">Ошибка загрузки видео</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative bg-black rounded-lg overflow-hidden mb-4">
+      {!loaded && (
+        <div className="absolute inset-0 bg-gray-800 animate-pulse flex items-center justify-center">
+          <Play className="w-12 h-12 text-white/30" />
+        </div>
+      )}
+      <video
+        src={src}
+        controls
+        preload="metadata"
+        className="w-full aspect-video"
+        onLoadedData={() => setLoaded(true)}
+        onError={() => setError(true)}
+      />
+    </div>
+  );
+}
+
 interface AssignmentItem {
   id: string;
   title: string;
@@ -247,15 +281,16 @@ export function LessonPage({
             {/* Видеоурок */}
             {lesson.type === "video" && (
               <div>
-                <div className="bg-gray-900 rounded-lg aspect-video flex items-center justify-center mb-4">
-                  <div className="text-center text-white">
-                    <Play className="w-16 h-16 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm opacity-50">Видеоурок</p>
-                    {lesson.videoUrl && (
-                      <p className="text-xs opacity-30 mt-1">{lesson.videoUrl}</p>
-                    )}
+                {lesson.videoUrl ? (
+                  <LessonVideo src={lesson.videoUrl} />
+                ) : (
+                  <div className="bg-gray-900 rounded-lg aspect-video flex items-center justify-center mb-4">
+                    <div className="text-center text-white">
+                      <Play className="w-16 h-16 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm opacity-50">Видео не загружено</p>
+                    </div>
                   </div>
-                </div>
+                )}
                 {lesson.content && (
                   <div className="prose prose-sm max-w-none whitespace-pre-wrap">
                     {lesson.content}

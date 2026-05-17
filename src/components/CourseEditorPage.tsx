@@ -50,6 +50,58 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+function VideoUploadButton({ onUpload }: { onUpload: (url: string) => void }) {
+  const [uploading, setUploading] = useState(false);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("folder", "lessons");
+
+    try {
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Upload failed");
+      }
+      const data = await res.json();
+      onUpload(data.url);
+      toast.success("Видео загружено");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Ошибка загрузки");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  return (
+    <>
+      <input
+        type="file"
+        accept="video/*"
+        onChange={handleFile}
+        disabled={uploading}
+        className="hidden"
+        id="video-upload"
+      />
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-8 text-xs shrink-0"
+        disabled={uploading}
+        onClick={() => document.getElementById("video-upload")?.click()}
+      >
+        {uploading ? "..." : "Загрузить"}
+      </Button>
+    </>
+  );
+}
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 interface LessonForm {
@@ -59,6 +111,7 @@ interface LessonForm {
   duration: number;
   isFree: boolean;
   content: string;
+  videoUrl: string;
   sortOrder: number;
 }
 
@@ -164,6 +217,7 @@ function createEmptyLesson(sortOrder: number): LessonForm {
     duration: 0,
     isFree: false,
     content: "",
+    videoUrl: "",
     sortOrder,
   };
 }
@@ -419,6 +473,7 @@ export function CourseEditorPage() {
               duration: Number(l.duration) || 0,
               isFree: l.isFree,
               content: l.content.trim() || undefined,
+              videoUrl: l.videoUrl.trim() || undefined,
               sortOrder: lIdx + 1,
             })),
           })),
@@ -1055,16 +1110,25 @@ export function CourseEditorPage() {
                                         <Label className="text-xs">
                                           URL видео
                                         </Label>
-                                        <Input
-                                          className="h-8 text-xs"
-                                          placeholder="https://..."
-                                          value={lesson.content}
-                                          onChange={(e) =>
-                                            updateLesson(mIdx, lIdx, {
-                                              content: e.target.value,
-                                            })
-                                          }
-                                        />
+                                        <div className="flex gap-2">
+                                          <Input
+                                            className="h-8 text-xs flex-1"
+                                            placeholder="https://..."
+                                            value={lesson.videoUrl}
+                                            onChange={(e) =>
+                                              updateLesson(mIdx, lIdx, {
+                                                videoUrl: e.target.value,
+                                              })
+                                            }
+                                          />
+                                          <VideoUploadButton
+                                            onUpload={(url) =>
+                                              updateLesson(mIdx, lIdx, {
+                                                videoUrl: url,
+                                              })
+                                            }
+                                          />
+                                        </div>
                                       </div>
                                     )}
                                   </div>
