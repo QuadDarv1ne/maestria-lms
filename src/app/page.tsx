@@ -9,8 +9,8 @@ import { Footer } from "@/components/Footer";
 import { AuthDialogs } from "@/components/AuthDialogs";
 import { CustomCursor } from "@/components/CustomCursor";
 import { GlobalScrollToTop } from "@/components/GlobalScrollToTop";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { motion, AnimatePresence } from "framer-motion";
+import { PageTransition } from "@/components/PageTransition";
+import { PageWrapper } from "@/components/PageWrapper";
 
 /**
  * Root page (/) — HomePage with full layout.
@@ -53,18 +53,11 @@ export default function Page() {
       <GlobalScrollToTop />
       <Header />
       <main className="flex-1">
-        <ErrorBoundary>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key="home"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-            >
-              <HomePage />
-            </motion.div>
-          </AnimatePresence>
-        </ErrorBoundary>
+        <PageWrapper>
+          <PageTransition pageKey="home">
+            <HomePage />
+          </PageTransition>
+        </PageWrapper>
       </main>
       <Footer />
       <Suspense fallback={null}>
