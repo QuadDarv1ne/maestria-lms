@@ -113,6 +113,7 @@ export async function GET(
     }
 
     // Проверяем, авторизован ли пользователь и записан ли он на курс
+    // Use resolved course.id (not raw param which could be a slug)
     let userEnrollment = null;
     type LessonProgress = { lessonId: string; completed: boolean };
     let userProgress: LessonProgress[] = [];
@@ -122,7 +123,7 @@ export async function GET(
         where: {
           userId_courseId: {
             userId: session.user.id,
-            courseId: id,
+            courseId: course.id,
           },
         },
       });

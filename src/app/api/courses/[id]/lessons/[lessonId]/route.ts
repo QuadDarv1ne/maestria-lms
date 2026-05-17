@@ -137,10 +137,26 @@ export async function GET(
       completedLessonIds = completedProgress.map((p) => p.lessonId);
     }
 
+    // Скрываем correctAnswer для не записанных пользователей (даже для бесплатных уроков)
+    const assignments = lesson.assignments.map((a) =>
+      isEnrolled
+        ? a
+        : { ...a, correctAnswer: null }
+    );
+
     return NextResponse.json({
       lesson: {
-        ...lesson,
+        id: lesson.id,
+        title: lesson.title,
+        type: lesson.type,
+        content: lesson.content,
+        videoUrl: lesson.videoUrl,
+        duration: lesson.duration,
+        isFree: lesson.isFree,
+        sortOrder: lesson.sortOrder,
         completed: completedLessonIds.includes(lessonId),
+        module: lesson.module,
+        assignments,
         progress: progressData || null,
         prevStepId,
         nextStepId,

@@ -190,7 +190,41 @@ export async function POST() {
                   { title: "Что такое Python и зачем его учить?", type: "text", content: "Python — один из самых популярных языков программирования в мире. Он прост в изучении, универсален и используется в веб-разработке, анализе данных, искусственном интеллекте и многих других областях.\n\nВ этом уроке вы узнаете:\n- Почему Python так популярен\n- Где применяется Python\n- Как устроен язык и его экосистема\n- Что вас ждёт в этом курсе", duration: 15, sortOrder: 1, isFree: true },
                   { title: "Установка Python и настройка среды", type: "video", content: "Пошаговая инструкция по установке Python на ваш компьютер", videoUrl: "https://example.com/install-python", duration: 25, sortOrder: 2, isFree: true },
                   { title: "Первая программа: Hello World", type: "coding", content: "Напишите свою первую программу на Python! В этом уроке вы научитесь выводить текст на экран с помощью функции print().", duration: 20, sortOrder: 3, isFree: true },
-                  { title: "Тест: Введение в Python", type: "quiz", duration: 10, sortOrder: 4, isFree: false },
+                  {
+                    title: "Тест: Введение в Python",
+                    type: "quiz",
+                    duration: 10,
+                    sortOrder: 4,
+                    isFree: false,
+                    assignments: {
+                      create: [
+                        {
+                          title: "Для чего чаще всего используется Python?",
+                          description: "Выберите наиболее полный ответ",
+                          type: "quiz",
+                          points: 10,
+                          options: JSON.stringify(["Только для веб-разработки", "Только для анализа данных", "Веб-разработка, анализ данных, AI, автоматизация", "Только для создания игр"]),
+                          correctAnswer: "2", // index 2 — correct option
+                        },
+                        {
+                          title: "Какой символ используется для комментариев в Python?",
+                          description: "Выберите правильный вариант",
+                          type: "quiz",
+                          points: 10,
+                          options: JSON.stringify(["//", "#", "/* */", "--"]),
+                          correctAnswer: "1",
+                        },
+                        {
+                          title: "Какая функция выводит текст на экран?",
+                          description: "Выберите правильный ответ",
+                          type: "quiz",
+                          points: 10,
+                          options: JSON.stringify(["console.log()", "echo()", "print()", "write()"]),
+                          correctAnswer: "2",
+                        },
+                      ],
+                    },
+                  },
                 ],
               },
             },

@@ -140,8 +140,8 @@ export async function POST(
           where: { id: existingEnrollment.id },
           data: {
             status: "active",
-            progress: 0,
             enrolledAt: new Date(),
+            // Preserve existing progress — don't reset to 0
           },
         });
       }

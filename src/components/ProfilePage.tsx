@@ -329,7 +329,7 @@ export function ProfilePage() {
             {[
               {
                 label: "Курсов пройдено",
-                value: profile?._count?.enrollments || 0,
+                value: completedCount,
                 icon: <BookOpen className="w-5 h-5 text-blue-700" />,
               },
               {

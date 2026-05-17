@@ -85,8 +85,8 @@ interface LessonData {
   };
   assignments: AssignmentItem[];
   progress: LessonProgress | null;
-  prevLessonId: string | null;
-  nextLessonId: string | null;
+  prevStepId: string | null;
+  nextStepId: string | null;
 }
 
 const lessonTypeIcons: Record<string, React.ReactNode> = {
@@ -439,10 +439,10 @@ export function LessonPage({
         <div className="flex items-center justify-between">
           <Button
             variant="outline"
-            disabled={!lesson.prevLessonId}
+            disabled={!lesson.prevStepId}
             onClick={() =>
-              lesson.prevLessonId &&
-              navigate(`course/${courseId}/lesson/${lesson.prevLessonId}`)
+              lesson.prevStepId &&
+              navigate(`course/${courseId}/lesson/${lesson.prevStepId}`)
             }
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -464,10 +464,10 @@ export function LessonPage({
 
           <Button
             variant="outline"
-            disabled={!lesson.nextLessonId}
+            disabled={!lesson.nextStepId}
             onClick={() =>
-              lesson.nextLessonId &&
-              navigate(`course/${courseId}/lesson/${lesson.nextLessonId}`)
+              lesson.nextStepId &&
+              navigate(`course/${courseId}/lesson/${lesson.nextStepId}`)
             }
           >
             Следующий
