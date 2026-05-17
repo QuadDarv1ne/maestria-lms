@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,6 +34,8 @@ import { toast } from "sonner";
 import { ReviewForm } from "@/components/ReviewForm";
 import { CourseImage } from "@/components/CourseImage";
 import { levelLabels, levelColors } from "@/lib/constants";
+import { useCourse, useCourseReviews } from "@/hooks/useCourses";
+import { useQueryClient } from "@tanstack/react-query";
 interface LessonItem {
   id: string;
   title: string;
@@ -106,54 +108,22 @@ interface CourseDetail {
 
 export function CourseDetailPage({ courseId }: { courseId: string }) {
   const { navigate, user, toggleFavorite, isFavorite, addNotification } = useAppStore();
-  const [course, setCourse] = useState<CourseDetail | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [enrolling, setEnrolling] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string>("sbp");
-  const [reviews, setReviews] = useState<ReviewItem[]>([]);
-  const [reviewPagination, setReviewPagination] = useState({ page: 1, total: 0, totalPages: 0 });
+
+  const { data: courseData, isLoading } = useCourse(courseId);
+  const { data: reviewsData } = useCourseReviews(courseId);
+
+  const course = courseData?.course as CourseDetail | null | undefined;
+  const reviews = (reviewsData?.reviews as ReviewItem[] | undefined) ?? [];
+  const loading = isLoading;
 
   const favored = isFavorite(courseId);
 
-  // Load course and reviews on mount / courseId change
-  useEffect(() => {
-    let cancelled = false;
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        const [courseRes, reviewsRes] = await Promise.all([
-          fetch(`/api/courses/${courseId}`),
-          fetch(`/api/courses/${courseId}/reviews?page=1&limit=10`),
-        ]);
-        if (!cancelled) {
-          if (courseRes.ok) {
-            const data = await courseRes.json();
-            setCourse(data.course);
-          }
-          if (reviewsRes.ok) {
-            const data = await reviewsRes.json();
-            setReviews(data.reviews || []);
-            setReviewPagination(data.pagination || { page: 1, total: 0, totalPages: 0 });
-          }
-        }
-      } catch (e) {
-        if (!cancelled) {
-          console.error("Ошибка загрузки:", e);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    loadData();
-    return () => { cancelled = true; };
-  }, [courseId]);
-
-  const refetchCourse = async () => {
-    const courseRes = await fetch(`/api/courses/${courseId}`);
-    if (courseRes.ok) {
-      const courseData = await courseRes.json();
-      setCourse(courseData.course);
-    }
+  const invalidateCourse = () => {
+    queryClient.invalidateQueries({ queryKey: ["course", courseId] });
+    queryClient.invalidateQueries({ queryKey: ["course-reviews", courseId] });
   };
 
   const showEnrollmentNotification = () => {
@@ -192,12 +162,11 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
           if (confirmRes.ok) {
             toast.success("Оплата прошла успешно! Вы записаны на курс.");
             showEnrollmentNotification();
-            await refetchCourse();
+            invalidateCourse();
           } else {
             toast.error(confirmData.error || "Ошибка подтверждения платежа");
           }
         } else if (data.requiresPayment && data.paymentId === undefined) {
-          // A pending payment already exists — need to find it and confirm
           const paymentsRes = await fetch("/api/payments");
           if (paymentsRes.ok) {
             const paymentsData = await paymentsRes.json();
@@ -214,7 +183,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
               if (confirmRes.ok) {
                 toast.success("Оплата прошла успешно! Вы записаны на курс.");
                 showEnrollmentNotification();
-                await refetchCourse();
+                invalidateCourse();
               } else {
                 toast.error(confirmData.error || "Ошибка подтверждения платежа");
               }
@@ -225,7 +194,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
         } else {
           toast.success(data.message);
           showEnrollmentNotification();
-          await refetchCourse();
+          invalidateCourse();
         }
       } else {
         toast.error(data.error || "Ошибка записи на курс");
@@ -694,7 +663,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">
-                  Отзывы ({reviewPagination.total || course.reviewCount})
+                  Отзывы ({reviewsData?.pagination?.total ?? course?.reviewCount ?? 0})
                 </h2>
               </div>
 
@@ -718,7 +687,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                           ))}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {reviewPagination.total || course.reviewCount} отзывов
+                          {reviewsData?.pagination?.total ?? course?.reviewCount ?? 0} отзывов
                         </p>
                       </div>
                       <div className="flex-1 space-y-1">
@@ -799,22 +768,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                 <div className="mt-6">
                   <ReviewForm
                     courseId={courseId}
-                    onReviewSubmitted={async () => {
-                      // Refetch course and reviews after new review
-                      const [courseRes, reviewsRes] = await Promise.all([
-                        fetch(`/api/courses/${courseId}`),
-                        fetch(`/api/courses/${courseId}/reviews?page=1&limit=10`),
-                      ]);
-                      if (courseRes.ok) {
-                        const d = await courseRes.json();
-                        setCourse(d.course);
-                      }
-                      if (reviewsRes.ok) {
-                        const d = await reviewsRes.json();
-                        setReviews(d.reviews || []);
-                        setReviewPagination(d.pagination || { page: 1, total: 0, totalPages: 0 });
-                      }
-                    }}
+                    onReviewSubmitted={() => invalidateCourse()}
                   />
                 </div>
               )}
