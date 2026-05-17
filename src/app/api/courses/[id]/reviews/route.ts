@@ -145,27 +145,25 @@ export async function POST(
       );
     }
 
-    // Check if user already reviewed this course (upsert via unique constraint)
-    const existingReview = await db.review.findUnique({
-      where: {
-        userId_courseId: {
-          userId,
-          courseId,
-        },
-      },
-    });
-
-    let review;
-
     // Wrap review creation/update AND rating recalculation in a single transaction
-    // to prevent race conditions when multiple users submit reviews concurrently.
+    // to prevent race conditions when multiple requests arrive concurrently.
     const result = await db.$transaction(async (tx) => {
+      // Check for existing review INSIDE the transaction to prevent race conditions
+      const existing = await tx.review.findUnique({
+        where: {
+          userId_courseId: {
+            userId,
+            courseId,
+          },
+        },
+      });
+
       let r;
 
-      if (existingReview) {
+      if (existing) {
         // Update existing review
         r = await tx.review.update({
-          where: { id: existingReview.id },
+          where: { id: existing.id },
           data: {
             rating,
             comment: comment || null,
@@ -216,7 +214,7 @@ export async function POST(
         },
       });
 
-      return { review: r, wasUpdated: !!existingReview };
+      return { review: r, wasUpdated: !!existing };
     });
 
     return NextResponse.json(

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions, ExtendedSession } from "@/lib/auth";
 
 // POST: Записаться на курс
 export async function POST(
@@ -10,7 +10,7 @@ export async function POST(
 ) {
   try {
     const { id: courseId } = await params;
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as ExtendedSession | null;
 
     if (!session?.user) {
       return NextResponse.json(
@@ -19,10 +19,7 @@ export async function POST(
       );
     }
 
-    const userId = (session.user as { id?: string }).id;
-    if (!userId) {
-      return NextResponse.json({ error: "Ошибка аутентификации" }, { status: 401 });
-    }
+    const userId = session.user.id;
     // Проверяем существование курса
     const course = await db.course.findUnique({
       where: { id: courseId },

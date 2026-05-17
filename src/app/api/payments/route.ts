@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions, ExtendedSession } from "@/lib/auth";
 import { z } from "zod";
 
 const createPaymentSchema = z.object({
@@ -12,7 +12,7 @@ const createPaymentSchema = z.object({
 // POST: Создать платёж
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as ExtendedSession | null;
     if (!session?.user) {
       return NextResponse.json(
         { error: "Необходимо авторизоваться" },
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userId = (session.user as { id?: string }).id;
+    const userId = session.user.id;
     if (!userId) {
       return NextResponse.json({ error: "Ошибка аутентификации" }, { status: 401 });
     }
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
 // GET: Список платежей пользователя
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as ExtendedSession | null;
     if (!session?.user) {
       return NextResponse.json(
         { error: "Необходимо авторизоваться" },
@@ -141,14 +141,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const userId = (session.user as { id?: string }).id;
+    const userId = session.user.id;
     if (!userId) {
       return NextResponse.json({ error: "Ошибка аутентификации" }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
-    const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "20")));
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
     const skip = (page - 1) * limit;
 
     const [payments, total] = await Promise.all([

@@ -170,7 +170,7 @@ export async function POST(
 ) {
   try {
     const { id: courseId, lessonId } = await params;
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as ExtendedSession | null;
 
     if (!session?.user) {
       return NextResponse.json(
@@ -179,10 +179,7 @@ export async function POST(
       );
     }
 
-    const userId = (session.user as { id?: string }).id;
-    if (!userId) {
-      return NextResponse.json({ error: "Ошибка аутентификации" }, { status: 401 });
-    }
+    const userId = session.user.id;
     // Проверяем запись на курс или бесплатность урока
     const lesson = await db.lesson.findUnique({
       where: { id: lessonId },

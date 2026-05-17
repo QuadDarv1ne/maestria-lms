@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions, ExtendedSession } from "@/lib/auth";
 
 // GET: Статус платежа
 export async function GET(
@@ -10,7 +10,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as ExtendedSession | null;
 
     if (!session?.user) {
       return NextResponse.json(
@@ -19,7 +19,7 @@ export async function GET(
       );
     }
 
-    const userId = (session.user as { id?: string }).id;
+    const userId = session.user.id;
 
     const payment = await db.payment.findUnique({
       where: { id },
@@ -43,7 +43,7 @@ export async function GET(
     }
 
     // Проверяем, что платёж принадлежит пользователю (или пользователь — админ)
-    if (payment.userId !== userId && (session.user as { role?: string }).role !== "admin") {
+    if (payment.userId !== userId && session.user.role !== "admin") {
       return NextResponse.json(
         { error: "Доступ запрещён" },
         { status: 403 }
@@ -70,7 +70,7 @@ export async function PUT(
   try {
     const { id } = await params;
 
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as ExtendedSession | null;
     if (!session?.user) {
       return NextResponse.json(
         { error: "Необходимо авторизоваться" },
@@ -78,7 +78,7 @@ export async function PUT(
       );
     }
 
-    const userRole = (session.user as { role?: string }).role;
+    const userRole = session.user.role;
 
     // Только администраторы могут менять статус платежа
     if (userRole !== "admin") {

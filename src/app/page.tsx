@@ -182,11 +182,11 @@ export default function Home() {
           const session = await res.json();
           if (session?.user) {
             setUser({
-              id: (session.user as { id?: string }).id || "",
+              id: session.user.id || "",
               email: session.user.email || "",
               name: session.user.name || null,
               image: session.user.image || null,
-              role: (session.user as { role?: string }).role || "student",
+              role: session.user.role || "student",
             });
           }
         }

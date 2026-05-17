@@ -17,8 +17,8 @@ interface ExtendedJWT extends JWT {
 
 export interface ExtendedSession extends Session {
   user: {
-    id?: string;
-    role?: string;
+    id: string;
+    role: string;
     name?: string | null;
     email?: string | null;
     image?: string | null;

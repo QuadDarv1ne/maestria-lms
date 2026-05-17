@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions, ExtendedSession } from "@/lib/auth";
 import { z } from "zod";
 import { authenticator } from "otplib";
 
@@ -39,7 +39,7 @@ function generateOtpAuthUrl(secret: string, email: string): string {
 // POST: Включить 2FA — генерирует секрет и возвращает данные QR-кода
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as ExtendedSession | null;
     if (!session?.user) {
       return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
     }
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userId = (session.user as { id?: string }).id;
+    const userId = session.user.id;
     const user = await db.user.findUnique({ where: { id: userId } });
 
     if (!user) {
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
 // PUT: Подтвердить настройку 2FA
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as ExtendedSession | null;
     if (!session?.user) {
       return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
     }
@@ -104,7 +104,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const { code } = validation.data;
-    const userId = (session.user as { id?: string }).id;
+    const userId = session.user.id;
 
     const user = await db.user.findUnique({ where: { id: userId } });
 
@@ -143,7 +143,7 @@ export async function PUT(request: NextRequest) {
 // DELETE: Отключить 2FA
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as ExtendedSession | null;
     if (!session?.user) {
       return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
     }
@@ -158,7 +158,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const userId = (session.user as { id?: string }).id;
+    const userId = session.user.id;
 
     const user = await db.user.findUnique({ where: { id: userId } });
 
