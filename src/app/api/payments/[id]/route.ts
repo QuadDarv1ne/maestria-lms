@@ -60,6 +60,108 @@ export async function GET(
   }
 }
 
+// POST: Подтвердить платёж (пользователь может подтвердить только свой pending платёж).
+// Это временное решение до интеграции с реальным платёжным шлюзом.
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const session = (await getServerSession(authOptions)) as ExtendedSession | null;
+
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: "Необходимо авторизоваться" },
+        { status: 401 }
+      );
+    }
+
+    const userId = session.user.id;
+
+    const payment = await db.payment.findUnique({
+      where: { id },
+    });
+
+    if (!payment) {
+      return NextResponse.json(
+        { error: "Платёж не найден" },
+        { status: 404 }
+      );
+    }
+
+    // Пользователь может подтвердить только свой платёж
+    if (payment.userId !== userId) {
+      return NextResponse.json(
+        { error: "Доступ запрещён" },
+        { status: 403 }
+      );
+    }
+
+    if (payment.status !== "pending") {
+      return NextResponse.json(
+        { error: `Платёж уже имеет статус "${payment.status}"` },
+        { status: 400 }
+      );
+    }
+
+    // Атомарное обновление: статус платежа + запись на курс
+    const updatedPayment = await db.$transaction(async (tx) => {
+      const updated = await tx.payment.update({
+        where: { id },
+        data: { status: "completed" },
+      });
+
+      // Записываем на курс
+      const existingEnrollment = await tx.enrollment.findUnique({
+        where: {
+          userId_courseId: {
+            userId: payment.userId,
+            courseId: payment.courseId,
+          },
+        },
+      });
+
+      if (!existingEnrollment) {
+        await tx.enrollment.create({
+          data: {
+            userId: payment.userId,
+            courseId: payment.courseId,
+            status: "active",
+            progress: 0,
+          },
+        });
+        await tx.course.update({
+          where: { id: payment.courseId },
+          data: { studentCount: { increment: 1 } },
+        });
+      } else if (existingEnrollment.status !== "active") {
+        await tx.enrollment.update({
+          where: { id: existingEnrollment.id },
+          data: {
+            status: "active",
+            progress: 0,
+            enrolledAt: new Date(),
+          },
+        });
+      }
+
+      return updated;
+    });
+
+    return NextResponse.json(
+      { message: "Платёж подтверждён", payment: updatedPayment },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Ошибка подтверждения платежа:", error);
+    return NextResponse.json(
+      { error: "Внутренняя ошибка сервера" },
+      { status: 500 }
+    );
+  }
+}
+
 // PUT: Обновить статус платежа (только для администраторов).
 // Обычные пользователи не могут менять статус платежа — это предотвращает
 // ситуацию, когда пользователь сам одобряет свой платёж и получает бесплатный доступ.

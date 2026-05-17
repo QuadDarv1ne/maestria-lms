@@ -45,7 +45,7 @@ export async function GET(
       },
     });
 
-    if (!lesson || lesson.module.courseId !== courseId) {
+    if (!lesson || !lesson.module || lesson.module.courseId !== courseId) {
       return NextResponse.json(
         { error: "Шаг не найден" },
         { status: 404 }
@@ -186,7 +186,7 @@ export async function POST(
       include: { module: { select: { courseId: true } } },
     });
 
-    if (!lesson || lesson.module.courseId !== courseId) {
+    if (!lesson || !lesson.module || lesson.module.courseId !== courseId) {
       return NextResponse.json({ error: "Шаг не найден" }, { status: 404 });
     }
 

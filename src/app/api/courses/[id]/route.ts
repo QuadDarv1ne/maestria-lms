@@ -14,8 +14,11 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const course = await db.course.findUnique({
-      where: { id },
+    // Try to find by id first, then by slug
+    const course = await db.course.findFirst({
+      where: {
+        OR: [{ id }, { slug: id }],
+      },
       include: {
         teacher: {
           select: {
@@ -98,7 +101,7 @@ export async function GET(
       }
       const userRole = session.user.role;
       const isEnrolled = await db.enrollment.findUnique({
-        where: { userId_courseId: { userId: session.user.id, courseId: id } },
+        where: { userId_courseId: { userId: session.user.id, courseId: course.id } },
       });
       const isOwner = course.teacherId === session.user.id;
       if (userRole !== "admin" && userRole !== "teacher" && !isEnrolled && !isOwner) {

@@ -190,25 +190,45 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
       const data = await res.json();
 
       if (res.ok) {
-        if (data.requiresPayment) {
-          const payRes = await fetch("/api/payments", {
+        if (data.requiresPayment && data.paymentId) {
+          // Confirm the payment that was created by the enroll endpoint
+          const confirmRes = await fetch(`/api/payments/${data.paymentId}/confirm`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ courseId, paymentMethod }),
           });
-          const payData = await payRes.json();
+          const confirmData = await confirmRes.json();
 
-          if (payRes.ok && payData.payment) {
-            const confirmRes = await fetch(`/api/payments/${payData.payment.id}`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ status: "completed" }),
-            });
-
-            if (confirmRes.ok) {
-              toast.success("Оплата прошла успешно! Вы записаны на курс.");
-              showEnrollmentNotification();
-              await refetchCourse();
+          if (confirmRes.ok) {
+            toast.success("Оплата прошла успешно! Вы записаны на курс.");
+            showEnrollmentNotification();
+            await refetchCourse();
+          } else {
+            toast.error(confirmData.error || "Ошибка подтверждения платежа");
+          }
+        } else if (data.requiresPayment && data.paymentId === undefined) {
+          // A pending payment already exists — need to find it and confirm
+          const paymentsRes = await fetch("/api/payments");
+          if (paymentsRes.ok) {
+            const paymentsData = await paymentsRes.json();
+            const pendingPayment = paymentsData.payments?.find(
+              (p: { courseId: string; status: string }) =>
+                p.courseId === courseId && p.status === "pending"
+            );
+            if (pendingPayment) {
+              const confirmRes = await fetch(`/api/payments/${pendingPayment.id}/confirm`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+              });
+              const confirmData = await confirmRes.json();
+              if (confirmRes.ok) {
+                toast.success("Оплата прошла успешно! Вы записаны на курс.");
+                showEnrollmentNotification();
+                await refetchCourse();
+              } else {
+                toast.error(confirmData.error || "Ошибка подтверждения платежа");
+              }
+            } else {
+              toast.error("Платёж не найден. Попробуйте ещё раз.");
             }
           }
         } else {
