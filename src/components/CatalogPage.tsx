@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import type { SortBy } from "@/lib/store";
 import { CourseImage } from "@/components/CourseImage";
+import { levelColors } from "@/lib/constants";
 
 interface CourseCard {
   id: string;
@@ -72,12 +73,6 @@ export function CatalogPage() {
     beginner: t("catalog.beginner", locale),
     intermediate: t("catalog.intermediate", locale),
     advanced: t("catalog.advanced", locale),
-  };
-
-  const levelColors: Record<string, string> = {
-    beginner: "bg-blue-100 text-blue-700",
-    intermediate: "bg-amber-100 text-amber-700",
-    advanced: "bg-red-100 text-red-700",
   };
 
   const categories = [

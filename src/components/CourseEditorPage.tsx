@@ -49,6 +49,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { levelLabels, levelColors, CATEGORIES } from "@/lib/constants";
 
 function VideoUploadButton({ onUpload }: { onUpload: (url: string) => void }) {
   const [uploading, setUploading] = useState(false);
@@ -156,14 +157,7 @@ function slugify(text: string) {
     .slice(0, 80);
 }
 
-const CATEGORY_OPTIONS = [
-  { slug: "python", label: "Программирование на Python", icon: "🐍" },
-  { slug: "web-development", label: "Веб-разработка", icon: "🌐" },
-  { slug: "roblox", label: "Создание игр в Roblox", icon: "🎮" },
-  { slug: "cpp-csharp", label: "C++/C#", icon: "⚡" },
-  { slug: "data-science", label: "Data Science", icon: "📊" },
-  { slug: "mobile-development", label: "Мобильная разработка", icon: "📱" },
-];
+const CATEGORY_OPTIONS = CATEGORIES;
 
 const LEVEL_OPTIONS = [
   { value: "beginner", label: "Начинающий" },
@@ -178,18 +172,6 @@ const LESSON_TYPE_OPTIONS = [
   { value: "quiz", label: "Тест", icon: HelpCircle },
   { value: "assignment", label: "Задание", icon: ClipboardList },
 ];
-
-const levelLabels: Record<string, string> = {
-  beginner: "Начинающий",
-  intermediate: "Средний",
-  advanced: "Продвинутый",
-};
-
-const levelColors: Record<string, string> = {
-  beginner: "bg-blue-100 text-blue-700",
-  intermediate: "bg-amber-100 text-amber-700",
-  advanced: "bg-red-100 text-red-700",
-};
 
 function lessonTypeIcon(type: string) {
   const found = LESSON_TYPE_OPTIONS.find((o) => o.value === type);

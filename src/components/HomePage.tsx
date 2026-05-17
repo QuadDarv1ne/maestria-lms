@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { CoursePromoCarousel } from "@/components/CoursePromoCarousel";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
+import { levelLabels, levelColors, CATEGORIES } from "@/lib/constants";
 
 interface CourseCard {
   id: string;
@@ -59,26 +60,14 @@ export function HomePage() {
     fetchData();
   }, []);
 
-  const levelLabels: Record<string, string> = {
-    beginner: "Начинающий",
-    intermediate: "Средний",
-    advanced: "Продвинутый",
-  };
-
-  const levelColors: Record<string, string> = {
-    beginner: "bg-blue-100 text-blue-700",
-    intermediate: "bg-amber-100 text-amber-700",
-    advanced: "bg-red-100 text-red-700",
-  };
-
-  const defaultCategories = [
-    { id: "1", name: "Программирование на Python", slug: "python", icon: "🐍", color: "#3776AB", description: "Курсы по Python" },
-    { id: "2", name: "Веб-разработка", slug: "web-development", icon: "🌐", color: "#F7DF1E", description: "HTML, CSS, JS" },
-    { id: "3", name: "Создание игр в Roblox", slug: "roblox", icon: "🎮", color: "#E2231A", description: "Roblox Studio" },
-    { id: "4", name: "C++/C#", slug: "cpp-csharp", icon: "⚡", color: "#00599C", description: "Системное программирование" },
-    { id: "5", name: "Data Science", slug: "data-science", icon: "📊", color: "#FF6F00", description: "Анализ данных" },
-    { id: "6", name: "Мобильная разработка", slug: "mobile-development", icon: "📱", color: "#3DDC84", description: "iOS и Android" },
-  ];
+  const defaultCategories = CATEGORIES.map((c, i) => ({
+    id: String(i + 1),
+    name: c.label,
+    slug: c.slug,
+    icon: c.icon,
+    color: ["#3776AB", "#F7DF1E", "#E2231A", "#00599C", "#FF6F00", "#3DDC84"][i],
+    description: "",
+  }));
 
   return (
     <div>

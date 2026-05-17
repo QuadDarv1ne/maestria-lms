@@ -64,6 +64,24 @@ import {
   Gift,
 } from "lucide-react";
 import { toast } from "sonner";
+import { activityIcon, ACTIVITY_TYPE_LABELS, ACTIVITY_TYPE_COLORS } from "@/lib/constants";
+import {
+  demoReports,
+  demoActivityLog,
+  monthLabels,
+  demoMonthlyRegistrations,
+  demoMonthlyRevenue,
+  demoMonthlyEnrollments,
+  dayLabels,
+  demoTestCompletions,
+  demoTestPassRate,
+  demoReadingSessions,
+  demoAvgReadingTime,
+  demoCategoryDistribution,
+  demoTestResults,
+  demoMaterialProgress,
+} from "@/data/demo-data";
+import type { ReportItem } from "@/data/demo-data";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ТИПЫ
@@ -91,99 +109,7 @@ interface AdminUser {
   _count: { enrollments: number; teacherCourses: number; reviews: number };
 }
 
-interface ReportItem {
-  id: string;
-  type: "content" | "user" | "bug" | "other";
-  status: "pending" | "reviewed" | "resolved";
-  userName: string;
-  description: string;
-  createdAt: string;
-}
-
-interface ActivityLogItem {
-  id: string;
-  type: "user_register" | "course_create" | "course_publish" | "enrollment" | "payment" | "report" | "settings_change";
-  description: string;
-  userName: string;
-  timestamp: string;
-}
-
 type AdminTab = "dashboard" | "users" | "tests" | "materials" | "finance" | "courses" | "reports" | "logs" | "settings";
-
-// ═══════════════════════════════════════════════════════════════════════════
-// ДЕМО-ДАННЫЕ
-// ═══════════════════════════════════════════════════════════════════════════
-
-const demoReports: ReportItem[] = [
-  { id: "r1", type: "content", status: "pending", userName: "Иван П.", description: "Некорректный код в уроке 5 курса Python", createdAt: "2026-05-15" },
-  { id: "r2", type: "user", status: "pending", userName: "Анна К.", description: "Нарушение правил в комментариях курса Веб-разработка", createdAt: "2026-05-14" },
-  { id: "r3", type: "bug", status: "reviewed", userName: "Пётр С.", description: "Не загружается видео в уроке 3 курса Data Science", createdAt: "2026-05-13" },
-  { id: "r4", type: "content", status: "resolved", userName: "Мария Л.", description: "Устаревшая информация в курсе C++", createdAt: "2026-05-10" },
-  { id: "r5", type: "bug", status: "pending", userName: "Дмитрий В.", description: "Ошибка расчёта прогресса в курсе Алгоритмы", createdAt: "2026-05-09" },
-];
-
-const demoActivityLog: ActivityLogItem[] = [
-  { id: "al1", type: "user_register", description: "Зарегистрирован новый пользователь", userName: "Алексей М.", timestamp: "5 мин назад" },
-  { id: "al2", type: "enrollment", description: "Запись на курс «Python для начинающих»", userName: "Екатерина С.", timestamp: "12 мин назад" },
-  { id: "al3", type: "payment", description: "Оплата курса «Веб-разработка» — 1 799 ₽", userName: "Дмитрий К.", timestamp: "28 мин назад" },
-  { id: "al4", type: "course_create", description: "Создан новый курс «Алгоритмы и структуры данных»", userName: "Дуплей М.И.", timestamp: "1 час назад" },
-  { id: "al5", type: "course_publish", description: "Курс «Linux Admin» опубликован", userName: "Дуплей М.И.", timestamp: "2 часа назад" },
-  { id: "al6", type: "report", description: "Новая жалоба на контент курса Data Science", userName: "Иван П.", timestamp: "3 часа назад" },
-  { id: "al7", type: "user_register", description: "Зарегистрирован новый пользователь", userName: "Ольга Н.", timestamp: "4 часа назад" },
-  { id: "al8", type: "enrollment", description: "Запись на курс «SQL Mastery»", userName: "Сергей В.", timestamp: "5 часов назад" },
-  { id: "al9", type: "payment", description: "Оплата курса «React App» — 1 699 ₽", userName: "Наталья Р.", timestamp: "6 часов назад" },
-  { id: "al10", type: "settings_change", description: "Обновлены правила платформы", userName: "Дуплей М.И.", timestamp: "1 день назад" },
-  { id: "al11", type: "enrollment", description: "Запись на курс «Machine Learning»", userName: "Виктор Б.", timestamp: "1 день назад" },
-  { id: "al12", type: "payment", description: "Оплата курса «Python Pro» — 2 499 ₽", userName: "Алина Т.", timestamp: "1 день назад" },
-];
-
-// Данные для графиков (12 месяцев)
-const monthLabels = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"];
-const demoMonthlyRegistrations = [45, 62, 78, 95, 110, 128, 142, 155, 168, 185, 203, 218];
-const demoMonthlyRevenue = [32000, 45000, 58000, 72000, 85000, 98000, 112000, 125000, 138000, 152000, 168000, 185000];
-const demoMonthlyEnrollments = [120, 165, 210, 255, 298, 340, 385, 420, 460, 510, 565, 620];
-
-// Данные для тестов (7 дней)
-const dayLabels = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
-const demoTestCompletions = [42, 58, 35, 67, 52, 28, 31];
-const demoTestPassRate = [78, 82, 75, 88, 85, 72, 80];
-
-// Данные для чтения материалов (7 дней)
-const demoReadingSessions = [156, 198, 142, 225, 188, 95, 72];
-const demoAvgReadingTime = [24, 28, 22, 32, 27, 18, 15]; // минуты
-
-// Распределение по категориям курсов
-const demoCategoryDistribution = [
-  { label: "Программирование", value: 35, color: "#4f46e5" },
-  { label: "Веб-разработка", value: 25, color: "#7c3aed" },
-  { label: "Data Science", value: 18, color: "#f59e0b" },
-  { label: "Игры", value: 12, color: "#10b981" },
-  { label: "Другое", value: 10, color: "#6b7280" },
-];
-
-// Результаты тестов по курсам
-const demoTestResults = [
-  { course: "Python для начинающих", passRate: 87, avgScore: 78, attempts: 342, completions: 298 },
-  { course: "Веб-разработка", passRate: 72, avgScore: 65, attempts: 256, completions: 184 },
-  { course: "Data Science", passRate: 65, avgScore: 58, attempts: 198, completions: 129 },
-  { course: "React App", passRate: 80, avgScore: 72, attempts: 178, completions: 142 },
-  { course: "SQL Mastery", passRate: 76, avgScore: 68, attempts: 156, completions: 119 },
-  { course: "Алгоритмы", passRate: 58, avgScore: 52, attempts: 289, completions: 168 },
-  { course: "Linux Admin", passRate: 82, avgScore: 74, attempts: 134, completions: 110 },
-  { course: "Machine Learning", passRate: 55, avgScore: 48, attempts: 167, completions: 92 },
-];
-
-// Прогресс чтения материалов
-const demoMaterialProgress = [
-  { course: "Python для начинающих", readPercent: 78, avgTime: "32 мин", totalReaders: 267, completed: 208 },
-  { course: "Веб-разработка", readPercent: 65, avgTime: "45 мин", totalReaders: 198, completed: 129 },
-  { course: "Data Science", readPercent: 52, avgTime: "55 мин", totalReaders: 156, completed: 81 },
-  { course: "React App", readPercent: 71, avgTime: "38 мин", totalReaders: 142, completed: 101 },
-  { course: "SQL Mastery", readPercent: 68, avgTime: "28 мин", totalReaders: 118, completed: 80 },
-  { course: "Алгоритмы", readPercent: 45, avgTime: "62 мин", totalReaders: 189, completed: 85 },
-  { course: "Linux Admin", readPercent: 73, avgTime: "35 мин", totalReaders: 98, completed: 72 },
-  { course: "Machine Learning", readPercent: 41, avgTime: "68 мин", totalReaders: 134, completed: 55 },
-];
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SVG КОМПОНЕНТЫ ГРАФИКОВ
@@ -803,28 +729,17 @@ export function AdminPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {demoActivityLog.slice(0, 6).map((item) => {
-                      const iconMap: Record<string, React.ReactNode> = {
-                        user_register: <Users className="w-3.5 h-3.5 text-green-600" />,
-                        enrollment: <BookOpen className="w-3.5 h-3.5 text-blue-600" />,
-                        payment: <DollarSign className="w-3.5 h-3.5 text-emerald-600" />,
-                        course_create: <Plus className="w-3.5 h-3.5 text-violet-600" />,
-                        course_publish: <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />,
-                        report: <Flag className="w-3.5 h-3.5 text-red-600" />,
-                        settings_change: <Settings className="w-3.5 h-3.5 text-gray-600" />,
-                      };
-                      return (
+                    {demoActivityLog.slice(0, 6).map((item) => (
                         <div key={item.id} className="flex items-start gap-2.5">
                           <div className="mt-0.5 w-6 h-6 bg-muted rounded-md flex items-center justify-center shrink-0">
-                            {iconMap[item.type] || <Activity className="w-3.5 h-3.5 text-gray-500" />}
+                            {activityIcon(item.type, "w-3.5 h-3.5")}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-xs truncate">{item.description}</p>
                             <p className="text-[10px] text-muted-foreground">{item.userName} · {item.timestamp}</p>
                           </div>
                         </div>
-                      );
-                    })}
+                      ))}
                   </div>
                 </CardContent>
               </Card>
@@ -1598,39 +1513,10 @@ export function AdminPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {demoActivityLog.map((item) => {
-                    const iconMap: Record<string, React.ReactNode> = {
-                      user_register: <Users className="w-4 h-4 text-green-600" />,
-                      enrollment: <BookOpen className="w-4 h-4 text-blue-600" />,
-                      payment: <DollarSign className="w-4 h-4 text-emerald-600" />,
-                      course_create: <Plus className="w-4 h-4 text-violet-600" />,
-                      course_publish: <CheckCircle2 className="w-4 h-4 text-green-600" />,
-                      report: <Flag className="w-4 h-4 text-red-600" />,
-                      settings_change: <Settings className="w-4 h-4 text-gray-600" />,
-                    };
-                    const typeLabels: Record<string, string> = {
-                      user_register: "Регистрация",
-                      course_create: "Создание",
-                      course_publish: "Публикация",
-                      enrollment: "Запись",
-                      payment: "Оплата",
-                      report: "Жалоба",
-                      settings_change: "Настройки",
-                    };
-                    const typeColors: Record<string, string> = {
-                      payment: "border-emerald-300 text-emerald-700",
-                      report: "border-red-300 text-red-700",
-                      course_publish: "border-green-300 text-green-700",
-                      user_register: "border-blue-300 text-blue-700",
-                      enrollment: "border-violet-300 text-violet-700",
-                      course_create: "border-purple-300 text-purple-700",
-                      settings_change: "border-gray-300 text-gray-700",
-                    };
-
-                    return (
+                  {demoActivityLog.map((item) => (
                       <div key={item.id} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted/80 transition-colors">
                         <div className="w-9 h-9 bg-background rounded-lg flex items-center justify-center shrink-0 shadow-sm">
-                          {iconMap[item.type] || <Activity className="w-4 h-4 text-gray-500" />}
+                          {activityIcon(item.type, "w-4 h-4")}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm truncate">{item.description}</p>
@@ -1640,13 +1526,12 @@ export function AdminPage() {
                         </div>
                         <Badge
                           variant="outline"
-                          className={`text-[10px] shrink-0 ${typeColors[item.type] || "border-gray-300 text-gray-700"}`}
+                          className={`text-[10px] shrink-0 ${ACTIVITY_TYPE_COLORS[item.type] || "border-gray-300 text-gray-700"}`}
                         >
-                          {typeLabels[item.type] || item.type}
+                          {ACTIVITY_TYPE_LABELS[item.type] || item.type}
                         </Badge>
                       </div>
-                    );
-                  })}
+                    ))}
                 </div>
               </CardContent>
             </Card>

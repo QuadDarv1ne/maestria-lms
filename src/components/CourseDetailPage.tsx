@@ -33,6 +33,7 @@ import { toast } from "sonner";
 
 import { ReviewForm } from "@/components/ReviewForm";
 import { CourseImage } from "@/components/CourseImage";
+import { levelLabels, levelColors } from "@/lib/constants";
 interface LessonItem {
   id: string;
   title: string;
@@ -113,18 +114,6 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
   const [reviewPagination, setReviewPagination] = useState({ page: 1, total: 0, totalPages: 0 });
 
   const favored = isFavorite(courseId);
-
-  const levelLabels: Record<string, string> = {
-    beginner: "Начинающий",
-    intermediate: "Средний",
-    advanced: "Продвинутый",
-  };
-
-  const levelColors: Record<string, string> = {
-    beginner: "bg-blue-100 text-blue-700",
-    intermediate: "bg-amber-100 text-amber-700",
-    advanced: "bg-red-100 text-red-700",
-  };
 
   // Load course and reviews on mount / courseId change
   useEffect(() => {
