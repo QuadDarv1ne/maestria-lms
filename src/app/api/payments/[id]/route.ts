@@ -3,6 +3,47 @@ import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions, ExtendedSession } from "@/lib/auth";
 
+/**
+ * Ensure user is enrolled on a course after payment completion.
+ * - Creates enrollment + increments studentCount if not enrolled.
+ * - Reactivates inactive enrollment WITHOUT resetting progress.
+ */
+async function ensureEnrollment(
+  tx: NonNullable<Parameters<Parameters<typeof db.$transaction>[0]>[0]>,
+  userId: string,
+  courseId: string,
+) {
+  const existingEnrollment = await tx.enrollment.findUnique({
+    where: {
+      userId_courseId: { userId, courseId },
+    },
+  });
+
+  if (!existingEnrollment) {
+    await tx.enrollment.create({
+      data: {
+        userId,
+        courseId,
+        status: "active",
+        progress: 0,
+      },
+    });
+    await tx.course.update({
+      where: { id: courseId },
+      data: { studentCount: { increment: 1 } },
+    });
+  } else if (existingEnrollment.status !== "active") {
+    await tx.enrollment.update({
+      where: { id: existingEnrollment.id },
+      data: {
+        status: "active",
+        enrolledAt: new Date(),
+        // Do NOT reset progress — preserve existing user progress
+      },
+    });
+  }
+}
+
 // GET: Статус платежа
 export async function GET(
   request: NextRequest,
@@ -112,39 +153,7 @@ export async function POST(
         data: { status: "completed" },
       });
 
-      // Записываем на курс
-      const existingEnrollment = await tx.enrollment.findUnique({
-        where: {
-          userId_courseId: {
-            userId: payment.userId,
-            courseId: payment.courseId,
-          },
-        },
-      });
-
-      if (!existingEnrollment) {
-        await tx.enrollment.create({
-          data: {
-            userId: payment.userId,
-            courseId: payment.courseId,
-            status: "active",
-            progress: 0,
-          },
-        });
-        await tx.course.update({
-          where: { id: payment.courseId },
-          data: { studentCount: { increment: 1 } },
-        });
-      } else if (existingEnrollment.status !== "active") {
-        await tx.enrollment.update({
-          where: { id: existingEnrollment.id },
-          data: {
-            status: "active",
-            enrolledAt: new Date(),
-            // Preserve existing progress — don't reset to 0
-          },
-        });
-      }
+      await ensureEnrollment(tx, payment.userId, payment.courseId);
 
       return updated;
     });
@@ -220,38 +229,7 @@ export async function PUT(
 
       // Если платёж завершён успешно — записываем на курс
       if (status === "completed" && payment.status === "pending") {
-        const existingEnrollment = await tx.enrollment.findUnique({
-          where: {
-            userId_courseId: {
-              userId: payment.userId,
-              courseId: payment.courseId,
-            },
-          },
-        });
-
-        if (!existingEnrollment) {
-          await tx.enrollment.create({
-            data: {
-              userId: payment.userId,
-              courseId: payment.courseId,
-              status: "active",
-              progress: 0,
-            },
-          });
-          await tx.course.update({
-            where: { id: payment.courseId },
-            data: { studentCount: { increment: 1 } },
-          });
-        } else if (existingEnrollment.status !== "active") {
-          await tx.enrollment.update({
-            where: { id: existingEnrollment.id },
-            data: {
-              status: "active",
-              progress: 0,
-              enrolledAt: new Date(),
-            },
-          });
-        }
+        await ensureEnrollment(tx, payment.userId, payment.courseId);
       }
 
       // Если платёж возвращён — отменяем запись

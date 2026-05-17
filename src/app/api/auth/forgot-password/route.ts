@@ -58,9 +58,9 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // В продакшене здесь отправить email с ссылкой для сброса пароля
-    // Ссылка: ${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/reset-password?token=${token}
-    console.log("[Forgot Password] Reset token for", email, ":", token);
+    // TODO: В продакшене отправить email с ссылкой для сброса пароля:
+    // ${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/reset-password?token=${token}
+    // Не логировать токен — это уязвимость безопасности!
 
     return NextResponse.json(
       { message: "Если аккаунт существует, на email будет отправлена инструкция по сбросу пароля" },
