@@ -1,48 +1,58 @@
-# TODO: Улучшения проекта Maestria LMS
+# TODO: Локализация Maestria LMS
 
-## 🔴 Критические ошибки
-- [x] Удалить зависимость `"2": "^3.0.0"` из package.json (ошибочный пакет)
-- [x] Убрать пароль админа из CHANGELOG.md (строка 12: `admin / Maestria2026`)
-- [x] Исправить ESLint config — удалить несуществующие правила `react-hooks/purity`, `set-state-in-effect`, `static-components`, `immutability`
-- [x] Добавить динамический импорт (code splitting) в page.tsx для всех страниц SPA
+## Статус: Выполнено
 
-## 🟡 Качество кода
-- [ ] Разделить огромные файлы (AdminPage.tsx ~1834 строк, CourseEditorPage.tsx ~1697, StepViewerPage.tsx ~1048)
-- [ ] Вынести i18n переводы из `src/lib/i18n.ts` в отдельные JSON-файлы (`locales/*.json`)
-- [ ] Убрать дублирование: icon maps, level labels, category options, course card
-- [ ] Заменить прямые `fetch()` вызовы на React Query (`@tanstack/react-query` уже установлен)
-- [ ] Разделить единый Zustand store на несколько (auth, ui, catalog)
+### Темы оформления
+- [x] Fix theme switching — CSS класс применяется к document.documentElement
+- [x] `<html lang>` динамический на основе выбранного языка
+- [x] next-themes в sonner.tsx заменён на Zustand store
 
-## 🔧 Архитектура
-- [ ] Заменить hash-based SPA роутер на настоящие Next.js App Router страницы (SSR, SEO)
-- [ ] Вынести демо-данные из AdminPage.tsx в `src/lib/demo-data.ts`
-- [ ] Создать переиспользуемые компоненты: CourseCard, StatCard, IconMap
-- [ ] Добавить Suspense границы и Error Boundaries для каждого раздела
+### Локализация компонентов
+- [x] Header, Footer, ProfilePage
+- [x] Providers, sonner
+- [x] HomePage, AboutPage, HelpPage, ErrorBoundary
+- [x] AuthDialogs (вход/регистрация/восстановление пароля)
+- [x] NotificationsPage, AchievementsPage, ReviewForm
+- [x] CertificatePage, CoursePromoCarousel, GlobalScrollToTop
+- [x] CourseDetailPage, CourseCard, AnimatedCounter
+- [x] CatalogPage, StepViewerPage
+- [x] Student detail page (admin/student/[id]/page.tsx)
 
-## 🧪 Тестирование
-- [ ] Добавить компонентные тесты (30+ компонентов, 0 тестов)
-- [ ] Добавить API route тесты (18 роутов, 0 тестов)
-- [ ] Добавить E2E тесты
+### Locale файлы
+- [x] ~650+ ключей в ru.json, en.json, zh.json
 
-## 🔒 Безопасность
-- [ ] Реализовать rate limiting на API роутах
-- [ ] Убрать `console.log` токенов сброса пароля (forgot-password/route.ts)
-- [ ] Добавить централизованную проверку авторизации (middleware)
+---
 
-## ⚡ Производительность
-- [ ] Добавить code splitting через `next/dynamic` (сделано)
-- [ ] Использовать `next/image` вместо `<img>` везде
-- [ ] Добавить React.memo/useMemo для больших списков
+## Осталось сделать
 
-## 📦 Зависимости
-- [ ] Проверить неиспользуемые пакеты: cmdk, input-otp, vaul, react-resizable-panels, @reactuses/core
-- [ ] Перейти на единый пакетный менеджер (убрать или bun.lock или package-lock.json)
+### Локализация компонентов
+- [ ] LessonPage — страница урока (захардкожены: типы шагов, toast, кнопки, лейблы)
+- [ ] CourseEditorPage — редактор курсов (очень большой, ~100+ строк: формы, табы, toast, превью)
+- [ ] AdminPage — админ-панель (огромный файл, ~200+ строк: дашборд, пользователи, тесты, материалы, финансы, курсы, жалобы, логи, настройки)
+- [ ] TermsPage — пользовательское соглашение (большой текстовый контент)
+- [ ] PrivacyPage — политика конфиденциальности (большой текстовый контент)
+- [ ] Остальные legal pages: offer, refund, license, rules, edu-info, cookies, age-rating, personal-data
 
-## 🗄️ База данных
-- [ ] Рассмотреть миграцию с SQLite на PostgreSQL для продакшена
-- [ ] Добавить стратегию миграций для production
+### Форматирование дат и чисел
+- [ ] Заменить `toLocaleDateString("ru-RU")` на locale-aware во всех компонентах
+  - AdminPage (строки 876, 1186, 1189, 1248, 1328)
+  - CertificatePage (строка 34)
+  - CourseDetailPage (строка 747)
+  - ProfilePage (строки 374, 799, 932)
+  - Student detail page (строки 151, 333, 385, 425, 464, 486)
+- [ ] Создать утилиту `formatDate(date, locale)` для единого форматирования
+- [ ] Создать утилиту `formatNumber(value, locale)` для единого форматирования чисел/цен
 
-## 🚀 CI/CD & DevOps
-- [ ] Добавить GitHub Actions workflow для линтинга и тестов
-- [ ] Настроить Docker контейнеризацию
-- [ ] Добавить Sentry для отслеживания ошибок
+### API ответы
+- [ ] API route файлы с русскими error messages (~18 файлов в src/app/api/)
+  - Это серверные ответы, можно оставить на потом или перевести на английский
+
+### Демо-данные
+- [ ] src/data/demo-data.ts — захардкоженные русские названия, описания курсов, метки месяцев/дней
+  - Это демо-данные, можно оставить как есть или сделать locale-aware
+
+### Прочее
+- [ ] layout.tsx — SEO мета-теги на русском (title, description, keywords, JSON-LD)
+  - Можно сделать динамическими на основе locale
+- [ ] Курсор (globals.css) — комментарии на русском (не критично)
+- [ ] Комментарии в коде на русском (не критично)
