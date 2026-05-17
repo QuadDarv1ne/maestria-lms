@@ -10,7 +10,7 @@ export async function GET() {
       return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
     }
 
-    const [userCounts, courseCounts, enrollmentAgg] = await Promise.all([
+    const [userCounts, courseCounts, enrollmentAgg, paymentAgg, activeUsersCount, activeWeekCount, activeMonthCount] = await Promise.all([
       db.user.groupBy({
         by: ["role"],
         _count: true,
@@ -22,6 +22,47 @@ export async function GET() {
       db.enrollment.aggregate({
         _count: true,
       }),
+      db.payment.aggregate({
+        where: { status: "completed" },
+        _sum: { amount: true },
+        _count: true,
+      }),
+      db.user.count({
+        where: {
+          isActive: true,
+          progress: {
+            some: {
+              lastAccessed: {
+                gte: new Date(new Date().setDate(new Date().getDate() - 1)),
+              },
+            },
+          },
+        },
+      }),
+      db.user.count({
+        where: {
+          isActive: true,
+          progress: {
+            some: {
+              lastAccessed: {
+                gte: new Date(new Date().setDate(new Date().getDate() - 7)),
+              },
+            },
+          },
+        },
+      }),
+      db.user.count({
+        where: {
+          isActive: true,
+          progress: {
+            some: {
+              lastAccessed: {
+                gte: new Date(new Date().setMonth(new Date().getMonth() - 1)),
+              },
+            },
+          },
+        },
+      }),
     ]);
 
     const totalUsers = userCounts.reduce((sum, g) => sum + g._count, 0);
@@ -29,7 +70,8 @@ export async function GET() {
     const totalTeachers = userCounts.find((g) => g.role === "teacher")?._count ?? 0;
     const totalAdmins = userCounts.find((g) => g.role === "admin")?._count ?? 0;
 
-    const totalRevenue = 0; // Would need payment records
+    const totalRevenue = paymentAgg._sum.amount || 0;
+    const totalPayments = paymentAgg._count || 0;
 
     const stats = {
       totalUsers,
@@ -40,7 +82,10 @@ export async function GET() {
       totalPublishedCourses: await db.course.count({ where: { isPublished: true } }),
       totalEnrollments: enrollmentAgg._count,
       totalRevenue,
-      activeToday: 0,
+      totalPayments,
+      activeToday: activeUsersCount,
+      activeThisWeek: activeWeekCount,
+      activeThisMonth: activeMonthCount,
       serverUptime: process.uptime() < 3600
         ? `${Math.floor(process.uptime() / 60)} мин`
         : `${(process.uptime() / 3600).toFixed(1)} ч`,

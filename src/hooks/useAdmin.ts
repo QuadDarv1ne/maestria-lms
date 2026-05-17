@@ -31,7 +31,10 @@ export interface AdminStats {
   totalPublishedCourses: number;
   totalEnrollments: number;
   totalRevenue: number;
+  totalPayments: number;
   activeToday: number;
+  activeThisWeek: number;
+  activeThisMonth: number;
   serverUptime: string;
   dbSize: string;
 }
@@ -90,6 +93,96 @@ export function useUpdateUserRole() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
     },
+  });
+}
+
+export interface StudentStats {
+  user: {
+    id: string;
+    email: string;
+    name: string | null;
+    image: string | null;
+    role: string;
+    bio: string | null;
+    phone: string | null;
+    isActive: boolean;
+    twoFactorEnabled: boolean;
+    createdAt: string;
+    _count: {
+      enrollments: number;
+      reviews: number;
+      certificates: number;
+      progress: number;
+    };
+  };
+  enrollments: Array<{
+    id: string;
+    status: string;
+    progress: number;
+    enrolledAt: string;
+    completedAt: string | null;
+    course: {
+      id: string;
+      title: string;
+      image: string | null;
+      level: string;
+      category: { name: string } | null;
+      teacher: { name: string | null } | null;
+      _count: { modules: number; lessons: number };
+    };
+    totalLessons: number;
+    completedLessons: number;
+    totalTimeSpent: number;
+    lastAccessed: string | null;
+    avgScore: number | null;
+    lessonCompletionRate: number;
+  }>;
+  reviews: Array<{
+    id: string;
+    rating: number;
+    comment: string | null;
+    createdAt: string;
+    course: { id: string; title: string };
+  }>;
+  certificates: Array<{
+    id: string;
+    certificateNumber: string;
+    issuedAt: string;
+    course: { id: string; title: string };
+  }>;
+  payments: Array<{
+    id: string;
+    amount: number;
+    currency: string;
+    status: string;
+    paymentMethod: string;
+    createdAt: string;
+    course: { id: string; title: string };
+  }>;
+  stats: {
+    totalCoursesEnrolled: number;
+    completedCourses: number;
+    inProgressCourses: number;
+    notStartedCourses: number;
+    totalLessonsCompleted: number;
+    totalLessonsAvailable: number;
+    totalTimeSpent: number;
+    overallAvgScore: number;
+    recentProgress: number;
+    avgProgress: number;
+  };
+}
+
+export function useStudentStats(userId: string) {
+  return useQuery<StudentStats>({
+    queryKey: ["admin", "student-stats", userId],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/student-stats?userId=${userId}`);
+      if (!res.ok) throw new Error("Failed to fetch student stats");
+      return res.json();
+    },
+    enabled: !!userId,
+    staleTime: 10_000,
   });
 }
 

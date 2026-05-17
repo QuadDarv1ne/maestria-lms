@@ -374,6 +374,11 @@ export function AdminPage() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [userSearch, setUserSearch] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState("all");
+  const [userPage, setUserPage] = useState(1);
+  const userPageSize = 20;
+
+  // Reset page when filters change
+  React.useEffect(() => { setUserPage(1); }, [userSearch, userRoleFilter]);
 
   const { data: coursesData, isLoading: coursesLoading } = useAdminCourses();
   const { data: usersData, isLoading: usersLoading } = useAdminUsers();
@@ -428,6 +433,13 @@ export function AdminPage() {
       return matchesSearch && matchesRole;
     });
   }, [users, userSearch, userRoleFilter]);
+
+  const paginatedUsers = useMemo(() => {
+    const start = (userPage - 1) * userPageSize;
+    return filteredUsers.slice(start, start + userPageSize);
+  }, [filteredUsers, userPage]);
+
+  const totalUserPages = Math.ceil(filteredUsers.length / userPageSize);
 
   // Роутинг
   if (!user || user.role !== "admin") return null;
@@ -821,7 +833,7 @@ export function AdminPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredUsers.map((u) => (
+                      {paginatedUsers.map((u) => (
                         <TableRow key={u.id}>
                           <TableCell>
                             <div className="flex items-center gap-2">
@@ -864,15 +876,20 @@ export function AdminPage() {
                             {new Date(u.createdAt).toLocaleDateString("ru-RU")}
                           </TableCell>
                           <TableCell>
-                            <Button variant="ghost" size="sm" onClick={() => navigate("profile")}>
-                              <Eye className="w-4 h-4" />
-                            </Button>
+                            <div className="flex gap-1">
+                              <Button variant="ghost" size="sm" onClick={() => window.location.href = `/admin/student/${u.id}`}>
+                                <BarChart3 className="w-4 h-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => navigate("profile")}>
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
-                      {filteredUsers.length === 0 && (
+                      {paginatedUsers.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                             Пользователи не найдены
                           </TableCell>
                         </TableRow>
@@ -880,9 +897,29 @@ export function AdminPage() {
                     </TableBody>
                   </Table>
                 </div>
-                <div className="p-3 border-t text-xs text-muted-foreground flex justify-between">
+                <div className="p-3 border-t text-xs text-muted-foreground flex items-center justify-between">
                   <span>Найдено: {filteredUsers.length} из {users.length}</span>
-                  <span>Страница 1 из 1</span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={userPage <= 1}
+                      onClick={() => setUserPage(p => p - 1)}
+                      className="h-7 px-2.5 text-xs"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                    </Button>
+                    <span>Страница {userPage} из {totalUserPages || 1}</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={userPage >= totalUserPages}
+                      onClick={() => setUserPage(p => p + 1)}
+                      className="h-7 px-2.5 text-xs"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>

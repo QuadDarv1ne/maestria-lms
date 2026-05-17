@@ -252,10 +252,10 @@ export function Header() {
                   <p className="text-xs text-muted-foreground">{user.email}</p>
                   <p className="text-xs text-primary mt-1">
                     {user.role === "admin"
-                      ? "Администратор"
+                      ? t("role.admin", locale)
                       : user.role === "teacher"
-                      ? "Преподаватель"
-                      : "Студент"}
+                      ? t("role.teacher", locale)
+                      : t("role.student", locale)}
                   </p>
                 </div>
                 <DropdownMenuSeparator />
@@ -279,7 +279,7 @@ export function Header() {
                 {user.role === "admin" && (
                   <DropdownMenuItem onClick={() => navigate("admin")}>
                     <LayoutDashboard className="mr-2 h-4 w-4" />
-                    Панель администратора
+                    {t("admin.panel", locale)}
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />

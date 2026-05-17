@@ -39,7 +39,7 @@ export function Footer() {
             </p>
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
               <Crown className="w-4 h-4 text-amber-500" />
-              <span>Руководитель: <span className="font-medium text-foreground">Дуплей Максим Игоревич</span></span>
+              <span>{t("footer.manager", locale)}: <span className="font-medium text-foreground">Дуплей Максим Игоревич</span></span>
             </div>
             {/* VK Video и Rutube */}
             <div className="flex items-center gap-2">
@@ -178,7 +178,7 @@ export function Footer() {
               </li>
               <li className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 shrink-0" />
-                Москва, Россия
+                {t("footer.location", locale)}
               </li>
             </ul>
           </div>
@@ -227,7 +227,7 @@ export function Footer() {
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
               </svg>
               <div className="text-left leading-none">
-                <div className="text-[8px] opacity-70">Доступно в</div>
+                <div className="text-[8px] opacity-70">{t("footer.ruStoreAvailable", locale)}</div>
                 <div className="text-xs font-semibold -mt-0.5">RuStore</div>
               </div>
             </a>

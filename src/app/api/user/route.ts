@@ -73,6 +73,18 @@ export async function GET() {
       orderBy: { enrolledAt: "desc" },
     });
 
+    // Получаем прогресс по всем урокам
+    const progress = await db.progress.findMany({
+      where: { userId },
+      select: {
+        lessonId: true,
+        completed: true,
+        timeSpent: true,
+        score: true,
+        lastAccessed: true,
+      },
+    });
+
     // Получаем последние сертификаты
     const certificates = await db.certificate.findMany({
       where: { userId },
@@ -92,6 +104,7 @@ export async function GET() {
       user,
       enrollments,
       certificates,
+      progress,
     }, { status: 200 });
   } catch (error) {
     console.error("Ошибка получения профиля:", error);
