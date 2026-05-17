@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import React, { use } from "react";
+import { use } from "react";
 import { CourseDetailPage } from "@/components/CourseDetailPage";
 
 export async function generateMetadata({

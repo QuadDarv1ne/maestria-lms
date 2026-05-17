@@ -1,6 +1,6 @@
 "use client";
 
-import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { PageWrapper } from "@/components/PageWrapper";
 import { RouterSync } from "@/components/RouterSync";
 
 export default function AdminLayout({
@@ -11,7 +11,7 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen bg-background text-foreground">
       <RouterSync />
-      <ErrorBoundary>{children}</ErrorBoundary>
+      <PageWrapper withErrorBoundary={false}>{children}</PageWrapper>
     </div>
   );
 }

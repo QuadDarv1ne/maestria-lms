@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback } from "react";
 import { useAppStore } from "@/lib/store";
+import { lessonTypeIcon } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -173,12 +174,6 @@ const LESSON_TYPE_OPTIONS = [
   { value: "assignment", label: "Задание", icon: ClipboardList },
 ];
 
-function lessonTypeIcon(type: string) {
-  const found = LESSON_TYPE_OPTIONS.find((o) => o.value === type);
-  if (!found) return <FileText className="w-4 h-4" />;
-  const Icon = found.icon;
-  return <Icon className="w-4 h-4" />;
-}
 
 // ─── Initial State ───────────────────────────────────────────────────────────
 

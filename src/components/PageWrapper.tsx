@@ -1,12 +1,12 @@
 "use client";
 
-import React, { Suspense } from "react";
+import { Suspense, type ReactNode } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 interface PageWrapperProps {
-  children: React.ReactNode;
+  children: ReactNode;
   /** Custom loading fallback, defaults to skeleton screen */
-  fallback?: React.ReactNode;
+  fallback?: ReactNode;
   /** Whether to wrap content in ErrorBoundary (default: true) */
   withErrorBoundary?: boolean;
 }

@@ -1,23 +1,8 @@
 import type { StateCreator } from "zustand";
+import { loadString, saveString } from "@/lib/storage";
 
 export type Theme = "light" | "dark" | "amber";
 export type Locale = "ru" | "en" | "zh";
-
-function loadString(key: string, fallback: string): string {
-  if (typeof window === "undefined") return fallback;
-  try {
-    return window.localStorage.getItem(key) || fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function saveString(key: string, value: string): void {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(key, value);
-  } catch { /* ignore */ }
-}
 
 // Маппинг hash-роутов → Next.js paths (перенесено сюда для устранения circular dependency)
 const ROUTE_MAP: Record<string, string> = {

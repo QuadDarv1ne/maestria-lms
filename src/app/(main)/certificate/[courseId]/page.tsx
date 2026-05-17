@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import React, { use } from "react";
+import { use } from "react";
 import { CertificatePage } from "@/components/CertificatePage";
 
 export const metadata: Metadata = {

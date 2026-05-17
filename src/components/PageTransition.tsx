@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type Target } from "framer-motion";
 
 export type PageTransitionVariant =
   | "fade-up"
@@ -22,11 +22,15 @@ interface PageTransitionProps {
   duration?: number;
   /** Whether to scroll to top on page change */
   scrollToTop?: boolean;
-  /** Custom exit animation variant */
-  exitVariant?: PageTransitionVariant;
 }
 
-const variants: Record<PageTransitionVariant, { initial: object; animate: object; exit: object }> = {
+interface VariantDef {
+  initial: Target;
+  animate: Target;
+  exit: Target;
+}
+
+const variants: Record<PageTransitionVariant, VariantDef> = {
   "fade-up": {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },

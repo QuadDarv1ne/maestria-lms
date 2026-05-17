@@ -10,7 +10,6 @@ import { GlobalScrollToTop } from "@/components/GlobalScrollToTop";
 import { PageTransition } from "@/components/PageTransition";
 import { PageWrapper } from "@/components/PageWrapper";
 import { RouterSync } from "@/components/RouterSync";
-import { useAppStore } from "@/lib/store";
 
 export default function MainLayout({
   children,
@@ -18,7 +17,6 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const { theme } = useAppStore();
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
