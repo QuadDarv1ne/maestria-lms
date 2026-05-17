@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -82,32 +82,8 @@ import {
   demoMaterialProgress,
 } from "@/data/demo-data";
 import type { ReportItem } from "@/data/demo-data";
-
-// ═══════════════════════════════════════════════════════════════════════════
-// ТИПЫ
-// ═══════════════════════════════════════════════════════════════════════════
-
-interface AdminCourse {
-  id: string;
-  title: string;
-  isPublished: boolean;
-  price: number;
-  rating: number;
-  teacher: { name: string | null };
-  category: { name: string } | null;
-  _count: { enrollments: number; reviews: number; modules: number };
-}
-
-interface AdminUser {
-  id: string;
-  email: string;
-  name: string | null;
-  role: string;
-  isActive: boolean;
-  twoFactorEnabled: boolean;
-  createdAt: string;
-  _count: { enrollments: number; teacherCourses: number; reviews: number };
-}
+import { useAdminCourses, useAdminUsers, useAdminStats, useUpdateUserRole, useToggleUserStatus } from "@/hooks/useAdmin";
+import { useQueryClient } from "@tanstack/react-query";
 
 type AdminTab = "dashboard" | "users" | "tests" | "materials" | "finance" | "courses" | "reports" | "logs" | "settings";
 
@@ -391,62 +367,28 @@ function Sparkline({ data, color = "#4f46e5", width = 80, height = 32 }: { data:
 
 export function AdminPage() {
   const { user, navigate } = useAppStore();
-  const [courses, setCourses] = useState<AdminCourse[]>([]);
-  const [users, setUsers] = useState<AdminUser[]>([]);
+  const queryClient = useQueryClient();
   const [reports] = useState<ReportItem[]>(demoReports);
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [userSearch, setUserSearch] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState("all");
-  const [refreshing, setRefreshing] = useState(false);
 
-  // Load admin data on mount / user change
-  useEffect(() => {
-    if (!user || user.role !== "admin") {
-      navigate("home");
-      return;
-    }
-    let cancelled = false;
-    const loadData = async () => {
-      try {
-        const [coursesRes, usersRes] = await Promise.all([
-          fetch("/api/admin/courses?limit=50"),
-          fetch("/api/admin/users?limit=50"),
-        ]);
-        if (!cancelled) {
-          if (coursesRes.ok) {
-            const data = await coursesRes.json();
-            setCourses(data.courses || []);
-          }
-          if (usersRes.ok) {
-            const data = await usersRes.json();
-            setUsers(data.users || []);
-          }
-        }
-      } catch (e) {
-        if (!cancelled) console.error("Ошибка загрузки данных:", e);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    loadData();
-    return () => { cancelled = true; };
-  }, [user, navigate]);
+  const { data: coursesData, isLoading: coursesLoading } = useAdminCourses();
+  const { data: usersData, isLoading: usersLoading } = useAdminUsers();
+  const { data: stats } = useAdminStats();
+  const updateRole = useUpdateUserRole();
+  const toggleStatus = useToggleUserStatus();
 
-  // Обработчики
+  const loading = coursesLoading || usersLoading;
+  const courses = React.useMemo(() => coursesData?.courses ?? [], [coursesData?.courses]);
+  const users = React.useMemo(() => usersData?.users ?? [], [usersData?.users]);
+
   const handleUserRoleChange = async (userId: string, role: string) => {
     try {
-      const res = await fetch("/api/admin/users", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, role }),
-      });
-      if (res.ok) {
-        toast.success("Роль пользователя обновлена");
-        setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role } : u)));
-      }
+      await updateRole.mutateAsync({ userId, role });
+      toast.success("Роль пользователя обновлена");
     } catch {
       toast.error("Ошибка обновления роли");
     }
@@ -454,39 +396,15 @@ export function AdminPage() {
 
   const handleUserStatusChange = async (userId: string, isActive: boolean) => {
     try {
-      const res = await fetch("/api/admin/users", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, isActive }),
-      });
-      if (res.ok) {
-        toast.success(isActive ? "Пользователь разблокирован" : "Пользователь заблокирован");
-        setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, isActive } : u)));
-      }
+      await toggleStatus.mutateAsync({ userId, isActive });
+      toast.success(isActive ? "Пользователь разблокирован" : "Пользователь заблокирован");
     } catch {
       toast.error("Ошибка обновления статуса");
     }
   };
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    try {
-      const [coursesRes, usersRes] = await Promise.all([
-        fetch("/api/admin/courses?limit=50"),
-        fetch("/api/admin/users?limit=50"),
-      ]);
-      if (coursesRes.ok) {
-        const data = await coursesRes.json();
-        setCourses(data.courses || []);
-      }
-      if (usersRes.ok) {
-        const data = await usersRes.json();
-        setUsers(data.users || []);
-      }
-    } catch (e) {
-      console.error("Ошибка загрузки данных:", e);
-    }
-    setRefreshing(false);
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["admin"] });
     toast.success("Данные обновлены");
   };
 
@@ -744,32 +662,30 @@ export function AdminPage() {
                 </CardContent>
               </Card>
 
-              {/* Статус серверов */}
+              {/* Системная статистика */}
               <Card className="border-0 shadow-sm">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Server className="w-5 h-5 text-green-600" />
-                    Статус серверов
+                    Системная статистика
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {[
-                      { name: "Web-сервер", status: "online", latency: "12ms", uptime: "99.9%" },
-                      { name: "API-сервер", status: "online", latency: "8ms", uptime: "99.8%" },
-                      { name: "База данных", status: "online", latency: "3ms", uptime: "99.99%" },
-                      { name: "CDN (РФ)", status: "online", latency: "5ms", uptime: "99.7%" },
-                      { name: "Аутентификация", status: "online", latency: "15ms", uptime: "99.5%" },
-                    ].map((server, i) => (
+                      { name: "Пользователей", value: stats?.totalUsers ?? "—", icon: <Users className="w-4 h-4 text-blue-600" /> },
+                      { name: "Студентов", value: stats?.totalStudents ?? "—", icon: <GraduationCap className="w-4 h-4 text-green-600" /> },
+                      { name: "Преподавателей", value: stats?.totalTeachers ?? "—", icon: <Award className="w-4 h-4 text-amber-600" /> },
+                      { name: "Курсов", value: stats?.totalPublishedCourses ?? "—", icon: <BookOpen className="w-4 h-4 text-violet-600" /> },
+                      { name: "Записей на курсы", value: stats?.totalEnrollments ?? "—", icon: <Activity className="w-4 h-4 text-emerald-600" /> },
+                      { name: "Время работы", value: stats?.serverUptime ?? "—", icon: <Clock className="w-4 h-4 text-gray-600" /> },
+                    ].map((item, i) => (
                       <div key={i} className="flex items-center justify-between p-2.5 bg-muted/50 rounded-lg">
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                          <span className="text-sm">{server.name}</span>
+                          {item.icon}
+                          <span className="text-sm">{item.name}</span>
                         </div>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          <span>{server.latency}</span>
-                          <span className="text-green-600 font-medium">{server.uptime}</span>
-                        </div>
+                        <span className="text-sm font-semibold text-foreground">{item.value}</span>
                       </div>
                     ))}
                   </div>
@@ -1693,9 +1609,9 @@ export function AdminPage() {
                 variant="outline"
                 size="sm"
                 onClick={handleRefresh}
-                disabled={refreshing}
+                disabled={loading}
               >
-                <RefreshCw className={`w-4 h-4 mr-1.5 ${refreshing ? "animate-spin" : ""}`} />
+                <RefreshCw className={`w-4 h-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
                 Обновить
               </Button>
               <Button

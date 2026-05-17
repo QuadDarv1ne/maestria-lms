@@ -31,6 +31,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { lessonTypeIcon } from "@/lib/constants";
+
 // ==================== TYPES ====================
 
 interface StepData {
@@ -99,14 +101,6 @@ interface LessonStructure {
 }
 
 // ==================== CONSTANTS ====================
-
-const stepTypeIcons: Record<string, React.ReactNode> = {
-  video: <Play className="w-4 h-4" />,
-  text: <FileText className="w-4 h-4" />,
-  coding: <Code2 className="w-4 h-4" />,
-  quiz: <HelpCircle className="w-4 h-4" />,
-  assignment: <PenTool className="w-4 h-4" />,
-};
 
 const stepTypeLabels: Record<string, string> = {
   video: "Видеоурок",
@@ -495,7 +489,7 @@ export function StepViewerPage({
                               <div className="w-2 h-2 bg-blue-500 rounded-full" />
                             </div>
                           ) : (
-                            stepTypeIcons[lesson.type] || <FileText className="w-4 h-4" />
+                            lessonTypeIcon(lesson.type)
                           )}
                         </div>
                         <span className="flex-1 truncate">{lesson.title}</span>

@@ -3,22 +3,20 @@
 import React from "react";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import {
-  GraduationCap,
-  Users,
-  BookOpen,
-  Award,
-  Star,
-  Clock,
   ArrowRight,
-  TrendingUp,
+  Users,
+  Award,
+  GraduationCap,
+  BookOpen,
+  Star,
 } from "lucide-react";
 import { CoursePromoCarousel } from "@/components/CoursePromoCarousel";
-import { CourseImage } from "@/components/CourseImage";
+import { CourseCard } from "@/components/CourseCard";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
-import { levelLabels, levelColors, CATEGORIES } from "@/lib/constants";
+import { CATEGORIES } from "@/lib/constants";
 import { useCourses } from "@/hooks/useCourses";
 
 export function HomePage() {
@@ -187,108 +185,11 @@ export function HomePage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {featuredCourses.map((course) => (
-                <Card
+                <CourseCard
                   key={course.id}
-                  className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 border-0 shadow-sm overflow-hidden"
+                  course={course}
                   onClick={() => navigate(`course/${course.id}`)}
-                >
-                  <CardContent className="p-0">
-                    {/* Обложка курса */}
-                    <div className="relative h-40 flex items-center justify-center overflow-hidden bg-gradient-to-br from-blue-500 to-violet-600">
-                      {course.image || course.category?.icon ? (
-                        course.image ? (
-                          <CourseImage
-                            src={course.image}
-                            alt={course.title}
-                            className="absolute inset-0 w-full h-full object-cover"
-                            identifier={course.id}
-                          />
-                        ) : (
-                          <span className="text-5xl opacity-50">
-                            {course.category?.icon}
-                          </span>
-                        )
-                      ) : null}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-                      {course.price === 0 && (
-                        <Badge className="absolute top-3 left-3 bg-green-500 text-white border-0">
-                          Бесплатно
-                        </Badge>
-                      )}
-                      {course.isFeatured && course.price > 0 && (
-                        <Badge className="absolute top-3 left-3 bg-amber-500 text-white border-0">
-                          <TrendingUp className="w-3 h-3 mr-1" />
-                          Хит
-                        </Badge>
-                      )}
-                      <Badge
-                        className={`absolute top-3 right-3 ${levelColors[course.level] || "bg-gray-100 text-gray-700"}`}
-                      >
-                        {levelLabels[course.level] || course.level}
-                      </Badge>
-                    </div>
-
-                    <div className="p-4">
-                      {/* Категория */}
-                      <p className="text-xs text-violet-600 font-medium mb-1">
-                        {course.category?.name}
-                      </p>
-
-                      {/* Название */}
-                      <h3 className="font-semibold text-sm leading-tight mb-2 line-clamp-2">
-                        {course.title}
-                      </h3>
-
-                      {/* Преподаватель */}
-                      <p className="text-xs text-muted-foreground mb-3">
-                        {course.teacher?.name}
-                      </p>
-
-                      {/* Мета-информация */}
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {course.totalDuration} мин
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <BookOpen className="w-3 h-3" />
-                          {course.totalLessons} уроков
-                        </span>
-                      </div>
-
-                      {/* Рейтинг и студенты */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1">
-                          <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                          <span className="text-sm font-semibold">
-                            {course.rating}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            ({course.studentCount})
-                          </span>
-                        </div>
-                        <div>
-                          {course.price === 0 ? (
-                            <span className="text-sm font-semibold text-green-600">
-                              Бесплатно
-                            </span>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              {course.oldPrice && (
-                                <span className="text-xs text-muted-foreground line-through">
-                                  {course.oldPrice.toLocaleString("ru-RU")} ₽
-                                </span>
-                              )}
-                              <span className="text-sm font-bold text-foreground">
-                                {course.price.toLocaleString("ru-RU")} ₽
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                />
               ))}
             </div>
           )}

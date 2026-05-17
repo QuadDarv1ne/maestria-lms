@@ -6,17 +6,23 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
+  Clock,
   ArrowLeft,
   ArrowRight,
+  ChevronLeft,
+  ChevronRight,
   CheckCircle2,
   Play,
-  Clock,
-  FileText,
-  Code2,
+  PlayCircle,
+  BookOpen,
+  Award,
+  Maximize2,
+  FileCode,
+  ExternalLink,
   HelpCircle,
-  PenTool,
 } from "lucide-react";
 import { toast } from "sonner";
+import { lessonTypeIcon } from "@/lib/constants";
 
 function LessonVideo({ src }: { src: string }) {
   const [error, setError] = useState(false);
@@ -88,14 +94,6 @@ interface LessonData {
   prevStepId: string | null;
   nextStepId: string | null;
 }
-
-const lessonTypeIcons: Record<string, React.ReactNode> = {
-  video: <Play className="w-4 h-4" />,
-  text: <FileText className="w-4 h-4" />,
-  coding: <Code2 className="w-4 h-4" />,
-  quiz: <HelpCircle className="w-4 h-4" />,
-  assignment: <PenTool className="w-4 h-4" />,
-};
 
 const lessonTypeLabels: Record<string, string> = {
   video: "Видеоурок",
@@ -270,7 +268,7 @@ export function LessonPage({
               {lesson.duration} мин
             </span>
             <span className="flex items-center gap-1">
-              {lessonTypeIcons[lesson.type]}
+              {lessonTypeIcon(lesson.type)}
               {lessonTypeLabels[lesson.type]}
             </span>
           </div>

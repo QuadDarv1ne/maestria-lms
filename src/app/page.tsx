@@ -8,6 +8,7 @@ import { Footer } from "@/components/Footer";
 import { AuthDialogs } from "@/components/AuthDialogs";
 import { PageTransition } from "@/components/PageTransition";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { PageWrapper } from "@/components/PageWrapper";
 
 const HomePage = dynamic(() => import("@/components/HomePage").then(m => ({ default: m.HomePage })));
 const CatalogPage = dynamic(() => import("@/components/CatalogPage").then(m => ({ default: m.CatalogPage })));
@@ -51,92 +52,113 @@ function AppRouter() {
     // light theme = no class needed (uses :root)
   }, [theme]);
 
-  // Парсинг хеш-роутов: #home, #catalog, #course/ID, #course/ID/lesson/LESSON_ID, #profile, #admin
   const renderPage = () => {
-    // Parse route segments
     const segments = currentPage.split('/');
     const mainRoute = segments[0];
 
+    let page: React.ReactNode;
+
     switch (mainRoute) {
       case 'catalog':
-        return <CatalogPage />;
+        page = <CatalogPage />;
+        break;
 
       case 'course':
         if (segments.length >= 4 && segments[2] === 'lesson') {
-          return <StepViewerPage courseId={segments[1]} lessonId={segments[3]} />;
+          page = <StepViewerPage courseId={segments[1]} lessonId={segments[3]} />;
+        } else if (segments.length >= 2 && segments[1]) {
+          page = <CourseDetailPage courseId={segments[1]} />;
+        } else {
+          page = <CatalogPage />;
         }
-        if (segments.length >= 2 && segments[1]) {
-          return <CourseDetailPage courseId={segments[1]} />;
-        }
-        return <CatalogPage />;
+        break;
 
       case 'lesson-simple':
-        if (segments.length >= 3) {
-          return <LessonPage courseId={segments[1]} lessonId={segments[2]} />;
-        }
-        return <CatalogPage />;
+        page = segments.length >= 3
+          ? <LessonPage courseId={segments[1]} lessonId={segments[2]} />
+          : <CatalogPage />;
+        break;
 
       case 'profile':
-        return <ProfilePage />;
+        page = <ProfilePage />;
+        break;
 
       case 'admin':
-        return <AdminPage />;
+        page = <AdminPage />;
+        break;
 
       case 'about':
-        return <AboutPage />;
+        page = <AboutPage />;
+        break;
 
       case 'achievements':
-        return <AchievementsPage />;
+        page = <AchievementsPage />;
+        break;
 
       case 'notifications':
-        return <NotificationsPage />;
+        page = <NotificationsPage />;
+        break;
 
       case 'certificate':
-        if (segments.length >= 2 && segments[1]) {
-          return <CertificatePage courseId={segments[1]} />;
-        }
-        return <CatalogPage />;
+        page = segments.length >= 2 && segments[1]
+          ? <CertificatePage courseId={segments[1]} />
+          : <CatalogPage />;
+        break;
 
       case 'course-editor':
-        return <CourseEditorPage />;
+        page = <CourseEditorPage />;
+        break;
 
       case 'terms':
-        return <TermsPage />;
+        page = <TermsPage />;
+        break;
 
       case 'privacy':
-        return <PrivacyPage />;
+        page = <PrivacyPage />;
+        break;
 
       case 'personal-data':
-        return <PersonalDataConsentPage />;
+        page = <PersonalDataConsentPage />;
+        break;
 
       case 'offer':
-        return <OfferPage />;
+        page = <OfferPage />;
+        break;
 
       case 'refund':
-        return <RefundPage />;
+        page = <RefundPage />;
+        break;
 
       case 'edu-info':
-        return <EduInfoPage />;
+        page = <EduInfoPage />;
+        break;
 
       case 'rules':
-        return <RulesPage />;
+        page = <RulesPage />;
+        break;
 
       case 'license':
-        return <LicensePage />;
+        page = <LicensePage />;
+        break;
 
       case 'age-rating':
-        return <AgeRatingPage />;
+        page = <AgeRatingPage />;
+        break;
 
       case 'cookies':
-        return <CookiePage />;
+        page = <CookiePage />;
+        break;
 
       case 'help':
-        return <HelpPage />;
+        page = <HelpPage />;
+        break;
 
       case 'home':
       default:
-        return <HomePage />;
+        page = <HomePage />;
     }
+
+    return <PageWrapper>{page}</PageWrapper>;
   };
 
   const themeClass = theme === 'dark' ? 'dark' : theme === 'amber' ? 'amber' : '';

@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  DATABASE_URL: file:./test.db
+  NEXTAUTH_URL: http://localhost:3000
+  NEXTAUTH_SECRET: test-secret-for-ci
+  ALLOW_SEED_DATA: "false"
+
 jobs:
   lint-and-type-check:
     runs-on: ubuntu-latest
@@ -20,11 +26,17 @@ jobs:
 
       - run: npm ci
 
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Create SQLite database
+        run: npx prisma db push --skip-generate
+
       - name: Lint
         run: npx eslint --no-error-on-unmatched-pattern 'src/**/*.ts' 'src/**/*.tsx'
 
       - name: Type check
-        run: npx next build
+        run: npx tsc --noEmit
 
   test:
     runs-on: ubuntu-latest
@@ -39,5 +51,11 @@ jobs:
 
       - run: npm ci
 
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Create SQLite database
+        run: npx prisma db push --skip-generate
+
       - name: Run tests
-        run: npm test -- --run || true
+        run: npx vitest run

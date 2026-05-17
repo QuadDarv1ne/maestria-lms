@@ -8,6 +8,11 @@ import {
   Flag,
   Settings,
   Activity,
+  Play,
+  FileText,
+  Code2,
+  HelpCircle,
+  ClipboardList,
 } from "lucide-react";
 
 export const levelLabels: Record<string, string> = {
@@ -77,4 +82,17 @@ export function activityIcon(type: string, className = "w-3.5 h-3.5"): ReactNode
   if (!entry) return <Activity className={`${className} text-gray-500`} />;
   const Icon = entry.icon;
   return <Icon className={`${className} ${entry.color}`} />;
+}
+
+// ─── Lesson type icons ──────────────────────────────────────────────────────
+
+export function lessonTypeIcon(type: string, className = "w-4 h-4"): ReactNode {
+  const icons: Record<string, ReactNode> = {
+    video: <Play className={className} />,
+    text: <FileText className={className} />,
+    coding: <Code2 className={className} />,
+    quiz: <HelpCircle className={className} />,
+    assignment: <ClipboardList className={className} />,
+  };
+  return icons[type] || <FileText className={className} />;
 }
