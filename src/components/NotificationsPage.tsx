@@ -2,6 +2,8 @@
 
 import React, { useMemo } from "react";
 import { useAppStore } from "@/lib/store";
+import type { Locale } from "@/lib/store";
+import { t } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,75 +35,74 @@ const typeConfig: Record<NotificationType, TypeConfig> = {
     iconColor: "text-blue-600",
     iconBg: "bg-blue-100",
     badgeColor: "bg-blue-100 text-blue-700",
-    label: "Запись",
+    label: t("notifications.type.enrollment"),
   },
   completion: {
     icon: Award,
     iconColor: "text-green-600",
     iconBg: "bg-green-100",
     badgeColor: "bg-green-100 text-green-700",
-    label: "Завершение",
+    label: t("notifications.type.completion"),
   },
   achievement: {
     icon: Trophy,
     iconColor: "text-amber-600",
     iconBg: "bg-amber-100",
     badgeColor: "bg-amber-100 text-amber-700",
-    label: "Достижение",
+    label: t("notifications.type.achievement"),
   },
   review: {
     icon: Star,
     iconColor: "text-violet-600",
     iconBg: "bg-violet-100",
     badgeColor: "bg-violet-100 text-violet-700",
-    label: "Отзыв",
+    label: t("notifications.type.review"),
   },
   system: {
     icon: Bell,
     iconColor: "text-gray-500",
     iconBg: "bg-gray-100",
     badgeColor: "bg-gray-100 text-gray-600",
-    label: "Система",
+    label: t("notifications.type.system"),
   },
 };
 
 // ============ TIME AGO ============
 
-function formatTimeAgo(timestamp: number): string {
+function formatTimeAgo(timestamp: number, locale: Locale): string {
   const now = Date.now();
   const diffMs = now - timestamp;
   const diffSec = Math.floor(diffMs / 1000);
 
-  if (diffSec < 60) return "только что";
+  if (diffSec < 60) return t("notifications.time.justNow", locale);
 
   const diffMin = Math.floor(diffSec / 60);
   if (diffMin < 60) {
-    if (diffMin === 1) return "1 мин назад";
-    if (diffMin >= 2 && diffMin <= 4) return `${diffMin} мин назад`;
-    return `${diffMin} мин назад`;
+    if (diffMin === 1) return `1 ${t("notifications.time.minutesAgo", locale)}`;
+    return `${diffMin} ${t("notifications.time.minutesAgo", locale)}`;
   }
 
   const diffHour = Math.floor(diffMin / 60);
   if (diffHour < 24) {
-    if (diffHour === 1) return "1 час назад";
-    if (diffHour >= 2 && diffHour <= 4) return `${diffHour} часа назад`;
-    return `${diffHour} часов назад`;
+    if (diffHour === 1) return `1 ${t("notifications.time.hoursAgo", locale)}`;
+    return `${diffHour} ${t("notifications.time.hoursAgo", locale)}`;
   }
 
   const diffDay = Math.floor(diffHour / 24);
-  if (diffDay === 1) return "1 день назад";
-  if (diffDay >= 2 && diffDay <= 4) return `${diffDay} дня назад`;
-  if (diffDay < 30) return `${diffDay} дней назад`;
+  if (diffDay < 30) {
+    if (diffDay === 1) return `1 ${t("notifications.time.daysAgo", locale)}`;
+    return `${diffDay} ${t("notifications.time.daysAgo", locale)}`;
+  }
 
   const diffMonth = Math.floor(diffDay / 30);
-  if (diffMonth === 1) return "1 месяц назад";
-  if (diffMonth >= 2 && diffMonth <= 4) return `${diffMonth} месяца назад`;
-  if (diffMonth < 12) return `${diffMonth} месяцев назад`;
+  if (diffMonth < 12) {
+    if (diffMonth === 1) return `1 ${t("notifications.time.monthsAgo", locale)}`;
+    return `${diffMonth} ${t("notifications.time.monthsAgo", locale)}`;
+  }
 
   const diffYear = Math.floor(diffMonth / 12);
-  if (diffYear === 1) return "1 год назад";
-  if (diffYear >= 2 && diffYear <= 4) return `${diffYear} года назад`;
-  return `${diffYear} лет назад`;
+  if (diffYear === 1) return `1 ${t("notifications.time.yearsAgo", locale)}`;
+  return `${diffYear} ${t("notifications.time.yearsAgo", locale)}`;
 }
 
 // ============ COMPONENT ============
@@ -113,6 +114,7 @@ export function NotificationsPage() {
     markAllNotificationsRead,
     unreadNotificationsCount,
     navigate,
+    locale,
   } = useAppStore();
 
   const unreadCount = unreadNotificationsCount();
@@ -144,9 +146,9 @@ export function NotificationsPage() {
               <BellRing className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold">Уведомления</h1>
+              <h1 className="text-2xl md:text-3xl font-bold">{t("notifications.title")}</h1>
               <p className="text-muted-foreground text-sm">
-                Будьте в курсе событий на платформе Maestria
+                {t("notifications.subtitle")}
               </p>
             </div>
           </div>
@@ -157,10 +159,9 @@ export function NotificationsPage() {
             <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <Bell className="w-10 h-10 text-gray-400" />
             </div>
-            <h2 className="text-xl font-semibold mb-2">Нет уведомлений</h2>
+            <h2 className="text-xl font-semibold mb-2">{t("notifications.noNotifications")}</h2>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Здесь будут отображаться уведомления о записях на курсы,
-              завершении обучения, достижениях и других событиях платформы.
+              {t("notifications.emptyDesc")}
             </p>
           </CardContent>
         </Card>
@@ -177,11 +178,11 @@ export function NotificationsPage() {
             <BellRing className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold">Уведомления</h1>
+            <h1 className="text-2xl md:text-3xl font-bold">{t("notifications.title")}</h1>
             <p className="text-muted-foreground text-sm">
               {unreadCount > 0
-                ? `${unreadCount} непрочитанных`
-                : "Все прочитано"}
+                ? `${unreadCount} ${t("notifications.unread")}`
+                : t("notifications.allRead")}
             </p>
           </div>
         </div>
@@ -194,7 +195,7 @@ export function NotificationsPage() {
             className="self-start sm:self-auto"
           >
             <CheckCheck className="w-4 h-4 mr-2" />
-            Прочитать все
+            {t("notifications.readAll")}
           </Button>
         )}
       </div>
@@ -262,7 +263,7 @@ export function NotificationsPage() {
                           <span className="w-2.5 h-2.5 rounded-full bg-blue-500 flex-shrink-0" />
                         )}
                         <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          {formatTimeAgo(notification.createdAt)}
+                          {formatTimeAgo(notification.createdAt, locale)}
                         </span>
                       </div>
                     </div>

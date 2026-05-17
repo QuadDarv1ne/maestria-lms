@@ -279,12 +279,12 @@ export function CatalogPage() {
       ) : error ? (
         <div className="text-center py-16">
           <X className="w-16 h-16 text-red-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">{error instanceof Error ? error.message : "Ошибка загрузки"}</h3>
+          <h3 className="text-lg font-semibold mb-2">{error instanceof Error ? error.message : t("catalog.error", locale)}</h3>
           <p className="text-muted-foreground mb-4">
             {t("catalog.noResultsHint", locale)}
           </p>
           <Button onClick={() => setPagination((prev) => ({ ...prev, page: 1 }))}>
-            {t("common.retry", locale) || "Повторить"}
+            {t("catalog.retry", locale)}
           </Button>
         </div>
       ) : sortedCourses.length === 0 ? (

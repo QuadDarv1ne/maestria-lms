@@ -18,9 +18,10 @@ import { CourseCard } from "@/components/CourseCard";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { CATEGORIES } from "@/lib/constants";
 import { useCourses } from "@/hooks/useCourses";
+import { t } from "@/lib/i18n";
 
 export function HomePage() {
-  const { navigate } = useAppStore();
+  const { navigate, locale } = useAppStore();
   const { data: coursesData, isLoading } = useCourses({ limit: 6 });
   const featuredCourses = coursesData?.courses ?? [];
   const loading = isLoading;
@@ -42,16 +43,15 @@ export function HomePage() {
         <div className="relative container mx-auto px-4 py-16 md:py-24">
           <div className="max-w-3xl">
             <Badge className="mb-4 bg-white/20 text-white border-0 hover:bg-white/30">
-              🎓 Обучающая платформа нового поколения
+              🎓 {t("home.heroTitle", locale)}
             </Badge>
             <h1 className="text-3xl md:text-5xl font-bold text-white mb-4 leading-tight">
-              Научись программировать
+              {t("home.heroSubtitle", locale)}
               <br />
-              <span className="text-blue-200">с нуля до профи</span>
+              <span className="text-blue-200">{t("home.heroHighlight", locale)}</span>
             </h1>
             <p className="text-lg md:text-xl text-blue-100 mb-8 max-w-2xl">
-              Интерактивные курсы по программированию, веб-разработке, созданию игр и Data
-              Science. Учитесь в своём темпе с лучшими преподавателями.
+              {t("home.heroDescription", locale)}
             </p>
             <div className="flex flex-wrap gap-3">
               <Button
@@ -59,7 +59,7 @@ export function HomePage() {
                 className="bg-white text-blue-800 hover:bg-blue-50 font-semibold"
                 onClick={() => navigate("catalog")}
               >
-                Смотреть курсы
+                {t("home.viewCourses", locale)}
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
               <Button
@@ -68,7 +68,7 @@ export function HomePage() {
                 className="border-white/30 text-white bg-blue-600 hover:bg-blue-700 hover:border-blue-600"
                 onClick={() => navigate("login")}
               >
-                Начать бесплатно
+                {t("home.startFree", locale)}
               </Button>
             </div>
           </div>
@@ -76,10 +76,10 @@ export function HomePage() {
           {/* Статистика */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12">
             {[
-              { icon: <BookOpen className="w-5 h-5" />, value: 34, suffix: "+", label: "Курсов", decimals: 0 },
-              { icon: <Users className="w-5 h-5" />, value: 12000, suffix: "+", label: "Студентов", decimals: 0 },
-              { icon: <Award className="w-5 h-5" />, value: 1000, suffix: "+", label: "Сертификатов", decimals: 0 },
-              { icon: <Star className="w-5 h-5" />, value: 4.8, suffix: "", label: "Средняя оценка", decimals: 1 },
+              { icon: <BookOpen className="w-5 h-5" />, value: 34, suffix: "+", label: t("home.courses", locale), decimals: 0 },
+              { icon: <Users className="w-5 h-5" />, value: 12000, suffix: "+", label: t("home.students", locale), decimals: 0 },
+              { icon: <Award className="w-5 h-5" />, value: 1000, suffix: "+", label: t("home.certificates", locale), decimals: 0 },
+              { icon: <Star className="w-5 h-5" />, value: 4.8, suffix: "", label: t("home.avgRating", locale), decimals: 1 },
             ].map((stat, i) => (
               <div
                 key={i}
@@ -107,11 +107,9 @@ export function HomePage() {
       <section className="container mx-auto px-4 py-12 md:py-16">
         <div className="text-center mb-8">
           <h2 className="text-2xl md:text-3xl font-bold mb-2">
-            Направления обучения
+            {t("home.directionsTitle", locale)}
           </h2>
-          <p className="text-muted-foreground">
-            Выберите направление, которое вам интересно
-          </p>
+          <p className="text-muted-foreground">{t("home.directionsSubtitle", locale)}</p>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {defaultCategories.map((cat) => (
@@ -151,10 +149,10 @@ export function HomePage() {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h2 className="text-2xl md:text-3xl font-bold">
-                Популярные курсы
+                {t("home.popularCourses", locale)}
               </h2>
               <p className="text-muted-foreground mt-1">
-                Лучшие курсы по оценкам студентов
+                {t("home.popularCoursesSubtitle", locale)}
               </p>
             </div>
             <Button
@@ -162,7 +160,7 @@ export function HomePage() {
               onClick={() => navigate("catalog")}
               className="hidden sm:flex"
             >
-              Все курсы
+              {t("home.allCourses", locale)}
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
@@ -196,7 +194,7 @@ export function HomePage() {
 
           <div className="text-center mt-8 sm:hidden">
             <Button variant="outline" onClick={() => navigate("catalog")}>
-              Все курсы
+              {t("home.allCourses", locale)}
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
@@ -207,10 +205,10 @@ export function HomePage() {
       <section className="container mx-auto px-4 py-12 md:py-16">
         <div className="text-center mb-8">
           <h2 className="text-2xl md:text-3xl font-bold mb-2">
-            Почему Maestria?
+            {t("home.whyMaestria", locale)}
           </h2>
           <p className="text-muted-foreground">
-            Мы создаём лучший опыт онлайн-обучения
+            {t("home.whyMaestriaSubtitle", locale)}
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -248,18 +246,17 @@ export function HomePage() {
       <section className="bg-gradient-to-r from-blue-700 to-violet-700 py-12 md:py-16">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
-            Начните обучаться прямо сейчас!
+            {t("home.startNowTitle", locale)}
           </h2>
           <p className="text-blue-100 mb-6 max-w-lg mx-auto">
-            Зарегистрируйтесь бесплатно и получите доступ к бесплатным курсам по
-            программированию
+            {t("home.startNowSubtitle", locale)}
           </p>
           <Button
             size="lg"
             className="bg-white text-blue-800 hover:bg-blue-50 font-semibold"
             onClick={() => navigate("login")}
           >
-            Зарегистрироваться бесплатно
+            {t("home.registerFree", locale)}
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </div>

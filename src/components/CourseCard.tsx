@@ -126,11 +126,11 @@ export function CourseCard({ course, onClick }: CourseCardProps) {
                 <div className="flex items-center gap-2">
                   {course.oldPrice && (
                     <span className="text-xs text-muted-foreground line-through">
-                      {course.oldPrice.toLocaleString("ru-RU")} ₽
+                      {course.oldPrice.toLocaleString(locale === "zh" ? "zh-CN" : locale === "en" ? "en-US" : "ru-RU")} ₽
                     </span>
                   )}
                   <span className="text-sm font-bold text-foreground">
-                    {course.price.toLocaleString("ru-RU")} ₽
+                    {course.price.toLocaleString(locale === "zh" ? "zh-CN" : locale === "en" ? "en-US" : "ru-RU")} ₽
                   </span>
                 </div>
               )}

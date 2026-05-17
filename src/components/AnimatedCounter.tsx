@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useAppStore } from "@/lib/store";
 
 interface AnimatedCounterProps {
   end: number;
@@ -21,6 +22,7 @@ export function AnimatedCounter({
   const [hasStarted, setHasStarted] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
   const rafRef = useRef<number>(0);
+  const locale = useAppStore((s) => s.locale);
 
   useEffect(() => {
     const el = ref.current;
@@ -66,7 +68,7 @@ export function AnimatedCounter({
 
   const formatted = decimals > 0
     ? count.toFixed(decimals)
-    : Math.round(count).toLocaleString("ru-RU");
+    : Math.round(count).toLocaleString(locale === "zh" ? "zh-CN" : locale === "en" ? "en-US" : "ru-RU");
 
   return (
     <span ref={ref}>

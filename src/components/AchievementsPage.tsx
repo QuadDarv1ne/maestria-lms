@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
+import { t } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -74,15 +75,15 @@ type AchievementStatus = "earned" | "in_progress" | "locked";
 
 interface Achievement {
   id: string;
-  title: string;
-  description: string;
+  titleKey: string;
+  descriptionKey: string;
   icon: React.ElementType;
   color: string;
   colorBg: string;
   colorBorder: string;
   colorText: string;
   category: string;
-  categoryLabel: string;
+  categoryLabelKey: string;
   check: (data: AchievementCheckData) => {
     status: AchievementStatus;
     current: number;
@@ -107,304 +108,308 @@ interface AchievementCheckData {
 
 // ============ ACHIEVEMENT DEFINITIONS ============
 
-const achievements: Achievement[] = [
-  // Обучение (Learning)
-  {
-    id: "first-step",
-    title: "Первый шаг",
-    description: "Записаться на первый курс",
-    icon: Footprints,
-    color: "blue",
-    colorBg: "bg-blue-100",
-    colorBorder: "border-blue-400",
-    colorText: "text-blue-700",
-    category: "learning",
-    categoryLabel: "Обучение",
-    check: (d) => ({
-      status: d.enrollmentsCount >= 1 ? "earned" : "locked",
-      current: Math.min(d.enrollmentsCount, 1),
-      target: 1,
-    }),
-  },
-  {
-    id: "student",
-    title: "Студент",
-    description: "Записаться на 3 курса",
-    icon: BookOpen,
-    color: "violet",
-    colorBg: "bg-violet-100",
-    colorBorder: "border-violet-400",
-    colorText: "text-violet-700",
-    category: "learning",
-    categoryLabel: "Обучение",
-    check: (d) => ({
-      status:
-        d.enrollmentsCount >= 3
-          ? "earned"
-          : d.enrollmentsCount >= 1
-            ? "in_progress"
-            : "locked",
-      current: Math.min(d.enrollmentsCount, 3),
-      target: 3,
-    }),
-  },
-  {
-    id: "excellent",
-    title: "Отличник",
-    description: "Записаться на 5 курсов",
-    icon: GraduationCap,
-    color: "amber",
-    colorBg: "bg-amber-100",
-    colorBorder: "border-amber-400",
-    colorText: "text-amber-700",
-    category: "learning",
-    categoryLabel: "Обучение",
-    check: (d) => ({
-      status:
-        d.enrollmentsCount >= 5
-          ? "earned"
-          : d.enrollmentsCount >= 1
-            ? "in_progress"
-            : "locked",
-      current: Math.min(d.enrollmentsCount, 5),
-      target: 5,
-    }),
-  },
-  {
-    id: "multitalented",
-    title: "На все руки",
-    description: "Записаться на курсы из 3+ разных категорий",
-    icon: Zap,
-    color: "orange",
-    colorBg: "bg-orange-100",
-    colorBorder: "border-orange-400",
-    colorText: "text-orange-700",
-    category: "learning",
-    categoryLabel: "Обучение",
-    check: (d) => ({
-      status:
-        d.uniqueCategories >= 3
-          ? "earned"
-          : d.uniqueCategories >= 1
-            ? "in_progress"
-            : "locked",
-      current: Math.min(d.uniqueCategories, 3),
-      target: 3,
-    }),
-  },
-  // Прогресс (Progress)
-  {
-    id: "start",
-    title: "Начало положено",
-    description: "Завершить первый шаг",
-    icon: Play,
-    color: "blue",
-    colorBg: "bg-blue-100",
-    colorBorder: "border-blue-400",
-    colorText: "text-blue-700",
-    category: "progress",
-    categoryLabel: "Прогресс",
-    check: (d) => ({
-      status:
-        d.completedLessonsCount >= 1
-          ? "earned"
-          : d.anyProgress
-            ? "in_progress"
-            : "locked",
-      current: Math.min(d.completedLessonsCount, 1),
-      target: 1,
-    }),
-  },
-  {
-    id: "halfway",
-    title: "На полпути",
-    description: "Достичь 50% прогресса в любом курсе",
-    icon: TrendingUp,
-    color: "violet",
-    colorBg: "bg-violet-100",
-    colorBorder: "border-violet-400",
-    colorText: "text-violet-700",
-    category: "progress",
-    categoryLabel: "Прогресс",
-    check: (d) => ({
-      status: d.has50Progress ? "earned" : d.anyProgress ? "in_progress" : "locked",
-      current: d.has50Progress ? 1 : d.anyProgress ? 0 : 0,
-      target: 1,
-    }),
-  },
-  {
-    id: "finish-line",
-    title: "Финишная прямая",
-    description: "Завершить курс на 100%",
-    icon: Trophy,
-    color: "amber",
-    colorBg: "bg-amber-100",
-    colorBorder: "border-amber-400",
-    colorText: "text-amber-700",
-    category: "progress",
-    categoryLabel: "Прогресс",
-    check: (d) => ({
-      status:
-        d.completedCoursesCount >= 1
-          ? "earned"
-          : d.anyProgress
-            ? "in_progress"
-            : "locked",
-      current: Math.min(d.completedCoursesCount, 1),
-      target: 1,
-    }),
-  },
-  {
-    id: "marathoner",
-    title: "Марафонец",
-    description: "Завершить 3 курса",
-    icon: Flame,
-    color: "orange",
-    colorBg: "bg-orange-100",
-    colorBorder: "border-orange-400",
-    colorText: "text-orange-700",
-    category: "progress",
-    categoryLabel: "Прогресс",
-    check: (d) => ({
-      status:
-        d.completedCoursesCount >= 3
-          ? "earned"
-          : d.completedCoursesCount >= 1
-            ? "in_progress"
-            : "locked",
-      current: Math.min(d.completedCoursesCount, 3),
-      target: 3,
-    }),
-  },
-  // Активность (Activity)
-  {
-    id: "newcomer",
-    title: "Новичок",
-    description: "Зарегистрироваться на платформе",
-    icon: UserPlus,
-    color: "blue",
-    colorBg: "bg-blue-100",
-    colorBorder: "border-blue-400",
-    colorText: "text-blue-700",
-    category: "activity",
-    categoryLabel: "Активность",
-    check: (d) => ({
-      status: d.isRegistered ? "earned" : "locked",
-      current: d.isRegistered ? 1 : 0,
-      target: 1,
-    }),
-  },
-  {
-    id: "commentator",
-    title: "Комментатор",
-    description: "Оставить 3 отзыва",
-    icon: MessageSquare,
-    color: "violet",
-    colorBg: "bg-violet-100",
-    colorBorder: "border-violet-400",
-    colorText: "text-violet-700",
-    category: "activity",
-    categoryLabel: "Активность",
-    check: (d) => ({
-      status:
-        d.reviewsCount >= 3
-          ? "earned"
-          : d.reviewsCount >= 1
-            ? "in_progress"
-            : "locked",
-      current: Math.min(d.reviewsCount, 3),
-      target: 3,
-    }),
-  },
-  {
-    id: "coder",
-    title: "Кодер",
-    description: "Пройти практическое задание",
-    icon: Code2,
-    color: "amber",
-    colorBg: "bg-amber-100",
-    colorBorder: "border-amber-400",
-    colorText: "text-amber-700",
-    category: "activity",
-    categoryLabel: "Активность",
-    check: (d) => ({
-      status:
-        d.codingAssignments >= 1
-          ? "earned"
-          : d.anyProgress
-            ? "in_progress"
-            : "locked",
-      current: Math.min(d.codingAssignments, 1),
-      target: 1,
-    }),
-  },
-  {
-    id: "code-master",
-    title: "Мастер кода",
-    description: "Пройти 10 практических заданий",
-    icon: Terminal,
-    color: "orange",
-    colorBg: "bg-orange-100",
-    colorBorder: "border-orange-400",
-    colorText: "text-orange-700",
-    category: "activity",
-    categoryLabel: "Активность",
-    check: (d) => ({
-      status:
-        d.codingAssignments >= 10
-          ? "earned"
-          : d.codingAssignments >= 1
-            ? "in_progress"
-            : "locked",
-      current: Math.min(d.codingAssignments, 10),
-      target: 10,
-    }),
-  },
-  // Особые (Special)
-  {
-    id: "pioneer",
-    title: "Первооткрыватель",
-    description: "Быть в числе первых 100 пользователей",
-    icon: Star,
-    color: "amber",
-    colorBg: "bg-amber-100",
-    colorBorder: "border-amber-400",
-    colorText: "text-amber-700",
-    category: "special",
-    categoryLabel: "Особые",
-    check: (d) => ({
-      status: d.userRegistrationOrder <= 100 ? "earned" : "locked",
-      current: d.userRegistrationOrder <= 100 ? 1 : 0,
-      target: 1,
-    }),
-  },
-  {
-    id: "leader",
-    title: "Лидер",
-    description: "Получить роль преподавателя или администратора",
-    icon: Crown,
-    color: "violet",
-    colorBg: "bg-violet-100",
-    colorBorder: "border-violet-400",
-    colorText: "text-violet-700",
-    category: "special",
-    categoryLabel: "Особые",
-    check: (d) => ({
-      status: d.isTeacherOrAdmin ? "earned" : "locked",
-      current: d.isTeacherOrAdmin ? 1 : 0,
-      target: 1,
-    }),
-  },
-];
+function getAchievements(): Achievement[] {
+  return [
+    // Learning
+    {
+      id: "first-step",
+      titleKey: "achievements.ach.firstStep.title",
+      descriptionKey: "achievements.ach.firstStep.desc",
+      icon: Footprints,
+      color: "blue",
+      colorBg: "bg-blue-100",
+      colorBorder: "border-blue-400",
+      colorText: "text-blue-700",
+      category: "learning",
+      categoryLabelKey: "achievements.cat.learning",
+      check: (d) => ({
+        status: d.enrollmentsCount >= 1 ? "earned" : "locked",
+        current: Math.min(d.enrollmentsCount, 1),
+        target: 1,
+      }),
+    },
+    {
+      id: "student",
+      titleKey: "achievements.ach.student.title",
+      descriptionKey: "achievements.ach.student.desc",
+      icon: BookOpen,
+      color: "violet",
+      colorBg: "bg-violet-100",
+      colorBorder: "border-violet-400",
+      colorText: "text-violet-700",
+      category: "learning",
+      categoryLabelKey: "achievements.cat.learning",
+      check: (d) => ({
+        status:
+          d.enrollmentsCount >= 3
+            ? "earned"
+            : d.enrollmentsCount >= 1
+              ? "in_progress"
+              : "locked",
+        current: Math.min(d.enrollmentsCount, 3),
+        target: 3,
+      }),
+    },
+    {
+      id: "excellent",
+      titleKey: "achievements.ach.excellent.title",
+      descriptionKey: "achievements.ach.excellent.desc",
+      icon: GraduationCap,
+      color: "amber",
+      colorBg: "bg-amber-100",
+      colorBorder: "border-amber-400",
+      colorText: "text-amber-700",
+      category: "learning",
+      categoryLabelKey: "achievements.cat.learning",
+      check: (d) => ({
+        status:
+          d.enrollmentsCount >= 5
+            ? "earned"
+            : d.enrollmentsCount >= 1
+              ? "in_progress"
+              : "locked",
+        current: Math.min(d.enrollmentsCount, 5),
+        target: 5,
+      }),
+    },
+    {
+      id: "multitalented",
+      titleKey: "achievements.ach.multitalented.title",
+      descriptionKey: "achievements.ach.multitalented.desc",
+      icon: Zap,
+      color: "orange",
+      colorBg: "bg-orange-100",
+      colorBorder: "border-orange-400",
+      colorText: "text-orange-700",
+      category: "learning",
+      categoryLabelKey: "achievements.cat.learning",
+      check: (d) => ({
+        status:
+          d.uniqueCategories >= 3
+            ? "earned"
+            : d.uniqueCategories >= 1
+              ? "in_progress"
+              : "locked",
+        current: Math.min(d.uniqueCategories, 3),
+        target: 3,
+      }),
+    },
+    // Progress
+    {
+      id: "start",
+      titleKey: "achievements.ach.start.title",
+      descriptionKey: "achievements.ach.start.desc",
+      icon: Play,
+      color: "blue",
+      colorBg: "bg-blue-100",
+      colorBorder: "border-blue-400",
+      colorText: "text-blue-700",
+      category: "progress",
+      categoryLabelKey: "achievements.cat.progress",
+      check: (d) => ({
+        status:
+          d.completedLessonsCount >= 1
+            ? "earned"
+            : d.anyProgress
+              ? "in_progress"
+              : "locked",
+        current: Math.min(d.completedLessonsCount, 1),
+        target: 1,
+      }),
+    },
+    {
+      id: "halfway",
+      titleKey: "achievements.ach.halfway.title",
+      descriptionKey: "achievements.ach.halfway.desc",
+      icon: TrendingUp,
+      color: "violet",
+      colorBg: "bg-violet-100",
+      colorBorder: "border-violet-400",
+      colorText: "text-violet-700",
+      category: "progress",
+      categoryLabelKey: "achievements.cat.progress",
+      check: (d) => ({
+        status: d.has50Progress ? "earned" : d.anyProgress ? "in_progress" : "locked",
+        current: d.has50Progress ? 1 : d.anyProgress ? 0 : 0,
+        target: 1,
+      }),
+    },
+    {
+      id: "finish-line",
+      titleKey: "achievements.ach.finishLine.title",
+      descriptionKey: "achievements.ach.finishLine.desc",
+      icon: Trophy,
+      color: "amber",
+      colorBg: "bg-amber-100",
+      colorBorder: "border-amber-400",
+      colorText: "text-amber-700",
+      category: "progress",
+      categoryLabelKey: "achievements.cat.progress",
+      check: (d) => ({
+        status:
+          d.completedCoursesCount >= 1
+            ? "earned"
+            : d.anyProgress
+              ? "in_progress"
+              : "locked",
+        current: Math.min(d.completedCoursesCount, 1),
+        target: 1,
+      }),
+    },
+    {
+      id: "marathoner",
+      titleKey: "achievements.ach.marathoner.title",
+      descriptionKey: "achievements.ach.marathoner.desc",
+      icon: Flame,
+      color: "orange",
+      colorBg: "bg-orange-100",
+      colorBorder: "border-orange-400",
+      colorText: "text-orange-700",
+      category: "progress",
+      categoryLabelKey: "achievements.cat.progress",
+      check: (d) => ({
+        status:
+          d.completedCoursesCount >= 3
+            ? "earned"
+            : d.completedCoursesCount >= 1
+              ? "in_progress"
+              : "locked",
+        current: Math.min(d.completedCoursesCount, 3),
+        target: 3,
+      }),
+    },
+    // Activity
+    {
+      id: "newcomer",
+      titleKey: "achievements.ach.newcomer.title",
+      descriptionKey: "achievements.ach.newcomer.desc",
+      icon: UserPlus,
+      color: "blue",
+      colorBg: "bg-blue-100",
+      colorBorder: "border-blue-400",
+      colorText: "text-blue-700",
+      category: "activity",
+      categoryLabelKey: "achievements.cat.activity",
+      check: (d) => ({
+        status: d.isRegistered ? "earned" : "locked",
+        current: d.isRegistered ? 1 : 0,
+        target: 1,
+      }),
+    },
+    {
+      id: "commentator",
+      titleKey: "achievements.ach.commentator.title",
+      descriptionKey: "achievements.ach.commentator.desc",
+      icon: MessageSquare,
+      color: "violet",
+      colorBg: "bg-violet-100",
+      colorBorder: "border-violet-400",
+      colorText: "text-violet-700",
+      category: "activity",
+      categoryLabelKey: "achievements.cat.activity",
+      check: (d) => ({
+        status:
+          d.reviewsCount >= 3
+            ? "earned"
+            : d.reviewsCount >= 1
+              ? "in_progress"
+              : "locked",
+        current: Math.min(d.reviewsCount, 3),
+        target: 3,
+      }),
+    },
+    {
+      id: "coder",
+      titleKey: "achievements.ach.coder.title",
+      descriptionKey: "achievements.ach.coder.desc",
+      icon: Code2,
+      color: "amber",
+      colorBg: "bg-amber-100",
+      colorBorder: "border-amber-400",
+      colorText: "text-amber-700",
+      category: "activity",
+      categoryLabelKey: "achievements.cat.activity",
+      check: (d) => ({
+        status:
+          d.codingAssignments >= 1
+            ? "earned"
+            : d.anyProgress
+              ? "in_progress"
+              : "locked",
+        current: Math.min(d.codingAssignments, 1),
+        target: 1,
+      }),
+    },
+    {
+      id: "code-master",
+      titleKey: "achievements.ach.codeMaster.title",
+      descriptionKey: "achievements.ach.codeMaster.desc",
+      icon: Terminal,
+      color: "orange",
+      colorBg: "bg-orange-100",
+      colorBorder: "border-orange-400",
+      colorText: "text-orange-700",
+      category: "activity",
+      categoryLabelKey: "achievements.cat.activity",
+      check: (d) => ({
+        status:
+          d.codingAssignments >= 10
+            ? "earned"
+            : d.codingAssignments >= 1
+              ? "in_progress"
+              : "locked",
+        current: Math.min(d.codingAssignments, 10),
+        target: 10,
+      }),
+    },
+    // Special
+    {
+      id: "pioneer",
+      titleKey: "achievements.ach.pioneer.title",
+      descriptionKey: "achievements.ach.pioneer.desc",
+      icon: Star,
+      color: "amber",
+      colorBg: "bg-amber-100",
+      colorBorder: "border-amber-400",
+      colorText: "text-amber-700",
+      category: "special",
+      categoryLabelKey: "achievements.cat.special",
+      check: (d) => ({
+        status: d.userRegistrationOrder <= 100 ? "earned" : "locked",
+        current: d.userRegistrationOrder <= 100 ? 1 : 0,
+        target: 1,
+      }),
+    },
+    {
+      id: "leader",
+      titleKey: "achievements.ach.leader.title",
+      descriptionKey: "achievements.ach.leader.desc",
+      icon: Crown,
+      color: "violet",
+      colorBg: "bg-violet-100",
+      colorBorder: "border-violet-400",
+      colorText: "text-violet-700",
+      category: "special",
+      categoryLabelKey: "achievements.cat.special",
+      check: (d) => ({
+        status: d.isTeacherOrAdmin ? "earned" : "locked",
+        current: d.isTeacherOrAdmin ? 1 : 0,
+        target: 1,
+      }),
+    },
+  ];
+}
 
 // ============ COMPONENT ============
 
 export function AchievementsPage() {
-  const { user, navigate } = useAppStore();
+  const { user, navigate, locale } = useAppStore();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [achievementData, setAchievementData] = useState<AchievementData | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const achievements = useMemo(() => getAchievements(), []);
 
   useEffect(() => {
     if (!user) return;
@@ -426,15 +431,15 @@ export function AchievementsPage() {
           setAchievementData(achData);
         }
       } catch (e) {
-        console.error("Ошибка загрузки данных достижений:", e);
-        toast.error("Не удалось загрузить достижения");
+        console.error("Error loading achievement data:", e);
+        toast.error(t("achievements.errorLoad", locale));
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [user]);
+  }, [user, locale]);
 
   // Build check data from profile + enrollments + achievement data
   const checkData: AchievementCheckData = useMemo(() => {
@@ -473,7 +478,7 @@ export function AchievementsPage() {
       const result = ach.check(checkData);
       return { ...ach, ...result };
     });
-  }, [checkData]);
+  }, [achievements, checkData]);
 
   // Summary stats
   const totalAchievements = achievements.length;
@@ -485,10 +490,10 @@ export function AchievementsPage() {
   // Category stats
   const categories = useMemo(() => {
     const cats = [
-      { key: "learning", label: "Обучение", icon: BookOpen, color: "text-blue-700" },
-      { key: "progress", label: "Прогресс", icon: TrendingUp, color: "text-violet-600" },
-      { key: "activity", label: "Активность", icon: Flame, color: "text-amber-600" },
-      { key: "special", label: "Особые", icon: Star, color: "text-orange-600" },
+      { key: "learning", labelKey: "achievements.cat.learning", icon: BookOpen, color: "text-blue-700" },
+      { key: "progress", labelKey: "achievements.cat.progress", icon: TrendingUp, color: "text-violet-600" },
+      { key: "activity", labelKey: "achievements.cat.activity", icon: Flame, color: "text-amber-600" },
+      { key: "special", labelKey: "achievements.cat.special", icon: Star, color: "text-orange-600" },
     ];
     return cats.map((cat) => {
       const catAchievements = achievementResults.filter(
@@ -517,16 +522,15 @@ export function AchievementsPage() {
           <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-violet-600 rounded-full flex items-center justify-center text-white mx-auto mb-6">
             <Award className="w-10 h-10" />
           </div>
-          <h2 className="text-2xl font-bold mb-3">Достижения</h2>
+          <h2 className="text-2xl font-bold mb-3">{t("achievements.title", locale)}</h2>
           <p className="text-muted-foreground mb-6">
-            Войдите в аккаунт, чтобы отслеживать свои достижения и прогресс на
-            платформе Maestria
+            {t("achievements.loginDesc", locale)}
           </p>
           <Button
             className="bg-blue-700 hover:bg-blue-800 text-white"
             onClick={() => navigate("login")}
           >
-            Войти в аккаунт
+            {t("achievements.loginBtn", locale)}
           </Button>
         </div>
       </div>
@@ -563,9 +567,9 @@ export function AchievementsPage() {
             <Trophy className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold">Достижения</h1>
+            <h1 className="text-2xl md:text-3xl font-bold">{t("achievements.title", locale)}</h1>
             <p className="text-muted-foreground text-sm">
-              Отслеживайте свой прогресс на платформе Maestria
+              {t("achievements.progressDesc", locale)}
             </p>
           </div>
         </div>
@@ -626,17 +630,17 @@ export function AchievementsPage() {
                   </div>
                   <div>
                     <h2 className="text-xl font-bold">
-                      {earnedCount} из {totalAchievements}
+                      {earnedCount} {t("achievements.of", locale)} {totalAchievements}
                     </h2>
                     <p className="text-muted-foreground text-sm">
-                      достижений получено
+                      {t("achievements.earned", locale)}
                     </p>
                     <div className="flex items-center gap-1 mt-1">
                       <Sparkles className="w-4 h-4 text-amber-500" />
                       <span className="text-xs font-medium text-amber-600">
                         {earnedCount > 0
-                          ? "Продолжайте в том же духе!"
-                          : "Начните обучение, чтобы получать достижения"}
+                          ? t("achievements.keepItUp", locale)
+                          : t("achievements.startLearning", locale)}
                       </span>
                     </div>
                   </div>
@@ -654,7 +658,7 @@ export function AchievementsPage() {
                         {cat.earned}/{cat.total}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {cat.label}
+                        {t(cat.labelKey, locale)}
                       </p>
                       <Progress
                         value={cat.progress}
@@ -671,10 +675,10 @@ export function AchievementsPage() {
 
       {/* Achievement Categories */}
       {[
-        { key: "learning", label: "Обучение", icon: BookOpen, gradient: "from-blue-700 to-blue-800" },
-        { key: "progress", label: "Прогресс", icon: TrendingUp, gradient: "from-violet-600 to-violet-700" },
-        { key: "activity", label: "Активность", icon: Flame, gradient: "from-amber-500 to-amber-600" },
-        { key: "special", label: "Особые", icon: Star, gradient: "from-orange-600 to-orange-700" },
+        { key: "learning", labelKey: "achievements.cat.learning", icon: BookOpen, gradient: "from-blue-700 to-blue-800" },
+        { key: "progress", labelKey: "achievements.cat.progress", icon: TrendingUp, gradient: "from-violet-600 to-violet-700" },
+        { key: "activity", labelKey: "achievements.cat.activity", icon: Flame, gradient: "from-amber-500 to-amber-600" },
+        { key: "special", labelKey: "achievements.cat.special", icon: Star, gradient: "from-orange-600 to-orange-700" },
       ].map((cat) => {
         const catAchievements = achievementResults.filter(
           (a) => a.category === cat.key
@@ -692,7 +696,7 @@ export function AchievementsPage() {
               >
                 <cat.icon className="w-4 h-4 text-white" />
               </div>
-              <h2 className="text-lg font-bold">{cat.label}</h2>
+              <h2 className="text-lg font-bold">{t(cat.labelKey, locale)}</h2>
               <Badge
                 variant="secondary"
                 className="text-xs"
@@ -770,18 +774,18 @@ export function AchievementsPage() {
                         {isEarned ? (
                           <Badge className="bg-green-100 text-green-700 border-0 text-[10px] font-semibold">
                             <CheckIcon className="w-3 h-3 mr-0.5" />
-                            Получено
+                            {t("achievements.gotIt", locale)}
                           </Badge>
                         ) : isInProgress ? (
                           <Badge className="bg-amber-50 text-amber-600 border border-amber-200 text-[10px] font-semibold">
-                            В процессе
+                            {t("achievements.inProgress", locale)}
                           </Badge>
                         ) : (
                           <Badge
                             variant="outline"
                             className="text-[10px] text-gray-400"
                           >
-                            Недоступно
+                            {t("achievements.unavailable", locale)}
                           </Badge>
                         )}
                       </div>
@@ -792,7 +796,7 @@ export function AchievementsPage() {
                           isLocked ? "text-gray-400" : "text-foreground"
                         }`}
                       >
-                        {ach.title}
+                        {t(ach.titleKey, locale)}
                       </h3>
                       <p
                         className={`text-xs mb-3 ${
@@ -801,7 +805,7 @@ export function AchievementsPage() {
                             : "text-muted-foreground"
                         }`}
                       >
-                        {ach.description}
+                        {t(ach.descriptionKey, locale)}
                       </p>
 
                       {/* Progress */}
@@ -853,20 +857,20 @@ export function AchievementsPage() {
           <Target className="w-8 h-8 text-violet-600 mx-auto mb-3" />
           <h3 className="font-semibold mb-1">
             {earnedCount === 0
-              ? "Начните свой путь!"
+              ? t("achievements.startYourJourney", locale)
               : earnedCount < 5
-                ? "Хорошее начало!"
+                ? t("achievements.goodStart", locale)
                 : earnedCount < 10
-                  ? "Впечатляющий прогресс!"
-                  : "Вы настоящий мастер!"}
+                  ? t("achievements.impressiveProgress", locale)
+                  : t("achievements.trueMaster", locale)}
           </h3>
           <p className="text-sm text-muted-foreground mb-4">
             {earnedCount === 0
-              ? "Запишитесь на первый курс, чтобы получить первое достижение"
-              : `Вы уже получили ${earnedCount} из ${totalAchievements} достижений. ${
+              ? t("achievements.enrollFirstCourse", locale)
+              : `${t("achievements.youEarned", locale).replace("{{earned}}", String(earnedCount)).replace("{{total}}", String(totalAchievements))}. ${
                   earnedCount < totalAchievements
-                    ? "Продолжайте обучение, чтобы разблокировать новые!"
-                    : "Вы собрали все достижения! Невероятно!"
+                    ? t("achievements.keepLearning", locale)
+                    : t("achievements.allCollected", locale)
                 }`}
           </p>
           {earnedCount < totalAchievements && (
@@ -874,7 +878,7 @@ export function AchievementsPage() {
               className="bg-blue-700 hover:bg-blue-800 text-white"
               onClick={() => navigate("catalog")}
             >
-              Перейти к курсам
+              {t("achievements.goToCourses", locale)}
               <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           )}

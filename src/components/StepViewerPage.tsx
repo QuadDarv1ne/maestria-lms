@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
+import { t, useLocale } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -100,15 +101,7 @@ interface LessonStructure {
   completed: boolean;
 }
 
-// ==================== CONSTANTS ====================
-
-const stepTypeLabels: Record<string, string> = {
-  video: "Видеоурок",
-  text: "Теория",
-  coding: "Практика код",
-  quiz: "Тест",
-  assignment: "Задание",
-};
+// ==================== MAIN COMPONENT ====================
 
 const stepTypeColors: Record<string, string> = {
   video: "bg-blue-100 text-blue-700",
@@ -128,6 +121,7 @@ export function StepViewerPage({
   lessonId: string;
 }) {
   const { navigate, user } = useAppStore();
+  const { locale } = useLocale();
   const [step, setStep] = useState<StepData | null>(null);
   const [courseStructure, setCourseStructure] = useState<CourseStructure | null>(null);
   const [loading, setLoading] = useState(true);
@@ -167,12 +161,12 @@ export function StepViewerPage({
           setStep(data.lesson);
         } else {
           const data = await res.json();
-          toast.error(data.error || "Ошибка доступа к шагу");
+          toast.error(data.error || t("course.step.errorAccess", locale));
           navigate(`course/${courseId}`);
         }
       } catch (e) {
-        console.error("Ошибка загрузки шага:", e);
-        toast.error("Ошибка загрузки шага");
+        console.error(t("course.step.errorLoad", locale), e);
+        toast.error(t("course.step.errorLoad", locale));
       } finally {
         setLoading(false);
       }
@@ -222,7 +216,7 @@ export function StepViewerPage({
           });
         }
       } catch (e) {
-        console.error("Ошибка загрузки структуры курса:", e);
+        console.error(t("course.step.errorLoad", locale), e);
       }
     };
     fetchStructure();
@@ -242,8 +236,8 @@ export function StepViewerPage({
         }),
       });
       if (res.ok) {
-        toast.success("Шаг пройден!", {
-          description: step.nextStepId ? "Переходим к следующему шагу" : "Вы завершили курс!",
+        toast.success(t("course.step.completed", locale), {
+          description: step.nextStepId ? t("course.step.completedDesc", locale) : t("course.step.courseCompletedDesc", locale),
         });
         setStep((prev) => prev ? { ...prev, completed: true } : prev);
         // Update structure
@@ -266,7 +260,7 @@ export function StepViewerPage({
         }
       }
     } catch {
-      toast.error("Ошибка обновления прогресса");
+      toast.error(t("course.step.errorProgress", locale));
     } finally {
       setCompleting(false);
     }
@@ -280,7 +274,7 @@ export function StepViewerPage({
 
     const selected = selectedAnswers[assignmentId];
     if (!selected) {
-      toast.error("Выберите вариант ответа");
+      toast.error(t("course.step.selectAnswer", locale));
       return;
     }
 
@@ -289,9 +283,9 @@ export function StepViewerPage({
     setQuizResults((prev) => ({ ...prev, [assignmentId]: isCorrect }));
 
     if (isCorrect) {
-      toast.success("Правильно! 🎉");
+      toast.success(`${t("course.step.correct", locale)} 🎉`);
     } else {
-      toast.error("Неверный ответ. Попробуйте ещё раз.");
+      toast.error(`${t("course.step.incorrect", locale)}. ${t("course.step.tryAgain", locale)}.`);
     }
   }, [step, selectedAnswers]);
 
@@ -309,23 +303,23 @@ export function StepViewerPage({
   // Submit code
   const handleCodeSubmit = useCallback(() => {
     if (!codeValue.trim()) {
-      toast.error("Напишите код перед отправкой");
+      toast.error(t("course.step.writeCodeFirst", locale));
       return;
     }
     setCodeSubmitted(true);
     setCodeOutput("// Выполнение кода...\n> Hello, World!\n> Программа завершена успешно");
-    toast.success("Код отправлен на проверку");
-  }, [codeValue]);
+    toast.success(t("course.step.codeSent", locale));
+  }, [codeValue, locale]);
 
   // Submit assignment
   const handleAssignmentSubmit = useCallback(() => {
     if (!assignmentAnswer.trim()) {
-      toast.error("Напишите ответ перед отправкой");
+      toast.error(t("course.step.writeAnswerFirst", locale));
       return;
     }
     setAssignmentSubmitted(true);
-    toast.success("Ответ отправлен на проверку преподавателю");
-  }, [assignmentAnswer]);
+    toast.success(t("course.step.answerSent", locale));
+  }, [assignmentAnswer, locale]);
 
   // Build flat step list for navigation
   const flatSteps = useMemo(() => {
@@ -352,7 +346,7 @@ export function StepViewerPage({
           <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-violet-600 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
             <GraduationCap className="w-8 h-8 text-white" />
           </div>
-          <p className="text-muted-foreground">Загрузка шага...</p>
+          <p className="text-muted-foreground">{t("common.loading", locale)}</p>
         </div>
       </div>
     );
@@ -362,9 +356,9 @@ export function StepViewerPage({
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Шаг не найден</h2>
+          <h2 className="text-xl font-semibold mb-2">{t("course.step.notFound", locale)}</h2>
           <Button variant="outline" onClick={() => navigate(`course/${courseId}`)}>
-            Вернуться к курсу
+            {t("course.step.backToCourse", locale)}
           </Button>
         </div>
       </div>
@@ -392,7 +386,7 @@ export function StepViewerPage({
                 onClick={() => navigate(`course/${courseId}`)}
               >
                 <ArrowLeft className="w-4 h-4 mr-1" />
-                К курсу
+                {t("course.step.backToCourse", locale)}
               </Button>
               <Button
                 variant="ghost"
@@ -404,7 +398,7 @@ export function StepViewerPage({
               </Button>
             </div>
             <h2 className="font-bold text-sm leading-tight mb-2 line-clamp-2">
-              {courseStructure?.title || "Курс"}
+              {courseStructure?.title || t("course.step.module", locale)}
             </h2>
             <div className="flex items-center gap-2 text-xs text-blue-100 mb-2">
               <span>{courseStructure?.completedLessons || 0} из {courseStructure?.totalLessons || 0} шагов</span>
@@ -446,8 +440,8 @@ export function StepViewerPage({
                         {module.title}
                       </p>
                       <p className="text-[10px] text-muted-foreground">
-                        {module.lessons.length} шагов
-                        {moduleCompleted && " • Пройден"}
+                        {module.lessons.length} {t("course.step.moduleLessons", locale)}
+                        {moduleCompleted && ` • ${t("course.step.moduleCompleted", locale)}`}
                       </p>
                     </div>
                   </div>
@@ -471,7 +465,7 @@ export function StepViewerPage({
                         }`}
                         onClick={() => {
                           if (isLocked) {
-                            toast.error("Запишитесь на курс для доступа");
+                            toast.error(t("course.step.enrollFirst", locale));
                             return;
                           }
                           navigate(`course/${courseId}/lesson/${lesson.id}`);
@@ -495,7 +489,7 @@ export function StepViewerPage({
                         <span className="flex-1 truncate">{lesson.title}</span>
                         {lesson.isFree && !lesson.completed && (
                           <Badge variant="outline" className="text-[9px] px-1 py-0 text-green-600 border-green-300 flex-shrink-0">
-                            Free
+                            {t("common.free", locale)}
                           </Badge>
                         )}
                       </button>
@@ -511,8 +505,8 @@ export function StepViewerPage({
             <div className="p-4 m-2 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border border-amber-200">
               <div className="text-center">
                 <Trophy className="w-10 h-10 text-amber-500 mx-auto mb-2" />
-                <p className="font-bold text-amber-800 text-sm">Курс пройден!</p>
-                <p className="text-xs text-amber-600 mt-1">Поздравляем с завершением</p>
+                <p className="font-bold text-amber-800 text-sm">{t("course.step.courseCompleted", locale)}</p>
+                <p className="text-xs text-amber-600 mt-1">{t("course.step.courseCompletedDesc", locale)}</p>
               </div>
             </div>
           )}
@@ -548,7 +542,7 @@ export function StepViewerPage({
                 onClick={() => navigate(`course/${courseId}`)}
               >
                 <ArrowLeft className="w-4 h-4 mr-1" />
-                К курсу
+                {t("course.step.toCourse", locale)}
               </Button>
             </div>
 
@@ -556,16 +550,16 @@ export function StepViewerPage({
             <div className="flex items-center gap-2">
               {currentStepIndex >= 0 && (
                 <span className="text-xs text-muted-foreground">
-                  Шаг {currentStepIndex + 1} из {flatSteps.length}
+                  {t("course.step.stepXofY", locale).replace("{{current}}", String(currentStepIndex + 1)).replace("{{total}}", String(flatSteps.length))}
                 </span>
               )}
               <Badge className={stepTypeColors[step.type] || "bg-gray-100 text-gray-700"}>
-                {stepTypeLabels[step.type] || step.type}
+                {t(`course.step.type.${step.type}`, locale)}
               </Badge>
               {step.completed && (
                 <Badge className="bg-green-100 text-green-700 border-0">
                   <CheckCircle2 className="w-3 h-3 mr-1" />
-                  Пройден
+                  {t("course.step.completed", locale)}
                 </Badge>
               )}
             </div>
@@ -573,7 +567,7 @@ export function StepViewerPage({
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground flex items-center gap-1">
                 <Clock className="w-3 h-3" />
-                {step.duration} мин
+                {step.duration} {t("common.min", locale)}
               </span>
             </div>
           </div>
@@ -594,7 +588,7 @@ export function StepViewerPage({
           {/* Breadcrumb */}
           <div className="flex items-center gap-1 text-sm text-muted-foreground mb-4">
             <span className="hover:text-foreground cursor-pointer" onClick={() => navigate(`course/${courseId}`)}>
-              {courseStructure?.title || "Курс"}
+              {courseStructure?.title || t("course.step.module", locale)}
             </span>
             <ChevronRight className="w-3 h-3" />
             <span>{step.module?.title}</span>
@@ -607,11 +601,11 @@ export function StepViewerPage({
             <h1 className="text-2xl md:text-3xl font-bold mb-2">{step.title}</h1>
             <div className="flex items-center gap-3">
               <Badge variant="outline" className="text-xs">
-                {stepTypeLabels[step.type]}
+                {t(`course.step.type.${step.type}`, locale)}
               </Badge>
               <span className="text-xs text-muted-foreground flex items-center gap-1">
                 <Clock className="w-3 h-3" />
-                {step.duration} мин
+                {step.duration} {t("common.min", locale)}
               </span>
             </div>
           </div>
@@ -633,15 +627,15 @@ export function StepViewerPage({
                       <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-white/20 transition-colors cursor-pointer">
                         <Play className="w-10 h-10 ml-1" />
                       </div>
-                      <p className="text-lg font-medium mb-1">Видеоурок</p>
-                      <p className="text-sm opacity-50">Нажмите для воспроизведения</p>
+                      <p className="text-lg font-medium mb-1">{t("course.step.videoLesson", locale)}</p>
+                      <p className="text-sm opacity-50">{t("course.step.clickToPlay", locale)}</p>
                     </div>
                   )}
                   {/* Video progress overlay */}
                   {step.completed && (
                     <div className="absolute top-3 right-3 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
                       <CheckCircle2 className="w-3 h-3" />
-                      Просмотрено
+                      {t("course.step.watched", locale)}
                     </div>
                   )}
                 </div>
@@ -655,10 +649,10 @@ export function StepViewerPage({
               <CardContent className="p-6 md:p-8">
                 <div className="flex items-center gap-2 mb-4 text-sm text-violet-600">
                   <FileText className="w-4 h-4" />
-                  <span className="font-medium">Теоретический материал</span>
+                  <span className="font-medium">{t("course.step.theory", locale)}</span>
                 </div>
                 <div className="prose prose-sm max-w-none whitespace-pre-wrap leading-relaxed">
-                  {step.content || "Содержимое шага загружается..."}
+                  {step.content || t("course.step.loadingContent", locale)}
                 </div>
               </CardContent>
             </Card>
@@ -673,7 +667,7 @@ export function StepViewerPage({
                   <CardContent className="p-6">
                     <div className="flex items-center gap-2 mb-3 text-sm text-amber-600">
                       <Lightbulb className="w-4 h-4" />
-                      <span className="font-medium">Подсказка к заданию</span>
+                      <span className="font-medium">{t("course.step.theory", locale)}</span>
                     </div>
                     <div className="prose prose-sm max-w-none whitespace-pre-wrap">
                       {step.content}
@@ -687,7 +681,7 @@ export function StepViewerPage({
                 <div className="bg-gray-900 px-4 py-2 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Code2 className="w-4 h-4 text-green-400" />
-                    <span className="text-sm text-gray-300 font-medium">Редактор кода</span>
+                    <span className="text-sm text-gray-300 font-medium">{t("course.step.codeEditor", locale)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-red-500" />
@@ -698,7 +692,7 @@ export function StepViewerPage({
                 <CardContent className="p-0">
                   <Textarea
                     className="font-mono text-sm bg-gray-900 text-green-400 border-0 rounded-none min-h-[200px] resize-y focus-visible:ring-0 focus-visible:ring-offset-0"
-                    placeholder="# Напишите ваш код здесь&#10;# Например:&#10;print('Hello, World!')"
+                    placeholder={t("course.step.codePlaceholder", locale)}
                     value={codeValue}
                     onChange={(e) => setCodeValue(e.target.value)}
                     disabled={codeSubmitted}

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useAppStore } from "@/lib/store";
+import { t } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,18 +14,19 @@ interface ReviewFormProps {
   onReviewSubmitted: () => void;
 }
 
-const RATING_LABELS: Record<number, string> = {
-  1: "Ужасно",
-  2: "Плохо",
-  3: "Нормально",
-  4: "Хорошо",
-  5: "Отлично",
-};
+const RATING_LABELS = (locale?: string): Record<number, string> => ({
+  1: t("review.awful", locale),
+  2: t("review.bad", locale),
+  3: t("review.okay", locale),
+  4: t("review.good", locale),
+  5: t("review.excellent", locale),
+});
 
 const MAX_COMMENT_LENGTH = 500;
 
 export function ReviewForm({ courseId, onReviewSubmitted }: ReviewFormProps) {
   const user = useAppStore((s) => s.user);
+  const locale = useAppStore((s) => s.locale);
 
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
@@ -37,10 +39,11 @@ export function ReviewForm({ courseId, onReviewSubmitted }: ReviewFormProps) {
   if (!user) return null;
 
   const displayRating = hoverRating || rating;
+  const ratingLabels = RATING_LABELS(locale);
 
   const handleSubmit = async () => {
     if (rating === 0) {
-      toast.error("Пожалуйста, выберите оценку");
+      toast.error(t("review.selectRating", locale));
       return;
     }
 
@@ -58,16 +61,18 @@ export function ReviewForm({ courseId, onReviewSubmitted }: ReviewFormProps) {
       const data = await res.json();
 
       if (res.ok) {
-        toast.success(data.updated ? "Отзыв обновлён" : "Отзыв добавлен");
+        toast.success(
+          data.updated ? t("review.updated", locale) : t("review.added", locale),
+        );
         setRating(0);
         setHoverRating(0);
         setComment("");
         onReviewSubmitted();
       } else {
-        toast.error(data.error || "Не удалось отправить отзыв");
+        toast.error(data.error || t("review.error", locale));
       }
     } catch {
-      toast.error("Произошла ошибка при отправке отзыва");
+      toast.error(t("review.error", locale));
     } finally {
       setSubmitting(false);
     }
@@ -76,7 +81,7 @@ export function ReviewForm({ courseId, onReviewSubmitted }: ReviewFormProps) {
   return (
     <Card className="border shadow-sm">
       <CardContent className="p-6">
-        <h3 className="text-lg font-bold mb-4">Оставить отзыв</h3>
+        <h3 className="text-lg font-bold mb-4">{t("review.title", locale)}</h3>
 
         {/* Star rating selector */}
         <div className="flex items-center gap-1 mb-1">
@@ -92,7 +97,7 @@ export function ReviewForm({ courseId, onReviewSubmitted }: ReviewFormProps) {
                 onClick={() => setRating(starValue)}
                 onMouseEnter={() => setHoverRating(starValue)}
                 onMouseLeave={() => setHoverRating(0)}
-                aria-label={RATING_LABELS[starValue]}
+                aria-label={ratingLabels[starValue]}
               >
                 <Star
                   className={`w-7 h-7 transition-colors ${
@@ -107,7 +112,7 @@ export function ReviewForm({ courseId, onReviewSubmitted }: ReviewFormProps) {
 
           {displayRating > 0 && (
             <span className="ml-2 text-sm font-medium text-amber-600">
-              {RATING_LABELS[displayRating]}
+              {ratingLabels[displayRating]}
             </span>
           )}
         </div>
@@ -115,7 +120,7 @@ export function ReviewForm({ courseId, onReviewSubmitted }: ReviewFormProps) {
         {/* Comment textarea */}
         <div className="mt-4">
           <Textarea
-            placeholder="Комментарий (необязательно)"
+            placeholder={t("review.commentPlaceholder", locale)}
             value={comment}
             onChange={(e) => {
               if (e.target.value.length <= MAX_COMMENT_LENGTH) {
@@ -136,7 +141,9 @@ export function ReviewForm({ courseId, onReviewSubmitted }: ReviewFormProps) {
           disabled={submitting || rating === 0}
           onClick={handleSubmit}
         >
-          {submitting ? "Отправка..." : "Отправить отзыв"}
+          {submitting
+            ? t("review.submitting", locale)
+            : t("review.submit", locale)}
         </Button>
       </CardContent>
     </Card>

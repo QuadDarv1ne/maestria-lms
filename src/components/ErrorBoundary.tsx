@@ -1,6 +1,8 @@
 "use client";
 
 import React, { Component, type ErrorInfo, type ReactNode } from "react";
+import { t } from "@/lib/i18n";
+import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Home, RefreshCw } from "lucide-react";
 
@@ -45,15 +47,17 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         return this.props.fallback;
       }
 
+      const locale = useAppStore.getState().locale;
+
       return (
         <div className="min-h-[60vh] flex items-center justify-center px-4">
           <div className="text-center max-w-md">
             <div className="w-20 h-20 bg-gradient-to-br from-red-100 to-orange-100 rounded-2xl mx-auto mb-6 flex items-center justify-center">
               <AlertTriangle className="w-10 h-10 text-red-500" />
             </div>
-            <h2 className="text-2xl font-bold mb-2">Что-то пошло не так</h2>
+            <h2 className="text-2xl font-bold mb-2">{t("error.somethingWrong", locale)}</h2>
             <p className="text-muted-foreground mb-2">
-              Произошла непредвиденная ошибка. Мы уже работаем над её устранением.
+              {t("error.description", locale)}
             </p>
             {this.state.error && (
               <p className="text-xs text-muted-foreground/60 mb-6 font-mono bg-muted/50 p-3 rounded-lg overflow-auto max-h-24">
@@ -63,11 +67,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             <div className="flex gap-3 justify-center">
               <Button onClick={this.handleReload} variant="outline">
                 <RefreshCw className="w-4 h-4 mr-2" />
-                Перезагрузить
+                {t("error.reload", locale)}
               </Button>
               <Button onClick={this.handleGoHome} className="bg-blue-700 hover:bg-blue-800 text-white">
                 <Home className="w-4 h-4 mr-2" />
-                На главную
+                {t("error.goHome", locale)}
               </Button>
             </div>
           </div>

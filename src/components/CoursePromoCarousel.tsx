@@ -14,6 +14,8 @@ import {
   ExternalLink,
   BookOpen,
 } from "lucide-react";
+import { t } from "@/lib/i18n";
+import { useAppStore } from "@/lib/store";
 
 interface PromoCourse {
   id: number;
@@ -108,6 +110,7 @@ function CourseImage({ src, alt }: { src: string; alt: string }) {
 }
 
 export function CoursePromoCarousel() {
+  const locale = useAppStore((s) => s.locale);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -159,7 +162,7 @@ export function CoursePromoCarousel() {
           <div className="flex items-center gap-2">
             <Sparkles className="w-6 h-6 text-amber-500" />
             <h2 className="text-2xl md:text-3xl font-bold">
-              Наши курсы на{" "}
+              {t("promo.title", locale)}{" "}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-700 via-violet-600 to-amber-500">
                 Stepik
               </span>
@@ -187,7 +190,7 @@ export function CoursePromoCarousel() {
               size="icon"
               className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-lg border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-700 w-10 h-10 rounded-full opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300"
               onClick={() => scroll("left")}
-              aria-label="Прокрутить влево"
+              aria-label={t("promo.scrollLeft", locale)}
             >
               <ChevronLeft className="w-5 h-5" />
             </Button>
@@ -200,7 +203,7 @@ export function CoursePromoCarousel() {
               size="icon"
               className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-lg border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-700 w-10 h-10 rounded-full opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300"
               onClick={() => scroll("right")}
-              aria-label="Прокрутить вправо"
+              aria-label={t("promo.scrollRight", locale)}
             >
               <ChevronRight className="w-5 h-5" />
             </Button>
@@ -239,13 +242,13 @@ export function CoursePromoCarousel() {
                       </Badge>
                       {course.isNew && (
                         <Badge className="bg-emerald-500 text-white text-[10px] font-semibold px-2 py-0.5 border-0">
-                          Новинка
+                          {t("promo.new", locale)}
                         </Badge>
                       )}
                       {course.isHot && (
                         <Badge className="bg-orange-500 text-white text-[10px] font-semibold px-2 py-0.5 border-0 flex items-center gap-0.5">
                           <Flame className="w-2.5 h-2.5" />
-                          Хит
+                          {t("promo.hit", locale)}
                         </Badge>
                       )}
                     </div>
@@ -291,7 +294,7 @@ export function CoursePromoCarousel() {
         <div className="text-center mt-6 flex items-center justify-center gap-2">
           <BookOpen className="w-4 h-4 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
-            {promoCourses.length} курсов доступно на платформе Stepik
+            {promoCourses.length} {t("promo.coursesAvailable", locale)}
           </p>
         </div>
       </div>

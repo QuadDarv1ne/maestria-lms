@@ -74,7 +74,7 @@ export function GlobalScrollToTop() {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       aria-label={t("doc.scrollToTop", locale)}
-      title={`${progressPercent}% прочитано`}
+      title={`${progressPercent}% ${t("read.percent", locale)}`}
       className={`
         fixed bottom-6 right-6 z-50
         flex items-center justify-center

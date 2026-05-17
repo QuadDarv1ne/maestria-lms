@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useAppStore } from "@/lib/store";
+import { t } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -107,7 +108,7 @@ interface CourseDetail {
 }
 
 export function CourseDetailPage({ courseId }: { courseId: string }) {
-  const { navigate, user, toggleFavorite, isFavorite, addNotification } = useAppStore();
+  const { navigate, user, toggleFavorite, isFavorite, addNotification, locale } = useAppStore();
   const queryClient = useQueryClient();
   const [enrolling, setEnrolling] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string>("sbp");
@@ -129,8 +130,8 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
   const showEnrollmentNotification = () => {
     addNotification({
       type: "enrollment",
-      title: "Запись на курс",
-      message: `Вы записались на курс "${course?.title}"`,
+      title: t("notifications.type.enrollment", locale),
+      message: t("course.enrollFree", locale),
       read: false,
       link: `course/${courseId}`,
     });
@@ -160,11 +161,11 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
           const confirmData = await confirmRes.json();
 
           if (confirmRes.ok) {
-            toast.success("Оплата прошла успешно! Вы записаны на курс.");
+            toast.success(t("common.success", locale));
             showEnrollmentNotification();
             invalidateCourse();
           } else {
-            toast.error(confirmData.error || "Ошибка подтверждения платежа");
+            toast.error(confirmData.error || t("common.error", locale));
           }
         } else if (data.requiresPayment && data.paymentId === undefined) {
           const paymentsRes = await fetch("/api/payments");
@@ -181,14 +182,14 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
               });
               const confirmData = await confirmRes.json();
               if (confirmRes.ok) {
-                toast.success("Оплата прошла успешно! Вы записаны на курс.");
+                toast.success(t("common.success", locale));
                 showEnrollmentNotification();
                 invalidateCourse();
               } else {
-                toast.error(confirmData.error || "Ошибка подтверждения платежа");
+                toast.error(confirmData.error || t("common.error", locale));
               }
             } else {
-              toast.error("Платёж не найден. Попробуйте ещё раз.");
+              toast.error(t("common.error", locale));
             }
           }
         } else {
@@ -197,10 +198,10 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
           invalidateCourse();
         }
       } else {
-        toast.error(data.error || "Ошибка записи на курс");
+        toast.error(data.error || t("common.error", locale));
       }
     } catch {
-      toast.error("Произошла ошибка");
+      toast.error(t("common.error", locale));
     } finally {
       setEnrolling(false);
     }
@@ -212,7 +213,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
       return;
     }
     toggleFavorite(courseId);
-    toast.success(favored ? "Добавлено в избранное" : "Удалено из избранного");
+    toast.success(favored ? t("common.success", locale) : t("common.success", locale));
   };
 
   const handleShare = async () => {
@@ -223,7 +224,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
       } catch { /* user cancelled share dialog — safe to ignore */ }
     } else {
       await navigator.clipboard.writeText(url);
-      toast.success("Ссылка скопирована в буфер обмена");
+      toast.success(t("common.success", locale));
     }
   };
 
@@ -242,9 +243,9 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
   if (!course) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
-        <h2 className="text-xl font-semibold mb-2">Курс не найден</h2>
+        <h2 className="text-xl font-semibold mb-2">{t("course.notFound", locale)}</h2>
         <Button variant="outline" onClick={() => navigate("catalog")}>
-          Вернуться в каталог
+          {t("course.backToCatalog", locale)}
         </Button>
       </div>
     );
@@ -294,7 +295,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
               onClick={() => navigate("catalog")}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Каталог
+              {t("nav.catalog", locale)}
             </Button>
             <div className="ml-auto flex items-center gap-1">
               <Button
@@ -336,24 +337,24 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
               <div className="flex flex-wrap items-center gap-4 text-sm text-blue-100">
                 <span className="flex items-center gap-1">
                   <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                  {course.rating} ({course.reviewCount} отзывов)
+                  {course.rating} ({course.reviewCount} {t("course.reviewsCount", locale)})
                 </span>
                 <span className="flex items-center gap-1">
                   <Users className="w-4 h-4" />
-                  {course.studentCount} студентов
+                  {course.studentCount} {t("course.students", locale)}
                 </span>
                 <span className="flex items-center gap-1">
                   <Clock className="w-4 h-4" />
-                  {course.duration || `${course.totalDuration} мин`}
+                  {course.duration || `${course.totalDuration} ${t("course.min", locale)}`}
                 </span>
                 <span className="flex items-center gap-1">
                   <BookOpen className="w-4 h-4" />
-                  {course.totalLessons} уроков
+                  {course.totalLessons} {t("course.lessons", locale)}
                 </span>
                 {course.hasCertificate && (
                   <span className="flex items-center gap-1">
                     <Award className="w-4 h-4" />
-                    Сертификат
+                    {t("common.certificate", locale)}
                   </span>
                 )}
               </div>
@@ -367,7 +368,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                     <div>
                       <div className="mb-4">
                         <p className="text-sm text-muted-foreground mb-1">
-                          Прогресс обучения
+                          {t("course.progress", locale)}
                         </p>
                         <Progress
                           value={course.enrollmentProgress}
@@ -400,7 +401,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                           }}
                         >
                           <Play className="w-4 h-4 mr-2" />
-                          {course.enrollmentProgress === 0 ? "Начать обучение" : course.enrollmentProgress === 100 ? "Пройти заново" : "Продолжить обучение"}
+                          {course.enrollmentProgress === 0 ? t("course.startLearning", locale) : course.enrollmentProgress === 100 ? t("course.restart", locale) : t("course.continue", locale)}
                         </Button>
                         {course.enrollmentProgress === 100 && course.hasCertificate && (
                           <Button
@@ -409,7 +410,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                             onClick={() => navigate(`certificate/${courseId}`)}
                           >
                             <FileCheck className="w-4 h-4 mr-2" />
-                            Получить сертификат
+                            {t("course.getCertificate", locale)}
                           </Button>
                         )}
                       </div>
@@ -419,23 +420,23 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                       <div className="mb-4">
                         {course.price === 0 ? (
                           <span className="text-3xl font-bold text-green-600">
-                            Бесплатно
+                            {t("course.free", locale)}
                           </span>
                         ) : (
                           <div>
                             <div className="flex items-baseline gap-2">
                               <span className="text-3xl font-bold">
-                                {course.price.toLocaleString("ru-RU")} ₽
+                                {course.price.toLocaleString(locale === "ru" ? "ru-RU" : locale === "zh" ? "zh-CN" : "en-US")} ₽
                               </span>
                               {course.oldPrice && (
                                 <span className="text-lg text-muted-foreground line-through">
-                                  {course.oldPrice.toLocaleString("ru-RU")} ₽
+                                  {course.oldPrice.toLocaleString(locale === "ru" ? "ru-RU" : locale === "zh" ? "zh-CN" : "en-US")} ₽
                                 </span>
                               )}
                             </div>
                             {course.oldPrice && (
                               <Badge className="mt-1 bg-red-100 text-red-700 border-0">
-                                Скидка{" "}
+                                {t("course.discount", locale)}{" "}
                                 {Math.round(
                                   ((course.oldPrice - course.price) /
                                     course.oldPrice) *
@@ -450,7 +451,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
 
                       {course.price > 0 && (
                         <div className="space-y-2 mb-4">
-                          <p className="text-sm font-medium">Способ оплаты:</p>
+                          <p className="text-sm font-medium">{t("course.paymentMethod", locale)}</p>
                           {[
                             { id: "sbp", label: "СБП", icon: <Smartphone className="w-4 h-4" /> },
                             { id: "yookassa", label: "ЮKassa", icon: <CreditCard className="w-4 h-4" /> },
@@ -486,19 +487,19 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                         disabled={enrolling}
                       >
                         {enrolling
-                          ? "Загрузка..."
+                          ? t("course.loading", locale)
                           : course.price === 0
-                          ? "Записаться бесплатно"
-                          : "Оплатить и записаться"}
+                          ? t("course.enrollFree", locale)
+                          : t("course.enrollPay", locale)}
                       </Button>
                     </div>
                   )}
 
                   <div className="mt-4 text-xs text-muted-foreground space-y-1">
-                    <p>✅ {course.totalLessons} уроков</p>
-                    <p>✅ {course.freeLessons} бесплатных уроков</p>
-                    <p>✅ {course.duration || `${course.totalDuration} мин`} обучения</p>
-                    {course.hasCertificate && <p>✅ Сертификат по окончании</p>}
+                    <p>✅ {course.totalLessons} {t("course.lessons", locale)}</p>
+                    <p>✅ {course.freeLessons} {t("course.free", locale)}</p>
+                    <p>✅ {course.duration || `${course.totalDuration} ${t("course.min", locale)}`} {t("course.learning", locale)}</p>
+                    {course.hasCertificate && <p>✅ {t("common.certificate", locale)}</p>}
                   </div>
                 </CardContent>
               </Card>
@@ -514,7 +515,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
             {/* Чему вы научитесь */}
             {whatYouLearn.length > 0 && (
               <div>
-                <h2 className="text-xl font-bold mb-4">Чему вы научитесь</h2>
+                <h2 className="text-xl font-bold mb-4">{t("course.whatYouLearn", locale)}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {whatYouLearn.map((item: string, i: number) => (
                     <div key={i} className="flex items-start gap-2">
@@ -528,7 +529,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
 
             {/* Описание */}
             <div>
-              <h2 className="text-xl font-bold mb-4">О курсе</h2>
+              <h2 className="text-xl font-bold mb-4">{t("course.aboutCourse", locale)}</h2>
               <div className="prose prose-sm max-w-none text-muted-foreground whitespace-pre-wrap">
                 {course.description}
               </div>
@@ -537,7 +538,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
             {/* Требования */}
             {requirements.length > 0 && (
               <div>
-                <h2 className="text-xl font-bold mb-4">Требования</h2>
+                <h2 className="text-xl font-bold mb-4">{t("course.requirements", locale)}</h2>
                 <ul className="space-y-2">
                   {requirements.map((req: string, i: number) => (
                     <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
@@ -552,7 +553,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
             {/* Программа курса */}
             <div>
               <h2 className="text-xl font-bold mb-4">
-                Программа курса ({course.modules.length} модулей)
+                {t("course.curriculum", locale)} ({course.modules.length} {t("course.modules", locale)})
               </h2>
               <Accordion type="multiple" className="space-y-2">
                 {course.modules.map((module: ModuleItem, mIdx: number) => (
@@ -569,7 +570,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                         <div>
                           <p className="font-semibold text-sm">{module.title}</p>
                           <p className="text-xs text-muted-foreground">
-                            {module.lessons?.length || 0} уроков
+                            {module.lessons?.length || 0} {t("course.lessons", locale)}
                           </p>
                         </div>
                       </div>
@@ -593,7 +594,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                                     `course/${courseId}/lesson/${lesson.id}`
                                   );
                                 } else {
-                                  toast.error("Запишитесь на курс для доступа к уроку");
+                                  toast.error(t("course.step.enrollFirst", locale));
                                 }
                               }}
                             >
@@ -615,11 +616,11 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                                     variant="outline"
                                     className="text-[10px] text-green-600 border-green-300"
                                   >
-                                    Бесплатно
+                                    {t("course.free", locale)}
                                   </Badge>
                                 )}
                                 <span className="text-xs text-muted-foreground">
-                                  {lesson.duration} мин
+                                  {lesson.duration} {t("course.min", locale)}
                                 </span>
                               </div>
                             </div>
@@ -634,7 +635,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
 
             {/* Преподаватель */}
             <div>
-              <h2 className="text-xl font-bold mb-4">Преподаватель</h2>
+              <h2 className="text-xl font-bold mb-4">{t("course.instructor", locale)}</h2>
               <Card className="border-0 shadow-sm">
                 <CardContent className="p-4 flex items-center gap-4">
                   <div className="w-16 h-16 bg-violet-100 rounded-full flex items-center justify-center text-violet-700 font-bold text-xl">
@@ -647,7 +648,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                   </div>
                   <div>
                     <h3 className="font-semibold">
-                      {course.teacher?.name || "Преподаватель"}
+                      {course.teacher?.name || t("common.instructor", locale)}
                     </h3>
                     {course.teacher?.bio && (
                       <p className="text-sm text-muted-foreground mt-1 max-w-md">
@@ -663,7 +664,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">
-                  Отзывы ({reviewsData?.pagination?.total ?? course?.reviewCount ?? 0})
+                  {t("course.reviews", locale)} ({reviewsData?.pagination?.total ?? course?.reviewCount ?? 0})
                 </h2>
               </div>
 
@@ -687,7 +688,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                           ))}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {reviewsData?.pagination?.total ?? course?.reviewCount ?? 0} отзывов
+                          {reviewsData?.pagination?.total ?? course?.reviewCount ?? 0} {t("course.reviewsCount", locale)}
                         </p>
                       </div>
                       <div className="flex-1 space-y-1">
@@ -744,7 +745,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                           </div>
                           <span className="text-xs text-muted-foreground">
                             {review.createdAt
-                              ? new Date(review.createdAt).toLocaleDateString("ru-RU")
+                              ? new Date(review.createdAt).toLocaleDateString(locale === "ru" ? "ru-RU" : locale === "zh" ? "zh-CN" : "en-US")
                               : ""}
                           </span>
                         </div>
@@ -759,7 +760,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground text-center py-6">
-                  Пока нет отзывов. Будьте первым!
+                  {t("course.noReviews", locale)}
                 </p>
               )}
 

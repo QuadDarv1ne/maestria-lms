@@ -23,10 +23,11 @@ import {
   ArrowLeft,
   KeyRound,
 } from "lucide-react";
+import { t } from "@/lib/i18n";
 import { toast } from "sonner";
 
 export function AuthDialogs() {
-  const { setUser } = useAppStore();
+  const { setUser, locale } = useAppStore();
   const searchParams = useSearchParams();
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
@@ -100,9 +101,9 @@ export function AuthDialogs() {
       if (result?.error) {
         if (result.error === "ТРЕБУЕТСЯ_2FA") {
           setRequire2FA(true);
-          toast.info("Введите код двухфакторной аутентификации");
+          toast.info(t("auth.twoFactorInfo", locale));
         } else {
-          toast.error(result.error || "Неверный email или пароль");
+          toast.error(result.error || t("auth.invalidCredentials", locale));
         }
       } else if (result?.ok) {
         // Получаем обновлённую сессию
@@ -118,14 +119,14 @@ export function AuthDialogs() {
               role: (sessionData.user as { role?: string }).role || "student",
             });
             toast.success(
-              `Добро пожаловать, ${sessionData.user.name || "пользователь"}!`
+              `${t("auth.welcome", locale)}, ${sessionData.user.name || t("auth.user", locale)}!`
             );
           }
         }
         closeDialog();
       }
     } catch {
-      toast.error("Ошибка входа. Попробуйте ещё раз.");
+      toast.error(t("auth.loginError", locale));
     } finally {
       setLoginLoading(false);
     }
@@ -135,12 +136,12 @@ export function AuthDialogs() {
     e.preventDefault();
 
     if (registerForm.password !== registerForm.confirmPassword) {
-      toast.error("Пароли не совпадают");
+      toast.error(t("auth.passwordsNoMatch", locale));
       return;
     }
 
     if (registerForm.password.length < 6) {
-      toast.error("Пароль должен быть не менее 6 символов");
+      toast.error(t("auth.passwordMinLength", locale));
       return;
     }
 
@@ -159,17 +160,17 @@ export function AuthDialogs() {
       const data = await res.json();
 
       if (res.ok) {
-        toast.success("Регистрация успешна! Теперь вы можете войти.");
+        toast.success(t("auth.registerSuccess", locale));
         switchToLogin();
         setLoginForm({
           ...loginForm,
           email: registerForm.email,
         });
       } else {
-        toast.error(data.error || "Ошибка регистрации");
+        toast.error(data.error || t("auth.registerError", locale));
       }
     } catch {
-      toast.error("Ошибка регистрации");
+      toast.error(t("auth.registerError", locale));
     } finally {
       setRegisterLoading(false);
     }
@@ -189,10 +190,10 @@ export function AuthDialogs() {
         setForgotSent(true);
         toast.success(data.message);
       } else {
-        toast.error(data.error || "Ошибка");
+        toast.error(data.error || t("common.error", locale));
       }
     } catch {
-      toast.error("Ошибка отправки запроса");
+      toast.error(t("auth.forgotError", locale));
     } finally {
       setForgotLoading(false);
     }
@@ -209,7 +210,7 @@ export function AuthDialogs() {
                 <GraduationCap className="w-5 h-5 text-white" />
               </div>
               <div>
-                <DialogTitle>Вход в аккаунт</DialogTitle>
+                <DialogTitle>{t("auth.login", locale)}</DialogTitle>
                 <p className="text-sm text-muted-foreground">
                   Maestria
                 </p>
@@ -237,13 +238,13 @@ export function AuthDialogs() {
             </div>
 
             <div>
-              <Label htmlFor="login-password">Пароль</Label>
+              <Label htmlFor="login-password">{t("auth.password", locale)}</Label>
               <div className="relative mt-1">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   id="login-password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Введите пароль"
+                  placeholder={t("auth.enterPassword", locale)}
                   value={loginForm.password}
                   onChange={(e) =>
                     setLoginForm({ ...loginForm, password: e.target.value })
@@ -267,7 +268,7 @@ export function AuthDialogs() {
 
             {require2FA && (
               <div>
-                <Label htmlFor="2fa-code">Код двухфакторной аутентификации</Label>
+                <Label htmlFor="2fa-code">{t("auth.twoFactorCode", locale)}</Label>
                 <div className="relative mt-1">
                   <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
@@ -294,7 +295,7 @@ export function AuthDialogs() {
                 className="text-sm text-blue-700 hover:underline"
                 onClick={switchToForgot}
               >
-                Забыли пароль?
+                {t("auth.forgotPassword", locale)}
               </button>
             </div>
 
@@ -303,18 +304,18 @@ export function AuthDialogs() {
               className="w-full bg-blue-700 hover:bg-blue-800 text-white"
               disabled={loginLoading}
             >
-              {loginLoading ? "Вход..." : "Войти"}
+              {loginLoading ? t("auth.loggingIn", locale) : t("auth.loginBtn", locale)}
             </Button>
 
             <div className="text-center">
               <span className="text-sm text-muted-foreground">
-                Нет аккаунта?{" "}
+                {t("auth.noAccount", locale)}{" "}
                 <button
                   type="button"
                   className="text-blue-700 hover:underline font-medium"
                   onClick={switchToRegister}
                 >
-                  Зарегистрироваться
+                  {t("auth.registerBtn", locale)}
                 </button>
               </span>
             </div>
@@ -323,7 +324,7 @@ export function AuthDialogs() {
           {/* Демо-аккаунты */}
           <div className="border-t pt-3 mt-2">
             <p className="text-xs text-muted-foreground mb-2">
-              Демо-аккаунты для тестирования:
+              {t("auth.demoHint", locale)}
             </p>
             <div className="space-y-1">
               <button
@@ -337,7 +338,7 @@ export function AuthDialogs() {
                   });
                 }}
               >
-                Администратор: admin@maestro7it.ru / admin123
+                {t("auth.demoAdmin", locale)}
               </button>
               <button
                 type="button"
@@ -350,7 +351,7 @@ export function AuthDialogs() {
                   });
                 }}
               >
-                Преподаватель: teacher@maestro7it.ru / teacher123
+                {t("auth.demoTeacher", locale)}
               </button>
             </div>
           </div>
@@ -366,9 +367,9 @@ export function AuthDialogs() {
                 <GraduationCap className="w-5 h-5 text-white" />
               </div>
               <div>
-                <DialogTitle>Регистрация</DialogTitle>
+                <DialogTitle>{t("auth.registration", locale)}</DialogTitle>
                 <p className="text-sm text-muted-foreground">
-                  Создайте аккаунт на Maestria
+                  {t("auth.createAccount", locale)}
                 </p>
               </div>
             </div>
@@ -376,13 +377,13 @@ export function AuthDialogs() {
 
           <form onSubmit={handleRegister} className="space-y-4">
             <div>
-              <Label htmlFor="reg-name">Имя</Label>
+              <Label htmlFor="reg-name">{t("auth.name", locale)}</Label>
               <div className="relative mt-1">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   id="reg-name"
                   type="text"
-                  placeholder="Ваше имя"
+                  placeholder={t("auth.yourName", locale)}
                   value={registerForm.name}
                   onChange={(e) =>
                     setRegisterForm({ ...registerForm, name: e.target.value })
@@ -412,13 +413,13 @@ export function AuthDialogs() {
             </div>
 
             <div>
-              <Label htmlFor="reg-password">Пароль</Label>
+              <Label htmlFor="reg-password">{t("auth.password", locale)}</Label>
               <div className="relative mt-1">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   id="reg-password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Минимум 6 символов"
+                  placeholder={t("auth.min6Chars", locale)}
                   value={registerForm.password}
                   onChange={(e) =>
                     setRegisterForm({
@@ -434,13 +435,13 @@ export function AuthDialogs() {
             </div>
 
             <div>
-              <Label htmlFor="reg-confirm">Подтвердите пароль</Label>
+              <Label htmlFor="reg-confirm">{t("auth.confirmPassword", locale)}</Label>
               <div className="relative mt-1">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   id="reg-confirm"
                   type="password"
-                  placeholder="Повторите пароль"
+                  placeholder={t("auth.repeatPassword", locale)}
                   value={registerForm.confirmPassword}
                   onChange={(e) =>
                     setRegisterForm({
@@ -459,18 +460,18 @@ export function AuthDialogs() {
               className="w-full bg-blue-700 hover:bg-blue-800 text-white"
               disabled={registerLoading}
             >
-              {registerLoading ? "Регистрация..." : "Зарегистрироваться"}
+              {registerLoading ? t("auth.registering", locale) : t("auth.registerBtn", locale)}
             </Button>
 
             <div className="text-center">
               <span className="text-sm text-muted-foreground">
-                Уже есть аккаунт?{" "}
+                {t("auth.hasAccount", locale)}{" "}
                 <button
                   type="button"
                   className="text-blue-700 hover:underline font-medium"
                   onClick={switchToLogin}
                 >
-                  Войти
+                  {t("auth.loginBtn2", locale)}
                 </button>
               </span>
             </div>
@@ -485,7 +486,7 @@ export function AuthDialogs() {
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Восстановление пароля</DialogTitle>
+            <DialogTitle>{t("auth.recovery", locale)}</DialogTitle>
           </DialogHeader>
 
           {forgotSent ? (
@@ -493,21 +494,19 @@ export function AuthDialogs() {
               <div className="w-16 h-16 bg-blue-100 rounded-full mx-auto mb-4 flex items-center justify-center">
                 <Mail className="w-8 h-8 text-blue-700" />
               </div>
-              <h3 className="font-semibold mb-2">Письмо отправлено</h3>
+              <h3 className="font-semibold mb-2">{t("auth.emailSent", locale)}</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Если аккаунт с таким email существует, вы получите инструкции по
-                сбросу пароля.
+                {t("auth.emailInstructions", locale)}
               </p>
               <Button variant="outline" onClick={switchToLogin}>
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Вернуться ко входу
+                {t("auth.backToLogin", locale)}
               </Button>
             </div>
           ) : (
             <form onSubmit={handleForgotPassword} className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Введите email, указанный при регистрации, и мы отправим вам
-                инструкцию по восстановлению пароля.
+                {t("auth.recoveryInstructions", locale)}
               </p>
               <div>
                 <Label htmlFor="forgot-email">Email</Label>
@@ -530,7 +529,7 @@ export function AuthDialogs() {
                 className="w-full bg-blue-700 hover:bg-blue-800 text-white"
                 disabled={forgotLoading}
               >
-                {forgotLoading ? "Отправка..." : "Отправить инструкцию"}
+                {forgotLoading ? t("auth.sending", locale) : t("auth.sendInstruction", locale)}
               </Button>
 
               <div className="text-center">
@@ -539,8 +538,7 @@ export function AuthDialogs() {
                   className="text-sm text-blue-700 hover:underline"
                   onClick={switchToLogin}
                 >
-                  <ArrowLeft className="w-4 h-4 inline mr-1" />
-                  Вернуться ко входу
+                  {t("auth.backToLogin", locale)}
                 </button>
               </div>
             </form>

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useAppStore } from "@/lib/store";
+import { t } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import {
   Award,
@@ -29,9 +30,14 @@ function generateCertificateNumber(courseId: string, userId: string): string {
   return `MAE-${year}-${h.slice(0, 4)}-${h.slice(4, 8)}`;
 }
 
-function formatDate(date: string | Date): string {
+function formatDate(date: string | Date, locale: string = "ru"): string {
+  const localeMap: Record<string, string> = {
+    ru: "ru-RU",
+    en: "en-US",
+    zh: "zh-CN",
+  };
   const d = typeof date === "string" ? new Date(date) : date;
-  return d.toLocaleDateString("ru-RU", {
+  return d.toLocaleDateString(localeMap[locale] || "ru-RU", {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -52,7 +58,7 @@ interface CourseData {
 /* ── component ───────────────────────────────────────────────────────── */
 
 export function CertificatePage({ courseId }: { courseId: string }) {
-  const { user, navigate } = useAppStore();
+  const { user, navigate, locale } = useAppStore();
   const [course, setCourse] = useState<CourseData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -66,13 +72,13 @@ export function CertificatePage({ courseId }: { courseId: string }) {
       try {
         const res = await fetch(`/api/courses/${courseId}`);
         if (!res.ok) {
-          setError("Курс не найден");
+          setError(t("cert.courseNotFound", locale));
           return;
         }
         const data = await res.json();
         setCourse(data.course);
       } catch {
-        setError("Ошибка загрузки данных курса");
+        setError(t("cert.loadError", locale));
       } finally {
         setLoading(false);
       }
@@ -131,11 +137,11 @@ export function CertificatePage({ courseId }: { courseId: string }) {
       <div className="container mx-auto px-4 py-16 text-center">
         <AlertTriangle className="w-16 h-16 text-amber-500 mx-auto mb-4" />
         <h2 className="text-xl font-semibold mb-2">
-          {error || "Курс не найден"}
+          {error || t("cert.courseNotFound", locale)}
         </h2>
         <Button variant="outline" onClick={() => navigate("catalog")}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Вернуться в каталог
+          {t("common.back", locale)}
         </Button>
       </div>
     );
@@ -146,13 +152,13 @@ export function CertificatePage({ courseId }: { courseId: string }) {
       <div className="container mx-auto px-4 py-16 text-center">
         <AlertTriangle className="w-16 h-16 text-amber-500 mx-auto mb-4" />
         <h2 className="text-xl font-semibold mb-2">
-          Войдите в аккаунт для просмотра сертификата
+          {t("cert.loginToAccess", locale)}
         </h2>
         <Button
           className="bg-blue-700 hover:bg-blue-800 text-white mt-2"
           onClick={() => navigate("login")}
         >
-          Войти
+          {t("cert.loginBtn", locale)}
         </Button>
       </div>
     );
@@ -163,17 +169,16 @@ export function CertificatePage({ courseId }: { courseId: string }) {
       <div className="container mx-auto px-4 py-16 text-center">
         <AlertTriangle className="w-16 h-16 text-amber-500 mx-auto mb-4" />
         <h2 className="text-xl font-semibold mb-2">
-          Вы не записаны на этот курс
+          {t("cert.notEnrolled", locale)}
         </h2>
         <p className="text-muted-foreground mb-4">
-          Чтобы получить сертификат, сначала запишитесь на курс и пройдите все
-          уроки.
+          {t("cert.instructions", locale)}
         </p>
         <Button
           className="bg-blue-700 hover:bg-blue-800 text-white"
           onClick={() => navigate(`course/${courseId}`)}
         >
-          Перейти к курсу
+          {t("cert.toCourse", locale)}
         </Button>
       </div>
     );
@@ -184,20 +189,21 @@ export function CertificatePage({ courseId }: { courseId: string }) {
       <div className="container mx-auto px-4 py-16 text-center">
         <AlertTriangle className="w-16 h-16 text-amber-500 mx-auto mb-4" />
         <h2 className="text-xl font-semibold mb-2">
-          Курс ещё не пройден
+          {t("cert.notCompleted", locale)}
         </h2>
         <p className="text-muted-foreground mb-2">
-          Ваш прогресс: <span className="font-semibold">{course.enrollmentProgress}%</span>
+          {t("cert.progressText", locale)}{" "}
+          <span className="font-semibold">{course.enrollmentProgress}%</span>
         </p>
         <p className="text-muted-foreground mb-4">
-          Завершите все уроки курса, чтобы получить сертификат.
+          {t("cert.continueLearning", locale)}
         </p>
         <Button
           className="bg-blue-700 hover:bg-blue-800 text-white"
           onClick={() => navigate(`course/${courseId}`)}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Продолжить обучение
+          {t("cert.continueLearning", locale)}
         </Button>
       </div>
     );
@@ -208,11 +214,11 @@ export function CertificatePage({ courseId }: { courseId: string }) {
       <div className="container mx-auto px-4 py-16 text-center">
         <AlertTriangle className="w-16 h-16 text-amber-500 mx-auto mb-4" />
         <h2 className="text-xl font-semibold mb-2">
-          Этот курс не предусматривает выдачу сертификата
+          {t("cert.noCertificate", locale)}
         </h2>
         <Button variant="outline" onClick={() => navigate(`course/${courseId}`)}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Вернуться к курсу
+          {t("cert.backToCourse", locale)}
         </Button>
       </div>
     );
@@ -227,19 +233,19 @@ export function CertificatePage({ courseId }: { courseId: string }) {
       <div className="print:hidden flex items-center justify-between mb-6 max-w-5xl mx-auto">
         <Button variant="ghost" onClick={() => navigate(`course/${courseId}`)}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          К курсу
+          {t("cert.toCourse", locale)}
         </Button>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={handlePrint}>
             <Printer className="w-4 h-4 mr-2" />
-            Печать
+            {t("cert.print", locale)}
           </Button>
           <Button
             className="bg-blue-700 hover:bg-blue-800 text-white"
             onClick={handleDownload}
           >
             <Download className="w-4 h-4 mr-2" />
-            Скачать сертификат
+            {t("cert.download", locale)}
           </Button>
         </div>
       </div>
@@ -354,14 +360,14 @@ export function CertificatePage({ courseId }: { courseId: string }) {
                   WebkitTextFillColor: "transparent",
                 }}
               >
-                СЕРТИФИКАТ
+                {t("cert.title", locale)}
               </h1>
             </div>
 
             {/* middle: main text */}
             <div className="flex flex-col items-center gap-3 text-center">
               <p className="text-gray-500 text-sm sm:text-base tracking-wide">
-                Настоящим сертификатом подтверждается, что
+                {t("cert.certificateText", locale)}
               </p>
 
               {/* user name */}
@@ -373,7 +379,7 @@ export function CertificatePage({ courseId }: { courseId: string }) {
               </h2>
 
               <p className="text-gray-500 text-sm sm:text-base tracking-wide">
-                успешно завершил(а) курс
+                {t("cert.completedCourse", locale)}
               </p>
 
               {/* course title */}
@@ -386,7 +392,7 @@ export function CertificatePage({ courseId }: { courseId: string }) {
             <div className="w-full flex flex-col sm:flex-row items-center sm:items-end justify-between gap-4">
               {/* left: date & number */}
               <div className="flex flex-col items-center sm:items-start gap-1 text-sm text-gray-500">
-                <span>Дата выдачи: {formatDate(completionDate)}</span>
+                <span>{t("cert.issueDate", locale)}: {formatDate(completionDate, locale)}</span>
                 <span className="font-mono text-xs tracking-wider text-gray-400">
                   {certificateNumber}
                 </span>
@@ -410,10 +416,10 @@ export function CertificatePage({ courseId }: { courseId: string }) {
                 {/* signature line */}
                 <div className="w-48 border-b border-gray-400 mb-0.5" />
                 <span className="text-sm font-semibold text-gray-800">
-                  Дуплей Максим Игоревич
+                  {t("cert.director", locale)}
                 </span>
                 <span className="text-xs text-gray-500 text-center sm:text-right max-w-[220px]">
-                  Руководитель образовательной платформы Maestria
+                  {t("cert.issuedBy", locale)}
                 </span>
               </div>
             </div>
