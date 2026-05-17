@@ -100,8 +100,8 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }): Promise<ExtendedSession> {
       const extendedSession = session as ExtendedSession;
       if (extendedSession.user) {
-        extendedSession.user.role = token.role as string | undefined;
-        extendedSession.user.id = token.id as string | undefined;
+        extendedSession.user.role = (token.role as string) ?? "";
+        extendedSession.user.id = (token.id as string) ?? "";
       }
       return extendedSession;
     },

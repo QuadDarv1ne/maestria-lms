@@ -166,9 +166,7 @@ export function HomePage() {
               className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 border-0 shadow-sm"
               onClick={() => {
                 navigate("catalog");
-                useAppStore.setState({
-                  courseFilters: { category: cat.slug, search: "", level: "", sortBy: "popular" as const, freeOnly: false },
-                });
+                useAppStore.getState().setCourseFilters({ category: cat.slug, search: "", level: "", sortBy: "popular", freeOnly: false });
               }}
             >
               <CardContent className="p-4 text-center">
