@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions, ExtendedSession } from "@/lib/auth";
 import { z } from "zod";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 const updateUserSchema = z.object({
   userId: z.string().min(1, "ID пользователя обязателен"),
@@ -12,8 +13,12 @@ const updateUserSchema = z.object({
   name: z.string().min(2).max(50).optional(),
 });
 
+const checkRateLimit = rateLimit("admin", RATE_LIMITS.admin);
+
 // GET: Все пользователи с пагинацией
 export async function GET(request: NextRequest) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
   try {
     const session = await getServerSession(authOptions) as ExtendedSession | null;
     if (!session?.user || session.user.role !== "admin") {
@@ -86,6 +91,9 @@ export async function GET(request: NextRequest) {
 
 // PUT: Обновить пользователя (роль, статус)
 export async function PUT(request: NextRequest) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
+
   try {
     const session = await getServerSession(authOptions) as ExtendedSession | null;
     if (!session?.user || session.user.role !== "admin") {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
 import { z } from "zod";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 const forgotPasswordSchema = z.object({
   email: z.string().email("Введите корректный email"),
@@ -12,8 +13,13 @@ const resetPasswordSchema = z.object({
   password: z.string().min(6, "Пароль должен быть не менее 6 символов"),
 });
 
+const checkRateLimit = rateLimit("forgotPassword", RATE_LIMITS.forgotPassword);
+
 // POST: Запрос на сброс пароля
 export async function POST(request: NextRequest) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
+
   try {
     const body = await request.json();
     const validation = forgotPasswordSchema.safeParse(body);

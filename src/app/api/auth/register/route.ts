@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 // Схема валидации с использованием Zod
 import { z } from "zod";
@@ -11,7 +12,12 @@ const registerSchema = z.object({
   name: z.string().min(2, "Имя должно быть не менее 2 символов").max(50, "Имя слишком длинное"),
 });
 
+const checkRateLimit = rateLimit("register", RATE_LIMITS.register);
+
 export async function POST(request: NextRequest) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
+
   try {
     const body = await request.json();
     const validation = registerSchema.safeParse(body);

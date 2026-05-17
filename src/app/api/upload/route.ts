@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import type { ExtendedSession } from "@/lib/auth";
 import { s3Client, S3_BUCKET, toCdnUrl, makeFileKey } from "@/lib/s3";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 const ALLOWED_TYPES = [
   "image/jpeg",
@@ -17,7 +18,11 @@ const ALLOWED_TYPES = [
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 
+const checkRateLimit = rateLimit("upload", RATE_LIMITS.upload);
+
 export async function POST(req: NextRequest) {
+  const blocked = checkRateLimit(req);
+  if (blocked) return blocked;
   const session = (await getServerSession(authOptions)) as ExtendedSession | null;
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -2,12 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions, ExtendedSession } from "@/lib/auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+
+const checkRateLimit = rateLimit("enrollment", RATE_LIMITS.enrollment);
 
 // POST: Записаться на курс
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
+
   try {
     const { id: courseId } = await params;
     const session = (await getServerSession(authOptions)) as ExtendedSession | null;

@@ -3,9 +3,14 @@ import { db } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions, ExtendedSession } from "@/lib/auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+
+const checkRateLimit = rateLimit("admin", RATE_LIMITS.admin);
 
 // GET: Все курсы (включая неопубликованные) — для админов
 export async function GET(request: NextRequest) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
   try {
     const session = await getServerSession(authOptions) as ExtendedSession | null;
     if (!session?.user || session.user.role !== "admin") {
@@ -77,6 +82,9 @@ export async function GET(request: NextRequest) {
 
 // POST: Создать новый курс с модулями и уроками
 export async function POST(request: NextRequest) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
+
   try {
     const session = await getServerSession(authOptions) as ExtendedSession | null;
     if (!session?.user) {
