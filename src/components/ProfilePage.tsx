@@ -116,10 +116,10 @@ export function ProfilePage() {
             const res = await fetch(`/api/courses/${courseId}`);
             if (res.ok) {
               const data = await res.json();
-              titles[courseId] = data.course?.title || data.title || `Курс #${courseId.slice(0, 8)}`;
+              titles[courseId] = data.course?.title || data.title || "";
             }
           } catch {
-            // skip — will fall back to ID display
+            // skip — will fall back to loading state
           }
         })
       );
@@ -267,6 +267,10 @@ export function ProfilePage() {
     if (count <= 3) return "bg-green-400 dark:bg-green-700/80";
     return "bg-green-500 dark:bg-green-600";
   };
+
+  // Heatmap grid dimensions
+  const totalWeeks = 16;
+  const weekSize = 7;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -555,60 +559,76 @@ export function ProfilePage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {enrollments.map((enrollment) => (
-                <Card
-                  key={enrollment.id}
-                  className="cursor-pointer hover:shadow-md transition-shadow border-0 shadow-sm"
-                  onClick={() => navigate(`course/${enrollment.course.id}`)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-violet-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">
-                        <BookOpen className="w-6 h-6" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-sm truncate">
-                          {enrollment.course.title}
-                        </h3>
-                        <Badge
-                          variant="outline"
-                          className="text-[10px] mt-1"
-                        >
-                          {levelLabels[enrollment.course.level] || enrollment.course.level}
-                        </Badge>
-                        <div className="mt-2">
-                          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                            <span>Прогресс</span>
-                            <span>{enrollment.progress}%</span>
-                          </div>
-                          <Progress value={enrollment.progress} className="h-2" />
+              {enrollments.map((enrollment) => {
+                const isCompleted = enrollment.status === "completed";
+                const progressColor = isCompleted
+                  ? "bg-green-500"
+                  : enrollment.progress > 50
+                    ? "bg-blue-500"
+                    : enrollment.progress > 0
+                      ? "bg-amber-500"
+                      : "bg-gray-300";
+
+                return (
+                  <Card
+                    key={enrollment.id}
+                    className="cursor-pointer hover:shadow-md transition-shadow border-0 shadow-sm"
+                    onClick={() => navigate(`course/${enrollment.course.id}`)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-white flex-shrink-0 ${isCompleted ? "bg-gradient-to-br from-green-500 to-emerald-600" : "bg-gradient-to-br from-blue-500 to-violet-600"}`}>
+                          {isCompleted ? <CheckCircle2 className="w-6 h-6" /> : <BookOpen className="w-6 h-6" />}
                         </div>
-                        <div className="flex items-center gap-2 mt-2">
-                          {enrollment.status === "completed" ? (
-                            <Badge className="bg-green-100 text-green-700 border-0 text-[10px]">
-                              <CheckCircle2 className="w-3 h-3 mr-1" />
-                              Завершён
-                            </Badge>
-                          ) : (
-                            <Badge className="bg-blue-100 text-blue-700 border-0 text-[10px]">
-                              <Clock className="w-3 h-3 mr-1" />
-                              В процессе
-                            </Badge>
-                          )}
-                          {/* Кнопка закладки */}
-                          <button
-                            className="ml-auto p-1 rounded hover:bg-muted transition-colors"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleFavorite(enrollment.course.id);
-                            }}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-sm truncate">
+                            {enrollment.course.title}
+                          </h3>
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] mt-1"
                           >
-                            {isFavorite(enrollment.course.id) ? (
-                              <BookmarkCheck className="w-4 h-4 text-blue-600" />
+                            {levelLabels[enrollment.course.level] || enrollment.course.level}
+                          </Badge>
+                          <div className="mt-2">
+                            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                              <span>Прогресс</span>
+                              <span className={isCompleted ? "text-green-600 font-medium" : ""}>{enrollment.progress}%</span>
+                            </div>
+                            <div className={`h-2 rounded-full bg-gray-200 overflow-hidden`}>
+                              <div
+                                className={`h-full rounded-full transition-all duration-500 ${progressColor}`}
+                                style={{ width: `${enrollment.progress}%` }}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 mt-2">
+                            {isCompleted ? (
+                              <Badge className="bg-green-100 text-green-700 border-0 text-[10px]">
+                                <CheckCircle2 className="w-3 h-3 mr-1" />
+                                Завершён
+                              </Badge>
                             ) : (
-                              <Bookmark className="w-4 h-4 text-muted-foreground" />
+                              <Badge className="bg-blue-100 text-blue-700 border-0 text-[10px]">
+                                <Clock className="w-3 h-3 mr-1" />
+                                В процессе
+                              </Badge>
                             )}
-                          </button>
+                            {/* Кнопка закладки */}
+                            <button
+                              className="ml-auto p-1 rounded hover:bg-muted transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleFavorite(enrollment.course.id);
+                              }}
+                            >
+                              {isFavorite(enrollment.course.id) ? (
+                                <BookmarkCheck className="w-4 h-4 text-blue-600" />
+                              ) : (
+                                <Bookmark className="w-4 h-4 text-muted-foreground" />
+                              )}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -655,12 +675,13 @@ export function ProfilePage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {favorites.map((courseId) => {
-                const title = bookmarkCourses[courseId] || `Курс #${courseId.slice(0, 8)}`;
+                const title = bookmarkCourses[courseId];
+                const isLoading = bookmarksLoading && !title;
                 return (
                   <Card
                     key={courseId}
                     className="cursor-pointer hover:shadow-md transition-shadow border-0 shadow-sm"
-                    onClick={() => navigate(`course/${courseId}`)}
+                    onClick={() => !isLoading && navigate(`course/${courseId}`)}
                   >
                     <CardContent className="p-4 flex items-center gap-3">
                       <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-violet-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">
@@ -668,7 +689,7 @@ export function ProfilePage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-sm truncate">
-                          {title}
+                          {isLoading ? "Загрузка..." : title || "Курс не найден"}
                         </h3>
                         <p className="text-xs text-muted-foreground">Из закладок</p>
                       </div>

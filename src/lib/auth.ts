@@ -98,11 +98,12 @@ export const authOptions: NextAuthOptions = {
       return token as ExtendedJWT;
     },
     async session({ session, token }): Promise<ExtendedSession> {
-      if (session.user) {
-        (session.user as ExtendedSession["user"]).role = token.role as string | undefined;
-        (session.user as ExtendedSession["user"]).id = token.id as string | undefined;
+      const extendedSession = session as ExtendedSession;
+      if (extendedSession.user) {
+        extendedSession.user.role = token.role as string | undefined;
+        extendedSession.user.id = token.id as string | undefined;
       }
-      return session as ExtendedSession;
+      return extendedSession;
     },
   },
   pages: {

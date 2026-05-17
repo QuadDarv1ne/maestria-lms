@@ -129,9 +129,10 @@ export function LessonPage({
       } catch {
         // invalid JSON — treat as no options
       }
-      const correctIndex = assignment.correctAnswer
+      const parsed = assignment.correctAnswer
         ? parseInt(assignment.correctAnswer, 10)
         : -1;
+      const correctIndex = Number.isNaN(parsed) ? -1 : parsed;
       scores[assignment.id] =
         correctIndex >= 0 && quizAnswers[assignment.id] === correctIndex;
     });
@@ -304,9 +305,10 @@ export function LessonPage({
                     // invalid JSON
                   }
 
-                  const correctIndex = assignment.correctAnswer
+                  const parsed = assignment.correctAnswer
                     ? parseInt(assignment.correctAnswer, 10)
                     : -1;
+                  const correctIndex = Number.isNaN(parsed) ? -1 : parsed;
 
                   return (
                     <Card key={assignment.id} className="mb-3 border shadow-sm">
