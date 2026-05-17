@@ -28,37 +28,10 @@ import {
 import type { SortBy } from "@/lib/store";
 import { CourseImage } from "@/components/CourseImage";
 import { levelColors } from "@/lib/constants";
-
-interface CourseCard {
-  id: string;
-  title: string;
-  slug: string;
-  shortDesc: string | null;
-  image: string | null;
-  price: number;
-  oldPrice: number | null;
-  level: string;
-  duration: string | null;
-  isFeatured: boolean;
-  rating: number;
-  studentCount: number;
-  totalLessons: number;
-  totalDuration: number;
-  teacher: { id: string; name: string | null; image: string | null };
-  category: {
-    id: string;
-    name: string;
-    slug: string;
-    icon: string | null;
-    color: string | null;
-  };
-}
+import { useCourses } from "@/hooks/useCourses";
 
 export function CatalogPage() {
   const { navigate, courseFilters, setCourseFilters, locale } = useAppStore();
-  const [courses, setCourses] = useState<CourseCard[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 12,
@@ -68,6 +41,21 @@ export function CatalogPage() {
   const [searchInput, setSearchInput] = useState(courseFilters.search);
   const [showFilters, setShowFilters] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const { data, isLoading, error } = useCourses({
+    page: pagination.page,
+    limit: pagination.limit,
+    category: courseFilters.category || undefined,
+    search: courseFilters.search || undefined,
+    level: courseFilters.level || undefined,
+    sortBy: courseFilters.sortBy || undefined,
+    freeOnly: courseFilters.freeOnly || undefined,
+  });
+
+  const courses = React.useMemo(() => data?.courses ?? [], [data?.courses]);
+
+  const totalPages = data?.pagination?.totalPages ?? 0;
+  const total = data?.pagination?.total ?? pagination.total;
 
   const levelLabels: Record<string, string> = {
     beginner: t("catalog.beginner", locale),
@@ -99,42 +87,6 @@ export function CatalogPage() {
     { value: "priceAsc", label: t("catalog.sortPriceAsc", locale) },
     { value: "priceDesc", label: t("catalog.sortPriceDesc", locale) },
   ];
-
-  useEffect(() => {
-    const fetchCourses = async () => {
-      setLoading(true);
-      try {
-        const params = new URLSearchParams();
-        params.set("page", pagination.page.toString());
-        params.set("limit", pagination.limit.toString());
-        if (courseFilters.category) params.set("category", courseFilters.category);
-        if (courseFilters.search) params.set("search", courseFilters.search);
-        if (courseFilters.level) params.set("level", courseFilters.level);
-        if (courseFilters.sortBy) params.set("sortBy", courseFilters.sortBy);
-        if (courseFilters.freeOnly) params.set("freeOnly", "true");
-
-        const res = await fetch(`/api/courses?${params}`);
-        if (res.ok) {
-          const data = await res.json();
-          setCourses(data.courses || []);
-          setError(null);
-          setPagination((prev) => ({
-            ...prev,
-            total: data.pagination?.total || 0,
-            totalPages: data.pagination?.totalPages || 0,
-          }));
-        } else {
-          setError("Ошибка загрузки курсов");
-        }
-      } catch (e) {
-        console.error("Ошибка загрузки курсов:", e);
-        setError("Не удалось подключиться к серверу");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchCourses();
-  }, [courseFilters.category, courseFilters.search, courseFilters.level, courseFilters.sortBy, courseFilters.freeOnly, pagination.page, pagination.limit]);
 
   const handleSearch = useCallback(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -322,10 +274,10 @@ export function CatalogPage() {
 
       {/* Результаты */}
       <div className="mb-4 text-sm text-muted-foreground">
-        {loading ? t("common.loading", locale) : `${t("catalog.found", locale)} ${pagination.total}`}
+        {isLoading ? t("common.loading", locale) : `${t("catalog.found", locale)} ${total}`}
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <Card key={i} className="border-0 shadow-sm">
@@ -339,14 +291,14 @@ export function CatalogPage() {
             </Card>
           ))}
         </div>
-      ) : error && sortedCourses.length === 0 ? (
+      ) : error ? (
         <div className="text-center py-16">
           <X className="w-16 h-16 text-red-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">{error}</h3>
+          <h3 className="text-lg font-semibold mb-2">{error instanceof Error ? error.message : "Ошибка загрузки"}</h3>
           <p className="text-muted-foreground mb-4">
             {t("catalog.noResultsHint", locale)}
           </p>
-          <Button onClick={() => { setError(null); setPagination((prev) => ({ ...prev, page: prev.page })); }}>
+          <Button onClick={() => setPagination((prev) => ({ ...prev, page: 1 }))}>
             {t("common.retry", locale) || "Повторить"}
           </Button>
         </div>
@@ -460,7 +412,7 @@ export function CatalogPage() {
       )}
 
       {/* Пагинация */}
-      {pagination.totalPages > 1 && (
+      {totalPages > 1 && (
         <div className="flex justify-center gap-2 mt-8">
           <Button
             variant="outline"
@@ -473,12 +425,12 @@ export function CatalogPage() {
             {t("common.back", locale)}
           </Button>
           <span className="flex items-center text-sm text-muted-foreground px-3">
-            {t("common.page", locale)} {pagination.page} {t("common.of", locale)} {pagination.totalPages}
+            {t("common.page", locale)} {pagination.page} {t("common.of", locale)} {totalPages}
           </span>
           <Button
             variant="outline"
             size="sm"
-            disabled={pagination.page >= pagination.totalPages}
+            disabled={pagination.page >= totalPages}
             onClick={() =>
               setPagination((prev) => ({ ...prev, page: prev.page + 1 }))
             }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,49 +16,16 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { CoursePromoCarousel } from "@/components/CoursePromoCarousel";
+import { CourseImage } from "@/components/CourseImage";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { levelLabels, levelColors, CATEGORIES } from "@/lib/constants";
-
-interface CourseCard {
-  id: string;
-  title: string;
-  slug: string;
-  shortDesc: string | null;
-  image: string | null;
-  price: number;
-  oldPrice: number | null;
-  level: string;
-  duration: string | null;
-  isFeatured: boolean;
-  rating: number;
-  studentCount: number;
-  totalLessons: number;
-  totalDuration: number;
-  teacher: { id: string; name: string | null; image: string | null };
-  category: { id: string; name: string; slug: string; icon: string | null; color: string | null };
-}
+import { useCourses } from "@/hooks/useCourses";
 
 export function HomePage() {
   const { navigate } = useAppStore();
-  const [featuredCourses, setFeaturedCourses] = useState<CourseCard[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const courseRes = await fetch("/api/courses?limit=6");
-        if (courseRes.ok) {
-          const data = await courseRes.json();
-          setFeaturedCourses(data.courses || []);
-        }
-      } catch (e) {
-        console.error("Ошибка загрузки данных:", e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
+  const { data: coursesData, isLoading } = useCourses({ limit: 6 });
+  const featuredCourses = coursesData?.courses ?? [];
+  const loading = isLoading;
 
   const defaultCategories = CATEGORIES.map((c, i) => ({
     id: String(i + 1),
@@ -228,17 +195,19 @@ export function HomePage() {
                   <CardContent className="p-0">
                     {/* Обложка курса */}
                     <div className="relative h-40 flex items-center justify-center overflow-hidden bg-gradient-to-br from-blue-500 to-violet-600">
-                      {course.image ? (
-                        <img
-                          src={course.image}
-                          alt={course.title}
-                          className="absolute inset-0 w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      ) : course.category?.icon ? (
-                        <span className="text-5xl opacity-50">
-                          {course.category.icon}
-                        </span>
+                      {course.image || course.category?.icon ? (
+                        course.image ? (
+                          <CourseImage
+                            src={course.image}
+                            alt={course.title}
+                            className="absolute inset-0 w-full h-full object-cover"
+                            identifier={course.id}
+                          />
+                        ) : (
+                          <span className="text-5xl opacity-50">
+                            {course.category?.icon}
+                          </span>
+                        )
                       ) : null}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
                       {course.price === 0 && (
