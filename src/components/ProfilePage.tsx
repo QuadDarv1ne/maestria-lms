@@ -64,7 +64,6 @@ interface Enrollment {
     title: string;
     image: string | null;
     level: string;
-    categoryId: string | null;
   };
 }
 
@@ -99,6 +98,39 @@ export function ProfilePage() {
 
   // Данные для теплового графика (демо)
   const activityData = useMemo(() => generateActivityData(), []);
+
+  // Course data for bookmarks (favorites stored as IDs need titles)
+  const [bookmarkCourses, setBookmarkCourses] = useState<Record<string, string>>({});
+  const [bookmarksLoading, setBookmarksLoading] = useState(false);
+
+  useEffect(() => {
+    if (favorites.length === 0) return;
+    let cancelled = false;
+    setBookmarksLoading(true);
+
+    const fetchTitles = async () => {
+      const titles: Record<string, string> = {};
+      await Promise.all(
+        favorites.map(async (courseId) => {
+          try {
+            const res = await fetch(`/api/courses/${courseId}`);
+            if (res.ok) {
+              const data = await res.json();
+              titles[courseId] = data.course?.title || data.title || `Курс #${courseId.slice(0, 8)}`;
+            }
+          } catch {
+            // skip — will fall back to ID display
+          }
+        })
+      );
+      if (!cancelled) {
+        setBookmarkCourses(titles);
+        setBookmarksLoading(false);
+      }
+    };
+    fetchTitles();
+    return () => { cancelled = true; };
+  }, [favorites]);
 
   // Серия обучения (streak)
   const learningStreak = useMemo(() => {
@@ -235,29 +267,6 @@ export function ProfilePage() {
     if (count <= 3) return "bg-green-400 dark:bg-green-700/80";
     return "bg-green-500 dark:bg-green-600";
   };
-
-  // Месяцы для подписей
-  const weekSize = 7;
-  const totalWeeks = Math.ceil(activityData.length / weekSize);
-  const monthLabels: { label: string; colSpan: number }[] = [];
-  let currentMonth = -1;
-  let spanCount = 0;
-
-  activityData.forEach((d, _i) => {
-    const month = new Date(d.date).getMonth();
-    if (month !== currentMonth) {
-      if (currentMonth !== -1) {
-        monthLabels.push({ label: getMonthShort(currentMonth), colSpan: spanCount });
-      }
-      currentMonth = month;
-      spanCount = 1;
-    } else {
-      spanCount++;
-    }
-  });
-  if (currentMonth !== -1) {
-    monthLabels.push({ label: getMonthShort(currentMonth), colSpan: spanCount });
-  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -465,29 +474,39 @@ export function ProfilePage() {
             <Target className="w-5 h-5 text-violet-600" />
             Навыки и компетенции
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[
-              { name: "Python", level: 72, color: "bg-blue-500" },
-              { name: "Веб-разработка", level: 58, color: "bg-violet-500" },
-              { name: "SQL / Базы данных", level: 45, color: "bg-amber-500" },
-              { name: "Data Science", level: 30, color: "bg-green-500" },
-              { name: "Linux / DevOps", level: 62, color: "bg-orange-500" },
-              { name: "Алгоритмы", level: 40, color: "bg-red-500" },
-            ].map((skill) => (
-              <div key={skill.name}>
-                <div className="flex items-center justify-between text-sm mb-1">
-                  <span className="font-medium">{skill.name}</span>
-                  <span className="text-muted-foreground">{skill.level}%</span>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className={`h-full ${skill.color} rounded-full transition-all duration-700`}
-                    style={{ width: `${skill.level}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
+          {/* Skills derived from actual enrollments */}
+          {enrollments.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Навыки появятся после прохождения курсов
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {enrollments
+                .filter((e) => e.progress > 0)
+                .map((enrollment) => {
+                  const colors = [
+                    "bg-blue-500", "bg-violet-500", "bg-amber-500",
+                    "bg-green-500", "bg-orange-500", "bg-red-500",
+                    "bg-cyan-500", "bg-pink-500",
+                  ];
+                  const colorIndex = enrollment.course.title.length % colors.length;
+                  return (
+                    <div key={enrollment.id}>
+                      <div className="flex items-center justify-between text-sm mb-1">
+                        <span className="font-medium truncate">{enrollment.course.title}</span>
+                        <span className="text-muted-foreground ml-2">{enrollment.progress}%</span>
+                      </div>
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className={`h-full ${colors[colorIndex]} rounded-full transition-all duration-700`}
+                          style={{ width: `${enrollment.progress}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -617,39 +636,58 @@ export function ProfilePage() {
                 {t("nav.catalog", locale)}
               </Button>
             </div>
-          ) : (
+          ) : bookmarksLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {favorites.map((courseId) => (
-                <Card
-                  key={courseId}
-                  className="cursor-pointer hover:shadow-md transition-shadow border-0 shadow-sm"
-                  onClick={() => navigate(`course/${courseId}`)}
-                >
-                  <CardContent className="p-4 flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-violet-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">
-                      <BookmarkCheck className="w-5 h-5" />
+                <Card key={courseId} className="border-0 shadow-sm">
+                  <CardContent className="p-4">
+                    <div className="animate-pulse flex items-center gap-3">
+                      <div className="w-10 h-10 bg-muted rounded-lg" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-muted rounded w-3/4" />
+                        <div className="h-3 bg-muted rounded w-1/2" />
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-sm truncate">
-                        Курс #{courseId.slice(0, 8)}
-                      </h3>
-                      <p className="text-xs text-muted-foreground">Из закладок</p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-red-500 hover:text-red-700"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleFavorite(courseId);
-                        toast.success("Закладка удалена");
-                      }}
-                    >
-                      Убрать
-                    </Button>
                   </CardContent>
                 </Card>
               ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {favorites.map((courseId) => {
+                const title = bookmarkCourses[courseId] || `Курс #${courseId.slice(0, 8)}`;
+                return (
+                  <Card
+                    key={courseId}
+                    className="cursor-pointer hover:shadow-md transition-shadow border-0 shadow-sm"
+                    onClick={() => navigate(`course/${courseId}`)}
+                  >
+                    <CardContent className="p-4 flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-violet-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">
+                        <BookmarkCheck className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm truncate">
+                          {title}
+                        </h3>
+                        <p className="text-xs text-muted-foreground">Из закладок</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-500 hover:text-red-700"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite(courseId);
+                          toast.success("Закладка удалена");
+                        }}
+                      >
+                        Убрать
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </TabsContent>
@@ -682,12 +720,5 @@ export function ProfilePage() {
       </Tabs>
     </div>
   );
-}
-
-// ─── Helpers ──────────────────────────────────────────────────────────────
-
-function getMonthShort(month: number): string {
-  const months = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"];
-  return months[month] || "";
 }
 
