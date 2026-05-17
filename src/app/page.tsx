@@ -1,37 +1,39 @@
 'use client'
 
 import React, { useEffect } from "react";
+import dynamic from "next/dynamic";
 import { useAppStore } from "@/lib/store";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { HomePage } from "@/components/HomePage";
-import { CatalogPage } from "@/components/CatalogPage";
-import { CourseDetailPage } from "@/components/CourseDetailPage";
-import { StepViewerPage } from "@/components/StepViewerPage";
-import { LessonPage } from "@/components/LessonPage";
-import { ProfilePage } from "@/components/ProfilePage";
-import { AdminPage } from "@/components/AdminPage";
-import { AboutPage } from "@/components/AboutPage";
-import { AchievementsPage } from "@/components/AchievementsPage";
-import { CertificatePage } from "@/components/CertificatePage";
-import { NotificationsPage } from "@/components/NotificationsPage";
-import { CourseEditorPage } from "@/components/CourseEditorPage";
 import { AuthDialogs } from "@/components/AuthDialogs";
-import { CustomCursor } from "@/components/CustomCursor";
-import { GlobalScrollToTop } from "@/components/GlobalScrollToTop";
 import { PageTransition } from "@/components/PageTransition";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { TermsPage } from "@/components/TermsPage";
-import { PrivacyPage } from "@/components/PrivacyPage";
-import { PersonalDataConsentPage } from "@/components/PersonalDataConsentPage";
-import { OfferPage } from "@/components/OfferPage";
-import { RefundPage } from "@/components/RefundPage";
-import { EduInfoPage } from "@/components/EduInfoPage";
-import { RulesPage } from "@/components/RulesPage";
-import { LicensePage } from "@/components/LicensePage";
-import { AgeRatingPage } from "@/components/AgeRatingPage";
-import { CookiePage } from "@/components/CookiePage";
-import { HelpPage } from "@/components/HelpPage";
+
+const HomePage = dynamic(() => import("@/components/HomePage").then(m => ({ default: m.HomePage })));
+const CatalogPage = dynamic(() => import("@/components/CatalogPage").then(m => ({ default: m.CatalogPage })));
+const CourseDetailPage = dynamic(() => import("@/components/CourseDetailPage").then(m => ({ default: m.CourseDetailPage })));
+const StepViewerPage = dynamic(() => import("@/components/StepViewerPage").then(m => ({ default: m.StepViewerPage })));
+const LessonPage = dynamic(() => import("@/components/LessonPage").then(m => ({ default: m.LessonPage })));
+const ProfilePage = dynamic(() => import("@/components/ProfilePage").then(m => ({ default: m.ProfilePage })));
+const AdminPage = dynamic(() => import("@/components/AdminPage").then(m => ({ default: m.AdminPage })));
+const AboutPage = dynamic(() => import("@/components/AboutPage").then(m => ({ default: m.AboutPage })));
+const AchievementsPage = dynamic(() => import("@/components/AchievementsPage").then(m => ({ default: m.AchievementsPage })));
+const CertificatePage = dynamic(() => import("@/components/CertificatePage").then(m => ({ default: m.CertificatePage })));
+const NotificationsPage = dynamic(() => import("@/components/NotificationsPage").then(m => ({ default: m.NotificationsPage })));
+const CourseEditorPage = dynamic(() => import("@/components/CourseEditorPage").then(m => ({ default: m.CourseEditorPage })));
+const CustomCursor = dynamic(() => import("@/components/CustomCursor").then(m => ({ default: m.CustomCursor })));
+const GlobalScrollToTop = dynamic(() => import("@/components/GlobalScrollToTop").then(m => ({ default: m.GlobalScrollToTop })));
+const TermsPage = dynamic(() => import("@/components/TermsPage").then(m => ({ default: m.TermsPage })));
+const PrivacyPage = dynamic(() => import("@/components/PrivacyPage").then(m => ({ default: m.PrivacyPage })));
+const PersonalDataConsentPage = dynamic(() => import("@/components/PersonalDataConsentPage").then(m => ({ default: m.PersonalDataConsentPage })));
+const OfferPage = dynamic(() => import("@/components/OfferPage").then(m => ({ default: m.OfferPage })));
+const RefundPage = dynamic(() => import("@/components/RefundPage").then(m => ({ default: m.RefundPage })));
+const EduInfoPage = dynamic(() => import("@/components/EduInfoPage").then(m => ({ default: m.EduInfoPage })));
+const RulesPage = dynamic(() => import("@/components/RulesPage").then(m => ({ default: m.RulesPage })));
+const LicensePage = dynamic(() => import("@/components/LicensePage").then(m => ({ default: m.LicensePage })));
+const AgeRatingPage = dynamic(() => import("@/components/AgeRatingPage").then(m => ({ default: m.AgeRatingPage })));
+const CookiePage = dynamic(() => import("@/components/CookiePage").then(m => ({ default: m.CookiePage })));
+const HelpPage = dynamic(() => import("@/components/HelpPage").then(m => ({ default: m.HelpPage })));
 
 // Главный SPA-роутер для образовательной платформы Maestria by Maestro7IT
 function AppRouter() {
