@@ -51,7 +51,13 @@ export const authOptions: NextAuthOptions = {
           where: { email: credentials.email },
         });
 
-        if (!user || !user.passwordHash) {
+        // Check isActive BEFORE password verification to prevent user enumeration
+        // and avoid unnecessary computation for blocked accounts
+        if (!user || !user.isActive) {
+          throw new Error("Неверный email или пароль");
+        }
+
+        if (!user.passwordHash) {
           throw new Error("Неверный email или пароль");
         }
 
@@ -69,10 +75,6 @@ export const authOptions: NextAuthOptions = {
           if (!user.twoFactorSecret || !authenticator.verify({ token: credentials.twoFactorCode, secret: user.twoFactorSecret })) {
             throw new Error("Неверный код 2FA");
           }
-        }
-
-        if (!user.isActive) {
-          throw new Error("Аккаунт заблокирован");
         }
 
         return {

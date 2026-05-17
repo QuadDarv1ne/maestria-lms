@@ -277,7 +277,7 @@ export async function POST(
           where: { id: enrollment.id },
           data: {
             progress: courseProgress,
-            completedAt: courseProgress === 100 ? new Date() : undefined,
+            completedAt: courseProgress === 100 ? new Date() : null,
             status: courseProgress === 100 ? "completed" : "active",
           },
         });

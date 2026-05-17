@@ -40,6 +40,18 @@ export async function POST(
       );
     }
 
+    // Use resolved course.id for all DB operations (courseId param could be a slug)
+    const resolvedCourseId = course.id;
+
+    // Read optional paymentMethod from request body
+    let paymentMethod = "sbp";
+    try {
+      const body = await request.json();
+      if (body?.paymentMethod) {
+        paymentMethod = body.paymentMethod;
+      }
+    } catch { /* no body or invalid JSON — use default */ }
+
     // Wrap enrollment logic in a transaction to prevent race conditions
     // when a user sends multiple concurrent requests.
     const result = await db.$transaction(async (tx) => {
@@ -48,7 +60,7 @@ export async function POST(
         where: {
           userId_courseId: {
             userId,
-            courseId,
+            courseId: resolvedCourseId,
           },
         },
       });
@@ -70,7 +82,7 @@ export async function POST(
 
           // Обновляем счётчик студентов
           await tx.course.update({
-            where: { id: courseId },
+            where: { id: resolvedCourseId },
             data: { studentCount: { increment: 1 } },
           });
 
@@ -83,7 +95,7 @@ export async function POST(
         const enrollment = await tx.enrollment.create({
           data: {
             userId,
-            courseId,
+            courseId: resolvedCourseId,
             status: "active",
             progress: 0,
           },
@@ -91,7 +103,7 @@ export async function POST(
 
         // Обновляем счётчик студентов
         await tx.course.update({
-          where: { id: courseId },
+          where: { id: resolvedCourseId },
           data: { studentCount: { increment: 1 } },
         });
 
@@ -106,11 +118,11 @@ export async function POST(
       const payment = await tx.payment.create({
         data: {
           userId,
-          courseId,
+          courseId: resolvedCourseId,
           amount: course.price,
           currency: course.currency,
           status: "pending",
-          paymentMethod: "sbp", // по умолчанию
+          paymentMethod, // from request body, defaults to 'sbp'
         },
       });
 

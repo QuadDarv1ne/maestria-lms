@@ -771,9 +771,14 @@ export function StepViewerPage({
 
               {/* Quiz questions */}
               {step.assignments?.map((assignment, aIdx) => {
-                const options: string[] = assignment.options
-                  ? JSON.parse(assignment.options)
-                  : [];
+                let options: string[] = [];
+                if (assignment.options) {
+                  try {
+                    options = JSON.parse(assignment.options);
+                  } catch {
+                    options = [];
+                  }
+                }
                 const isSubmitted = quizSubmitted[assignment.id];
                 const isCorrect = quizResults[assignment.id];
 

@@ -186,6 +186,8 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
     try {
       const res = await fetch(`/api/courses/${courseId}/enroll`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentMethod }),
       });
       const data = await res.json();
 
@@ -252,7 +254,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
       return;
     }
     toggleFavorite(courseId);
-    toast.success(favored ? "Удалено из избранного" : "Добавлено в избранное");
+    toast.success(favored ? "Добавлено в избранное" : "Удалено из избранного");
   };
 
   const handleShare = async () => {
