@@ -3,8 +3,9 @@
  *
  * Strategy:
  * 1. If the URL is already an absolute URL (starts with http), use it as-is (CDN)
- * 2. If the URL is a relative path, prepend the CDN base URL
- * 3. If no URL provided, return null (component should show placeholder)
+ * 2. If the URL is a relative path starting with /courses/, use CDN root + filename
+ * 3. If the URL is a relative path (any other), prepend the CDN base URL
+ * 4. If no URL provided, return null (component should show placeholder)
  */
 export function resolveCourseImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -14,11 +15,12 @@ export function resolveCourseImageUrl(url: string | null | undefined): string | 
     return url;
   }
 
-  // Relative path — prepend CDN base URL
+  // Relative path — use CDN
   const cdnBase = process.env.NEXT_PUBLIC_CDN_URL;
   if (cdnBase) {
     const cleanBase = cdnBase.replace(/\/$/, "");
-    const cleanPath = url.replace(/^\//, "");
+    // Strip /courses/ prefix since CDN serves files from root
+    const cleanPath = url.replace(/^\/courses\//, "");
     return `${cleanBase}/${cleanPath}`;
   }
 

@@ -584,10 +584,7 @@ export function ProfilePage() {
                           <h3 className="font-semibold text-sm truncate">
                             {enrollment.course.title}
                           </h3>
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] mt-1"
-                          >
+                          <Badge variant="outline" className="text-[10px] mt-1">
                             {levelLabels[enrollment.course.level] || enrollment.course.level}
                           </Badge>
                           <div className="mt-2">
@@ -595,7 +592,7 @@ export function ProfilePage() {
                               <span>Прогресс</span>
                               <span className={isCompleted ? "text-green-600 font-medium" : ""}>{enrollment.progress}%</span>
                             </div>
-                            <div className={`h-2 rounded-full bg-gray-200 overflow-hidden`}>
+                            <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
                               <div
                                 className={`h-full rounded-full transition-all duration-500 ${progressColor}`}
                                 style={{ width: `${enrollment.progress}%` }}
@@ -614,7 +611,6 @@ export function ProfilePage() {
                                 В процессе
                               </Badge>
                             )}
-                            {/* Кнопка закладки */}
                             <button
                               className="ml-auto p-1 rounded hover:bg-muted transition-colors"
                               onClick={(e) => {
@@ -631,10 +627,10 @@ export function ProfilePage() {
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </TabsContent>
