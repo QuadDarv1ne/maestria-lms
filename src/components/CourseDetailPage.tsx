@@ -138,7 +138,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
 
   const handleEnroll = async () => {
     if (!user) {
-      window.location.hash = "login";
+      navigate("login");
       return;
     }
     setEnrolling(true);
@@ -208,7 +208,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
 
   const handleToggleFavorite = () => {
     if (!user) {
-      window.location.hash = "login";
+      navigate("login");
       return;
     }
     toggleFavorite(courseId);

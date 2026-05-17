@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +27,8 @@ import { toast } from "sonner";
 
 export function AuthDialogs() {
   const { setUser } = useAppStore();
-  const [dialogType, setDialogType] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
 
   // Форма входа
@@ -52,39 +54,34 @@ export function AuthDialogs() {
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
 
-  // Слушаем хеш для открытия диалогов
-  useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.slice(1);
-      if (hash === "login" || hash === "register" || hash === "forgot-password") {
-        setDialogType(hash);
-      } else {
-        setDialogType(null);
-      }
-    };
-
-    handleHashChange();
-    window.addEventListener("hashchange", handleHashChange);
-    return () => window.removeEventListener("hashchange", handleHashChange);
-  }, []);
+  // Определяем тип диалога из search params
+  const dialogParam = searchParams.get("dialog");
+  const dialogType =
+    dialogParam === "login" ||
+    dialogParam === "register" ||
+    dialogParam === "forgot-password"
+      ? dialogParam
+      : null;
 
   const closeDialog = () => {
-    setDialogType(null);
-    window.location.hash = "";
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("dialog");
+    const query = params.toString();
+    router.replace(query ? `?${query}` : window.location.pathname, { scroll: false });
     setRequire2FA(false);
     setForgotSent(false);
   };
 
   const switchToRegister = () => {
-    window.location.hash = "register";
+    router.push("?dialog=register");
   };
 
   const switchToLogin = () => {
-    window.location.hash = "login";
+    router.push("?dialog=login");
   };
 
   const switchToForgot = () => {
-    window.location.hash = "forgot-password";
+    router.push("?dialog=forgot-password");
   };
 
   const handleLogin = async (e: React.FormEvent) => {

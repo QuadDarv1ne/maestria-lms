@@ -524,7 +524,7 @@ export function AchievementsPage() {
           </p>
           <Button
             className="bg-blue-700 hover:bg-blue-800 text-white"
-            onClick={() => (window.location.hash = "login")}
+            onClick={() => navigate("login")}
           >
             Войти в аккаунт
           </Button>

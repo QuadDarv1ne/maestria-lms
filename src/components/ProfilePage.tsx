@@ -130,7 +130,7 @@ export function ProfilePage() {
 
   useEffect(() => {
     if (!user) {
-      window.location.hash = "login";
+      navigate("login");
       return;
     }
     const fetchProfile = async () => {
@@ -220,7 +220,7 @@ export function ProfilePage() {
         </h2>
         <Button
           className="bg-blue-700 hover:bg-blue-800 text-white mt-4"
-          onClick={() => (window.location.hash = "login")}
+          onClick={() => navigate("login")}
         >
           {t("nav.login", locale)}
         </Button>

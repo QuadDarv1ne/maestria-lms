@@ -69,7 +69,7 @@ export function AboutPage() {
                 size="lg"
                 variant="outline"
                 className="border-white/30 text-white bg-blue-600 hover:bg-blue-700 hover:border-blue-600"
-                onClick={() => (window.location.hash = "login")}
+                onClick={() => navigate("login")}
               >
                 Начать бесплатно
               </Button>
@@ -471,7 +471,7 @@ export function AboutPage() {
           <Button
             size="lg"
             className="bg-white text-blue-800 hover:bg-blue-50 font-semibold text-lg px-8 py-6"
-            onClick={() => (window.location.hash = "login")}
+            onClick={() => navigate("login")}
           >
             Зарегистрироваться бесплатно
             <ArrowRight className="w-5 h-5 ml-2" />

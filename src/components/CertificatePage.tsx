@@ -150,7 +150,7 @@ export function CertificatePage({ courseId }: { courseId: string }) {
         </h2>
         <Button
           className="bg-blue-700 hover:bg-blue-800 text-white mt-2"
-          onClick={() => (window.location.hash = "login")}
+          onClick={() => navigate("login")}
         >
           Войти
         </Button>
