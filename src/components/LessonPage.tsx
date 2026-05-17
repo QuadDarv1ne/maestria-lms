@@ -83,6 +83,17 @@ export function LessonPage({
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
 
+  // Quiz state
+  const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
+  const [quizSubmitted, setQuizSubmitted] = useState(false);
+  const [quizScores, setQuizScores] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    setQuizAnswers({});
+    setQuizSubmitted(false);
+    setQuizScores({});
+  }, [lessonId]);
+
   useEffect(() => {
     const fetchLesson = async () => {
       setLoading(true);
@@ -106,6 +117,33 @@ export function LessonPage({
     };
     fetchLesson();
   }, [courseId, lessonId, navigate]);
+
+  const handleQuizSubmit = () => {
+    const scores: Record<string, boolean> = {};
+    lesson?.assignments.forEach((assignment) => {
+      let options: string[] = [];
+      try {
+        if (assignment.options) {
+          options = JSON.parse(assignment.options);
+        }
+      } catch {
+        // invalid JSON — treat as no options
+      }
+      const correctIndex = assignment.correctAnswer
+        ? parseInt(assignment.correctAnswer, 10)
+        : -1;
+      scores[assignment.id] =
+        correctIndex >= 0 && quizAnswers[assignment.id] === correctIndex;
+    });
+    setQuizScores(scores);
+    setQuizSubmitted(true);
+
+    const correctCount = Object.values(scores).filter(Boolean).length;
+    const total = Object.keys(scores).length;
+    if (total > 0) {
+      toast.success(`Правильных ответов: ${correctCount}/${total}`);
+    }
+  };
 
   const handleComplete = async () => {
     if (!user) return;
@@ -256,37 +294,105 @@ export function LessonPage({
                     {lesson.content}
                   </div>
                 )}
-                {lesson.assignments?.map((assignment: AssignmentItem) => (
-                  <Card key={assignment.id} className="mb-3 border shadow-sm">
-                    <CardContent className="p-4">
-                      <h4 className="font-semibold mb-2">
-                        {assignment.title}
-                      </h4>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        {assignment.description}
-                      </p>
-                      {assignment.options && (
-                        <div className="space-y-2">
-                          {JSON.parse(assignment.options).map(
-                            (opt: string, i: number) => (
-                              <label
-                                key={i}
-                                className="flex items-center gap-2 p-2 rounded-lg border cursor-pointer hover:bg-gray-50"
-                              >
-                                <input
-                                  type="radio"
-                                  name={`quiz-${assignment.id}`}
-                                  className="accent-blue-700"
-                                />
-                                <span className="text-sm">{opt}</span>
-                              </label>
-                            )
-                          )}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
+                {lesson.assignments?.map((assignment: AssignmentItem) => {
+                  let options: string[] = [];
+                  try {
+                    if (assignment.options) {
+                      options = JSON.parse(assignment.options);
+                    }
+                  } catch {
+                    // invalid JSON
+                  }
+
+                  const correctIndex = assignment.correctAnswer
+                    ? parseInt(assignment.correctAnswer, 10)
+                    : -1;
+
+                  return (
+                    <Card key={assignment.id} className="mb-3 border shadow-sm">
+                      <CardContent className="p-4">
+                        <h4 className="font-semibold mb-2">
+                          {assignment.title}
+                        </h4>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          {assignment.description}
+                        </p>
+                        {options.length > 0 && (
+                          <div className="space-y-2">
+                            {options.map((opt: string, i: number) => {
+                              const isSelected = quizAnswers[assignment.id] === i;
+                              const isCorrect = i === correctIndex;
+                              let optionStyle = "border cursor-pointer hover:bg-gray-50";
+                              if (quizSubmitted) {
+                                if (isCorrect) {
+                                  optionStyle = "border-green-500 bg-green-50 dark:bg-green-900/20 cursor-default";
+                                } else if (isSelected && !isCorrect) {
+                                  optionStyle = "border-red-500 bg-red-50 dark:bg-red-900/20 cursor-default";
+                                } else {
+                                  optionStyle = "border opacity-50 cursor-default";
+                                }
+                              }
+                              return (
+                                <label
+                                  key={i}
+                                  className={`flex items-center gap-2 p-2 rounded-lg transition-colors ${optionStyle}`}
+                                >
+                                  <input
+                                    type="radio"
+                                    name={`quiz-${assignment.id}`}
+                                    className="accent-blue-700"
+                                    checked={isSelected}
+                                    onChange={() => {
+                                      if (!quizSubmitted) {
+                                        setQuizAnswers((prev) => ({
+                                          ...prev,
+                                          [assignment.id]: i,
+                                        }));
+                                      }
+                                    }}
+                                    disabled={quizSubmitted}
+                                  />
+                                  <span className="text-sm flex-1">{opt}</span>
+                                  {quizSubmitted && isCorrect && (
+                                    <span className="text-green-600 text-xs font-medium">✓</span>
+                                  )}
+                                  {quizSubmitted && isSelected && !isCorrect && (
+                                    <span className="text-red-600 text-xs font-medium">✗</span>
+                                  )}
+                                </label>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+                {lesson.assignments?.length > 0 && (
+                  <div className="flex gap-2 mt-4">
+                    {!quizSubmitted && (
+                      <Button
+                        className="bg-blue-700 hover:bg-blue-800 text-white"
+                        onClick={handleQuizSubmit}
+                        disabled={Object.keys(quizAnswers).length === 0}
+                      >
+                        Проверить ответы
+                      </Button>
+                    )}
+                    {quizSubmitted && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setQuizSubmitted(false);
+                          setQuizAnswers({});
+                          setQuizScores({});
+                        }}
+                      >
+                        Попробовать снова
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
