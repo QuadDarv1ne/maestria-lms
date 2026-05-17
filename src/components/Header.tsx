@@ -2,6 +2,7 @@
 
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
   GraduationCap,
@@ -47,12 +48,8 @@ export function Header() {
   const unreadCount = unreadNotificationsCount();
 
   const handleLogout = async () => {
-    try {
-      await fetch("/api/auth/signout", { method: "POST" });
-      logout();
-    } catch {
-      logout();
-    }
+    await signOut({ redirect: false });
+    logout();
   };
 
   const userInitials = user?.name

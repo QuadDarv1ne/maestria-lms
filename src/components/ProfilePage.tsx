@@ -1,22 +1,17 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   User,
   BookOpen,
@@ -28,13 +23,15 @@ import {
   Clock,
   CheckCircle2,
   Trophy,
-  Flame,
   Bookmark,
   BookmarkCheck,
   Target,
+  MessageSquare,
+  Loader2,
   Activity,
 } from "lucide-react";
 import { toast } from "sonner";
+import { AchievementsPage } from "@/components/AchievementsPage";
 
 interface UserProfile {
   id: string;
@@ -67,37 +64,30 @@ interface Enrollment {
   };
 }
 
-// Генерация демо-данных для теплового графика (последние 16 недель)
-function generateActivityData(): { date: string; count: number }[] {
-  const data: { date: string; count: number }[] = [];
-  const now = new Date();
-  for (let i = 111; i >= 0; i--) {
-    const date = new Date(now);
-    date.setDate(date.getDate() - i);
-    const dateStr = date.toISOString().split("T")[0];
-    // Случайная активность: больше в будни, меньше в выходные
-    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-    const baseChance = isWeekend ? 0.3 : 0.6;
-    const count = Math.random() < baseChance ? Math.floor(Math.random() * 5) + 1 : 0;
-    data.push({ date: dateStr, count });
-  }
-  return data;
+interface Certificate {
+  id: string;
+  issuedAt: string;
+  course: {
+    id: string;
+    title: string;
+  };
 }
 
 export function ProfilePage() {
   const { user, navigate, setUser, logout, favorites, toggleFavorite, isFavorite, locale } = useAppStore();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [editForm, setEditForm] = useState({
     name: "",
     bio: "",
     phone: "",
+    image: "",
   });
-
-  // Данные для теплового графика (демо)
-  const activityData = useMemo(() => generateActivityData(), []);
 
   // Course data for bookmarks (favorites stored as IDs need titles)
   const [bookmarkCourses, setBookmarkCourses] = useState<Record<string, string>>({});
@@ -119,7 +109,7 @@ export function ProfilePage() {
               titles[courseId] = data.course?.title || data.title || "";
             }
           } catch {
-            // skip — will fall back to loading state
+            // skip
           }
         })
       );
@@ -131,28 +121,6 @@ export function ProfilePage() {
     fetchTitles();
     return () => { cancelled = true; };
   }, [favorites]);
-
-  // Серия обучения (streak)
-  const learningStreak = useMemo(() => {
-    let streak = 0;
-    const today = new Date();
-    for (let i = 0; i < 365; i++) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split("T")[0];
-      const dayActivity = activityData.find((d) => d.date === dateStr);
-      if (dayActivity && dayActivity.count > 0) {
-        streak++;
-      } else if (i > 0) {
-        // Пропускаем сегодняшний день если ещё не было активности
-        break;
-      }
-    }
-    return streak;
-  }, [activityData]);
-
-  // Общая статистика
-  const totalActivities = activityData.reduce((acc, d) => acc + d.count, 0);
 
   const levelLabels: Record<string, string> = {
     beginner: t("catalog.beginner", locale),
@@ -172,14 +140,20 @@ export function ProfilePage() {
           const data = await res.json();
           setProfile(data.user);
           setEnrollments(data.enrollments || []);
+          setCertificates(data.certificates || []);
           setEditForm({
             name: data.user.name || "",
             bio: data.user.bio || "",
             phone: data.user.phone || "",
+            image: data.user.image || "",
           });
+          setError(null);
+        } else {
+          setError("Не удалось загрузить профиль");
         }
       } catch (e) {
         console.error("Ошибка загрузки профиля:", e);
+        setError("Ошибка сети. Проверьте подключение к интернету");
       } finally {
         setLoading(false);
       }
@@ -188,6 +162,7 @@ export function ProfilePage() {
   }, [user]);
 
   const handleSaveProfile = async () => {
+    setSaving(true);
     try {
       const res = await fetch("/api/user", {
         method: "PUT",
@@ -200,6 +175,7 @@ export function ProfilePage() {
           setUser({
             ...user,
             name: data.user.name,
+            image: data.user.image,
           });
         }
         setProfile((prev) =>
@@ -213,15 +189,25 @@ export function ProfilePage() {
       }
     } catch {
       toast.error("Ошибка обновления профиля");
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await fetch("/api/auth/signout", { method: "POST" });
-    } catch {
-      // ok
+  const handleCancelEdit = () => {
+    if (profile) {
+      setEditForm({
+        name: profile.name || "",
+        bio: profile.bio || "",
+        phone: profile.phone || "",
+        image: profile.image || "",
+      });
     }
+    setEditing(false);
+  };
+
+  const handleLogout = async () => {
+    await signOut({ redirect: false });
     logout();
     navigate("home");
   };
@@ -253,42 +239,62 @@ export function ProfilePage() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <div className="max-w-md mx-auto">
+          <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+            <User className="w-8 h-8 text-red-600" />
+          </div>
+          <h2 className="text-xl font-semibold mb-2">{error}</h2>
+          <p className="text-muted-foreground mb-4">Попробуйте обновить страницу или войти заново</p>
+          <Button
+            className="bg-blue-700 hover:bg-blue-800 text-white"
+            onClick={() => { setLoading(true); setError(null); window.location.reload(); }}
+          >
+            Повторить попытку
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   const roleLabels: Record<string, string> = {
     admin: "Администратор",
     teacher: "Преподаватель",
     student: "Студент",
   };
 
-  // Цвет для ячейки теплового графика
-  const getActivityColor = (count: number): string => {
-    if (count === 0) return "bg-muted/50";
-    if (count <= 1) return "bg-green-200 dark:bg-green-900/60";
-    if (count <= 2) return "bg-green-300 dark:bg-green-800/70";
-    if (count <= 3) return "bg-green-400 dark:bg-green-700/80";
-    return "bg-green-500 dark:bg-green-600";
-  };
-
-  // Heatmap grid dimensions
-  const totalWeeks = 16;
-  const weekSize = 7;
+  // Derived stats from real enrollment data
+  const completedCount = enrollments.filter((e) => e.status === "completed").length;
+  const inProgressCount = enrollments.filter((e) => e.status === "active" && e.progress > 0 && e.progress < 100).length;
+  const avgProgress = enrollments.length > 0
+    ? Math.round(enrollments.reduce((sum, e) => sum + e.progress, 0) / enrollments.length)
+    : 0;
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Заголовок профиля */}
+      {/* Profile Header */}
       <Card className="border-0 shadow-sm mb-6">
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-violet-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-              {user.name
-                ?.split(" ")
-                .map((n) => n[0])
-                .join("")
-                .toUpperCase()
-                .slice(0, 2) || "U"}
-            </div>
+            <Avatar className="w-20 h-20">
+              <AvatarImage src={profile?.image || user?.image || ""} alt={profile?.name || user?.name || ""} />
+              <AvatarFallback className="bg-gradient-to-br from-blue-500 to-violet-600 text-white text-2xl font-bold">
+                {(profile?.name || user?.name)
+                  ?.split(" ")
+                  .map((n) => n[0])
+                  .join("")
+                  .toUpperCase()
+                  .slice(0, 2) || "U"}
+              </AvatarFallback>
+            </Avatar>
             <div className="flex-1">
               <h1 className="text-2xl font-bold">{profile?.name || user.name}</h1>
               <p className="text-muted-foreground">{profile?.email || user.email}</p>
+              {profile?.bio && (
+                <p className="text-sm text-muted-foreground mt-1 max-w-lg">{profile.bio}</p>
+              )}
               <div className="flex items-center gap-2 mt-2 flex-wrap">
                 <Badge className="bg-violet-100 text-violet-700 border-0">
                   {roleLabels[profile?.role || user.role] || user.role}
@@ -301,7 +307,7 @@ export function ProfilePage() {
                 <span className="text-xs text-muted-foreground">
                   На платформе с{" "}
                   {profile?.createdAt
-                    ? new Date(profile.createdAt).toLocaleDateString("ru-RU")
+                    ? new Date(profile.createdAt).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })
                     : "..."}
                 </span>
               </div>
@@ -311,14 +317,14 @@ export function ProfilePage() {
                 <Edit3 className="w-4 h-4 mr-2" />
                 {editing ? "Отмена" : "Редактировать"}
               </Button>
-              <Button variant="outline" size="sm" onClick={handleLogout} className="text-red-600">
+              <Button variant="destructive" size="sm" onClick={handleLogout}>
                 <LogOut className="w-4 h-4 mr-2" />
                 {t("nav.logout", locale)}
               </Button>
             </div>
           </div>
 
-          {/* Статистика */}
+          {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
             {[
               {
@@ -329,7 +335,7 @@ export function ProfilePage() {
               {
                 label: "Отзывов",
                 value: profile?._count?.reviews || 0,
-                icon: <User className="w-5 h-5 text-violet-600" />,
+                icon: <MessageSquare className="w-5 h-5 text-violet-600" />,
               },
               {
                 label: "Сертификатов",
@@ -342,9 +348,9 @@ export function ProfilePage() {
                 icon: <Settings className="w-5 h-5 text-orange-600" />,
               },
               {
-                label: "Серия обучения",
-                value: `${learningStreak} дн.`,
-                icon: <Flame className="w-5 h-5 text-red-500" />,
+                label: "Средний прогресс",
+                value: `${avgProgress}%`,
+                icon: <Target className="w-5 h-5 text-green-600" />,
               },
             ].map((stat, i) => (
               <div key={i} className="bg-muted/50 rounded-lg p-3 text-center">
@@ -359,7 +365,7 @@ export function ProfilePage() {
         </CardContent>
       </Card>
 
-      {/* Редактирование профиля */}
+      {/* Edit Profile Form */}
       {editing && (
         <Card className="border-0 shadow-sm mb-6">
           <CardContent className="p-6">
@@ -396,102 +402,79 @@ export function ProfilePage() {
                   }
                 />
               </div>
-              <Button
-                className="bg-blue-700 hover:bg-blue-800 text-white"
-                onClick={handleSaveProfile}
-              >
-                <Save className="w-4 h-4 mr-2" />
-                Сохранить
-              </Button>
+              <div>
+                <Label htmlFor="image">URL аватара</Label>
+                <Input
+                  id="image"
+                  value={editForm.image}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, image: e.target.value })
+                  }
+                  placeholder="https://example.com/avatar.jpg"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  className="bg-blue-700 hover:bg-blue-800 text-white"
+                  onClick={handleSaveProfile}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Сохранение...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Сохранить
+                    </>
+                  )}
+                </Button>
+                <Button variant="outline" onClick={handleCancelEdit} disabled={saving}>
+                  Отмена
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Тепловой график активности */}
-      <Card className="border-0 shadow-sm mb-6">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="font-semibold flex items-center gap-2">
-                <Activity className="w-5 h-5 text-green-600" />
-                Активность обучения
-              </h3>
-              <p className="text-xs text-muted-foreground mt-1">
-                {totalActivities} активностей за последние 16 недель
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Flame className="w-4 h-4 text-orange-500" />
-              <span className="text-sm font-semibold">{learningStreak} дней подряд</span>
-            </div>
-          </div>
-          <div className="overflow-x-auto">
-            <TooltipProvider delayDuration={200}>
-              <div className="flex gap-[3px] min-w-[680px]">
-                {Array.from({ length: totalWeeks }, (_, weekIdx) => (
-                  <div key={weekIdx} className="flex flex-col gap-[3px]">
-                    {Array.from({ length: weekSize }, (_, dayIdx) => {
-                      const dataIdx = weekIdx * weekSize + dayIdx;
-                      const dayData = activityData[dataIdx];
-                      if (!dayData) return <div key={dayIdx} className="w-[12px] h-[12px]" />;
-                      return (
-                        <Tooltip key={dayIdx}>
-                          <TooltipTrigger asChild>
-                            <div
-                              className={`w-[12px] h-[12px] rounded-[2px] ${getActivityColor(dayData.count)} transition-colors hover:ring-1 hover:ring-primary/30`}
-                            />
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="text-xs">
-                            <p className="font-medium">{dayData.date}</p>
-                            <p className="text-muted-foreground">
-                              {dayData.count > 0
-                                ? `${dayData.count} ${dayData.count === 1 ? "активность" : "активностей"}`
-                                : "Нет активности"}
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      );
-                    })}
-                  </div>
-                ))}
+      {/* Progress Summary (replaces fake heatmap) */}
+      {enrollments.length > 0 && (
+        <Card className="border-0 shadow-sm mb-6">
+          <CardContent className="p-6">
+            <h3 className="font-semibold flex items-center gap-2 mb-4">
+              <Activity className="w-5 h-5 text-blue-600" />
+              Прогресс обучения
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div className="bg-muted/50 rounded-lg p-4 text-center">
+                <p className="text-2xl font-bold text-blue-700">{enrollments.length}</p>
+                <p className="text-xs text-muted-foreground mt-1">Всего курсов</p>
               </div>
-            </TooltipProvider>
-          </div>
-          {/* Легенда */}
-          <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
-            <span>Меньше</span>
-            <div className="w-[12px] h-[12px] rounded-[2px] bg-muted/50" />
-            <div className="w-[12px] h-[12px] rounded-[2px] bg-green-200 dark:bg-green-900/60" />
-            <div className="w-[12px] h-[12px] rounded-[2px] bg-green-300 dark:bg-green-800/70" />
-            <div className="w-[12px] h-[12px] rounded-[2px] bg-green-400 dark:bg-green-700/80" />
-            <div className="w-[12px] h-[12px] rounded-[2px] bg-green-500 dark:bg-green-600" />
-            <span>Больше</span>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Навыки */}
-      <Card className="border-0 shadow-sm mb-6">
-        <CardContent className="p-6">
-          <h3 className="font-semibold flex items-center gap-2 mb-4">
-            <Target className="w-5 h-5 text-violet-600" />
-            Навыки и компетенции
-          </h3>
-          {/* Skills derived from actual enrollments */}
-          {enrollments.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              Навыки появятся после прохождения курсов
-            </p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-muted/50 rounded-lg p-4 text-center">
+                <p className="text-2xl font-bold text-amber-600">{inProgressCount}</p>
+                <p className="text-xs text-muted-foreground mt-1">В процессе</p>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-4 text-center">
+                <p className="text-2xl font-bold text-green-600">{completedCount}</p>
+                <p className="text-xs text-muted-foreground mt-1">Завершено</p>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-4 text-center">
+                <p className="text-2xl font-bold text-violet-600">{avgProgress}%</p>
+                <p className="text-xs text-muted-foreground mt-1">Средний прогресс</p>
+              </div>
+            </div>
+            {/* Course progress bars */}
+            <div className="space-y-3">
               {enrollments
                 .filter((e) => e.progress > 0)
+                .slice(0, 6)
                 .map((enrollment) => {
                   const colors = [
                     "bg-blue-500", "bg-violet-500", "bg-amber-500",
                     "bg-green-500", "bg-orange-500", "bg-red-500",
-                    "bg-cyan-500", "bg-pink-500",
                   ];
                   const colorIndex = enrollment.course.title.length % colors.length;
                   return (
@@ -510,11 +493,13 @@ export function ProfilePage() {
                   );
                 })}
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Мои курсы / Закладки / Сертификаты / Достижения */}
+      {/* Old Skills card removed — replaced by progress summary above */}
+
+      {/* Tabs: My Courses / Bookmarks / Certificates / Achievements */}
       <Tabs defaultValue="enrollments">
         <TabsList>
           <TabsTrigger value="enrollments">
@@ -710,32 +695,54 @@ export function ProfilePage() {
         </TabsContent>
 
         <TabsContent value="certificates" className="mt-4">
-          <div className="text-center py-12">
-            <Award className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">
-              Сертификаты появятся после завершения курсов
-            </h3>
-          </div>
+          {certificates.length === 0 ? (
+            <div className="text-center py-12">
+              <Award className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">
+                Сертификаты появятся после завершения курсов
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                Пройдите курс до конца, чтобы получить сертификат
+              </p>
+              <Button
+                className="bg-blue-700 hover:bg-blue-800 text-white"
+                onClick={() => navigate("catalog")}
+              >
+                {t("nav.catalog", locale)}
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {certificates.map((cert) => (
+                <Card
+                  key={cert.id}
+                  className="border-0 shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-amber-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">
+                        <Award className="w-6 h-6" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm truncate">
+                          {cert.course.title}
+                        </h3>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Выдан {new Date(cert.issuedAt).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="achievements" className="mt-4">
-          <div className="text-center py-8">
-            <Trophy className="w-16 h-16 text-amber-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Ваши достижения</h3>
-            <p className="text-muted-foreground mb-4">
-              Выполняйте задания, проходите курсы и получайте награды!
-            </p>
-            <Button
-              className="bg-blue-700 hover:bg-blue-800 text-white"
-              onClick={() => navigate("achievements")}
-            >
-              <Trophy className="w-4 h-4 mr-2" />
-              Все достижения
-            </Button>
-          </div>
+          <AchievementsPage />
         </TabsContent>
       </Tabs>
     </div>
   );
 }
-

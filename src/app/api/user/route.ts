@@ -85,7 +85,7 @@ export async function GET() {
         },
       },
       orderBy: { issuedAt: "desc" },
-      take: 5,
+      take: 50,
     });
 
     return NextResponse.json({
