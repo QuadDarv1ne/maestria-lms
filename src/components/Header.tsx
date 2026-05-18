@@ -37,14 +37,14 @@ const themeOptions: { value: Theme; icon: string; labelKey: string }[] = [
   { value: "amber", icon: "🍂", labelKey: "theme.amber" },
 ];
 
-const localeOptions: { value: Locale; flag: string; label: string }[] = [
-  { value: "ru", flag: "🇷🇺", label: "Русский" },
-  { value: "en", flag: "🇬🇧", label: "English" },
-  { value: "zh", flag: "🇨🇳", label: "中文" },
-];
-
 export function Header() {
   const { user, sidebarOpen, setSidebarOpen, navigate, logout, unreadNotificationsCount, theme, setTheme, locale, setLocale } = useAppStore();
+
+  const localeOptions: { value: Locale; flag: string; label: string }[] = [
+    { value: "ru", flag: "🇷🇺", label: t("locale.ru", locale) },
+    { value: "en", flag: "🇬🇧", label: t("locale.en", locale) },
+    { value: "zh", flag: "🇨🇳", label: t("locale.zh", locale) },
+  ];
   const unreadCount = unreadNotificationsCount();
 
   const handleLogout = async () => {

@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
+import { t } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { formatDate, formatNumber } from "@/lib/utils";
 import {
   Shield,
   Users,
@@ -367,6 +369,7 @@ function Sparkline({ data, color = "#4f46e5", width = 80, height = 32 }: { data:
 
 export function AdminPage() {
   const { user, navigate } = useAppStore();
+  const locale = useAppStore((s) => s.locale);
   const queryClient = useQueryClient();
   const [reports] = useState<ReportItem[]>(demoReports);
   const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
@@ -393,24 +396,24 @@ export function AdminPage() {
   const handleUserRoleChange = async (userId: string, role: string) => {
     try {
       await updateRole.mutateAsync({ userId, role });
-      toast.success("Роль пользователя обновлена");
+      toast.success(t("adminPage.roleUpdated", locale));
     } catch {
-      toast.error("Ошибка обновления роли");
+      toast.error(t("adminPage.roleUpdateError", locale));
     }
   };
 
   const handleUserStatusChange = async (userId: string, isActive: boolean) => {
     try {
       await toggleStatus.mutateAsync({ userId, isActive });
-      toast.success(isActive ? "Пользователь разблокирован" : "Пользователь заблокирован");
+      toast.success(t(isActive ? "adminPage.userUnblocked" : "adminPage.userBlocked", locale));
     } catch {
-      toast.error("Ошибка обновления статуса");
+      toast.error(t("adminPage.statusUpdateError", locale));
     }
   };
 
   const handleRefresh = () => {
     queryClient.invalidateQueries({ queryKey: ["admin"] });
-    toast.success("Данные обновлены");
+    toast.success(t("adminPage.dataUpdated", locale));
   };
 
   // Вычисляемые значения
@@ -461,15 +464,15 @@ export function AdminPage() {
   // ═══════════════════════════════════════════════════════════════════════
 
   const sidebarItems: { id: AdminTab; label: string; icon: React.ReactNode; badge?: number }[] = [
-    { id: "dashboard", label: "Дашборд", icon: <LayoutDashboard className="w-5 h-5" /> },
-    { id: "users", label: "Пользователи", icon: <Users className="w-5 h-5" />, badge: users.length },
-    { id: "tests", label: "Тесты", icon: <ClipboardCheck className="w-5 h-5" /> },
-    { id: "materials", label: "Материалы", icon: <FileText className="w-5 h-5" /> },
-    { id: "finance", label: "Финансы", icon: <Wallet className="w-5 h-5" /> },
-    { id: "courses", label: "Курсы", icon: <BookOpen className="w-5 h-5" />, badge: courses.length },
-    { id: "reports", label: "Жалобы", icon: <Flag className="w-5 h-5" />, badge: pendingReports },
-    { id: "logs", label: "Логи", icon: <Clock className="w-5 h-5" /> },
-    { id: "settings", label: "Настройки", icon: <Settings className="w-5 h-5" /> },
+    { id: "dashboard", label: t("adminPage.tabDashboard", locale), icon: <LayoutDashboard className="w-5 h-5" /> },
+    { id: "users", label: t("adminPage.tabUsers", locale), icon: <Users className="w-5 h-5" />, badge: users.length },
+    { id: "tests", label: t("adminPage.tabTests", locale), icon: <ClipboardCheck className="w-5 h-5" /> },
+    { id: "materials", label: t("adminPage.tabMaterials", locale), icon: <FileText className="w-5 h-5" /> },
+    { id: "finance", label: t("adminPage.tabFinance", locale), icon: <Wallet className="w-5 h-5" /> },
+    { id: "courses", label: t("adminPage.tabCourses", locale), icon: <BookOpen className="w-5 h-5" />, badge: courses.length },
+    { id: "reports", label: t("adminPage.tabReports", locale), icon: <Flag className="w-5 h-5" />, badge: pendingReports },
+    { id: "logs", label: t("adminPage.tabLogs", locale), icon: <Clock className="w-5 h-5" /> },
+    { id: "settings", label: t("adminPage.tabSettings", locale), icon: <Settings className="w-5 h-5" /> },
   ];
 
   const renderSidebar = () => (
@@ -483,7 +486,7 @@ export function AdminPage() {
           {!sidebarCollapsed && (
             <div className="overflow-hidden">
               <h2 className="text-sm font-bold text-sidebar-foreground truncate">Maestria Admin</h2>
-              <p className="text-[10px] text-muted-foreground">Панель управления v3.1</p>
+              <p className="text-[10px] text-muted-foreground">{t("admin.subtitle", locale)} v3.1</p>
             </div>
           )}
         </div>
@@ -535,10 +538,10 @@ export function AdminPage() {
         <button
           onClick={() => navigate("home")}
           className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors ${sidebarCollapsed ? "justify-center" : ""}`}
-          title="Выйти из панели"
+          title={t("adminPage.exitPanel", locale)}
         >
           <LogOut className="w-4 h-4" />
-          {!sidebarCollapsed && <span>Выйти из панели</span>}
+          {!sidebarCollapsed && <span>{t("adminPage.exitPanel", locale)}</span>}
         </button>
       </div>
     </div>
@@ -557,12 +560,12 @@ export function AdminPage() {
             {/* KPI карточки */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {[
-                { label: "Пользователей", value: users.length, icon: <Users className="w-5 h-5 text-blue-600" />, trend: "+18%", up: true, sparkData: [30, 35, 42, 48, 55, 62, 70, 78, 85, 92, 100, 110], sparkColor: "#4f46e5" },
-                { label: "Студентов", value: totalStudents, icon: <GraduationCap className="w-5 h-5 text-violet-600" />, trend: "+22%", up: true, sparkData: [20, 25, 30, 35, 42, 48, 55, 60, 68, 75, 82, 90], sparkColor: "#7c3aed" },
-                { label: "Курсов", value: courses.length, icon: <BookOpen className="w-5 h-5 text-blue-700" />, trend: "+2", up: true, sparkData: [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 30, 34], sparkColor: "#1d4ed8" },
-                { label: "Записей", value: totalEnrollments, icon: <BarChart3 className="w-5 h-5 text-purple-600" />, trend: "+12%", up: true, sparkData: [50, 65, 80, 95, 110, 128, 145, 160, 178, 195, 210, 230], sparkColor: "#9333ea" },
-                { label: "Доход", value: `${(totalRevenue / 1000).toFixed(0)}K ₽`, icon: <DollarSign className="w-5 h-5 text-emerald-600" />, trend: "+24%", up: true, sparkData: [32, 45, 58, 72, 85, 98, 112, 125, 138, 152, 168, 185], sparkColor: "#10b981" },
-                { label: "Ср. рейтинг", value: avgRating, icon: <TrendingUp className="w-5 h-5 text-amber-600" />, trend: "+0.2", up: true, sparkData: [3.2, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0, 4.1, 4.2, 4.3, 4.5], sparkColor: "#f59e0b" },
+                { label: t("adminPage.kpiUsers", locale), value: users.length, icon: <Users className="w-5 h-5 text-blue-600" />, trend: "+18%", up: true, sparkData: [30, 35, 42, 48, 55, 62, 70, 78, 85, 92, 100, 110], sparkColor: "#4f46e5" },
+                { label: t("adminPage.kpiStudents", locale), value: totalStudents, icon: <GraduationCap className="w-5 h-5 text-violet-600" />, trend: "+22%", up: true, sparkData: [20, 25, 30, 35, 42, 48, 55, 60, 68, 75, 82, 90], sparkColor: "#7c3aed" },
+                { label: t("adminPage.kpiCourses", locale), value: courses.length, icon: <BookOpen className="w-5 h-5 text-blue-700" />, trend: "+2", up: true, sparkData: [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 30, 34], sparkColor: "#1d4ed8" },
+                { label: t("adminPage.kpiEnrollments", locale), value: totalEnrollments, icon: <BarChart3 className="w-5 h-5 text-purple-600" />, trend: "+12%", up: true, sparkData: [50, 65, 80, 95, 110, 128, 145, 160, 178, 195, 210, 230], sparkColor: "#9333ea" },
+                { label: t("adminPage.kpiRevenue", locale), value: `${(totalRevenue / 1000).toFixed(0)}K ₽`, icon: <DollarSign className="w-5 h-5 text-emerald-600" />, trend: "+24%", up: true, sparkData: [32, 45, 58, 72, 85, 98, 112, 125, 138, 152, 168, 185], sparkColor: "#10b981" },
+                { label: t("adminPage.kpiAvgRating", locale), value: avgRating, icon: <TrendingUp className="w-5 h-5 text-amber-600" />, trend: "+0.2", up: true, sparkData: [3.2, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0, 4.1, 4.2, 4.3, 4.5], sparkColor: "#f59e0b" },
               ].map((stat, i) => (
                 <Card key={i} className="border-0 shadow-sm hover:shadow-md transition-shadow">
                   <CardContent className="p-4">
@@ -590,7 +593,7 @@ export function AdminPage() {
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base flex items-center gap-2">
                       <Users className="w-5 h-5 text-blue-700" />
-                      Регистрации пользователей
+                      {t("admin.registrations", locale)}
                     </CardTitle>
                     <Badge className="bg-green-100 text-green-700 border-0 text-xs">
                       <ArrowUpRight className="w-3 h-3 mr-1" />+18%
@@ -600,8 +603,8 @@ export function AdminPage() {
                 <CardContent>
                   <LineChart data={demoMonthlyRegistrations} labels={monthLabels} color="#4f46e5" height={220} />
                   <div className="flex justify-between mt-3 text-xs text-muted-foreground">
-                    <span>Всего за год: <strong className="text-foreground">{demoMonthlyRegistrations.reduce((a, b) => a + b, 0)}</strong></span>
-                    <span>Ср. за месяц: <strong className="text-foreground">{Math.round(demoMonthlyRegistrations.reduce((a, b) => a + b, 0) / 12)}</strong></span>
+                    <span>{t("adminPage.statTotalYear", locale)}: <strong className="text-foreground">{demoMonthlyRegistrations.reduce((a, b) => a + b, 0)}</strong></span>
+                    <span>{t("adminPage.statAvgMonth", locale)}: <strong className="text-foreground">{Math.round(demoMonthlyRegistrations.reduce((a, b) => a + b, 0) / 12)}</strong></span>
                   </div>
                 </CardContent>
               </Card>
@@ -611,7 +614,7 @@ export function AdminPage() {
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base flex items-center gap-2">
                       <BookOpen className="w-5 h-5 text-violet-600" />
-                      Записи на курсы
+                      {t("admin.enrollmentsChart", locale)}
                     </CardTitle>
                     <Badge className="bg-blue-100 text-blue-700 border-0 text-xs">
                       <ArrowUpRight className="w-3 h-3 mr-1" />+32%
@@ -621,8 +624,8 @@ export function AdminPage() {
                 <CardContent>
                   <LineChart data={demoMonthlyEnrollments} labels={monthLabels} color="#7c3aed" height={220} fillOpacity={0.15} />
                   <div className="flex justify-between mt-3 text-xs text-muted-foreground">
-                    <span>Всего за год: <strong className="text-foreground">{demoMonthlyEnrollments.reduce((a, b) => a + b, 0)}</strong></span>
-                    <span>Ср. за месяц: <strong className="text-foreground">{Math.round(demoMonthlyEnrollments.reduce((a, b) => a + b, 0) / 12)}</strong></span>
+                    <span>{t("adminPage.statTotalYear", locale)}: <strong className="text-foreground">{demoMonthlyEnrollments.reduce((a, b) => a + b, 0)}</strong></span>
+                    <span>{t("adminPage.statAvgMonth", locale)}: <strong className="text-foreground">{Math.round(demoMonthlyEnrollments.reduce((a, b) => a + b, 0) / 12)}</strong></span>
                   </div>
                 </CardContent>
               </Card>
@@ -635,14 +638,14 @@ export function AdminPage() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center gap-2">
                     <PieChart className="w-5 h-5 text-amber-600" />
-                    Категории курсов
+                    {t("admin.categoryDist", locale)}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <DonutChart
                     segments={demoCategoryDistribution}
                     centerValue={courses.length.toString()}
-                    centerLabel="курсов"
+                    centerLabel={t("adminPage.donutCourses", locale)}
                     size={160}
                     strokeWidth={26}
                   />
@@ -654,7 +657,7 @@ export function AdminPage() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Zap className="w-5 h-5 text-amber-600" />
-                    Последние действия
+                    {t("admin.recentActivity", locale)}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -679,18 +682,18 @@ export function AdminPage() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Server className="w-5 h-5 text-green-600" />
-                    Системная статистика
+                    {t("adminPage.statSystem", locale)}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {[
-                      { name: "Пользователей", value: stats?.totalUsers ?? "—", icon: <Users className="w-4 h-4 text-blue-600" /> },
-                      { name: "Студентов", value: stats?.totalStudents ?? "—", icon: <GraduationCap className="w-4 h-4 text-green-600" /> },
-                      { name: "Преподавателей", value: stats?.totalTeachers ?? "—", icon: <Award className="w-4 h-4 text-amber-600" /> },
-                      { name: "Курсов", value: stats?.totalPublishedCourses ?? "—", icon: <BookOpen className="w-4 h-4 text-violet-600" /> },
-                      { name: "Записей на курсы", value: stats?.totalEnrollments ?? "—", icon: <Activity className="w-4 h-4 text-emerald-600" /> },
-                      { name: "Время работы", value: stats?.serverUptime ?? "—", icon: <Clock className="w-4 h-4 text-gray-600" /> },
+                      { name: t("adminPage.statUsers", locale), value: stats?.totalUsers ?? "—", icon: <Users className="w-4 h-4 text-blue-600" /> },
+                      { name: t("adminPage.statStudents", locale), value: stats?.totalStudents ?? "—", icon: <GraduationCap className="w-4 h-4 text-green-600" /> },
+                      { name: t("adminPage.statTeachers", locale), value: stats?.totalTeachers ?? "—", icon: <Award className="w-4 h-4 text-amber-600" /> },
+                      { name: t("adminPage.statCourses", locale), value: stats?.totalPublishedCourses ?? "—", icon: <BookOpen className="w-4 h-4 text-violet-600" /> },
+                      { name: t("adminPage.statEnrollments", locale), value: stats?.totalEnrollments ?? "—", icon: <Activity className="w-4 h-4 text-emerald-600" /> },
+                      { name: t("adminPage.statUptime", locale), value: stats?.serverUptime ?? "—", icon: <Clock className="w-4 h-4 text-gray-600" /> },
                     ].map((item, i) => (
                       <div key={i} className="flex items-center justify-between p-2.5 bg-muted/50 rounded-lg">
                         <div className="flex items-center gap-2">
@@ -714,10 +717,10 @@ export function AdminPage() {
             {/* Статистика пользователей */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: "Всего пользователей", value: users.length, icon: <Users className="w-5 h-5 text-blue-600" />, bg: "bg-blue-50 dark:bg-blue-950/30" },
-                { label: "Активных", value: activeUsers, icon: <UserCheck className="w-5 h-5 text-green-600" />, bg: "bg-green-50 dark:bg-green-950/30" },
-                { label: "Заблокированных", value: users.length - activeUsers, icon: <UserX className="w-5 h-5 text-red-600" />, bg: "bg-red-50 dark:bg-red-950/30" },
-                { label: "С 2FA", value: users.filter(u => u.twoFactorEnabled).length, icon: <Shield className="w-5 h-5 text-violet-600" />, bg: "bg-violet-50 dark:bg-violet-950/30" },
+                { label: t("adminPage.kpiTotalUsers", locale), value: users.length, icon: <Users className="w-5 h-5 text-blue-600" />, bg: "bg-blue-50 dark:bg-blue-950/30" },
+                { label: t("adminPage.kpiActive", locale), value: activeUsers, icon: <UserCheck className="w-5 h-5 text-green-600" />, bg: "bg-green-50 dark:bg-green-950/30" },
+                { label: t("adminPage.kpiBlocked", locale), value: users.length - activeUsers, icon: <UserX className="w-5 h-5 text-red-600" />, bg: "bg-red-50 dark:bg-red-950/30" },
+                { label: t("adminPage.kpiWith2FA", locale), value: users.filter(u => u.twoFactorEnabled).length, icon: <Shield className="w-5 h-5 text-violet-600" />, bg: "bg-violet-50 dark:bg-violet-950/30" },
               ].map((stat, i) => (
                 <Card key={i} className="border-0 shadow-sm">
                   <CardContent className={`p-4 ${stat.bg} rounded-xl`}>
@@ -738,7 +741,7 @@ export function AdminPage() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
                   <TrendingUp className="w-5 h-5 text-blue-700" />
-                  Рост базы пользователей
+                  {t("adminPage.statUserGrowth", locale)}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -752,18 +755,18 @@ export function AdminPage() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center gap-2">
                     <PieChart className="w-5 h-5 text-violet-600" />
-                    Распределение ролей
+                    {t("adminPage.statRoleDistribution", locale)}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <DonutChart
                     segments={[
-                      { label: "Студенты", value: totalStudents, color: "#4f46e5" },
-                      { label: "Преподаватели", value: totalTeachers, color: "#f59e0b" },
-                      { label: "Администраторы", value: users.filter(u => u.role === "admin").length, color: "#7c3aed" },
+                      { label: t("adminPage.userRoleStudents", locale), value: totalStudents, color: "#4f46e5" },
+                      { label: t("adminPage.userRoleTeachers", locale), value: totalTeachers, color: "#f59e0b" },
+                      { label: t("adminPage.userRoleAdmins", locale), value: users.filter(u => u.role === "admin").length, color: "#7c3aed" },
                     ]}
                     centerValue={users.length.toString()}
-                    centerLabel="пользователей"
+                    centerLabel={t("adminPage.donutUsers", locale)}
                     size={160}
                     strokeWidth={26}
                   />
@@ -775,14 +778,14 @@ export function AdminPage() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Activity className="w-5 h-5 text-green-600" />
-                    Активность пользователей по дням
+                    {t("adminPage.statUserActivity", locale)}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <BarChart data={[65, 78, 52, 89, 72, 38, 42]} labels={dayLabels} color="#10b981" height={180} />
                   <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-                    <span>Пик: <strong className="text-foreground">Чт (89)</strong></span>
-                    <span>Среднее: <strong className="text-foreground">{Math.round([65, 78, 52, 89, 72, 38, 42].reduce((a, b) => a + b, 0) / 7)}</strong></span>
+                    <span>{t("adminPage.statPeakDay", locale)}: <strong className="text-foreground">Чт (89)</strong></span>
+                    <span>{t("adminPage.statAvgDayValue", locale)}: <strong className="text-foreground">{Math.round([65, 78, 52, 89, 72, 38, 42].reduce((a, b) => a + b, 0) / 7)}</strong></span>
                   </div>
                 </CardContent>
               </Card>
@@ -792,12 +795,12 @@ export function AdminPage() {
             <Card className="border-0 shadow-sm">
               <CardHeader className="pb-3">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <CardTitle className="text-base">Список пользователей</CardTitle>
+                  <CardTitle className="text-base">{t("adminPage.statUserList", locale)}</CardTitle>
                   <div className="flex items-center gap-2 w-full sm:w-auto">
                     <div className="relative flex-1 sm:flex-initial">
                       <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
-                        placeholder="Поиск..."
+                        placeholder={t("adminPage.userSearch", locale)}
                         value={userSearch}
                         onChange={(e) => setUserSearch(e.target.value)}
                         className="pl-9 h-9 w-full sm:w-[200px]"
@@ -805,13 +808,13 @@ export function AdminPage() {
                     </div>
                     <Select value={userRoleFilter} onValueChange={setUserRoleFilter}>
                       <SelectTrigger className="w-[140px] h-9">
-                        <SelectValue placeholder="Роль" />
+                        <SelectValue placeholder={t("adminPage.userRoleFilter", locale)} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Все роли</SelectItem>
-                        <SelectItem value="student">Студенты</SelectItem>
-                        <SelectItem value="teacher">Преподаватели</SelectItem>
-                        <SelectItem value="admin">Администраторы</SelectItem>
+                        <SelectItem value="all">{t("admin.allRoles", locale)}</SelectItem>
+                        <SelectItem value="student">{t("adminPage.userRoleStudents", locale)}</SelectItem>
+                        <SelectItem value="teacher">{t("adminPage.userRoleTeachers", locale)}</SelectItem>
+                        <SelectItem value="admin">{t("adminPage.userRoleAdmins", locale)}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -822,13 +825,13 @@ export function AdminPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Пользователь</TableHead>
+                        <TableHead>{t("adminPage.tabUsers", locale)}</TableHead>
                         <TableHead>Email</TableHead>
-                        <TableHead>Роль</TableHead>
+                        <TableHead>{t("admin.role", locale)}</TableHead>
                         <TableHead>2FA</TableHead>
-                        <TableHead>Статус</TableHead>
-                        <TableHead>Курсов</TableHead>
-                        <TableHead>Дата регистрации</TableHead>
+                        <TableHead>{t("admin.status", locale)}</TableHead>
+                        <TableHead>{t("adminPage.kpiCourses", locale)}</TableHead>
+                        <TableHead>{t("adminPage.statRegistrationDate", locale)}</TableHead>
                         <TableHead></TableHead>
                       </TableRow>
                     </TableHeader>
@@ -840,7 +843,7 @@ export function AdminPage() {
                               <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-violet-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0">
                                 {u.name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || "??"}
                               </div>
-                              <span className="font-medium text-sm">{u.name || "Без имени"}</span>
+                              <span className="font-medium text-sm">{u.name || t("adminPage.userNoName", locale)}</span>
                             </div>
                           </TableCell>
                           <TableCell className="text-sm">{u.email}</TableCell>
@@ -848,15 +851,15 @@ export function AdminPage() {
                             <Select value={u.role} onValueChange={(value) => handleUserRoleChange(u.id, value)}>
                               <SelectTrigger className="w-[130px] h-8 text-xs"><SelectValue /></SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="student">Студент</SelectItem>
-                                <SelectItem value="teacher">Преподаватель</SelectItem>
-                                <SelectItem value="admin">Администратор</SelectItem>
+                                <SelectItem value="student">{t("role.student", locale)}</SelectItem>
+                                <SelectItem value="teacher">{t("role.teacher", locale)}</SelectItem>
+                                <SelectItem value="admin">{t("role.admin", locale)}</SelectItem>
                               </SelectContent>
                             </Select>
                           </TableCell>
                           <TableCell>
                             <Badge variant="outline" className={`text-[10px] ${u.twoFactorEnabled ? 'border-green-300 text-green-700' : 'border-gray-300 text-gray-500'}`}>
-                              {u.twoFactorEnabled ? "Вкл" : "Выкл"}
+                              {u.twoFactorEnabled ? t("adminPage.user2faOn", locale) : t("adminPage.user2faOff", locale)}
                             </Badge>
                           </TableCell>
                           <TableCell>
@@ -866,14 +869,14 @@ export function AdminPage() {
                               className="cursor-pointer disabled:cursor-not-allowed"
                             >
                               {u.isActive
-                                ? <Badge className="bg-green-100 text-green-700 border-0 text-xs hover:bg-green-200 transition-colors">Активен</Badge>
-                                : <Badge className="bg-red-100 text-red-700 border-0 text-xs hover:bg-red-200 transition-colors">Заблокирован</Badge>
+                                ? <Badge className="bg-green-100 text-green-700 border-0 text-xs hover:bg-green-200 transition-colors">{t("admin.active", locale)}</Badge>
+                                : <Badge className="bg-red-100 text-red-700 border-0 text-xs hover:bg-red-200 transition-colors">{t("admin.blocked", locale)}</Badge>
                               }
                             </button>
                           </TableCell>
                           <TableCell className="text-sm">{u._count.enrollments}</TableCell>
                           <TableCell className="text-xs text-muted-foreground">
-                            {new Date(u.createdAt).toLocaleDateString("ru-RU")}
+                            {formatDate(u.createdAt, locale)}
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-1">
@@ -890,7 +893,7 @@ export function AdminPage() {
                       {paginatedUsers.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                            Пользователи не найдены
+                            {t("adminPage.statNotFound", locale)}
                           </TableCell>
                         </TableRow>
                       )}
@@ -898,7 +901,7 @@ export function AdminPage() {
                   </Table>
                 </div>
                 <div className="p-3 border-t text-xs text-muted-foreground flex items-center justify-between">
-                  <span>Найдено: {filteredUsers.length} из {users.length}</span>
+                  <span>{t("adminPage.statFound", locale)}: {filteredUsers.length} / {users.length}</span>
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
@@ -909,7 +912,7 @@ export function AdminPage() {
                     >
                       <ChevronLeft className="w-3.5 h-3.5" />
                     </Button>
-                    <span>Страница {userPage} из {totalUserPages || 1}</span>
+                    <span>{t("adminPage.statPage", locale)} {userPage} / {totalUserPages || 1}</span>
                     <Button
                       variant="outline"
                       size="sm"
@@ -933,10 +936,10 @@ export function AdminPage() {
             {/* KPI по тестам */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: "Всего попыток", value: demoTestResults.reduce((a, t) => a + t.attempts, 0), icon: <ClipboardCheck className="w-5 h-5 text-blue-600" /> },
-                { label: "Успешных", value: demoTestResults.reduce((a, t) => a + t.completions, 0), icon: <CheckCircle2 className="w-5 h-5 text-green-600" /> },
-                { label: "Ср. проходной %", value: `${Math.round(demoTestResults.reduce((a, t) => a + t.passRate, 0) / demoTestResults.length)}%`, icon: <Award className="w-5 h-5 text-amber-600" /> },
-                { label: "Ср. балл", value: Math.round(demoTestResults.reduce((a, t) => a + t.avgScore, 0) / demoTestResults.length), icon: <TrendingUp className="w-5 h-5 text-violet-600" /> },
+                { label: t("adminPage.kpiTotalAttempts", locale), value: demoTestResults.reduce((a, t) => a + t.attempts, 0), icon: <ClipboardCheck className="w-5 h-5 text-blue-600" /> },
+                { label: t("adminPage.kpiSuccessful", locale), value: demoTestResults.reduce((a, t) => a + t.completions, 0), icon: <CheckCircle2 className="w-5 h-5 text-green-600" /> },
+                { label: t("adminPage.kpiAvgPassRate", locale), value: `${Math.round(demoTestResults.reduce((a, t) => a + t.passRate, 0) / demoTestResults.length)}%`, icon: <Award className="w-5 h-5 text-amber-600" /> },
+                { label: t("adminPage.kpiAvgScore", locale), value: Math.round(demoTestResults.reduce((a, t) => a + t.avgScore, 0) / demoTestResults.length), icon: <TrendingUp className="w-5 h-5 text-violet-600" /> },
               ].map((stat, i) => (
                 <Card key={i} className="border-0 shadow-sm">
                   <CardContent className="p-4">
@@ -953,14 +956,14 @@ export function AdminPage() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center gap-2">
                     <ClipboardCheck className="w-5 h-5 text-blue-700" />
-                    Прохождение тестов за неделю
+                    {t("admin.testCompletions", locale)}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <BarChart data={demoTestCompletions} labels={dayLabels} color="#4f46e5" height={200} />
                   <div className="flex justify-between mt-3 text-xs text-muted-foreground">
-                    <span>Всего: <strong className="text-foreground">{demoTestCompletions.reduce((a, b) => a + b, 0)}</strong></span>
-                    <span>Ср. за день: <strong className="text-foreground">{Math.round(demoTestCompletions.reduce((a, b) => a + b, 0) / 7)}</strong></span>
+                    <span>{t("adminPage.statTotal", locale)}: <strong className="text-foreground">{demoTestCompletions.reduce((a, b) => a + b, 0)}</strong></span>
+                    <span>{t("adminPage.statAvgDay", locale)}: <strong className="text-foreground">{Math.round(demoTestCompletions.reduce((a, b) => a + b, 0) / 7)}</strong></span>
                   </div>
                 </CardContent>
               </Card>
@@ -969,14 +972,14 @@ export function AdminPage() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center gap-2">
                     <TrendingUp className="w-5 h-5 text-green-600" />
-                    Процент успешных прохождений
+                    {t("admin.testPassRate", locale)}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <LineChart data={demoTestPassRate} labels={dayLabels} color="#10b981" height={200} />
                   <div className="flex justify-between mt-3 text-xs text-muted-foreground">
-                    <span>Мин: <strong className="text-foreground">{Math.min(...demoTestPassRate)}%</strong></span>
-                    <span>Макс: <strong className="text-foreground">{Math.max(...demoTestPassRate)}%</strong></span>
+                    <span>{t("adminPage.statMin", locale)}: <strong className="text-foreground">{Math.min(...demoTestPassRate)}%</strong></span>
+                    <span>{t("adminPage.statMax", locale)}: <strong className="text-foreground">{Math.max(...demoTestPassRate)}%</strong></span>
                   </div>
                 </CardContent>
               </Card>
@@ -987,7 +990,7 @@ export function AdminPage() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-violet-600" />
-                  Результаты тестов по курсам
+                  {t("admin.testResults", locale)}
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
@@ -995,12 +998,12 @@ export function AdminPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Курс</TableHead>
-                        <TableHead>Проходной %</TableHead>
-                        <TableHead>Ср. балл</TableHead>
-                        <TableHead>Попыток</TableHead>
-                        <TableHead>Успешно</TableHead>
-                        <TableHead>Прогресс</TableHead>
+                        <TableHead>{t("adminPage.thCourse", locale)}</TableHead>
+                        <TableHead>{t("adminPage.thPassRate", locale)}</TableHead>
+                        <TableHead>{t("adminPage.thAvgScore", locale)}</TableHead>
+                        <TableHead>{t("adminPage.thAttempts", locale)}</TableHead>
+                        <TableHead>{t("adminPage.thSuccessful", locale)}</TableHead>
+                        <TableHead>{t("adminPage.thProgress", locale)}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1034,18 +1037,18 @@ export function AdminPage() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5 text-amber-600" />
-                  Распределение тестов по сложности
+                  {t("adminPage.statTestDifficulty", locale)}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <DonutChart
                   segments={[
-                    { label: "Лёгкие (>80%)", value: 3, color: "#10b981" },
-                    { label: "Средние (60-80%)", value: 3, color: "#f59e0b" },
-                    { label: "Сложные (<60%)", value: 2, color: "#ef4444" },
+                    { label: t("adminPage.testDifficultyEasy", locale), value: 3, color: "#10b981" },
+                    { label: t("adminPage.testDifficultyMedium", locale), value: 3, color: "#f59e0b" },
+                    { label: t("adminPage.testDifficultyHard", locale), value: 2, color: "#ef4444" },
                   ]}
                   centerValue="8"
-                  centerLabel="тестов"
+                  centerLabel={t("adminPage.donutTests", locale)}
                   size={160}
                   strokeWidth={26}
                 />
@@ -1061,10 +1064,10 @@ export function AdminPage() {
             {/* KPI по материалам */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: "Сессий чтения", value: demoReadingSessions.reduce((a, b) => a + b, 0), icon: <FileText className="w-5 h-5 text-blue-600" /> },
-                { label: "Ср. время чтения", value: `${Math.round(demoAvgReadingTime.reduce((a, b) => a + b, 0) / 7)} мин`, icon: <Timer className="w-5 h-5 text-amber-600" /> },
-                { label: "Завершено", value: demoMaterialProgress.reduce((a, m) => a + m.completed, 0), icon: <BookCheck className="w-5 h-5 text-green-600" /> },
-                { label: "Ср. прогресс", value: `${Math.round(demoMaterialProgress.reduce((a, m) => a + m.readPercent, 0) / demoMaterialProgress.length)}%`, icon: <TrendingUp className="w-5 h-5 text-violet-600" /> },
+                { label: t("adminPage.kpiReadingSessions", locale), value: demoReadingSessions.reduce((a, b) => a + b, 0), icon: <FileText className="w-5 h-5 text-blue-600" /> },
+                { label: t("adminPage.kpiAvgReadingTime", locale), value: `${Math.round(demoAvgReadingTime.reduce((a, b) => a + b, 0) / 7)} ${t("common.min", locale)}`, icon: <Timer className="w-5 h-5 text-amber-600" /> },
+                { label: t("adminPage.kpiCompleted", locale), value: demoMaterialProgress.reduce((a, m) => a + m.completed, 0), icon: <BookCheck className="w-5 h-5 text-green-600" /> },
+                { label: t("adminPage.kpiAvgProgress", locale), value: `${Math.round(demoMaterialProgress.reduce((a, m) => a + m.readPercent, 0) / demoMaterialProgress.length)}%`, icon: <TrendingUp className="w-5 h-5 text-violet-600" /> },
               ].map((stat, i) => (
                 <Card key={i} className="border-0 shadow-sm">
                   <CardContent className="p-4">
@@ -1081,14 +1084,14 @@ export function AdminPage() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center gap-2">
                     <FileText className="w-5 h-5 text-blue-700" />
-                    Сессии чтения за неделю
+                    {t("admin.readingSessions", locale)}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <BarChart data={demoReadingSessions} labels={dayLabels} color="#4f46e5" height={200} />
                   <div className="flex justify-between mt-3 text-xs text-muted-foreground">
-                    <span>Всего: <strong className="text-foreground">{demoReadingSessions.reduce((a, b) => a + b, 0)}</strong></span>
-                    <span>Пик: <strong className="text-foreground">Чт ({Math.max(...demoReadingSessions)})</strong></span>
+                    <span>{t("adminPage.statTotal", locale)}: <strong className="text-foreground">{demoReadingSessions.reduce((a, b) => a + b, 0)}</strong></span>
+                    <span>{t("adminPage.statPeak", locale)}: <strong className="text-foreground">Чт ({Math.max(...demoReadingSessions)})</strong></span>
                   </div>
                 </CardContent>
               </Card>
@@ -1097,14 +1100,14 @@ export function AdminPage() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Timer className="w-5 h-5 text-amber-600" />
-                    Среднее время чтения (мин)
+                    {t("admin.avgReadingTime", locale)}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <LineChart data={demoAvgReadingTime} labels={dayLabels} color="#f59e0b" height={200} fillOpacity={0.12} />
                   <div className="flex justify-between mt-3 text-xs text-muted-foreground">
-                    <span>Мин: <strong className="text-foreground">{Math.min(...demoAvgReadingTime)} мин</strong></span>
-                    <span>Макс: <strong className="text-foreground">{Math.max(...demoAvgReadingTime)} мин</strong></span>
+                    <span>{t("adminPage.statMin", locale)}: <strong className="text-foreground">{Math.min(...demoAvgReadingTime)} {t("common.min", locale)}</strong></span>
+                    <span>{t("adminPage.statMax", locale)}: <strong className="text-foreground">{Math.max(...demoAvgReadingTime)} {t("common.min", locale)}</strong></span>
                   </div>
                 </CardContent>
               </Card>
@@ -1115,7 +1118,7 @@ export function AdminPage() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
                   <BookCheck className="w-5 h-5 text-green-600" />
-                  Прогресс прочитывания по курсам
+                  {t("admin.readingProgress", locale)}
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
@@ -1123,12 +1126,12 @@ export function AdminPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Курс</TableHead>
-                        <TableHead>Прогресс чтения</TableHead>
-                        <TableHead>Ср. время</TableHead>
-                        <TableHead>Читателей</TableHead>
-                        <TableHead>Дочитали</TableHead>
-                        <TableHead>Визуально</TableHead>
+                        <TableHead>{t("adminPage.thCourse", locale)}</TableHead>
+                        <TableHead>{t("adminPage.thReadingProgress", locale)}</TableHead>
+                        <TableHead>{t("adminPage.thAvgTime", locale)}</TableHead>
+                        <TableHead>{t("adminPage.thReaders", locale)}</TableHead>
+                        <TableHead>{t("adminPage.thCompleted", locale)}</TableHead>
+                        <TableHead>{t("adminPage.thVisual", locale)}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1162,14 +1165,14 @@ export function AdminPage() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
                   <TrendingUp className="w-5 h-5 text-violet-600" />
-                  Динамика вовлечённости по месяцам
+                  {t("adminPage.statEngagement", locale)}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <LineChart data={[42, 48, 55, 62, 68, 75, 82, 88, 92, 95, 78, 85]} labels={monthLabels} color="#7c3aed" height={180} fillOpacity={0.15} />
                 <div className="flex justify-between mt-3 text-xs text-muted-foreground">
-                  <span>Тренд: <strong className="text-green-600">Рост +38%</strong></span>
-                  <span>Ср. вовлечённость: <strong className="text-foreground">72%</strong></span>
+                  <span>{t("adminPage.statTrend", locale)}: <strong className="text-green-600">Рост +38%</strong></span>
+                  <span>{t("adminPage.statAvgEngagement", locale)}: <strong className="text-foreground">72%</strong></span>
                 </div>
               </CardContent>
             </Card>
@@ -1183,10 +1186,10 @@ export function AdminPage() {
             {/* Финансовые KPI */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: "Общий доход", value: `${totalRevenue.toLocaleString("ru-RU")} ₽`, icon: <DollarSign className="w-5 h-5 text-emerald-600" /> },
-                { label: "Платных курсов", value: courses.filter(c => c.price > 0).length, icon: <BookOpen className="w-5 h-5 text-blue-600" /> },
-                { label: "Бесплатных", value: courses.filter(c => c.price === 0).length, icon: <Gift className="w-5 h-5 text-amber-600" /> },
-                { label: "Ср. чек", value: courses.filter(c => c.price > 0).length > 0 ? `${Math.round(courses.filter(c => c.price > 0).reduce((a, c) => a + c.price, 0) / courses.filter(c => c.price > 0).length).toLocaleString("ru-RU")} ₽` : "0 ₽", icon: <Wallet className="w-5 h-5 text-violet-600" /> },
+                { label: t("adminPage.kpiTotalRevenue", locale), value: `${formatNumber(totalRevenue, locale)} ₽`, icon: <DollarSign className="w-5 h-5 text-emerald-600" /> },
+                { label: t("adminPage.kpiPaidCourses", locale), value: courses.filter(c => c.price > 0).length, icon: <BookOpen className="w-5 h-5 text-blue-600" /> },
+                { label: t("adminPage.kpiFreeCourses", locale), value: courses.filter(c => c.price === 0).length, icon: <Gift className="w-5 h-5 text-amber-600" /> },
+                { label: t("adminPage.kpiAvgCheck", locale), value: courses.filter(c => c.price > 0).length > 0 ? `${formatNumber(Math.round(courses.filter(c => c.price > 0).reduce((a, c) => a + c.price, 0) / courses.filter(c => c.price > 0).length), locale)} ₽` : "0 ₽", icon: <Wallet className="w-5 h-5 text-violet-600" /> },
               ].map((stat, i) => (
                 <Card key={i} className="border-0 shadow-sm">
                   <CardContent className="p-4">
@@ -1203,7 +1206,7 @@ export function AdminPage() {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base flex items-center gap-2">
                     <DollarSign className="w-5 h-5 text-emerald-600" />
-                    Динамика дохода по месяцам
+                    {t("admin.revenueChart", locale)}
                   </CardTitle>
                   <Badge className="bg-green-100 text-green-700 border-0 text-xs">
                     <ArrowUpRight className="w-3 h-3 mr-1" />+42%
@@ -1213,8 +1216,8 @@ export function AdminPage() {
               <CardContent>
                 <LineChart data={demoMonthlyRevenue.map(v => v / 1000)} labels={monthLabels} color="#10b981" height={220} fillOpacity={0.15} strokeWidth={3} />
                 <div className="flex justify-between mt-3 text-xs text-muted-foreground">
-                  <span>Итого: <strong className="text-foreground">{(demoMonthlyRevenue.reduce((a, b) => a + b, 0) / 1000).toFixed(0)}K ₽</strong></span>
-                  <span>Пик: <strong className="text-foreground">{(Math.max(...demoMonthlyRevenue) / 1000).toFixed(0)}K ₽ (Дек)</strong></span>
+                  <span>{t("adminPage.statTotalIncome", locale)}: <strong className="text-foreground">{(demoMonthlyRevenue.reduce((a, b) => a + b, 0) / 1000).toFixed(0)}K ₽</strong></span>
+                  <span>{t("adminPage.statPeak", locale)}: <strong className="text-foreground">{(Math.max(...demoMonthlyRevenue) / 1000).toFixed(0)}K ₽ (Дек)</strong></span>
                 </div>
               </CardContent>
             </Card>
@@ -1225,14 +1228,14 @@ export function AdminPage() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center gap-2">
                     <BarChart3 className="w-5 h-5 text-blue-700" />
-                    Доход по категориям
+                    {t("admin.revenueByCategory", locale)}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {Object.entries(
                       courses.reduce((acc, c) => {
-                        const cat = c.category?.name || "Без категории";
+                        const cat = c.category?.name || t("adminPage.courseNoCategory", locale);
                         acc[cat] = (acc[cat] || 0) + c.price * c._count.enrollments;
                         return acc;
                       }, {} as Record<string, number>)
@@ -1245,7 +1248,7 @@ export function AdminPage() {
                           <div key={cat}>
                             <div className="flex justify-between text-sm mb-1">
                               <span className="truncate mr-2">{cat}</span>
-                              <span className="font-medium shrink-0">{revenue.toLocaleString("ru-RU")} ₽</span>
+                              <span className="font-medium shrink-0">{formatNumber(revenue, locale)} ₽</span>
                             </div>
                             <div className="h-2.5 bg-muted rounded-full overflow-hidden">
                               <div className="h-full bg-gradient-to-r from-emerald-500 to-green-400 rounded-full transition-all duration-700" style={{ width: `${(revenue / maxRev) * 100}%` }} />
@@ -1253,7 +1256,7 @@ export function AdminPage() {
                           </div>
                         );
                       })}
-                    {totalRevenue === 0 && <p className="text-sm text-muted-foreground">Нет данных</p>}
+                    {totalRevenue === 0 && <p className="text-sm text-muted-foreground">{t("adminPage.statNoData", locale)}</p>}
                   </div>
                 </CardContent>
               </Card>
@@ -1262,17 +1265,17 @@ export function AdminPage() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center gap-2">
                     <PieChart className="w-5 h-5 text-violet-600" />
-                    Бесплатные vs Платные
+                    {t("admin.freeVsPaid", locale)}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <DonutChart
                     segments={[
-                      { label: "Платные", value: courses.filter(c => c.price > 0).length || 1, color: "#4f46e5" },
-                      { label: "Бесплатные", value: courses.filter(c => c.price === 0).length || 1, color: "#10b981" },
+                      { label: t("adminPage.coursePaid", locale), value: courses.filter(c => c.price > 0).length || 1, color: "#4f46e5" },
+                      { label: t("adminPage.courseFree", locale), value: courses.filter(c => c.price === 0).length || 1, color: "#10b981" },
                     ]}
                     centerValue={courses.length.toString()}
-                    centerLabel="курсов"
+                    centerLabel={t("adminPage.donutCourses", locale)}
                     size={160}
                     strokeWidth={26}
                   />
@@ -1288,10 +1291,10 @@ export function AdminPage() {
           <div className="space-y-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: "Всего курсов", value: courses.length, icon: <BookOpen className="w-5 h-5 text-blue-600" /> },
-                { label: "Опубликованных", value: courses.filter(c => c.isPublished).length, icon: <CheckCircle2 className="w-5 h-5 text-green-600" /> },
-                { label: "Черновиков", value: courses.filter(c => !c.isPublished).length, icon: <FileText className="w-5 h-5 text-amber-600" /> },
-                { label: "Ср. рейтинг", value: avgRating, icon: <TrendingUp className="w-5 h-5 text-violet-600" /> },
+                { label: t("adminPage.kpiCourses", locale), value: courses.length, icon: <BookOpen className="w-5 h-5 text-blue-600" /> },
+                { label: t("adminPage.kpiPublished", locale), value: courses.filter(c => c.isPublished).length, icon: <CheckCircle2 className="w-5 h-5 text-green-600" /> },
+                { label: t("adminPage.kpiDrafts", locale), value: courses.filter(c => !c.isPublished).length, icon: <FileText className="w-5 h-5 text-amber-600" /> },
+                { label: t("adminPage.kpiAvgRating", locale), value: avgRating, icon: <TrendingUp className="w-5 h-5 text-violet-600" /> },
               ].map((stat, i) => (
                 <Card key={i} className="border-0 shadow-sm">
                   <CardContent className="p-4">
@@ -1308,13 +1311,13 @@ export function AdminPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Название</TableHead>
-                        <TableHead>Категория</TableHead>
-                        <TableHead>Преподаватель</TableHead>
-                        <TableHead>Цена</TableHead>
-                        <TableHead>Рейтинг</TableHead>
-                        <TableHead>Студентов</TableHead>
-                        <TableHead>Статус</TableHead>
+                        <TableHead>{t("adminPage.thCourse", locale)}</TableHead>
+                        <TableHead>{t("adminPage.thCategory", locale)}</TableHead>
+                        <TableHead>{t("adminPage.thTeacher", locale)}</TableHead>
+                        <TableHead>{t("adminPage.thPrice", locale)}</TableHead>
+                        <TableHead>{t("adminPage.thRating", locale)}</TableHead>
+                        <TableHead>{t("adminPage.thStudents", locale)}</TableHead>
+                        <TableHead>{t("adminPage.thStatus", locale)}</TableHead>
                         <TableHead></TableHead>
                       </TableRow>
                     </TableHeader>
@@ -1325,14 +1328,14 @@ export function AdminPage() {
                           <TableCell className="text-sm">{course.category?.name || "—"}</TableCell>
                           <TableCell className="text-sm">{course.teacher?.name || "—"}</TableCell>
                           <TableCell className="text-sm">
-                            {course.price === 0 ? <Badge className="bg-green-100 text-green-700 border-0 text-xs">Бесплатно</Badge> : `${course.price.toLocaleString("ru-RU")} ₽`}
+                            {course.price === 0 ? <Badge className="bg-green-100 text-green-700 border-0 text-xs">{t("courseCard.free", locale)}</Badge> : `${formatNumber(course.price, locale)} ₽`}
                           </TableCell>
                           <TableCell className="text-sm font-medium">{course.rating > 0 ? course.rating.toFixed(1) : "—"}</TableCell>
                           <TableCell className="text-sm">{course._count.enrollments}</TableCell>
                           <TableCell>
                             {course.isPublished
-                              ? <Badge className="bg-green-100 text-green-700 border-0 text-xs">Опубликован</Badge>
-                              : <Badge className="bg-yellow-100 text-yellow-700 border-0 text-xs">Черновик</Badge>
+                              ? <Badge className="bg-green-100 text-green-700 border-0 text-xs">{t("common.published", locale)}</Badge>
+                              : <Badge className="bg-yellow-100 text-yellow-700 border-0 text-xs">{t("common.draft", locale)}</Badge>
                             }
                           </TableCell>
                           <TableCell>
@@ -1353,7 +1356,7 @@ export function AdminPage() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
                   <TrendingUp className="w-5 h-5 text-blue-700" />
-                  Топ курсов по записям
+                  {t("adminPage.statTopCourses", locale)}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -1363,12 +1366,12 @@ export function AdminPage() {
                       <span className={`text-sm font-bold w-7 text-center ${i < 3 ? 'text-amber-500' : 'text-muted-foreground'}`}>#{i + 1}</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{course.title}</p>
-                        <p className="text-xs text-muted-foreground">{course._count.enrollments} студентов</p>
+                        <p className="text-xs text-muted-foreground">{course._count.enrollments} {t("common.students", locale)}</p>
                       </div>
                       <Badge variant="outline" className="text-[10px] shrink-0">{course.rating.toFixed(1)}</Badge>
                     </div>
                   ))}
-                  {courses.length === 0 && <p className="text-sm text-muted-foreground">Нет данных</p>}
+                  {courses.length === 0 && <p className="text-sm text-muted-foreground">{t("adminPage.statNoData", locale)}</p>}
                 </div>
               </CardContent>
             </Card>
@@ -1383,19 +1386,19 @@ export function AdminPage() {
               <Card className="border-0 shadow-sm">
                 <CardContent className="p-4 bg-red-50 dark:bg-red-950/30 rounded-xl">
                   <p className="text-3xl font-bold text-red-600">{reports.filter(r => r.status === "pending").length}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Ожидают рассмотрения</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t("adminPage.statReportPending", locale)}</p>
                 </CardContent>
               </Card>
               <Card className="border-0 shadow-sm">
                 <CardContent className="p-4 bg-amber-50 dark:bg-amber-950/30 rounded-xl">
                   <p className="text-3xl font-bold text-amber-600">{reports.filter(r => r.status === "reviewed").length}</p>
-                  <p className="text-xs text-muted-foreground mt-1">В работе</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t("adminPage.statReportInProgress", locale)}</p>
                 </CardContent>
               </Card>
               <Card className="border-0 shadow-sm">
                 <CardContent className="p-4 bg-green-50 dark:bg-green-950/30 rounded-xl">
                   <p className="text-3xl font-bold text-green-600">{reports.filter(r => r.status === "resolved").length}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Решено</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t("adminPage.statReportResolved", locale)}</p>
                 </CardContent>
               </Card>
             </div>
@@ -1406,12 +1409,12 @@ export function AdminPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Тип</TableHead>
-                        <TableHead>Заявитель</TableHead>
-                        <TableHead>Описание</TableHead>
-                        <TableHead>Дата</TableHead>
-                        <TableHead>Статус</TableHead>
-                        <TableHead>Действия</TableHead>
+                        <TableHead>{t("adminPage.thType", locale)}</TableHead>
+                        <TableHead>{t("adminPage.thReporter", locale)}</TableHead>
+                        <TableHead>{t("adminPage.thDescription", locale)}</TableHead>
+                        <TableHead>{t("adminPage.thDate", locale)}</TableHead>
+                        <TableHead>{t("adminPage.thStatus", locale)}</TableHead>
+                        <TableHead>{t("adminPage.thActions", locale)}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1419,23 +1422,23 @@ export function AdminPage() {
                         <TableRow key={report.id}>
                           <TableCell>
                             <Badge variant="outline" className="text-[10px]">
-                              {report.type === "content" ? "Контент" : report.type === "user" ? "Пользователь" : report.type === "bug" ? "Ошибка" : "Другое"}
+                              {report.type === "content" ? t("adminPage.reportTypeContent", locale) : report.type === "user" ? t("adminPage.reportTypeUser", locale) : report.type === "bug" ? t("adminPage.reportTypeBug", locale) : t("adminPage.reportTypeOther", locale)}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-sm">{report.userName}</TableCell>
                           <TableCell className="text-sm max-w-[300px] truncate">{report.description}</TableCell>
                           <TableCell className="text-sm text-muted-foreground">{report.createdAt}</TableCell>
                           <TableCell>
-                            {report.status === "pending" ? <Badge className="bg-red-100 text-red-700 border-0 text-xs">Ожидает</Badge> :
-                             report.status === "reviewed" ? <Badge className="bg-yellow-100 text-yellow-700 border-0 text-xs">Рассматривается</Badge> :
-                             <Badge className="bg-green-100 text-green-700 border-0 text-xs">Решено</Badge>}
+                            {report.status === "pending" ? <Badge className="bg-red-100 text-red-700 border-0 text-xs">{t("adminPage.statReportPending", locale)}</Badge> :
+                             report.status === "reviewed" ? <Badge className="bg-yellow-100 text-yellow-700 border-0 text-xs">{t("adminPage.statReportInProgress", locale)}</Badge> :
+                             <Badge className="bg-green-100 text-green-700 border-0 text-xs">{t("adminPage.statReportResolved", locale)}</Badge>}
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-1">
-                              <Button variant="ghost" size="sm" onClick={() => toast.success("Жалоба отмечена как рассмотренная")}>
+                              <Button variant="ghost" size="sm" onClick={() => toast.success(t("adminPage.reportMarkReviewed", locale))}>
                                 <CheckCircle2 className="w-4 h-4 text-green-600" />
                               </Button>
-                              <Button variant="ghost" size="sm" onClick={() => toast.success("Жалоба отклонена")}>
+                              <Button variant="ghost" size="sm" onClick={() => toast.success(t("adminPage.reportRejected", locale))}>
                                 <XCircle className="w-4 h-4 text-red-600" />
                               </Button>
                             </div>
@@ -1459,9 +1462,9 @@ export function AdminPage() {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Clock className="w-5 h-5 text-blue-600" />
-                    Журнал действий платформы
+                    {t("adminPage.statLogJournal", locale)}
                   </CardTitle>
-                  <Badge variant="outline" className="text-xs">{demoActivityLog.length} записей</Badge>
+                  <Badge variant="outline" className="text-xs">{demoActivityLog.length} {t("adminPage.statLogEntries", locale)}</Badge>
                 </div>
               </CardHeader>
               <CardContent>
@@ -1498,15 +1501,15 @@ export function AdminPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card className="border-0 shadow-sm">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2"><Globe className="w-5 h-5 text-blue-700" />Платформа</CardTitle>
+                  <CardTitle className="text-base flex items-center gap-2"><Globe className="w-5 h-5 text-blue-700" />{t("admin.platform", locale)}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {[
-                    { title: "Режим обслуживания", desc: "Временно отключить доступ для пользователей", action: "Выключен", color: "default" },
-                    { title: "Регистрация пользователей", desc: "Разрешить регистрацию на платформе", action: "Открыта", color: "green" },
-                    { title: "Модерация курсов", desc: "Публиковать курсы только после проверки", action: "Включена", color: "blue" },
-                    { title: "Email-уведомления", desc: "Отправлять уведомления о действиях", action: "Включены", color: "blue" },
-                    { title: "Двухфакторная аутентификация", desc: "Требовать 2FA для администраторов", action: "Включена", color: "green" },
+                    { title: t("adminPage.settingMaintenance", locale), desc: t("adminPage.settingMaintenanceDesc", locale), action: t("adminPage.settingMaintenanceAction", locale), color: "default" },
+                    { title: t("adminPage.settingRegistration", locale), desc: t("adminPage.settingRegistrationDesc", locale), action: t("adminPage.settingRegistrationAction", locale), color: "green" },
+                    { title: t("adminPage.settingModeration", locale), desc: t("adminPage.settingModerationDesc", locale), action: t("adminPage.settingModerationAction", locale), color: "blue" },
+                    { title: t("adminPage.settingEmailNotify", locale), desc: t("adminPage.settingEmailNotifyDesc", locale), action: t("adminPage.settingEmailNotifyAction", locale), color: "blue" },
+                    { title: t("adminPage.setting2FA", locale), desc: t("adminPage.setting2FADesc", locale), action: t("adminPage.setting2FAAction", locale), color: "green" },
                   ].map((item, i) => (
                     <div key={i} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                       <div>
@@ -1518,6 +1521,7 @@ export function AdminPage() {
                         variant={item.color === "default" ? "outline" : undefined}
                         className={item.color === "green" ? "bg-green-600 hover:bg-green-700 text-white" : item.color === "blue" ? "bg-blue-700 hover:bg-blue-800 text-white" : undefined}
                         onClick={() => toast.success(`${item.title}: ${item.action}`)}
+
                       >
                         {item.action}
                       </Button>
@@ -1528,19 +1532,19 @@ export function AdminPage() {
 
               <Card className="border-0 shadow-sm">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2"><Monitor className="w-5 h-5 text-violet-600" />Система</CardTitle>
+                  <CardTitle className="text-base flex items-center gap-2"><Monitor className="w-5 h-5 text-violet-600" />{t("admin.system", locale)}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
                   {[
-                    { label: "Версия платформы", value: "v3.1.0" },
+                    { label: t("adminPage.infoVersion", locale), value: "v3.1.0" },
                     { label: "Next.js", value: "16.1.1" },
                     { label: "React", value: "19.0.0" },
-                    { label: "База данных", value: "SQLite + Prisma", special: true },
-                    { label: "Регион серверов", value: "Российская Федерация" },
-                    { label: "Лицензия контента", value: "CC BY-SA 4.0" },
-                    { label: "Кастомный курсор", value: "Активен", special: true },
-                    { label: "Темы оформления", value: "3 (light / dark / amber)" },
-                    { label: "Локализации", value: "3 (ru / en / zh)" },
+                    { label: t("adminPage.infoDatabase", locale), value: "SQLite + Prisma", special: true },
+                    { label: t("adminPage.infoServerRegion", locale), value: t("adminPage.infoServerRegionValue", locale) },
+                    { label: t("adminPage.infoLicense", locale), value: "CC BY-SA 4.0" },
+                    { label: t("adminPage.infoCustomCursor", locale), value: t("admin.active", locale), special: true },
+                    { label: t("adminPage.infoThemes", locale), value: "3 (light / dark / amber)" },
+                    { label: t("adminPage.infoLocales", locale), value: "3 (ru / en / zh)" },
                   ].map((item, i) => (
                     <div key={i} className="flex justify-between p-3 bg-muted/50 rounded-lg">
                       <span className="text-muted-foreground">{item.label}</span>
@@ -1560,26 +1564,26 @@ export function AdminPage() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2 text-red-600">
                   <AlertTriangle className="w-5 h-5" />
-                  Опасная зона
+                  {t("adminPage.settingDangerZone", locale)}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-950/20 rounded-lg">
                   <div>
-                    <p className="text-sm font-medium">Очистить кэш платформы</p>
-                    <p className="text-xs text-muted-foreground">Удалить все кэшированные данные</p>
+                    <p className="text-sm font-medium">{t("adminPage.settingClearCache", locale)}</p>
+                    <p className="text-xs text-muted-foreground">{t("adminPage.settingClearCacheDesc", locale)}</p>
                   </div>
-                  <Button size="sm" variant="outline" className="border-red-300 text-red-600 hover:bg-red-50" onClick={() => toast.info("Кэш очищен")}>
-                    Очистить
+                  <Button size="sm" variant="outline" className="border-red-300 text-red-600 hover:bg-red-50" onClick={() => toast.info(t("adminPage.cacheCleared", locale))}>
+                    {t("adminPage.settingClearCacheBtn", locale)}
                   </Button>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-950/20 rounded-lg">
                   <div>
-                    <p className="text-sm font-medium">Сбросить тестовые данные</p>
-                    <p className="text-xs text-muted-foreground">Удалить все демо-данные из базы</p>
+                    <p className="text-sm font-medium">{t("adminPage.settingResetData", locale)}</p>
+                    <p className="text-xs text-muted-foreground">{t("adminPage.settingResetDataDesc", locale)}</p>
                   </div>
-                  <Button size="sm" variant="outline" className="border-red-300 text-red-600 hover:bg-red-50" onClick={() => toast.info("Тестовые данные сброшены")}>
-                    Сбросить
+                  <Button size="sm" variant="outline" className="border-red-300 text-red-600 hover:bg-red-50" onClick={() => toast.info(t("adminPage.testDataReset", locale))}>
+                    {t("adminPage.settingResetDataBtn", locale)}
                   </Button>
                 </div>
               </CardContent>
@@ -1636,9 +1640,9 @@ export function AdminPage() {
               </Button>
               <div>
                 <h1 className="text-lg font-bold">
-                  {sidebarItems.find(s => s.id === activeTab)?.label || "Дашборд"}
+                  {sidebarItems.find(s => s.id === activeTab)?.label || t("adminPage.tabDashboard", locale)}
                 </h1>
-                <p className="text-xs text-muted-foreground">Управление Maestria</p>
+                <p className="text-xs text-muted-foreground">{t("adminPage.managingMaestria", locale)}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -1649,14 +1653,14 @@ export function AdminPage() {
                 disabled={loading}
               >
                 <RefreshCw className={`w-4 h-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
-                Обновить
+                {t("admin.refresh", locale)}
               </Button>
               <Button
                 className="bg-blue-700 hover:bg-blue-800 text-white"
                 size="sm"
                 onClick={() => navigate("course-editor")}
               >
-                <Plus className="w-4 h-4 mr-1.5" />Создать курс
+                <Plus className="w-4 h-4 mr-1.5" />{t("admin.createCourse", locale)}
               </Button>
             </div>
           </div>

@@ -215,18 +215,18 @@ export function HomePage() {
           {[
             {
               icon: <GraduationCap className="w-8 h-8 text-amber-600" />,
-              title: "Практический подход",
-              desc: "Каждый курс содержит практические задания, проекты и задачи для закрепления материала",
+              title: t("home.feature1Title", locale),
+              desc: t("home.feature1Desc", locale),
             },
             {
               icon: <Users className="w-8 h-8 text-violet-600" />,
-              title: "Опытные преподаватели",
-              desc: "Наши преподаватели — практикующие разработчики с многолетним опытом работы",
+              title: t("home.feature2Title", locale),
+              desc: t("home.feature2Desc", locale),
             },
             {
               icon: <Award className="w-8 h-8 text-blue-700" />,
-              title: "Сертификаты",
-              desc: "Получите сертификат по окончании курса для подтверждения ваших навыков",
+              title: t("home.feature3Title", locale),
+              desc: t("home.feature3Desc", locale),
             },
           ].map((item, i) => (
             <Card key={i} className="border-0 shadow-sm">

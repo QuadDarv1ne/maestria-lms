@@ -453,9 +453,9 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                         <div className="space-y-2 mb-4">
                           <p className="text-sm font-medium">{t("course.paymentMethod", locale)}</p>
                           {[
-                            { id: "sbp", label: "СБП", icon: <Smartphone className="w-4 h-4" /> },
-                            { id: "yookassa", label: "ЮKassa", icon: <CreditCard className="w-4 h-4" /> },
-                            { id: "tinkoff", label: "Тинькофф", icon: <Building className="w-4 h-4" /> },
+                            { id: "sbp", label: t("course.paymentSbp", locale), icon: <Smartphone className="w-4 h-4" /> },
+                            { id: "yookassa", label: t("course.paymentYookassa", locale), icon: <CreditCard className="w-4 h-4" /> },
+                            { id: "tinkoff", label: t("course.paymentTinkoff", locale), icon: <Building className="w-4 h-4" /> },
                           ].map((method) => (
                             <label
                               key={method.id}

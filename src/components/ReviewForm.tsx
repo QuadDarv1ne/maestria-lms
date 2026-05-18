@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import type { Locale } from "@/lib/stores/ui";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,7 +15,7 @@ interface ReviewFormProps {
   onReviewSubmitted: () => void;
 }
 
-const RATING_LABELS = (locale?: string): Record<number, string> => ({
+const RATING_LABELS = (locale?: Locale): Record<number, string> => ({
   1: t("review.awful", locale),
   2: t("review.bad", locale),
   3: t("review.okay", locale),

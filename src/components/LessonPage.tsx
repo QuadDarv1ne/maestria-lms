@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { useAppStore } from "@/lib/store";
+import { t } from "@/lib/i18n";
+import type { Locale } from "@/lib/stores/ui";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,13 +29,14 @@ import { lessonTypeIcon } from "@/lib/constants";
 function LessonVideo({ src }: { src: string }) {
   const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const locale = useAppStore((s) => s.locale);
 
   if (error) {
     return (
       <div className="bg-gray-900 rounded-lg aspect-video flex items-center justify-center mb-4">
         <div className="text-center text-white">
           <Play className="w-16 h-16 mx-auto mb-2 opacity-50" />
-          <p className="text-sm opacity-50">Ошибка загрузки видео</p>
+          <p className="text-sm opacity-50">{t("lesson.videoError", locale)}</p>
         </div>
       </div>
     );
@@ -95,13 +98,16 @@ interface LessonData {
   nextStepId: string | null;
 }
 
-const lessonTypeLabels: Record<string, string> = {
-  video: "Видеоурок",
-  text: "Текстовый урок",
-  coding: "Практика",
-  quiz: "Тест",
-  assignment: "Задание",
-};
+function lessonTypeLabel(type: string, locale: Locale): string {
+  const map: Record<string, string> = {
+    video: "lesson.typeVideo",
+    text: "lesson.typeText",
+    coding: "lesson.typeCoding",
+    quiz: "lesson.typeQuiz",
+    assignment: "lesson.typeAssignment",
+  };
+  return t(map[type] || type, locale);
+}
 
 export function LessonPage({
   courseId,
@@ -111,6 +117,7 @@ export function LessonPage({
   lessonId: string;
 }) {
   const { navigate, user } = useAppStore();
+  const locale = useAppStore((s) => s.locale);
   const [lesson, setLesson] = useState<LessonData | null>(null);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
@@ -138,7 +145,7 @@ export function LessonPage({
           setLesson(data.lesson);
         } else {
           const data = await res.json();
-          toast.error(data.error || "Ошибка доступа к уроку");
+          toast.error(data.error || t("lesson.accessError", locale));
           navigate(`course/${courseId}`);
         }
       } catch (e) {
@@ -174,7 +181,7 @@ export function LessonPage({
     const correctCount = Object.values(scores).filter(Boolean).length;
     const total = Object.keys(scores).length;
     if (total > 0) {
-      toast.success(`Правильных ответов: ${correctCount}/${total}`);
+      toast.success(`${t("lesson.quizCorrectAnswers", locale)} ${correctCount}/${total}`);
     }
   };
 
@@ -194,13 +201,13 @@ export function LessonPage({
         }
       );
       if (res.ok) {
-        toast.success("Урок отмечен как пройденный");
+        toast.success(t("lesson.markedCompleted", locale));
         setLesson((prev) =>
           prev ? { ...prev, completed: true } : prev
         );
       }
     } catch {
-      toast.error("Ошибка обновления прогресса");
+      toast.error(t("lesson.progressUpdateError", locale));
     } finally {
       setCompleting(false);
     }
@@ -220,9 +227,9 @@ export function LessonPage({
   if (!lesson) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
-        <h2 className="text-xl font-semibold mb-2">Урок не найден</h2>
+        <h2 className="text-xl font-semibold mb-2">{t("lesson.notFound", locale)}</h2>
         <Button variant="outline" onClick={() => navigate(`course/${courseId}`)}>
-          Вернуться к курсу
+          {t("lesson.backToCourse", locale)}
         </Button>
       </div>
     );
@@ -239,16 +246,16 @@ export function LessonPage({
             onClick={() => navigate(`course/${courseId}`)}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            К курсу
+            {t("lesson.toCourse", locale)}
           </Button>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-xs">
-              {lessonTypeLabels[lesson.type] || lesson.type}
+              {lessonTypeLabel(lesson.type, locale)}
             </Badge>
             {lesson.completed && (
               <Badge className="bg-green-100 text-green-700 border-0">
                 <CheckCircle2 className="w-3 h-3 mr-1" />
-                Пройден
+                {t("lesson.completed", locale)}
               </Badge>
             )}
           </div>
@@ -259,17 +266,17 @@ export function LessonPage({
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-6">
           <p className="text-sm text-muted-foreground mb-1">
-            Модуль: {lesson.module?.title}
+            {t("lesson.module", locale)} {lesson.module?.title}
           </p>
           <h1 className="text-2xl font-bold mb-2">{lesson.title}</h1>
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
               <Clock className="w-4 h-4" />
-              {lesson.duration} мин
+              {lesson.duration} {t("common.min", locale)}
             </span>
             <span className="flex items-center gap-1">
               {lessonTypeIcon(lesson.type)}
-              {lessonTypeLabels[lesson.type]}
+              {lessonTypeLabel(lesson.type, locale)}
             </span>
           </div>
         </div>
@@ -285,7 +292,7 @@ export function LessonPage({
                   <div className="bg-gray-900 rounded-lg aspect-video flex items-center justify-center mb-4">
                     <div className="text-center text-white">
                       <Play className="w-16 h-16 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm opacity-50">Видео не загружено</p>
+                      <p className="text-sm opacity-50">{t("lesson.videoNotLoaded", locale)}</p>
                     </div>
                   </div>
                 )}
@@ -300,7 +307,7 @@ export function LessonPage({
             {/* Текстовый урок */}
             {(lesson.type === "text" || lesson.type === "assignment") && (
               <div className="prose prose-sm max-w-none whitespace-pre-wrap">
-                {lesson.content || "Содержимое урока загружается..."}
+                {lesson.content || t("lesson.contentLoading", locale)}
               </div>
             )}
 
@@ -313,8 +320,8 @@ export function LessonPage({
                   </div>
                 )}
                 <div className="bg-gray-900 rounded-lg p-4 text-sm text-green-400 font-mono">
-                  <p className="text-gray-500 mb-2"># Напишите ваш код здесь</p>
-                  <p className="text-gray-500"># Например:</p>
+                  <p className="text-gray-500 mb-2">{t("lesson.writeCodeHere", locale)}</p>
+                  <p className="text-gray-500">{t("lesson.forExample", locale)}</p>
                   <p>print(&quot;Hello, World!&quot;)</p>
                 </div>
               </div>
@@ -411,7 +418,7 @@ export function LessonPage({
                         onClick={handleQuizSubmit}
                         disabled={Object.keys(quizAnswers).length === 0}
                       >
-                        Проверить ответы
+                        {t("lesson.checkAnswers", locale)}
                       </Button>
                     )}
                     {quizSubmitted && (
@@ -423,7 +430,7 @@ export function LessonPage({
                           setQuizScores({});
                         }}
                       >
-                        Попробовать снова
+                        {t("lesson.tryAgain", locale)}
                       </Button>
                     )}
                   </div>
@@ -444,7 +451,7 @@ export function LessonPage({
             }
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Предыдущий
+            {t("lesson.previousStep", locale)}
           </Button>
 
           <div className="flex items-center gap-2">
@@ -455,7 +462,7 @@ export function LessonPage({
                 disabled={completing}
               >
                 <CheckCircle2 className="w-4 h-4 mr-2" />
-                {completing ? "Сохранение..." : "Отметить как пройденный"}
+                {completing ? t("common.saving", locale) : t("lesson.markComplete", locale)}
               </Button>
             )}
           </div>
@@ -468,7 +475,7 @@ export function LessonPage({
               navigate(`course/${courseId}/lesson/${lesson.nextStepId}`)
             }
           >
-            Следующий
+            {t("lesson.nextStep", locale)}
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </div>

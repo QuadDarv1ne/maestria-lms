@@ -13,14 +13,14 @@ import {
 } from "lucide-react";
 import type { Locale } from "@/lib/store";
 
-const localeLabels: { value: Locale; flag: string; label: string }[] = [
-  { value: "ru", flag: "🇷🇺", label: "Русский" },
-  { value: "en", flag: "🇬🇧", label: "English" },
-  { value: "zh", flag: "🇨🇳", label: "中文" },
-];
-
 export function Footer() {
   const { navigate, locale, setLocale } = useAppStore();
+
+  const localeLabels: { value: Locale; flag: string; label: string }[] = [
+    { value: "ru", flag: "🇷🇺", label: t("locale.ru", locale) },
+    { value: "en", flag: "🇬🇧", label: t("locale.en", locale) },
+    { value: "zh", flag: "🇨🇳", label: t("locale.zh", locale) },
+  ];
 
   return (
     <footer className="border-t bg-muted/40 mt-auto">

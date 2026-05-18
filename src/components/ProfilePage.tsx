@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import { formatDate } from "@/lib/utils";
 import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -371,7 +372,7 @@ export function ProfilePage() {
                 <span className="text-xs text-muted-foreground">
                   {t("profile.since", locale)}{" "}
                   {profile?.createdAt
-                    ? new Date(profile.createdAt).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })
+                    ? formatDate(profile.createdAt, locale)
                     : "..."}
                 </span>
               </div>
@@ -796,7 +797,7 @@ export function ProfilePage() {
                           {cert.course.title}
                         </h3>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Выдан {new Date(cert.issuedAt).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}
+                          Выдан {formatDate(cert.issuedAt, locale)}
                         </p>
                       </div>
                     </div>
@@ -929,7 +930,7 @@ export function ProfilePage() {
                         <div className="bg-muted/50 rounded-lg p-3 text-center">
                           <p className="text-lg font-bold">
                             {detail.lastAccessed
-                              ? new Date(detail.lastAccessed).toLocaleDateString("ru-RU")
+                              ? formatDate(detail.lastAccessed, locale)
                               : "—"}
                           </p>
                           <p className="text-xs text-muted-foreground">{t("profile.lastActivity", locale)}</p>

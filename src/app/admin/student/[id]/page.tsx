@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useStudentStats } from "@/hooks/useAdmin";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import { formatDate, formatNumber } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -148,7 +149,7 @@ export default function StudentDetailPage() {
               </Badge>
               <span className="text-xs text-muted-foreground">
                 Регистрация:{" "}
-                {new Date(user.createdAt).toLocaleDateString("ru-RU")}
+                {formatDate(user.createdAt, locale)}
               </span>
             </div>
           </div>
@@ -382,7 +383,7 @@ export default function StudentDetailPage() {
                         {review.comment || "—"}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
-                        {new Date(review.createdAt).toLocaleDateString("ru-RU")}
+                        {formatDate(review.createdAt, locale)}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -422,7 +423,7 @@ export default function StudentDetailPage() {
                         {cert.certificateNumber}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
-                        {new Date(cert.issuedAt).toLocaleDateString("ru-RU")}
+                        {formatDate(cert.issuedAt, locale)}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -461,7 +462,7 @@ export default function StudentDetailPage() {
                         {payment.course.title}
                       </TableCell>
                       <TableCell className="text-sm font-semibold">
-                        {payment.amount.toLocaleString("ru-RU")}{" "}
+                        {formatNumber(payment.amount, locale)}{" "}
                         {payment.currency}
                       </TableCell>
                       <TableCell className="text-sm">
@@ -483,7 +484,7 @@ export default function StudentDetailPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
-                        {new Date(payment.createdAt).toLocaleDateString("ru-RU")}
+                        {formatDate(payment.createdAt, locale)}
                       </TableCell>
                     </TableRow>
                   ))}

@@ -2,7 +2,9 @@
 
 import React, { useState, useCallback } from "react";
 import { useAppStore } from "@/lib/store";
+import { t } from "@/lib/i18n";
 import { lessonTypeIcon } from "@/lib/constants";
+import { formatNumber } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -52,7 +54,9 @@ import {
 import { toast } from "sonner";
 import { levelLabels, levelColors, CATEGORIES } from "@/lib/constants";
 
-function VideoUploadButton({ onUpload }: { onUpload: (url: string) => void }) {
+import type { Locale } from "@/lib/store";
+
+function VideoUploadButton({ onUpload, locale }: { onUpload: (url: string) => void; locale: Locale }) {
   const [uploading, setUploading] = useState(false);
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -72,9 +76,9 @@ function VideoUploadButton({ onUpload }: { onUpload: (url: string) => void }) {
       }
       const data = await res.json();
       onUpload(data.url);
-      toast.success("Видео загружено");
+      toast.success(t("courseEditor.videoUploaded", locale));
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Ошибка загрузки");
+      toast.error(err instanceof Error ? err.message : t("courseEditor.uploadError", locale));
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -98,7 +102,7 @@ function VideoUploadButton({ onUpload }: { onUpload: (url: string) => void }) {
         disabled={uploading}
         onClick={() => document.getElementById("video-upload")?.click()}
       >
-        {uploading ? "..." : "Загрузить"}
+        {uploading ? "..." : t("courseEditor.upload", locale)}
       </Button>
     </>
   );
@@ -160,19 +164,6 @@ function slugify(text: string) {
 
 const CATEGORY_OPTIONS = CATEGORIES;
 
-const LEVEL_OPTIONS = [
-  { value: "beginner", label: "Начинающий" },
-  { value: "intermediate", label: "Средний" },
-  { value: "advanced", label: "Продвинутый" },
-];
-
-const LESSON_TYPE_OPTIONS = [
-  { value: "video", label: "Видео", icon: Video },
-  { value: "text", label: "Текст", icon: FileText },
-  { value: "coding", label: "Кодинг", icon: Code },
-  { value: "quiz", label: "Тест", icon: HelpCircle },
-  { value: "assignment", label: "Задание", icon: ClipboardList },
-];
 
 
 // ─── Initial State ───────────────────────────────────────────────────────────
@@ -222,7 +213,22 @@ const initialFormData: CourseFormData = {
 
 export function CourseEditorPage() {
   const { navigate, user } = useAppStore();
+  const locale = useAppStore((s) => s.locale);
   const [activeTab, setActiveTab] = useState("basic");
+
+  const LEVEL_OPTIONS = [
+    { value: "beginner", label: t("common.level.beginner", locale) },
+    { value: "intermediate", label: t("common.level.intermediate", locale) },
+    { value: "advanced", label: t("common.level.advanced", locale) },
+  ];
+
+  const LESSON_TYPE_OPTIONS = [
+    { value: "video", label: t("courseEditor.typeVideo", locale), icon: Video },
+    { value: "text", label: t("courseEditor.typeText", locale), icon: FileText },
+    { value: "coding", label: t("courseEditor.typeCoding", locale), icon: Code },
+    { value: "quiz", label: t("courseEditor.typeQuiz", locale), icon: HelpCircle },
+    { value: "assignment", label: t("courseEditor.typeAssignment", locale), icon: ClipboardList },
+  ];
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<CourseFormData>(initialFormData);
 
@@ -404,17 +410,17 @@ export function CourseEditorPage() {
   const handleSave = useCallback(
     async (publish: boolean) => {
       if (!form.title.trim()) {
-        toast.error("Укажите название курса");
+        toast.error(t("courseEditor.titleRequired", locale));
         setActiveTab("basic");
         return;
       }
       if (!form.description.trim() || form.description.trim().length < 10) {
-        toast.error("Описание курса должно быть не менее 10 символов");
+        toast.error(t("courseEditor.descriptionTooShort", locale));
         setActiveTab("basic");
         return;
       }
       if (!form.categorySlug) {
-        toast.error("Выберите категорию");
+        toast.error(t("courseEditor.selectCategory", locale));
         setActiveTab("basic");
         return;
       }
@@ -442,10 +448,10 @@ export function CourseEditorPage() {
           isFeatured: form.isFeatured,
           categorySlug: form.categorySlug,
           modules: form.modules.map((m, mIdx) => ({
-            title: m.title.trim() || `Модуль ${mIdx + 1}`,
+            title: m.title.trim() || t("courseEditor.moduleName", locale).replace("{number}", String(mIdx + 1)),
             sortOrder: mIdx + 1,
             lessons: m.lessons.map((l, lIdx) => ({
-              title: l.title.trim() || `Урок ${lIdx + 1}`,
+              title: l.title.trim() || t("courseEditor.lessonName", locale).replace("{number}", String(lIdx + 1)),
               type: l.type,
               duration: Number(l.duration) || 0,
               isFree: l.isFree,
@@ -467,15 +473,15 @@ export function CourseEditorPage() {
         if (res.ok) {
           toast.success(
             publish
-              ? "Курс опубликован!"
-              : "Черновик сохранён!"
+              ? t("courseEditor.coursePublished", locale)
+              : t("courseEditor.draftSaved", locale)
           );
           navigate("admin");
         } else {
-          toast.error(data.error || "Ошибка сохранения курса");
+          toast.error(data.error || t("courseEditor.saveError", locale));
         }
       } catch {
-        toast.error("Произошла ошибка при сохранении");
+        toast.error(t("courseEditor.saveErrorGeneric", locale));
       } finally {
         setSaving(false);
       }
@@ -516,15 +522,15 @@ export function CourseEditorPage() {
                 onClick={() => navigate("admin")}
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Назад
+                {t("common.back", locale)}
               </Button>
               <Separator orientation="vertical" className="h-6 bg-white/30" />
               <div>
                 <h1 className="text-xl md:text-2xl font-bold">
-                  Создание курса
+                  {t("courseEditor.createCourse", locale)}
                 </h1>
                 <p className="text-blue-200 text-sm">
-                  Maestria — Панель редактора
+                   {t("courseEditor.editorPanel", locale)}
                 </p>
               </div>
             </div>
@@ -536,7 +542,7 @@ export function CourseEditorPage() {
                 disabled={saving}
               >
                 <Save className="w-4 h-4 mr-2" />
-                Сохранить
+                {t("common.save", locale)}
               </Button>
               <Button
                 className="bg-amber-500 hover:bg-amber-600 text-white"
@@ -544,7 +550,7 @@ export function CourseEditorPage() {
                 disabled={saving}
               >
                 <Send className="w-4 h-4 mr-2" />
-                Опубликовать
+                {t("courseEditor.publish", locale)}
               </Button>
             </div>
           </div>
@@ -556,19 +562,19 @@ export function CourseEditorPage() {
           <TabsList className="mb-6 flex-wrap">
             <TabsTrigger value="basic">
               <Settings className="w-4 h-4 mr-1.5" />
-              Основная информация
+              {t("courseEditor.tabBasic", locale)}
             </TabsTrigger>
             <TabsTrigger value="curriculum">
               <BookOpen className="w-4 h-4 mr-1.5" />
-              Программа курса
+              {t("courseEditor.tabCurriculum", locale)}
             </TabsTrigger>
             <TabsTrigger value="additional">
               <GraduationCap className="w-4 h-4 mr-1.5" />
-              Дополнительно
+              {t("courseEditor.tabAdditional", locale)}
             </TabsTrigger>
             <TabsTrigger value="preview">
               <Eye className="w-4 h-4 mr-1.5" />
-              Предпросмотр
+              {t("courseEditor.tabPreview", locale)}
             </TabsTrigger>
           </TabsList>
 
@@ -581,21 +587,21 @@ export function CourseEditorPage() {
                   <CardHeader className="pb-4">
                     <CardTitle className="text-lg flex items-center gap-2">
                       <FileText className="w-5 h-5 text-blue-700" />
-                      Информация о курсе
+                      {t("courseEditor.sectionCourseInfo", locale)}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="title">Название курса *</Label>
+                      <Label htmlFor="title">{t("courseEditor.fieldTitle", locale)}</Label>
                       <Input
                         id="title"
-                        placeholder="Например: Python для начинающих"
+                        placeholder={t("courseEditor.titlePlaceholder", locale)}
                         value={form.title}
                         onChange={(e) => handleTitleChange(e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="slug">URL Slug</Label>
+                      <Label htmlFor="slug">{t("courseEditor.slugLabel", locale)}</Label>
                       <Input
                         id="slug"
                         placeholder="python-beginners"
@@ -603,14 +609,14 @@ export function CourseEditorPage() {
                         onChange={(e) => updateField("slug", e.target.value)}
                       />
                       <p className="text-xs text-muted-foreground">
-                        Автоматически генерируется из названия. Можно изменить вручную.
+                        {t("courseEditor.autoSlug", locale)}
                       </p>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="shortDesc">Краткое описание</Label>
+                      <Label htmlFor="shortDesc">{t("courseEditor.fieldShortDesc", locale)}</Label>
                       <Input
                         id="shortDesc"
-                        placeholder="Кратко о курсе (до 200 символов)"
+                        placeholder={t("courseEditor.shortDescPlaceholder", locale)}
                         maxLength={200}
                         value={form.shortDesc}
                         onChange={(e) =>
@@ -619,10 +625,10 @@ export function CourseEditorPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="description">Полное описание *</Label>
+                      <Label htmlFor="description">{t("courseEditor.fieldFullDesc", locale)}</Label>
                       <Textarea
                         id="description"
-                        placeholder="Подробное описание курса, программа, что изучат студенты..."
+                        placeholder={t("courseEditor.descriptionPlaceholder", locale)}
                         rows={7}
                         value={form.description}
                         onChange={(e) =>
@@ -631,10 +637,10 @@ export function CourseEditorPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="tags">Теги</Label>
+                      <Label htmlFor="tags">{t("courseEditor.fieldTags", locale)}</Label>
                       <Input
                         id="tags"
-                        placeholder="python, программирование, начинающие (через запятую)"
+                        placeholder={t("courseEditor.tagsPlaceholder", locale)}
                         value={form.tags}
                         onChange={(e) => updateField("tags", e.target.value)}
                       />
@@ -649,18 +655,18 @@ export function CourseEditorPage() {
                   <CardHeader className="pb-4">
                     <CardTitle className="text-lg flex items-center gap-2">
                       <GraduationCap className="w-5 h-5 text-violet-600" />
-                      Категория и уровень
+                      {t("courseEditor.categoryAndLevel", locale)}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label>Категория *</Label>
+                      <Label>{t("courseEditor.fieldCategory", locale)}</Label>
                       <Select
                         value={form.categorySlug}
                         onValueChange={(v) => updateField("categorySlug", v)}
                       >
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Выберите категорию" />
+                          <SelectValue placeholder={t("courseEditor.categoryPlaceholder", locale)} />
                         </SelectTrigger>
                         <SelectContent>
                           {CATEGORY_OPTIONS.map((cat) => (
@@ -673,7 +679,7 @@ export function CourseEditorPage() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>Уровень</Label>
+                      <Label>{t("courseEditor.fieldLevel", locale)}</Label>
                       <Select
                         value={form.level}
                         onValueChange={(v) =>
@@ -696,10 +702,10 @@ export function CourseEditorPage() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="duration">Длительность</Label>
+                      <Label htmlFor="duration">{t("courseEditor.fieldDuration", locale)}</Label>
                       <Input
                         id="duration"
-                        placeholder="Например: 8 недель"
+                        placeholder={t("courseEditor.durationPlaceholder", locale)}
                         value={form.duration}
                         onChange={(e) =>
                           updateField("duration", e.target.value)
@@ -713,13 +719,13 @@ export function CourseEditorPage() {
                   <CardHeader className="pb-4">
                     <CardTitle className="text-lg flex items-center gap-2">
                       <Star className="w-5 h-5 text-amber-500" />
-                      Цена и сертификат
+                      {t("courseEditor.priceAndCertificate", locale)}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="price">Цена (₽)</Label>
+                        <Label htmlFor="price">{t("courseEditor.fieldPrice", locale)}</Label>
                         <Input
                           id="price"
                           type="number"
@@ -734,12 +740,12 @@ export function CourseEditorPage() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="oldPrice">Старая цена (₽)</Label>
+                        <Label htmlFor="oldPrice">{t("courseEditor.fieldOldPrice", locale)}</Label>
                         <Input
                           id="oldPrice"
                           type="number"
                           min={0}
-                          placeholder="Необязательно"
+                          placeholder={t("courseEditor.optional", locale)}
                           value={form.oldPrice || ""}
                           onChange={(e) =>
                             updateField(
@@ -752,24 +758,22 @@ export function CourseEditorPage() {
                     </div>
                     {form.price === 0 && (
                       <Badge className="bg-green-100 text-green-700 border-0">
-                        Бесплатный курс
+                        {t("courseEditor.freeCourse", locale)}
                       </Badge>
                     )}
                     {form.oldPrice > form.price && form.price > 0 && (
                       <Badge className="bg-red-100 text-red-700 border-0">
-                        Скидка{" "}
-                        {Math.round(
+                        {t("courseEditor.discountPercent", locale).replace("{percent}", String(Math.round(
                           ((form.oldPrice - form.price) / form.oldPrice) * 100
-                        )}
-                        %
+                        )))}
                       </Badge>
                     )}
                     <Separator />
                     <div className="flex items-center justify-between">
                       <div>
-                        <Label>Сертификат по окончании</Label>
+                        <Label>{t("courseEditor.fieldCertificate", locale)}</Label>
                         <p className="text-xs text-muted-foreground">
-                          Студенты получат сертификат при завершении курса
+                          {t("courseEditor.certificateHint", locale)}
                         </p>
                       </div>
                       <Switch
@@ -781,9 +785,9 @@ export function CourseEditorPage() {
                     </div>
                     <div className="flex items-center justify-between">
                       <div>
-                        <Label>Рекомендуемый курс</Label>
+                        <Label>{t("courseEditor.fieldRecommended", locale)}</Label>
                         <p className="text-xs text-muted-foreground">
-                          Отображается на главной странице
+                          {t("courseEditor.recommendedHint", locale)}
                         </p>
                       </div>
                       <Switch
@@ -804,7 +808,7 @@ export function CourseEditorPage() {
                 className="bg-blue-700 hover:bg-blue-800 text-white"
                 onClick={() => setActiveTab("curriculum")}
               >
-                Далее: Программа курса
+                 {t("courseEditor.nextCurriculum", locale)}
                 <ChevronDown className="w-4 h-4 ml-1 rotate-[-90deg]" />
               </Button>
             </div>
@@ -826,13 +830,16 @@ export function CourseEditorPage() {
                     className="text-blue-700 border-blue-200 hover:bg-blue-50"
                   >
                     <Plus className="w-4 h-4 mr-1" />
-                    Добавить модуль
+                    {t("courseEditor.addModule", locale)}
                   </Button>
                 </div>
                 {form.modules.length > 0 && (
                   <p className="text-sm text-muted-foreground mt-1">
-                    {form.modules.length} модулей · {totalLessons} уроков ·{" "}
-                    {totalDuration} мин
+                    {t("courseEditor.modulesCount", locale)
+                      .replace("{count}", String(form.modules.length))
+                      .replace("{lessons}", String(totalLessons))
+                      .replace("{duration}", String(totalDuration))
+                      .replace("{min}", t("common.min", locale))}
                   </p>
                 )}
               </CardHeader>
@@ -841,14 +848,14 @@ export function CourseEditorPage() {
                   <div className="text-center py-12">
                     <BookOpen className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
                     <p className="text-muted-foreground mb-4">
-                      Пока нет модулей. Добавьте первый модуль к вашему курсу.
+                      {t("courseEditor.noModules", locale)}
                     </p>
                     <Button
                       onClick={addModule}
                       className="bg-blue-700 hover:bg-blue-800 text-white"
                     >
                       <Plus className="w-4 h-4 mr-2" />
-                      Добавить первый модуль
+                      {t("courseEditor.addFirstModule", locale)}
                     </Button>
                   </div>
                 ) : (
@@ -869,7 +876,7 @@ export function CourseEditorPage() {
                             <CollapsibleTrigger asChild>
                               <Input
                                 className="flex-1 h-8 text-sm font-medium bg-transparent border-0 shadow-none focus-visible:ring-1 px-2"
-                                placeholder={`Модуль ${mIdx + 1}`}
+                                placeholder={t("courseEditor.moduleName", locale).replace("{number}", String(mIdx + 1))}
                                 value={mod.title}
                                 onChange={(e) =>
                                   updateModule(mIdx, {
@@ -923,7 +930,7 @@ export function CourseEditorPage() {
                             <div className="p-3 space-y-2">
                               {mod.lessons.length === 0 ? (
                                 <p className="text-sm text-muted-foreground text-center py-4">
-                                  Нет уроков в этом модуле
+                                  {t("courseEditor.noLessonsInModule", locale)}
                                 </p>
                               ) : (
                                 mod.lessons.map((lesson, lIdx) => (
@@ -939,7 +946,7 @@ export function CourseEditorPage() {
                                       {lessonTypeIcon(lesson.type)}
                                       <Input
                                         className="flex-1 h-7 text-sm border-0 shadow-none focus-visible:ring-1 px-1"
-                                        placeholder={`Урок ${lIdx + 1}`}
+                                        placeholder={t("courseEditor.lessonName", locale).replace("{number}", String(lIdx + 1))}
                                         value={lesson.title}
                                         onChange={(e) =>
                                           updateLesson(mIdx, lIdx, {
@@ -985,7 +992,7 @@ export function CourseEditorPage() {
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                       <div className="space-y-1">
                                         <Label className="text-xs">
-                                          Тип
+                                          {t("courseEditor.type", locale)}
                                         </Label>
                                         <Select
                                           value={lesson.type}
@@ -1014,7 +1021,7 @@ export function CourseEditorPage() {
                                       </div>
                                       <div className="space-y-1">
                                         <Label className="text-xs">
-                                          Длительность (мин)
+                                          {t("courseEditor.durationLabel", locale)}
                                         </Label>
                                         <Input
                                           type="number"
@@ -1031,7 +1038,7 @@ export function CourseEditorPage() {
                                       </div>
                                       <div className="space-y-1">
                                         <Label className="text-xs">
-                                          Бесплатный
+                                          {t("courseEditor.freeLabel", locale)}
                                         </Label>
                                         <div className="h-8 flex items-center">
                                           <Switch
@@ -1046,7 +1053,7 @@ export function CourseEditorPage() {
                                       </div>
                                       <div className="space-y-1">
                                         <Label className="text-xs">
-                                          Порядок
+                                          {t("courseEditor.sortOrder", locale)}
                                         </Label>
                                         <Input
                                           type="number"
@@ -1067,11 +1074,11 @@ export function CourseEditorPage() {
                                       lesson.type === "assignment") && (
                                       <div className="mt-3 space-y-1">
                                         <Label className="text-xs">
-                                          Содержание урока
+                                          {t("courseEditor.fieldLessonContent", locale)}
                                         </Label>
                                         <Textarea
                                           className="text-xs min-h-[80px]"
-                                          placeholder="Текст урока, описание задания или код..."
+                                          placeholder={t("courseEditor.lessonContentPlaceholder", locale)}
                                           value={lesson.content}
                                           onChange={(e) =>
                                             updateLesson(mIdx, lIdx, {
@@ -1085,7 +1092,7 @@ export function CourseEditorPage() {
                                     {lesson.type === "video" && (
                                       <div className="mt-3 space-y-1">
                                         <Label className="text-xs">
-                                          URL видео
+                                          {t("courseEditor.fieldVideoUrl", locale)}
                                         </Label>
                                         <div className="flex gap-2">
                                           <Input
@@ -1099,6 +1106,7 @@ export function CourseEditorPage() {
                                             }
                                           />
                                           <VideoUploadButton
+                                            locale={locale}
                                             onUpload={(url) =>
                                               updateLesson(mIdx, lIdx, {
                                                 videoUrl: url,
@@ -1118,7 +1126,7 @@ export function CourseEditorPage() {
                                 onClick={() => addLesson(mIdx)}
                               >
                                 <Plus className="w-4 h-4 mr-1" />
-                                Добавить урок
+                                 {t("courseEditor.addLesson", locale)}
                               </Button>
                             </div>
                           </CollapsibleContent>
@@ -1137,196 +1145,13 @@ export function CourseEditorPage() {
                 onClick={() => setActiveTab("basic")}
               >
                 <ArrowLeft className="w-4 h-4 mr-1" />
-                Назад
-              </Button>
-              <Button
-                className="bg-blue-700 hover:bg-blue-800 text-white"
-                onClick={() => setActiveTab("additional")}
-              >
-                Далее: Дополнительно
-                <ChevronDown className="w-4 h-4 ml-1 rotate-[-90deg]" />
-              </Button>
-            </div>
-          </TabsContent>
-
-          {/* ─── Tab 3: Additional ────────────────────────────────────────── */}
-          <TabsContent value="additional">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Requirements */}
-              <Card className="border-0 shadow-sm">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <ClipboardList className="w-5 h-5 text-orange-600" />
-                      Требования
-                    </CardTitle>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addListItem("requirements")}
-                      className="text-orange-600 border-orange-200 hover:bg-orange-50"
-                    >
-                      <Plus className="w-4 h-4 mr-1" />
-                      Добавить
-                    </Button>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Что нужно знать/иметь студенту до начала курса
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  {form.requirements.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      Нет требований
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {form.requirements.map((req, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <span className="w-5 h-5 bg-orange-100 text-orange-600 rounded flex items-center justify-center text-xs font-medium flex-shrink-0">
-                            {idx + 1}
-                          </span>
-                          <Input
-                            className="flex-1 h-8 text-sm"
-                            placeholder="Например: Базовые навыки работы с компьютером"
-                            value={req}
-                            onChange={(e) =>
-                              updateListItem(
-                                "requirements",
-                                idx,
-                                e.target.value
-                              )
-                            }
-                          />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
-                            onClick={() =>
-                              removeListItem("requirements", idx)
-                            }
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* What you'll learn */}
-              <Card className="border-0 shadow-sm">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-blue-700" />
-                      Чему научатся студенты
-                    </CardTitle>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addListItem("whatYouLearn")}
-                      className="text-blue-700 border-blue-200 hover:bg-blue-50"
-                    >
-                      <Plus className="w-4 h-4 mr-1" />
-                      Добавить
-                    </Button>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Ключевые навыки и знания, которые получат студенты
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  {form.whatYouLearn.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      Нет пунктов
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {form.whatYouLearn.map((item, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <span className="w-5 h-5 bg-blue-100 text-blue-700 rounded flex items-center justify-center text-xs font-medium flex-shrink-0">
-                            {idx + 1}
-                          </span>
-                          <Input
-                            className="flex-1 h-8 text-sm"
-                            placeholder="Например: Основы программирования на Python"
-                            value={item}
-                            onChange={(e) =>
-                              updateListItem(
-                                "whatYouLearn",
-                                idx,
-                                e.target.value
-                              )
-                            }
-                          />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
-                            onClick={() =>
-                              removeListItem("whatYouLearn", idx)
-                            }
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Publish toggle */}
-            <Card className="border-0 shadow-sm mt-6">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold text-lg flex items-center gap-2">
-                      <Send className="w-5 h-5 text-amber-500" />
-                      Статус публикации
-                    </h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {form.isPublished
-                        ? "Курс будет виден студентам после сохранения"
-                        : "Курс сохранится как черновик и не будет виден студентам"}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Badge
-                      className={
-                        form.isPublished
-                          ? "bg-green-100 text-green-700 border-0"
-                          : "bg-yellow-100 text-yellow-700 border-0"
-                      }
-                    >
-                      {form.isPublished ? "Опубликован" : "Черновик"}
-                    </Badge>
-                    <Switch
-                      checked={form.isPublished}
-                      onCheckedChange={(v) => updateField("isPublished", v)}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Navigation */}
-            <div className="flex justify-between mt-6">
-              <Button
-                variant="outline"
-                onClick={() => setActiveTab("curriculum")}
-              >
-                <ArrowLeft className="w-4 h-4 mr-1" />
-                Назад
+                {t("common.back", locale)}
               </Button>
               <Button
                 className="bg-blue-700 hover:bg-blue-800 text-white"
                 onClick={() => setActiveTab("preview")}
               >
-                Далее: Предпросмотр
+                {t("courseEditor.nextPreview", locale)}
                 <ChevronDown className="w-4 h-4 ml-1 rotate-[-90deg]" />
               </Button>
             </div>
@@ -1340,9 +1165,7 @@ export function CourseEditorPage() {
                 <CardContent className="p-4 flex items-center gap-3">
                   <Eye className="w-5 h-5 text-amber-600 flex-shrink-0" />
                   <p className="text-sm text-amber-800">
-                    Это предварительный просмотр. Студенты увидят курс примерно
-                    так. Нажмите «Опубликовать», чтобы сделать курс доступным, или
-                    «Сохранить черновик», чтобы продолжить редактирование.
+                    {t("courseEditor.previewBanner", locale)}
                   </p>
                 </CardContent>
               </Card>
@@ -1365,16 +1188,16 @@ export function CourseEditorPage() {
                           </Badge>
                           {form.isPublished ? (
                             <Badge className="bg-green-500/20 text-green-200 border-0 text-xs">
-                              Опубликован
+                              {t("common.published", locale)}
                             </Badge>
                           ) : (
                             <Badge className="bg-yellow-500/20 text-yellow-200 border-0 text-xs">
-                              Черновик
+                              {t("common.draft", locale)}
                             </Badge>
                           )}
                         </div>
                         <h1 className="text-2xl md:text-4xl font-bold mb-3">
-                          {form.title || "Название курса"}
+                          {form.title || t("courseEditor.fieldTitleFallback", locale)}
                         </h1>
                         {form.shortDesc && (
                           <p className="text-blue-100 text-lg mb-4">
@@ -1384,20 +1207,20 @@ export function CourseEditorPage() {
                         <div className="flex flex-wrap items-center gap-4 text-sm text-blue-100">
                           <span className="flex items-center gap-1">
                             <Clock className="w-4 h-4" />
-                            {form.duration || `${totalDuration} мин`}
+                            {form.duration || t("courseEditor.minutes", locale).replace("{count}", String(totalDuration))}
                           </span>
                           <span className="flex items-center gap-1">
                             <BookOpen className="w-4 h-4" />
-                            {totalLessons} уроков
+                            {t("courseEditor.totalLessons", locale).replace("{count}", String(totalLessons))}
                           </span>
                           <span className="flex items-center gap-1">
                             <Users className="w-4 h-4" />
-                            0 студентов
+                            {t("courseEditor.zeroStudents", locale)}
                           </span>
                           {form.hasCertificate && (
                             <span className="flex items-center gap-1">
                               <Award className="w-4 h-4" />
-                              Сертификат
+                              {t("common.certificate", locale)}
                             </span>
                           )}
                         </div>
@@ -1425,17 +1248,17 @@ export function CourseEditorPage() {
                             <div className="mb-4">
                               {form.price === 0 ? (
                                 <span className="text-3xl font-bold text-green-600">
-                                  Бесплатно
+                                  {t("courseCard.free", locale)}
                                 </span>
                               ) : (
                                 <div>
                                   <div className="flex items-baseline gap-2">
                                     <span className="text-3xl font-bold">
-                                      {form.price.toLocaleString("ru-RU")} ₽
+                                      {formatNumber(form.price, locale)} ₽
                                     </span>
                                     {form.oldPrice > form.price && (
                                       <span className="text-lg text-muted-foreground line-through">
-                                        {form.oldPrice.toLocaleString("ru-RU")}{" "}
+                                        {formatNumber(form.oldPrice, locale)}{" "}
                                         ₽
                                       </span>
                                     )}
@@ -1443,13 +1266,11 @@ export function CourseEditorPage() {
                                   {form.oldPrice > form.price &&
                                     form.price > 0 && (
                                       <Badge className="mt-1 bg-red-100 text-red-700 border-0">
-                                        Скидка{" "}
-                                        {Math.round(
+                                        {t("courseEditor.discountPercent", locale).replace("{percent}", String(Math.round(
                                           ((form.oldPrice - form.price) /
                                             form.oldPrice) *
                                             100
-                                        )}
-                                        %
+                                        )))}
                                       </Badge>
                                     )}
                                 </div>
@@ -1457,17 +1278,16 @@ export function CourseEditorPage() {
                             </div>
                             <div className="mt-4 text-xs text-muted-foreground space-y-1">
                               <p>
-                                ✅ {totalLessons} уроков
+                                ✅ {t("courseEditor.lessonsCount", locale).replace("{count}", String(totalLessons))}
                               </p>
                               <p>
-                                ✅ {freeLessons} бесплатных уроков
+                                ✅ {t("courseEditor.freeLessons", locale).replace("{count}", String(freeLessons))}
                               </p>
                               <p>
-                                ✅ {form.duration || `${totalDuration} мин`}{" "}
-                                обучения
+                                ✅ {t("courseEditor.learningDuration", locale).replace("{duration}", form.duration || t("courseEditor.minutes", locale).replace("{count}", String(totalDuration)))}
                               </p>
                               {form.hasCertificate && (
-                                <p>✅ Сертификат по окончании</p>
+                                <p>✅ {t("courseEditor.certificateCompletion", locale)}</p>
                               )}
                             </div>
                           </CardContent>
@@ -1485,7 +1305,7 @@ export function CourseEditorPage() {
                       {form.whatYouLearn.filter(Boolean).length > 0 && (
                         <div>
                           <h2 className="text-xl font-bold mb-4">
-                            Чему вы научитесь
+                            {t("courseEditor.sectionWhatYouLearnPreview", locale)}
                           </h2>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                             {form.whatYouLearn
@@ -1506,7 +1326,7 @@ export function CourseEditorPage() {
                       {/* Description */}
                       {form.description && (
                         <div>
-                          <h2 className="text-xl font-bold mb-4">О курсе</h2>
+                          <h2 className="text-xl font-bold mb-4">{t("courseEditor.sectionAboutCourse", locale)}</h2>
                           <div className="prose prose-sm max-w-none text-muted-foreground whitespace-pre-wrap">
                             {form.description}
                           </div>
@@ -1517,7 +1337,7 @@ export function CourseEditorPage() {
                       {form.requirements.filter(Boolean).length > 0 && (
                         <div>
                           <h2 className="text-xl font-bold mb-4">
-                            Требования
+                            {t("courseEditor.sectionRequirements", locale)}
                           </h2>
                           <ul className="space-y-2">
                             {form.requirements
@@ -1539,7 +1359,7 @@ export function CourseEditorPage() {
                       {form.modules.length > 0 && (
                         <div>
                           <h2 className="text-xl font-bold mb-4">
-                            Программа курса ({form.modules.length} модулей)
+                            {t("courseEditor.programWithCount", locale).replace("{count}", String(form.modules.length))}
                           </h2>
                           <div className="space-y-2">
                             {form.modules.map((mod, mIdx) => (
@@ -1554,10 +1374,10 @@ export function CourseEditorPage() {
                                   <div>
                                     <p className="font-semibold text-sm">
                                       {mod.title ||
-                                        `Модуль ${mIdx + 1}`}
+                                        t("courseEditor.moduleName", locale).replace("{number}", String(mIdx + 1))}
                                     </p>
                                     <p className="text-xs text-muted-foreground">
-                                      {mod.lessons.length} уроков
+                                      {t("courseEditor.lessonsCountInModule", locale).replace("{count}", String(mod.lessons.length))}
                                     </p>
                                   </div>
                                 </div>
@@ -1572,7 +1392,7 @@ export function CourseEditorPage() {
                                         <div className="flex-1 min-w-0">
                                           <p className="text-sm truncate">
                                             {lesson.title ||
-                                              `Урок ${lIdx + 1}`}
+                                              t("courseEditor.lessonName", locale).replace("{number}", String(lIdx + 1))}
                                           </p>
                                         </div>
                                         <div className="flex items-center gap-2">
@@ -1581,11 +1401,11 @@ export function CourseEditorPage() {
                                               variant="outline"
                                               className="text-[10px] text-green-600 border-green-300"
                                             >
-                                              Бесплатно
+                                              {t("courseCard.free", locale)}
                                             </Badge>
                                           )}
                                           <span className="text-xs text-muted-foreground">
-                                            {lesson.duration} мин
+                                            {t("courseEditor.minutes", locale).replace("{count}", String(lesson.duration))}
                                           </span>
                                         </div>
                                       </div>
@@ -1600,9 +1420,9 @@ export function CourseEditorPage() {
 
                       {/* Teacher */}
                       <div>
-                        <h2 className="text-xl font-bold mb-4">
-                          Преподаватель
-                        </h2>
+                          <h2 className="text-xl font-bold mb-4">
+                            {t("courseEditor.sectionInstructor", locale)}
+                          </h2>
                         <Card className="border-0 shadow-sm">
                           <CardContent className="p-4 flex items-center gap-4">
                             <div className="w-16 h-16 bg-violet-100 rounded-full flex items-center justify-center text-violet-700 font-bold text-xl">
@@ -1615,10 +1435,10 @@ export function CourseEditorPage() {
                             </div>
                             <div>
                               <h3 className="font-semibold">
-                                {user?.name || "Преподаватель"}
+                                {user?.name || t("courseEditor.sectionInstructor", locale)}
                               </h3>
                               <p className="text-sm text-muted-foreground">
-                                Автор курса на платформе Maestria
+                                {t("courseEditor.authorLabel", locale)}
                               </p>
                             </div>
                           </CardContent>
@@ -1636,7 +1456,7 @@ export function CourseEditorPage() {
                   onClick={() => setActiveTab("additional")}
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
-                  Назад к редактированию
+                  {t("courseEditor.backToEdit", locale)}
                 </Button>
                 <div className="flex items-center gap-3">
                   <Button
@@ -1644,7 +1464,7 @@ export function CourseEditorPage() {
                     onClick={() => navigate("admin")}
                     className="text-muted-foreground"
                   >
-                    Отмена
+                    {t("common.cancel", locale)}
                   </Button>
                   <Button
                     variant="outline"
@@ -1653,7 +1473,7 @@ export function CourseEditorPage() {
                     disabled={saving}
                   >
                     <Save className="w-4 h-4 mr-2" />
-                    {saving ? "Сохранение..." : "Сохранить черновик"}
+                    {saving ? t("common.saving", locale) : t("courseEditor.saveDraft", locale)}
                   </Button>
                   <Button
                     className="bg-blue-700 hover:bg-blue-800 text-white"
@@ -1661,7 +1481,7 @@ export function CourseEditorPage() {
                     disabled={saving}
                   >
                     <Send className="w-4 h-4 mr-2" />
-                    {saving ? "Публикация..." : "Опубликовать"}
+                    {saving ? t("common.publishing", locale) : t("courseEditor.publish", locale)}
                   </Button>
                 </div>
               </div>

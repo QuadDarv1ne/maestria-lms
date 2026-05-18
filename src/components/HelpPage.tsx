@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import type { Locale } from "@/lib/store";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,7 +31,7 @@ interface FAQItem {
   category: string;
 }
 
-function getFaqItems(locale: string): FAQItem[] {
+function getFaqItems(locale: Locale): FAQItem[] {
   return [
     { id: "faq-1", question: t("help.faq.1q", locale), answer: t("help.faq.1a", locale), category: "learning" },
     { id: "faq-2", question: t("help.faq.2q", locale), answer: t("help.faq.2a", locale), category: "learning" },
@@ -50,7 +51,7 @@ function getFaqItems(locale: string): FAQItem[] {
   ];
 }
 
-function getCategories(locale: string) {
+function getCategories(locale: Locale) {
   return [
     { key: "learning", label: t("help.categories.learning", locale), icon: BookOpen, color: "text-blue-700", bg: "bg-blue-50" },
     { key: "payment", label: t("help.categories.payment", locale), icon: CreditCard, color: "text-amber-600", bg: "bg-amber-50" },
