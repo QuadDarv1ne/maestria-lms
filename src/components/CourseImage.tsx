@@ -1,20 +1,17 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
+import Image from "next/image";
 import { resolveCourseImageUrl, getLocalFallbackImage } from "@/lib/courseImage";
 
 interface CourseImageProps {
   src: string | null | undefined;
   alt: string;
   className?: string;
-  identifier?: string; // course id or slug for fallback
+  identifier?: string;
   loading?: "lazy" | "eager";
 }
 
-/**
- * Course image component with CDN-first loading and local fallback.
- * Tries the CDN URL first; if it fails, falls back to a local static file.
- */
 export function CourseImage({
   src,
   alt,
@@ -27,16 +24,17 @@ export function CourseImage({
   const cdnUrl = resolveCourseImageUrl(src);
   const fallbackUrl = getLocalFallbackImage(identifier ?? null);
 
-  // If no URL at all, render nothing (parent should show placeholder)
   if (!cdnUrl && !fallbackUrl) return null;
 
   const finalSrc = (failed ? fallbackUrl : cdnUrl) as string;
 
   return (
-    <img
+    <Image
       src={finalSrc}
       alt={alt}
+      fill
       className={className}
+      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
       loading={loading}
       onError={() => setFailed(true)}
     />
