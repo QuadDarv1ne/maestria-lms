@@ -224,7 +224,7 @@ export function ProfilePage() {
       }
     };
     fetchProfile();
-  }, [user]);
+  }, [user, locale, navigate]);
 
   const handleSaveProfile = async () => {
     setSaving(true);

@@ -84,7 +84,7 @@ export function CertificatePage({ courseId }: { courseId: string }) {
       }
     };
     fetchCourse();
-  }, [courseId]);
+  }, [courseId, locale]);
 
   /* derived state */
   const isCompleted = course?.enrollmentStatus === "completed" || course?.enrollmentProgress === 100;

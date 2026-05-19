@@ -155,7 +155,7 @@ export function LessonPage({
       }
     };
     fetchLesson();
-  }, [courseId, lessonId, navigate]);
+  }, [courseId, lessonId, navigate, locale]);
 
   const handleQuizSubmit = () => {
     const scores: Record<string, boolean> = {};

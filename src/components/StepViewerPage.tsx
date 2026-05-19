@@ -172,7 +172,7 @@ export function StepViewerPage({
       }
     };
     fetchStep();
-  }, [courseId, lessonId, navigate]);
+  }, [courseId, lessonId, navigate, locale]);
 
   // Load course structure for sidebar
   useEffect(() => {
@@ -220,7 +220,7 @@ export function StepViewerPage({
       }
     };
     fetchStructure();
-  }, [courseId, step?.completed]);
+  }, [courseId, locale, step?.completed]);
 
   // Complete step handler
   const handleComplete = useCallback(async () => {
@@ -264,7 +264,7 @@ export function StepViewerPage({
     } finally {
       setCompleting(false);
     }
-  }, [user, step, courseId, lessonId, navigate, courseStructure]);
+  }, [user, step, courseId, lessonId, navigate, courseStructure, locale]);
 
   // Submit quiz answer
   const handleQuizSubmit = useCallback((assignmentId: string) => {
@@ -287,7 +287,7 @@ export function StepViewerPage({
     } else {
       toast.error(`${t("course.step.incorrect", locale)}. ${t("course.step.tryAgain", locale)}.`);
     }
-  }, [step, selectedAnswers]);
+  }, [step, selectedAnswers, locale]);
 
   // Reset quiz
   const handleQuizReset = useCallback((assignmentId: string) => {

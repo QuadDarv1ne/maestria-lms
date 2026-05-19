@@ -486,7 +486,7 @@ export function CourseEditorPage() {
         setSaving(false);
       }
     },
-    [form, navigate]
+    [form, navigate, locale]
   );
 
   // ─── Computed values for preview ─────────────────────────────────────────
