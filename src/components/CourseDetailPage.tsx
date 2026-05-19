@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,7 @@ import { toast } from "sonner";
 
 import { ReviewForm } from "@/components/ReviewForm";
 import { CourseImage } from "@/components/CourseImage";
+import { formatDate } from "@/lib/utils";
 import { levelLabels, levelColors } from "@/lib/constants";
 import { useCourse, useCourseReviews } from "@/hooks/useCourses";
 import { useQueryClient } from "@tanstack/react-query";
@@ -745,7 +746,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                           </div>
                           <span className="text-xs text-muted-foreground">
                             {review.createdAt
-                              ? new Date(review.createdAt).toLocaleDateString(locale === "ru" ? "ru-RU" : locale === "zh" ? "zh-CN" : "en-US")
+                              ? formatDate(review.createdAt, locale)
                               : ""}
                           </span>
                         </div>

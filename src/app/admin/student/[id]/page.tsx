@@ -330,9 +330,7 @@ export default function StudentDetailPage() {
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {enrollment.lastAccessed
-                          ? new Date(enrollment.lastAccessed).toLocaleDateString(
-                              "ru-RU"
-                            )
+                          ? formatDate(enrollment.lastAccessed, locale)
                           : "—"}
                       </TableCell>
                     </TableRow>

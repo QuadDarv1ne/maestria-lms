@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Award,
@@ -28,20 +29,6 @@ function generateCertificateNumber(courseId: string, userId: string): string {
   const h = hashString(courseId + userId);
   const year = new Date().getFullYear();
   return `MAE-${year}-${h.slice(0, 4)}-${h.slice(4, 8)}`;
-}
-
-function formatDate(date: string | Date, locale: string = "ru"): string {
-  const localeMap: Record<string, string> = {
-    ru: "ru-RU",
-    en: "en-US",
-    zh: "zh-CN",
-  };
-  const d = typeof date === "string" ? new Date(date) : date;
-  return d.toLocaleDateString(localeMap[locale] || "ru-RU", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
 }
 
 /* ── types ───────────────────────────────────────────────────────────── */
