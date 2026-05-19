@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import type { Locale } from "@/lib/stores/ui";
@@ -11,17 +11,8 @@ import {
   Clock,
   ArrowLeft,
   ArrowRight,
-  ChevronLeft,
-  ChevronRight,
   CheckCircle2,
   Play,
-  PlayCircle,
-  BookOpen,
-  Award,
-  Maximize2,
-  FileCode,
-  ExternalLink,
-  HelpCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { lessonTypeIcon } from "@/lib/constants";
@@ -125,7 +116,7 @@ export function LessonPage({
   // Quiz state
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
-  const [quizScores, setQuizScores] = useState<Record<string, boolean>>({});
+  const [, setQuizScores] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     setQuizAnswers({});
@@ -160,14 +151,6 @@ export function LessonPage({
   const handleQuizSubmit = () => {
     const scores: Record<string, boolean> = {};
     lesson?.assignments.forEach((assignment) => {
-      let options: string[] = [];
-      try {
-        if (assignment.options) {
-          options = JSON.parse(assignment.options);
-        }
-      } catch {
-        // invalid JSON — treat as no options
-      }
       const parsed = assignment.correctAnswer
         ? parseInt(assignment.correctAnswer, 10)
         : -1;

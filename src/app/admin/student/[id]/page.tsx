@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+
 import { useSearchParams, useRouter } from "next/navigation";
 import { useStudentStats } from "@/hooks/useAdmin";
 import { useAppStore } from "@/lib/store";
@@ -31,7 +31,6 @@ import {
   BarChart3,
   DollarSign,
   MessageSquare,
-  Loader2,
   Activity,
 } from "lucide-react";
 

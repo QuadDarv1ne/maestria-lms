@@ -49,7 +49,6 @@ import {
   Eye,
   Settings,
   GraduationCap,
-  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { levelLabels, levelColors, CATEGORIES } from "@/lib/constants";
@@ -371,35 +370,6 @@ export function CourseEditorPage() {
               }
             : m
         ),
-      }));
-    },
-    []
-  );
-
-  // ─── Dynamic list operations ─────────────────────────────────────────────
-
-  const addListItem = useCallback(
-    (key: "requirements" | "whatYouLearn") => {
-      setForm((prev) => ({ ...prev, [key]: [...prev[key], ""] }));
-    },
-    []
-  );
-
-  const removeListItem = useCallback(
-    (key: "requirements" | "whatYouLearn", idx: number) => {
-      setForm((prev) => ({
-        ...prev,
-        [key]: prev[key].filter((_, i) => i !== idx),
-      }));
-    },
-    []
-  );
-
-  const updateListItem = useCallback(
-    (key: "requirements" | "whatYouLearn", idx: number, value: string) => {
-      setForm((prev) => ({
-        ...prev,
-        [key]: prev[key].map((v, i) => (i === idx ? value : v)),
       }));
     },
     []
