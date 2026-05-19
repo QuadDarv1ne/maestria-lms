@@ -57,3 +57,6 @@ server.log
 *.db
 *.db-journal
 prisma-data/
+
+# Use bun.lock as single lock file (project uses bun)
+package-lock.json
