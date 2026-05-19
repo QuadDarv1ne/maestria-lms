@@ -89,6 +89,17 @@ interface Certificate {
   };
 }
 
+interface CourseModuleData {
+  lessons?: { id: string }[];
+}
+interface ProgressData {
+  lessonId: string;
+  completed: boolean;
+  timeSpent?: number;
+  score?: number | null;
+  lastAccessed: string;
+}
+
 export function ProfilePage() {
   const { user, navigate, setUser, logout, favorites, toggleFavorite, isFavorite, locale } = useAppStore();
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -176,8 +187,8 @@ export function ProfilePage() {
                   if (courseRes.ok) {
                     const courseData = await courseRes.json();
                     const course = courseData.course || courseData;
-                    const lessonIds = course.modules?.flatMap((mod: any) =>
-                      mod.lessons?.map((l: any) => l.id) || []
+                    const lessonIds = course.modules?.flatMap((mod: CourseModuleData) =>
+                      mod.lessons?.map((l) => l.id) || []
                     ) || [];
                     courseLessonsMap[enrollment.course.id] = lessonIds;
                   }
@@ -187,15 +198,15 @@ export function ProfilePage() {
 
             const details = data.enrollments.map((enrollment: Enrollment) => {
               const courseLessonIds = courseLessonsMap[enrollment.course.id] || [];
-              const courseProgress = data.progress.filter((p: any) =>
+              const courseProgress: ProgressData[] = data.progress.filter((p: ProgressData) =>
                 courseLessonIds.includes(p.lessonId)
               );
-              const completedLessons = courseProgress.filter((p: any) => p.completed).length;
-              const totalTimeSpent = courseProgress.reduce((sum: number, p: any) => sum + (p.timeSpent || 0), 0);
-              const scores = courseProgress.filter((p: any) => p.score !== null).map((p: any) => p.score);
+              const completedLessons = courseProgress.filter((p: ProgressData) => p.completed).length;
+              const totalTimeSpent = courseProgress.reduce((sum: number, p: ProgressData) => sum + (p.timeSpent || 0), 0);
+              const scores = courseProgress.filter((p: ProgressData) => p.score !== null).map((p: ProgressData) => p.score);
               const avgScore = scores.length > 0 ? Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length) : null;
               const lastAccessed = courseProgress.length > 0
-                ? courseProgress.sort((a: any, b: any) =>
+                ? courseProgress.sort((a: ProgressData, b: ProgressData) =>
                     new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime()
                   )[0].lastAccessed
                 : null;

@@ -47,10 +47,11 @@ export function rateLimit(
 ) {
   const { windowMs, maxRequests } = { ...defaultConfig, ...config };
 
-  if (!stores.has(routeId)) {
-    stores.set(routeId, new Map());
+  let store = stores.get(routeId);
+  if (!store) {
+    store = new Map();
+    stores.set(routeId, store);
   }
-  const store = stores.get(routeId)!;
 
   return (request: Request): NextResponse | null => {
     const ip = getClientIp(request);
