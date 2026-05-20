@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import type { ExtendedSession } from "@/lib/auth";
+import { getAuthSession } from "@/lib/auth";
 import { z } from "zod";
 
 const updateProgressSchema = z.object({
@@ -57,7 +55,7 @@ export async function GET(
     let progressData = null;
     let sessionUser: { id: string } | null = null;
 
-    const session = (await getServerSession(authOptions)) as ExtendedSession | null;
+    const session = await getAuthSession();
     if (session?.user) {
       const userId = session.user.id;
       if (!userId) {
@@ -186,7 +184,7 @@ export async function POST(
 ) {
   try {
     const { id: courseId, lessonId } = await params;
-    const session = (await getServerSession(authOptions)) as ExtendedSession | null;
+    const session = await getAuthSession();
 
     if (!session?.user) {
       return NextResponse.json(

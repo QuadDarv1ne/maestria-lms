@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getServerSession } from "next-auth";
-import { authOptions, ExtendedSession } from "@/lib/auth";
+import { getAuthSession } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 const checkRateLimit = rateLimit("enrollment", RATE_LIMITS.enrollment);
@@ -16,7 +15,7 @@ export async function POST(
 
   try {
     const { id: courseId } = await params;
-    const session = (await getServerSession(authOptions)) as ExtendedSession | null;
+    const session = await getAuthSession();
 
     if (!session?.user) {
       return NextResponse.json(

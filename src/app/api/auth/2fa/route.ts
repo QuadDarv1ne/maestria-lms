@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getServerSession } from "next-auth";
-import { authOptions, ExtendedSession } from "@/lib/auth";
+import { getAuthSession } from "@/lib/auth";
 import { z } from "zod";
 import { authenticator } from "otplib";
 
@@ -39,7 +38,7 @@ function generateOtpAuthUrl(secret: string, email: string): string {
 // POST: Включить 2FA — генерирует секрет и возвращает данные QR-кода
 export async function POST(request: NextRequest) {
   try {
-    const session = (await getServerSession(authOptions)) as ExtendedSession | null;
+    const session = await getAuthSession();
     if (!session?.user) {
       return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
     }
@@ -88,7 +87,7 @@ export async function POST(request: NextRequest) {
 // PUT: Подтвердить настройку 2FA
 export async function PUT(request: NextRequest) {
   try {
-    const session = (await getServerSession(authOptions)) as ExtendedSession | null;
+    const session = await getAuthSession();
     if (!session?.user) {
       return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
     }
@@ -143,7 +142,7 @@ export async function PUT(request: NextRequest) {
 // DELETE: Отключить 2FA
 export async function DELETE(request: NextRequest) {
   try {
-    const session = (await getServerSession(authOptions)) as ExtendedSession | null;
+    const session = await getAuthSession();
     if (!session?.user) {
       return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
     }

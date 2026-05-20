@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getServerSession } from "next-auth";
-import { authOptions, ExtendedSession } from "@/lib/auth";
+import { getAuthSession } from "@/lib/auth";
 
 // GET: Supplementary data for achievements calculation
 export const revalidate = 120;
 
 export async function GET() {
   try {
-    const session = (await getServerSession(authOptions)) as ExtendedSession | null;
+    const session = await getAuthSession();
     if (!session?.user) {
       return NextResponse.json(
         { error: "Необходимо авторизоваться" },

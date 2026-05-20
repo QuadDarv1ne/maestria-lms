@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getServerSession } from "next-auth";
-import { authOptions, ExtendedSession } from "@/lib/auth";
+import { getAuthSession } from "@/lib/auth";
 import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
@@ -17,7 +16,7 @@ export async function POST(request: NextRequest) {
   const blocked = checkRateLimit(request);
   if (blocked) return blocked;
   try {
-    const session = (await getServerSession(authOptions)) as ExtendedSession | null;
+    const session = await getAuthSession();
     if (!session?.user) {
       return NextResponse.json(
         { error: "Необходимо авторизоваться" },
@@ -138,7 +137,7 @@ export async function POST(request: NextRequest) {
 // GET: Список платежей пользователя
 export async function GET(request: NextRequest) {
   try {
-    const session = (await getServerSession(authOptions)) as ExtendedSession | null;
+    const session = await getAuthSession();
     if (!session?.user) {
       return NextResponse.json(
         { error: "Необходимо авторизоваться" },

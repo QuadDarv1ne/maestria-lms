@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import type { ExtendedSession } from "@/lib/auth";
+import { getAuthSession } from "@/lib/auth";
 
 // GET: Get paginated reviews for a course
 export const revalidate = 60;
@@ -85,7 +83,7 @@ export async function POST(
     const { id: courseId } = await params;
 
     // Check authentication
-    const session = (await getServerSession(authOptions)) as ExtendedSession | null;
+    const session = await getAuthSession();
     if (!session?.user) {
       return NextResponse.json(
         { error: "Необходимо авторизоваться" },

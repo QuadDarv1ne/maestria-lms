@@ -333,7 +333,7 @@ export function AuthDialogs() {
                 onClick={() => {
                   setLoginForm({
                     email: "admin@maestro7it.ru",
-                    password: "admin123",
+                    password: "",
                     twoFactorCode: "",
                   });
                 }}
@@ -346,7 +346,7 @@ export function AuthDialogs() {
                 onClick={() => {
                   setLoginForm({
                     email: "teacher@maestro7it.ru",
-                    password: "teacher123",
+                    password: "",
                     twoFactorCode: "",
                   });
                 }}

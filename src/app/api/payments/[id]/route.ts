@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getServerSession } from "next-auth";
-import { authOptions, ExtendedSession } from "@/lib/auth";
+import { getAuthSession } from "@/lib/auth";
 
 /**
  * Ensure user is enrolled on a course after payment completion.
@@ -51,7 +50,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const session = (await getServerSession(authOptions)) as ExtendedSession | null;
+    const session = await getAuthSession();
 
     if (!session?.user) {
       return NextResponse.json(
@@ -109,7 +108,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const session = (await getServerSession(authOptions)) as ExtendedSession | null;
+    const session = await getAuthSession();
 
     if (!session?.user) {
       return NextResponse.json(
@@ -181,7 +180,7 @@ export async function PUT(
   try {
     const { id } = await params;
 
-    const session = (await getServerSession(authOptions)) as ExtendedSession | null;
+    const session = await getAuthSession();
     if (!session?.user) {
       return NextResponse.json(
         { error: "Необходимо авторизоваться" },

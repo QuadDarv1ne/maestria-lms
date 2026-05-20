@@ -1,5 +1,6 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { getServerSession } from "next-auth/next";
 import type { JWT } from "next-auth/jwt";
 import type { Session } from "next-auth";
 import bcrypt from "bcryptjs";
@@ -113,5 +114,13 @@ export const authOptions: NextAuthOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET,
 };
+
+/**
+ * Typed wrapper for getServerSession to avoid repeating
+ * `as ExtendedSession | null` across API routes.
+ */
+export async function getAuthSession(): Promise<ExtendedSession | null> {
+  return getServerSession(authOptions) as Promise<ExtendedSession | null>;
+}
 
 export { hashPassword };

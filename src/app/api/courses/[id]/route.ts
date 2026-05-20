@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import type { ExtendedSession } from "@/lib/auth";
+import { getAuthSession } from "@/lib/auth";
 
 // GET: Детальная информация о курсе
 export const revalidate = 60;
@@ -91,7 +89,7 @@ export async function GET(
     }
 
     // Проверяем доступ к неопубликованным курсам
-    const session = (await getServerSession(authOptions)) as ExtendedSession | null;
+    const session = await getAuthSession();
     if (!course.isPublished) {
       if (!session?.user?.id) {
         return NextResponse.json(

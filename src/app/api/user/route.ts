@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { Prisma } from "@prisma/client";
-import { getServerSession } from "next-auth";
-import { authOptions, ExtendedSession } from "@/lib/auth";
+import { getAuthSession } from "@/lib/auth";
 import { z } from "zod";
 
 const updateProfileSchema = z.object({
@@ -15,7 +14,7 @@ const updateProfileSchema = z.object({
 // GET: Профиль текущего пользователя
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions) as ExtendedSession | null;
+    const session = await getAuthSession();
     if (!session?.user) {
       return NextResponse.json(
         { error: "Необходимо авторизоваться" },
@@ -118,7 +117,7 @@ export async function GET() {
 // PUT: Обновить профиль
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions) as ExtendedSession | null;
+    const session = await getAuthSession();
     if (!session?.user) {
       return NextResponse.json(
         { error: "Необходимо авторизоваться" },
