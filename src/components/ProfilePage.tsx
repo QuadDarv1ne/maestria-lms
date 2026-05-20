@@ -163,23 +163,26 @@ export function ProfilePage() {
       navigate("login");
       return;
     }
+    let cancelled = false;
     const fetchProfile = async () => {
       try {
         const res = await fetch("/api/user");
         if (res.ok) {
           const data = await res.json();
-          setProfile(data.user);
-          setEnrollments(data.enrollments || []);
-          setCertificates(data.certificates || []);
-          setEditForm({
-            name: data.user.name || "",
-            bio: data.user.bio || "",
-            phone: data.user.phone || "",
-            image: data.user.image || "",
-          });
+          if (!cancelled) {
+            setProfile(data.user);
+            setEnrollments(data.enrollments || []);
+            setCertificates(data.certificates || []);
+            setEditForm({
+              name: data.user.name || "",
+              bio: data.user.bio || "",
+              phone: data.user.phone || "",
+              image: data.user.image || "",
+            });
+          }
 
           // Fetch detailed enrollment stats using progress data
-          if (data.enrollments?.length > 0 && data.progress) {
+          if (data.enrollments?.length > 0 && data.progress && !cancelled) {
             // Build a map of lessonId -> courseId by fetching course details
             const courseLessonsMap: Record<string, string[]> = {};
             await Promise.all(
@@ -222,21 +225,31 @@ export function ProfilePage() {
                 avgScore,
               };
             });
-            setEnrollmentDetails(details);
+            if (!cancelled) {
+              setEnrollmentDetails(details);
+              setError(null);
+            }
+          } else if (!cancelled) {
+            setError(null);
           }
-
-          setError(null);
-        } else {
+        } else if (!cancelled) {
           setError(t("profile.failedToLoad", locale));
         }
       } catch (e) {
-        console.error("Ошибка загрузки профиля:", e);
-        setError(t("profile.networkError", locale));
+        if (!cancelled) {
+          console.error("Ошибка загрузки профиля:", e);
+          setError(t("profile.networkError", locale));
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
     fetchProfile();
+    return () => {
+      cancelled = true;
+    };
   }, [user, locale, navigate]);
 
   const handleSaveProfile = async () => {

@@ -131,6 +131,7 @@ export function CoursePromoCarousel() {
   const rawLocale = useAppStore((s) => s.locale);
   const locale = rawLocale as Locale;
   const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
@@ -148,8 +149,18 @@ export function CoursePromoCarousel() {
     const cardWidth = 340;
     const scrollAmount = direction === "left" ? -cardWidth : cardWidth;
     el.scrollBy({ left: scrollAmount, behavior: "smooth" });
-    setTimeout(checkScrollPosition, 400);
+    if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+    scrollTimerRef.current = setTimeout(checkScrollPosition, 400);
   }, [checkScrollPosition]);
+
+  // Cleanup scroll timer on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollTimerRef.current) {
+        clearTimeout(scrollTimerRef.current);
+      }
+    };
+  }, []);
 
   // Auto-scroll
   useEffect(() => {

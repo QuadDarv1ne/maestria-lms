@@ -55,8 +55,64 @@ export function useCourses(filters?: {
   });
 }
 
+export interface CourseDetail {
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  shortDesc: string | null;
+  image: string | null;
+  price: number;
+  oldPrice: number | null;
+  currency: string;
+  level: string;
+  duration: string | null;
+  language: string;
+  isPublished: boolean;
+  isFeatured: boolean;
+  hasCertificate: boolean;
+  rating: number;
+  reviewCount: number;
+  studentCount: number;
+  tags: string[];
+  requirements: string[] | null;
+  whatYouLearn: string[] | null;
+  totalLessons: number;
+  totalDuration: number;
+  freeLessons: number;
+  isEnrolled: boolean;
+  isCompleted: boolean;
+  teacher: {
+    id: string;
+    name: string | null;
+    image: string | null;
+    bio: string | null;
+  } | null;
+  category: {
+    id: string;
+    name: string;
+    slug: string;
+    icon: string | null;
+    color: string | null;
+  } | null;
+  modules: Array<{
+    id: string;
+    title: string;
+    sortOrder: number;
+    lessons: Array<{
+      id: string;
+      title: string;
+      type: string;
+      duration: number;
+      isFree: boolean;
+      sortOrder: number;
+      completed: boolean;
+    }>;
+  }>;
+}
+
 export function useCourse(id: string | undefined) {
-  return useQuery<{ course: unknown }>({
+  return useQuery<{ course: CourseDetail }>({
     queryKey: ["course", id],
     queryFn: async () => {
       const res = await fetch(`/api/courses/${id}`);
@@ -68,8 +124,23 @@ export function useCourse(id: string | undefined) {
   });
 }
 
+export interface Review {
+  id: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  updatedAt: string;
+  userId: string;
+  courseId: string;
+  user: {
+    id: string;
+    name: string | null;
+    image: string | null;
+  };
+}
+
 export function useCourseReviews(courseId: string | undefined, page = 1) {
-  return useQuery<{ reviews: unknown[]; pagination: { page: number; total: number; totalPages: number } }>({
+  return useQuery<{ reviews: Review[]; pagination: { page: number; total: number; totalPages: number } }>({
     queryKey: ["course-reviews", courseId, page],
     queryFn: async () => {
       const res = await fetch(`/api/courses/${courseId}/reviews?page=${page}&limit=10`);

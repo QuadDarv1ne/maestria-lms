@@ -23,12 +23,13 @@ export default function Page() {
 
   // Загрузка сессии пользователя
   useEffect(() => {
+    let cancelled = false;
     const loadSession = async () => {
       try {
         const res = await fetch("/api/auth/session");
         if (res.ok) {
           const session = await res.json();
-          if (session?.user) {
+          if (session?.user && !cancelled) {
             setUser({
               id: session.user.id || "",
               email: session.user.email || "",
@@ -44,6 +45,9 @@ export default function Page() {
     };
 
     loadSession();
+    return () => {
+      cancelled = true;
+    };
   }, [setUser]);
 
   return (

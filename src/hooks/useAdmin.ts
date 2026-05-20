@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
+export type UserRole = "admin" | "teacher" | "student";
+
 export interface AdminCourse {
   id: string;
   title: string;
@@ -15,7 +17,7 @@ export interface AdminUser {
   id: string;
   email: string;
   name: string | null;
-  role: string;
+  role: UserRole;
   isActive: boolean;
   twoFactorEnabled: boolean;
   createdAt: string;
@@ -78,7 +80,7 @@ export function useAdminStats() {
 export function useUpdateUserRole() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
+    mutationFn: async ({ userId, role }: { userId: string; role: UserRole }) => {
       const res = await fetch("/api/admin/users", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useAppStore } from "@/lib/store";
 import { t, useLocale } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -127,6 +127,7 @@ export function StepViewerPage({
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const navigationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Quiz state
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
@@ -185,6 +186,15 @@ export function StepViewerPage({
       cancelled = true;
     };
   }, [courseId, lessonId, navigate, locale]);
+
+  // Cleanup navigation timer on unmount
+  useEffect(() => {
+    return () => {
+      if (navigationTimerRef.current) {
+        clearTimeout(navigationTimerRef.current);
+      }
+    };
+  }, []);
 
   // Load course structure for sidebar
   useEffect(() => {
@@ -272,7 +282,7 @@ export function StepViewerPage({
         });
         // Auto-navigate to next step after short delay
         if (step.nextStepId) {
-          setTimeout(() => {
+          navigationTimerRef.current = setTimeout(() => {
             navigate(`course/${courseId}/lesson/${step.nextStepId}`);
           }, 1200);
         }
