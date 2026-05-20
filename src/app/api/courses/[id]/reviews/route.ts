@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+
+const checkRateLimit = rateLimit("review", RATE_LIMITS.review);
 
 // GET: Get paginated reviews for a course
 export const revalidate = 60;
@@ -79,6 +82,8 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
   try {
     const { id: courseId } = await params;
 
@@ -92,9 +97,7 @@ export async function POST(
     }
 
     const userId = session.user.id;
-    if (!userId) {
-      return NextResponse.json({ error: "Ошибка аутентификации" }, { status: 401 });
-    }
+
     // Parse and validate request body
     const body = await request.json();
     const { rating, comment } = body;

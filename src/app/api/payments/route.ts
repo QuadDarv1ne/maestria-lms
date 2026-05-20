@@ -25,9 +25,6 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = session.user.id;
-    if (!userId) {
-      return NextResponse.json({ error: "Ошибка аутентификации" }, { status: 401 });
-    }
     const body = await request.json();
     const validation = createPaymentSchema.safeParse(body);
 
@@ -146,9 +143,6 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = session.user.id;
-    if (!userId) {
-      return NextResponse.json({ error: "Ошибка аутентификации" }, { status: 401 });
-    }
 
     const { searchParams } = new URL(request.url);
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));

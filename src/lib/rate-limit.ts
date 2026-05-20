@@ -91,6 +91,11 @@ export const RATE_LIMITS = {
   admin: { windowMs: 60_000, maxRequests: 60 },
   upload: { windowMs: 60_000, maxRequests: 10 },
   payments: { windowMs: 60_000, maxRequests: 20 },
+  paymentUpdate: { windowMs: 60_000, maxRequests: 30 },
   enrollment: { windowMs: 60_000, maxRequests: 10 },
+  progress: { windowMs: 60_000, maxRequests: 60 },
+  review: { windowMs: 60_000, maxRequests: 10 },
+  profile: { windowMs: 60_000, maxRequests: 20 },
+  twoFactor: { windowMs: 60_000, maxRequests: 10 },
   default: { windowMs: 60_000, maxRequests: 30 },
 } as const;

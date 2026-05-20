@@ -3,6 +3,9 @@ import { db } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { z } from "zod";
 import { authenticator } from "otplib";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+
+const checkRateLimit = rateLimit("twoFactor", RATE_LIMITS.twoFactor);
 
 const enable2FASchema = z.object({
   password: z.string().min(1, "Введите текущий пароль"),
@@ -37,6 +40,8 @@ function generateOtpAuthUrl(secret: string, email: string): string {
 
 // POST: Включить 2FA — генерирует секрет и возвращает данные QR-кода
 export async function POST(request: NextRequest) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
   try {
     const session = await getAuthSession();
     if (!session?.user) {
@@ -86,6 +91,8 @@ export async function POST(request: NextRequest) {
 
 // PUT: Подтвердить настройку 2FA
 export async function PUT(request: NextRequest) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
   try {
     const session = await getAuthSession();
     if (!session?.user) {
@@ -141,6 +148,8 @@ export async function PUT(request: NextRequest) {
 
 // DELETE: Отключить 2FA
 export async function DELETE(request: NextRequest) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
   try {
     const session = await getAuthSession();
     if (!session?.user) {

@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { z } from "zod";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 const updateProgressSchema = z.object({
   completed: z.boolean().optional(),
   score: z.number().int().min(0).max(100).optional().nullable(),
   timeSpent: z.number().int().min(0).optional(),
 });
+
+const checkRateLimit = rateLimit("progress", RATE_LIMITS.progress);
 
 // GET: Получить содержимое шага (урока) с полной навигацией по курсу
 export async function GET(
@@ -58,9 +61,6 @@ export async function GET(
     const session = await getAuthSession();
     if (session?.user) {
       const userId = session.user.id;
-      if (!userId) {
-        return NextResponse.json({ error: "Ошибка аутентификации" }, { status: 401 });
-      }
       const enrollment = await db.enrollment.findUnique({
         where: {
           userId_courseId: {
@@ -182,6 +182,8 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; lessonId: string }> }
 ) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
   try {
     const { id: courseId, lessonId } = await params;
     const session = await getAuthSession();

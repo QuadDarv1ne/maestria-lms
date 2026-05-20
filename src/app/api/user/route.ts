@@ -3,6 +3,9 @@ import { db } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import { getAuthSession } from "@/lib/auth";
 import { z } from "zod";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+
+const checkRateLimit = rateLimit("profile", RATE_LIMITS.profile);
 
 const updateProfileSchema = z.object({
   name: z.string().min(2, "Имя должно быть не менее 2 символов").max(50).optional(),
@@ -116,6 +119,8 @@ export async function GET() {
 
 // PUT: Обновить профиль
 export async function PUT(request: NextRequest) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
   try {
     const session = await getAuthSession();
     if (!session?.user) {

@@ -142,12 +142,6 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = session.user.id;
-    if (!userId) {
-      return NextResponse.json(
-        { error: "Ошибка аутентификации" },
-        { status: 401 }
-      );
-    }
 
     // Проверяем уникальность slug
     const existingCourse = await db.course.findUnique({
