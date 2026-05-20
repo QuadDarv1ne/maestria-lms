@@ -30,7 +30,7 @@ export async function POST() {
     try { await db.$executeRawUnsafe(`DELETE FROM sqlite_sequence`); } catch { /* safe to ignore */ }
     await db.$executeRawUnsafe(`PRAGMA foreign_keys = ON`);
   } catch (cleanupError) {
-    console.log('Cleanup note:', String(cleanupError));
+    console.error('Cleanup note:', String(cleanupError));
   }
 
   // ============ КАТЕГОРИИ ============
