@@ -28,7 +28,7 @@ export function HomePage() {
 
   const defaultCategories = CATEGORIES.map((c, i) => ({
     id: String(i + 1),
-    name: c.label,
+    name: t(c.labelKey, locale),
     slug: c.slug,
     icon: c.icon,
     color: ["#3776AB", "#F7DF1E", "#E2231A", "#00599C", "#FF6F00", "#3DDC84"][i],

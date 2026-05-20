@@ -475,7 +475,12 @@ export function CourseEditorPage() {
     0
   );
   const categoryLabel =
-    CATEGORY_OPTIONS.find((c) => c.slug === form.categorySlug)?.label || "";
+    CATEGORY_OPTIONS.find((c) => c.slug === form.categorySlug)?.labelKey
+      ? t(
+          CATEGORY_OPTIONS.find((c) => c.slug === form.categorySlug)!.labelKey,
+          locale
+        )
+      : "";
 
   // ─── Render ──────────────────────────────────────────────────────────────
 
@@ -642,7 +647,7 @@ export function CourseEditorPage() {
                           {CATEGORY_OPTIONS.map((cat) => (
                             <SelectItem key={cat.slug} value={cat.slug}>
                               <span className="mr-2">{cat.icon}</span>
-                              {cat.label}
+                              {t(cat.labelKey, locale)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -1154,7 +1159,7 @@ export function CourseEditorPage() {
                             </Badge>
                           )}
                           <Badge className={levelColors[form.level]}>
-                            {levelLabels[form.level]}
+                            {t(levelLabels[form.level], locale)}
                           </Badge>
                           {form.isPublished ? (
                             <Badge className="bg-green-500/20 text-green-200 border-0 text-xs">

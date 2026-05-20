@@ -16,9 +16,9 @@ import {
 } from "lucide-react";
 
 export const levelLabels: Record<string, string> = {
-  beginner: "Начинающий",
-  intermediate: "Средний",
-  advanced: "Продвинутый",
+  beginner: "common.levelBeginner",
+  intermediate: "common.levelIntermediate",
+  advanced: "common.levelAdvanced",
 };
 
 export const levelColors: Record<string, string> = {
@@ -29,27 +29,27 @@ export const levelColors: Record<string, string> = {
 
 export interface CategoryOption {
   slug: string;
-  label: string;
+  labelKey: string;
   icon: string;
 }
 
 export const CATEGORIES: CategoryOption[] = [
-  { slug: "python", label: "Программирование на Python", icon: "🐍" },
-  { slug: "web-development", label: "Веб-разработка", icon: "🌐" },
-  { slug: "roblox", label: "Создание игр в Roblox", icon: "🎮" },
-  { slug: "cpp-csharp", label: "C++/C#", icon: "⚡" },
-  { slug: "data-science", label: "Data Science", icon: "📊" },
-  { slug: "mobile-development", label: "Мобильная разработка", icon: "📱" },
+  { slug: "python", labelKey: "common.categoryPython", icon: "🐍" },
+  { slug: "web-development", labelKey: "common.categoryWebDev", icon: "🌐" },
+  { slug: "roblox", labelKey: "common.categoryRoblox", icon: "🎮" },
+  { slug: "cpp-csharp", labelKey: "common.categoryCppCsharp", icon: "⚡" },
+  { slug: "data-science", labelKey: "common.categoryDataScience", icon: "📊" },
+  { slug: "mobile-development", labelKey: "common.categoryMobileDev", icon: "📱" },
 ];
 
 export const ACTIVITY_TYPE_LABELS: Record<string, string> = {
-  user_register: "Регистрация",
-  course_create: "Создание",
-  course_publish: "Публикация",
-  enrollment: "Запись",
-  payment: "Оплата",
-  report: "Жалоба",
-  settings_change: "Настройки",
+  user_register: "common.activityRegister",
+  course_create: "common.activityCreate",
+  course_publish: "common.activityPublish",
+  enrollment: "common.activityEnroll",
+  payment: "common.activityPay",
+  report: "common.activityReport",
+  settings_change: "common.activitySettings",
 };
 
 export const ACTIVITY_TYPE_COLORS: Record<string, string> = {

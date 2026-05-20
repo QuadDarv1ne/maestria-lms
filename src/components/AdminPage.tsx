@@ -370,6 +370,17 @@ function Sparkline({ data, color = "#4f46e5", width = 80, height = 32 }: { data:
 export function AdminPage() {
   const { user, navigate } = useAppStore();
   const locale = useAppStore((s) => s.locale);
+  const dayLabelsI18n = [
+    t("common.dayMon", locale), t("common.dayTue", locale), t("common.dayWed", locale),
+    t("common.dayThu", locale), t("common.dayFri", locale), t("common.daySat", locale),
+    t("common.daySun", locale),
+  ];
+  const monthLabelsI18n = [
+    t("common.monthJan", locale), t("common.monthFeb", locale), t("common.monthMar", locale),
+    t("common.monthApr", locale), t("common.monthMay", locale), t("common.monthJun", locale),
+    t("common.monthJul", locale), t("common.monthAug", locale), t("common.monthSep", locale),
+    t("common.monthOct", locale), t("common.monthNov", locale), t("common.monthDec", locale),
+  ];
   const queryClient = useQueryClient();
   const [reports] = useState<ReportItem[]>(demoReports);
   const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
@@ -784,7 +795,7 @@ export function AdminPage() {
                 <CardContent>
                   <BarChart data={[65, 78, 52, 89, 72, 38, 42]} labels={dayLabels} color="#10b981" height={180} />
                   <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-                    <span>{t("adminPage.statPeakDay", locale)}: <strong className="text-foreground">Чт (89)</strong></span>
+                    <span>{t("adminPage.statPeakDay", locale)}: <strong className="text-foreground">{`${dayLabelsI18n[3]} (89)`}</strong></span>
                     <span>{t("adminPage.statAvgDayValue", locale)}: <strong className="text-foreground">{Math.round([65, 78, 52, 89, 72, 38, 42].reduce((a, b) => a + b, 0) / 7)}</strong></span>
                   </div>
                 </CardContent>
@@ -826,7 +837,7 @@ export function AdminPage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>{t("adminPage.tabUsers", locale)}</TableHead>
-                        <TableHead>Email</TableHead>
+                        <TableHead>{t("common.email", locale)}</TableHead>
                         <TableHead>{t("admin.role", locale)}</TableHead>
                         <TableHead>2FA</TableHead>
                         <TableHead>{t("admin.status", locale)}</TableHead>
@@ -1091,7 +1102,7 @@ export function AdminPage() {
                   <BarChart data={demoReadingSessions} labels={dayLabels} color="#4f46e5" height={200} />
                   <div className="flex justify-between mt-3 text-xs text-muted-foreground">
                     <span>{t("adminPage.statTotal", locale)}: <strong className="text-foreground">{demoReadingSessions.reduce((a, b) => a + b, 0)}</strong></span>
-                    <span>{t("adminPage.statPeak", locale)}: <strong className="text-foreground">Чт ({Math.max(...demoReadingSessions)})</strong></span>
+                    <span>{t("adminPage.statPeak", locale)}: <strong className="text-foreground">{`${dayLabelsI18n[demoReadingSessions.indexOf(Math.max(...demoReadingSessions))]} (${Math.max(...demoReadingSessions)})`}</strong></span>
                   </div>
                 </CardContent>
               </Card>
@@ -1171,7 +1182,7 @@ export function AdminPage() {
               <CardContent>
                 <LineChart data={[42, 48, 55, 62, 68, 75, 82, 88, 92, 95, 78, 85]} labels={monthLabels} color="#7c3aed" height={180} fillOpacity={0.15} />
                 <div className="flex justify-between mt-3 text-xs text-muted-foreground">
-                  <span>{t("adminPage.statTrend", locale)}: <strong className="text-green-600">Рост +38%</strong></span>
+                  <span>{t("adminPage.statTrend", locale)}: <strong className="text-green-600">{t("common.growth", locale)} +38%</strong></span>
                   <span>{t("adminPage.statAvgEngagement", locale)}: <strong className="text-foreground">72%</strong></span>
                 </div>
               </CardContent>
@@ -1217,7 +1228,7 @@ export function AdminPage() {
                 <LineChart data={demoMonthlyRevenue.map(v => v / 1000)} labels={monthLabels} color="#10b981" height={220} fillOpacity={0.15} strokeWidth={3} />
                 <div className="flex justify-between mt-3 text-xs text-muted-foreground">
                   <span>{t("adminPage.statTotalIncome", locale)}: <strong className="text-foreground">{(demoMonthlyRevenue.reduce((a, b) => a + b, 0) / 1000).toFixed(0)}K ₽</strong></span>
-                  <span>{t("adminPage.statPeak", locale)}: <strong className="text-foreground">{(Math.max(...demoMonthlyRevenue) / 1000).toFixed(0)}K ₽ (Дек)</strong></span>
+                  <span>{t("adminPage.statPeak", locale)}: <strong className="text-foreground">{`${(Math.max(...demoMonthlyRevenue) / 1000).toFixed(0)}K ₽ (${monthLabelsI18n[demoMonthlyRevenue.indexOf(Math.max(...demoMonthlyRevenue))]})`}</strong></span>
                 </div>
               </CardContent>
             </Card>
@@ -1484,7 +1495,7 @@ export function AdminPage() {
                           variant="outline"
                           className={`text-[10px] shrink-0 ${ACTIVITY_TYPE_COLORS[item.type] || "border-gray-300 text-gray-700"}`}
                         >
-                          {ACTIVITY_TYPE_LABELS[item.type] || item.type}
+                          {t(ACTIVITY_TYPE_LABELS[item.type] || item.type, locale)}
                         </Badge>
                       </div>
                     ))}

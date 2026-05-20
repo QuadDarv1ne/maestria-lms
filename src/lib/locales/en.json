@@ -1441,5 +1441,51 @@
 
     "course.paymentSbp": "SBP",
     "course.paymentYookassa": "YooKassa",
-    "course.paymentTinkoff": "Tinkoff"
+    "course.paymentTinkoff": "Tinkoff",
+
+    "common.levelBeginner": "Beginner",
+    "common.levelIntermediate": "Intermediate",
+    "common.levelAdvanced": "Advanced",
+
+    "common.categoryPython": "Python Programming",
+    "common.categoryWebDev": "Web Development",
+    "common.categoryRoblox": "Roblox Game Creation",
+    "common.categoryCppCsharp": "C++/C#",
+    "common.categoryDataScience": "Data Science",
+    "common.categoryMobileDev": "Mobile Development",
+
+    "common.activityRegister": "Registration",
+    "common.activityCreate": "Creation",
+    "common.activityPublish": "Publication",
+    "common.activityEnroll": "Enrollment",
+    "common.activityPay": "Payment",
+    "common.activityReport": "Report",
+    "common.activitySettings": "Settings",
+
+    "common.dayMon": "Mon",
+    "common.dayTue": "Tue",
+    "common.dayWed": "Wed",
+    "common.dayThu": "Thu",
+    "common.dayFri": "Fri",
+    "common.daySat": "Sat",
+    "common.daySun": "Sun",
+
+    "common.monthJan": "Jan",
+    "common.monthFeb": "Feb",
+    "common.monthMar": "Mar",
+    "common.monthApr": "Apr",
+    "common.monthMay": "May",
+    "common.monthJun": "Jun",
+    "common.monthJul": "Jul",
+    "common.monthAug": "Aug",
+    "common.monthSep": "Sep",
+    "common.monthOct": "Oct",
+    "common.monthNov": "Nov",
+    "common.monthDec": "Dec",
+
+    "common.hoursAbbrev": "h",
+    "common.minutesAbbrev": "m",
+    "common.growth": "Growth",
+    "common.peakDay": "Peak day",
+    "common.email": "Email"
 }

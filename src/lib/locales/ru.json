@@ -1441,5 +1441,51 @@
 
     "course.paymentSbp": "СБП",
     "course.paymentYookassa": "ЮKassa",
-    "course.paymentTinkoff": "Тинькофф"
+    "course.paymentTinkoff": "Тинькофф",
+
+    "common.levelBeginner": "Начинающий",
+    "common.levelIntermediate": "Средний",
+    "common.levelAdvanced": "Продвинутый",
+
+    "common.categoryPython": "Программирование на Python",
+    "common.categoryWebDev": "Веб-разработка",
+    "common.categoryRoblox": "Создание игр в Roblox",
+    "common.categoryCppCsharp": "C++/C#",
+    "common.categoryDataScience": "Data Science",
+    "common.categoryMobileDev": "Мобильная разработка",
+
+    "common.activityRegister": "Регистрация",
+    "common.activityCreate": "Создание",
+    "common.activityPublish": "Публикация",
+    "common.activityEnroll": "Запись",
+    "common.activityPay": "Оплата",
+    "common.activityReport": "Жалоба",
+    "common.activitySettings": "Настройки",
+
+    "common.dayMon": "Пн",
+    "common.dayTue": "Вт",
+    "common.dayWed": "Ср",
+    "common.dayThu": "Чт",
+    "common.dayFri": "Пт",
+    "common.daySat": "Сб",
+    "common.daySun": "Вс",
+
+    "common.monthJan": "Янв",
+    "common.monthFeb": "Фев",
+    "common.monthMar": "Мар",
+    "common.monthApr": "Апр",
+    "common.monthMay": "Май",
+    "common.monthJun": "Июн",
+    "common.monthJul": "Июл",
+    "common.monthAug": "Авг",
+    "common.monthSep": "Сен",
+    "common.monthOct": "Окт",
+    "common.monthNov": "Ноя",
+    "common.monthDec": "Дек",
+
+    "common.hoursAbbrev": "ч",
+    "common.minutesAbbrev": "м",
+    "common.growth": "Рост",
+    "common.peakDay": "Пиковый день",
+    "common.email": "Email"
 }

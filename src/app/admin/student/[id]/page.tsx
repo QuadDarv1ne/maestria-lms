@@ -6,6 +6,7 @@ import { useStudentStats } from "@/hooks/useAdmin";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { formatDate, formatNumber } from "@/lib/utils";
+import { levelLabels } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -55,12 +56,6 @@ export default function StudentDetailPage() {
   const userId = searchParams.get("userId") || "";
 
   const { data, isLoading, error } = useStudentStats(userId);
-
-  const levelLabels: Record<string, string> = {
-    beginner: t("admin.levelBeginner", locale),
-    intermediate: t("admin.levelIntermediate", locale),
-    advanced: t("admin.levelAdvanced", locale),
-  };
 
   const roleLabels: Record<string, string> = {
     admin: t("role.admin", locale),
@@ -293,8 +288,8 @@ export default function StudentDetailPage() {
                       </TableCell>
                       <TableCell className="text-sm">
                         <Badge variant="outline" className="text-[10px]">
-                          {levelLabels[enrollment.course.level] ||
-                            enrollment.course.level}
+                          {t(levelLabels[enrollment.course.level] ||
+                            enrollment.course.level, locale)}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm">

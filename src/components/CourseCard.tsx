@@ -82,7 +82,7 @@ export function CourseCard({ course, onClick }: CourseCardProps) {
           <Badge
             className={`absolute top-3 right-3 ${levelColors[course.level] || "bg-gray-100 text-gray-700"}`}
           >
-            {levelLabels[course.level] || course.level}
+            {t(levelLabels[course.level] || course.level, locale)}
           </Badge>
         </div>
 

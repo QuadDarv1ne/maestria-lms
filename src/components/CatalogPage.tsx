@@ -55,7 +55,7 @@ export function CatalogPage() {
 
   const categories = [
     { value: "", label: t("catalog.allCategories", locale) },
-    ...CATEGORIES.map((c) => ({ value: c.slug, label: c.label })),
+    ...CATEGORIES.map((c) => ({ value: c.slug, label: t(c.labelKey, locale) })),
   ];
 
   const levels = [

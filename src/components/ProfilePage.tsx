@@ -34,11 +34,13 @@ import {
 import { toast } from "sonner";
 import { AchievementsPage } from "@/components/AchievementsPage";
 
-function formatTime(seconds: number): string {
+function formatTime(seconds: number, locale?: string): string {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
-  if (hours > 0) return `${hours}ч ${minutes}м`;
-  return `${minutes}м`;
+  const h = locale === "en" ? "h" : locale === "zh" ? "小时" : "ч";
+  const m = locale === "en" ? "m" : locale === "zh" ? "分钟" : "м";
+  if (hours > 0) return `${hours}${h} ${minutes}${m}`;
+  return `${minutes}${m}`;
 }
 
 interface UserProfile {
@@ -650,7 +652,7 @@ export function ProfilePage() {
                             {enrollment.course.title}
                           </h3>
                           <Badge variant="outline" className="text-[10px] mt-1">
-                            {levelLabels[enrollment.course.level] || enrollment.course.level}
+                            {t(levelLabels[enrollment.course.level] || enrollment.course.level, locale)}
                           </Badge>
                           <div className="mt-2">
                             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
@@ -852,7 +854,7 @@ export function ProfilePage() {
                     </div>
                     <div className="bg-muted/50 rounded-lg p-4 text-center">
                       <p className="text-2xl font-bold text-amber-600">
-                        {formatTime(enrollmentDetails.reduce((s, e) => s + e.totalTimeSpent, 0))}
+                        {formatTime(enrollmentDetails.reduce((s, e) => s + e.totalTimeSpent, 0), locale)}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">{t("profile.totalTime", locale)}</p>
                     </div>
@@ -928,7 +930,7 @@ export function ProfilePage() {
                         </div>
                         <div className="bg-muted/50 rounded-lg p-3 text-center">
                           <p className="text-lg font-bold">
-                            {formatTime(detail.totalTimeSpent)}
+                            {formatTime(detail.totalTimeSpent, locale)}
                           </p>
                           <p className="text-xs text-muted-foreground">{t("profile.time", locale)}</p>
                         </div>

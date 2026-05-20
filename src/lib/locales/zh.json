@@ -1441,5 +1441,51 @@
 
     "course.paymentSbp": "SBP",
     "course.paymentYookassa": "YooKassa",
-    "course.paymentTinkoff": "Tinkoff"
+    "course.paymentTinkoff": "Tinkoff",
+
+    "common.levelBeginner": "初学者",
+    "common.levelIntermediate": "中级",
+    "common.levelAdvanced": "高级",
+
+    "common.categoryPython": "Python 编程",
+    "common.categoryWebDev": "网站开发",
+    "common.categoryRoblox": "Roblox 游戏制作",
+    "common.categoryCppCsharp": "C++/C#",
+    "common.categoryDataScience": "数据科学",
+    "common.categoryMobileDev": "移动开发",
+
+    "common.activityRegister": "注册",
+    "common.activityCreate": "创建",
+    "common.activityPublish": "发布",
+    "common.activityEnroll": "注册课程",
+    "common.activityPay": "付款",
+    "common.activityReport": "举报",
+    "common.activitySettings": "设置",
+
+    "common.dayMon": "周一",
+    "common.dayTue": "周二",
+    "common.dayWed": "周三",
+    "common.dayThu": "周四",
+    "common.dayFri": "周五",
+    "common.daySat": "周六",
+    "common.daySun": "周日",
+
+    "common.monthJan": "一月",
+    "common.monthFeb": "二月",
+    "common.monthMar": "三月",
+    "common.monthApr": "四月",
+    "common.monthMay": "五月",
+    "common.monthJun": "六月",
+    "common.monthJul": "七月",
+    "common.monthAug": "八月",
+    "common.monthSep": "九月",
+    "common.monthOct": "十月",
+    "common.monthNov": "十一月",
+    "common.monthDec": "十二月",
+
+    "common.hoursAbbrev": "小时",
+    "common.minutesAbbrev": "分钟",
+    "common.growth": "增长",
+    "common.peakDay": "峰值日",
+    "common.email": "邮箱"
 }
