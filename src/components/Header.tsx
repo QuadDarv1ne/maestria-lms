@@ -73,9 +73,9 @@ export function Header() {
             <GraduationCap className="w-5 h-5 text-white" />
           </div>
           <div className="hidden sm:block">
-            <h1 className="text-lg font-bold text-foreground leading-tight">
+            <span className="text-lg font-bold text-foreground leading-tight">
               Maestria
-            </h1>
+            </span>
             <p className="text-[10px] text-muted-foreground leading-none -mt-0.5">
               by Maestro7IT
             </p>
@@ -157,7 +157,7 @@ export function Header() {
           {/* Переключатель языка */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative">
+              <Button variant="ghost" size="icon" className="relative" aria-label={t("nav.language", locale)}>
                 <Globe className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>
@@ -181,7 +181,7 @@ export function Header() {
           {/* Переключатель темы */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative">
+              <Button variant="ghost" size="icon" className="relative" aria-label={t("nav.theme", locale)}>
                 <Palette className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>
@@ -208,6 +208,7 @@ export function Header() {
               variant="ghost"
               size="icon"
               className="relative"
+              aria-label={t("nav.notifications", locale)}
               onClick={() => navigate("notifications")}
             >
               <Bell className="h-5 w-5" />
@@ -225,6 +226,7 @@ export function Header() {
               variant="ghost"
               size="icon"
               className="relative hidden sm:flex"
+              aria-label={t("nav.favorites", locale)}
               onClick={() => navigate("profile")}
             >
               <Heart className="h-5 w-5" />
@@ -304,6 +306,8 @@ export function Header() {
             variant="ghost"
             size="icon"
             className="md:hidden"
+            aria-label={sidebarOpen ? t("nav.closeMenu", locale) : t("nav.openMenu", locale)}
+            aria-expanded={sidebarOpen}
             onClick={() => setSidebarOpen(!sidebarOpen)}
           >
             {sidebarOpen ? (
