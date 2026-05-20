@@ -413,6 +413,7 @@ export function AchievementsPage() {
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
 
     const fetchData = async () => {
       try {
@@ -420,25 +421,34 @@ export function AchievementsPage() {
         const userRes = await fetch("/api/user");
         if (userRes.ok) {
           const userData = await userRes.json();
-          setProfile(userData.user);
-          setEnrollments(userData.enrollments || []);
+          if (!cancelled) {
+            setProfile(userData.user);
+            setEnrollments(userData.enrollments || []);
+          }
         }
 
         // Fetch supplementary achievement data
         const achRes = await fetch("/api/achievements");
         if (achRes.ok) {
           const achData = await achRes.json();
-          setAchievementData(achData);
+          if (!cancelled) {
+            setAchievementData(achData);
+          }
         }
       } catch (e) {
         console.error("Error loading achievement data:", e);
-        toast.error(t("achievements.errorLoad", locale));
+        if (!cancelled) {
+          toast.error(t("achievements.errorLoad", locale));
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
     fetchData();
+    return () => { cancelled = true; };
   }, [user, locale]);
 
   // Build check data from profile + enrollments + achievement data

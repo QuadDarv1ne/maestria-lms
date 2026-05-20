@@ -53,6 +53,7 @@ export function CertificatePage({ courseId }: { courseId: string }) {
 
   /* fetch course */
   useEffect(() => {
+    let cancelled = false;
     const fetchCourse = async () => {
       setLoading(true);
       setError(null);
@@ -63,14 +64,21 @@ export function CertificatePage({ courseId }: { courseId: string }) {
           return;
         }
         const data = await res.json();
-        setCourse(data.course);
+        if (!cancelled) {
+          setCourse(data.course);
+        }
       } catch {
-        setError(t("cert.loadError", locale));
+        if (!cancelled) {
+          setError(t("cert.loadError", locale));
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
     fetchCourse();
+    return () => { cancelled = true; };
   }, [courseId, locale]);
 
   /* derived state */

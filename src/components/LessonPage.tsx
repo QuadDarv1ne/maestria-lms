@@ -123,6 +123,7 @@ export function LessonPage({
   }, [lessonId]);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchLesson = async () => {
       setLoading(true);
       try {
@@ -131,19 +132,26 @@ export function LessonPage({
         );
         if (res.ok) {
           const data = await res.json();
-          setLesson(data.lesson);
+          if (!cancelled) {
+            setLesson(data.lesson);
+          }
         } else {
           const data = await res.json();
-          toast.error(data.error || t("lesson.accessError", locale));
-          navigate(`course/${courseId}`);
+          if (!cancelled) {
+            toast.error(data.error || t("lesson.accessError", locale));
+            navigate(`course/${courseId}`);
+          }
         }
       } catch (e) {
         console.error("Ошибка загрузки урока:", e);
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
     fetchLesson();
+    return () => { cancelled = true; };
   }, [courseId, lessonId, navigate, locale]);
 
   const handleQuizSubmit = () => {
