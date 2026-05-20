@@ -70,32 +70,40 @@ export function Footer() {
             <ul className="space-y-2.5 text-sm text-muted-foreground">
               <li>
                 <button
+                  type="button"
+                  aria-label={t("footer.catalogCourses", locale)}
                   onClick={() => navigate("catalog")}
-                  className="hover:text-foreground transition-colors"
+                  className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded"
                 >
                   {t("footer.catalogCourses", locale)}
                 </button>
               </li>
               <li>
                 <button
+                  type="button"
+                  aria-label={t("footer.myCourses", locale)}
                   onClick={() => navigate("profile")}
-                  className="hover:text-foreground transition-colors"
+                  className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded"
                 >
                   {t("footer.myCourses", locale)}
                 </button>
               </li>
               <li>
                 <button
+                  type="button"
+                  aria-label={t("footer.achievements", locale)}
                   onClick={() => navigate("achievements")}
-                  className="hover:text-foreground transition-colors"
+                  className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded"
                 >
                   {t("footer.achievements", locale)}
                 </button>
               </li>
               <li>
                 <button
+                  type="button"
+                  aria-label={t("footer.certificates", locale)}
                   onClick={() => navigate("certificate/demo")}
-                  className="hover:text-foreground transition-colors"
+                  className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded"
                 >
                   {t("footer.certificates", locale)}
                 </button>
@@ -108,52 +116,52 @@ export function Footer() {
             <h3 className="font-semibold text-sm mb-3">{t("footer.legal", locale)}</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <button onClick={() => navigate("terms")} className="hover:text-foreground transition-colors">
+                <button type="button" aria-label={t("footer.userAgreement", locale)} onClick={() => navigate("terms")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
                   {t("footer.userAgreement", locale)}
                 </button>
               </li>
               <li>
-                <button onClick={() => navigate("privacy")} className="hover:text-foreground transition-colors">
+                <button type="button" aria-label={t("footer.privacyPolicy", locale)} onClick={() => navigate("privacy")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
                   {t("footer.privacyPolicy", locale)}
                 </button>
               </li>
               <li>
-                <button onClick={() => navigate("personal-data")} className="hover:text-foreground transition-colors">
+                <button type="button" aria-label={t("legal.personalDataConsent", locale)} onClick={() => navigate("personal-data")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
                   {t("legal.personalDataConsent", locale)}
                 </button>
               </li>
               <li>
-                <button onClick={() => navigate("offer")} className="hover:text-foreground transition-colors">
+                <button type="button" aria-label={t("legal.publicOffer", locale)} onClick={() => navigate("offer")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
                   {t("legal.publicOffer", locale)}
                 </button>
               </li>
               <li>
-                <button onClick={() => navigate("refund")} className="hover:text-foreground transition-colors">
+                <button type="button" aria-label={t("legal.refundPolicy", locale)} onClick={() => navigate("refund")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
                   {t("legal.refundPolicy", locale)}
                 </button>
               </li>
               <li>
-                <button onClick={() => navigate("license")} className="hover:text-foreground transition-colors">
+                <button type="button" aria-label={t("legal.licenseAgreement", locale)} onClick={() => navigate("license")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
                   {t("legal.licenseAgreement", locale)}
                 </button>
               </li>
               <li>
-                <button onClick={() => navigate("rules")} className="hover:text-foreground transition-colors">
+                <button type="button" aria-label={t("legal.platformRules", locale)} onClick={() => navigate("rules")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
                   {t("legal.platformRules", locale)}
                 </button>
               </li>
               <li>
-                <button onClick={() => navigate("cookies")} className="hover:text-foreground transition-colors">
+                <button type="button" aria-label={t("legal.cookiePolicy", locale)} onClick={() => navigate("cookies")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
                   {t("legal.cookiePolicy", locale)}
                 </button>
               </li>
               <li>
-                <button onClick={() => navigate("age-rating")} className="hover:text-foreground transition-colors">
+                <button type="button" aria-label={t("legal.ageRating", locale)} onClick={() => navigate("age-rating")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
                   {t("legal.ageRating", locale)}
                 </button>
               </li>
               <li>
-                <button onClick={() => navigate("edu-info")} className="hover:text-foreground transition-colors">
+                <button type="button" aria-label={t("legal.educationInfo", locale)} onClick={() => navigate("edu-info")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
                   {t("legal.educationInfo", locale)}
                 </button>
               </li>
@@ -253,8 +261,10 @@ export function Footer() {
                 <Fragment key={item.value}>
                   {idx > 0 && <span className="text-muted-foreground/40 text-xs">|</span>}
                   <button
+                    type="button"
+                    aria-label={`${t("nav.language", locale)}: ${item.label}`}
                     onClick={() => setLocale(item.value)}
-                    className={`text-xs transition-colors px-1 ${
+                    className={`text-xs transition-colors px-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
                       locale === item.value
                         ? "text-foreground font-medium"
                         : "text-muted-foreground hover:text-foreground"

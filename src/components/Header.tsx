@@ -65,8 +65,10 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         {/* Логотип */}
-        <div
-          className="flex items-center gap-2 cursor-pointer"
+        <button
+          type="button"
+          aria-label={t("nav.home", locale)}
+          className="flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded-lg"
           onClick={() => navigate("home")}
         >
           <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-violet-600 rounded-lg flex items-center justify-center">
@@ -80,7 +82,7 @@ export function Header() {
               by Maestro7IT
             </p>
           </div>
-        </div>
+        </button>
 
         {/* Навигация (десктоп) */}
         <nav className="hidden md:flex items-center gap-1">
@@ -295,6 +297,7 @@ export function Header() {
             <Button
               size="sm"
               className="bg-blue-700 hover:bg-blue-800 text-white"
+              aria-label={t("nav.login", locale)}
               onClick={() => navigate("login")}
             >
               {t("nav.login", locale)}
@@ -459,6 +462,7 @@ export function Header() {
           {!user && (
             <Button
               className="w-full bg-blue-700 hover:bg-blue-800 text-white"
+              aria-label={t("nav.login", locale)}
               onClick={() => {
                 navigate("login");
                 setSidebarOpen(false);
