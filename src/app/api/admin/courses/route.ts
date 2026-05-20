@@ -141,6 +141,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const parsedPrice = Number(price);
+    if (isNaN(parsedPrice) || parsedPrice < 0) {
+      return NextResponse.json(
+        { error: "Цена должна быть неотрицательным числом" },
+        { status: 400 }
+      );
+    }
+
+    if (oldPrice !== undefined && oldPrice !== null) {
+      const parsedOldPrice = Number(oldPrice);
+      if (isNaN(parsedOldPrice) || parsedOldPrice < 0) {
+        return NextResponse.json(
+          { error: "Старая цена должна быть неотрицательным числом" },
+          { status: 400 }
+        );
+      }
+    }
+
     const userId = session.user.id;
 
     // Проверяем уникальность slug
@@ -187,7 +205,7 @@ export async function POST(request: NextRequest) {
         slug,
         description,
         shortDesc: shortDesc || null,
-        price: Number(price) || 0,
+        price: parsedPrice,
         oldPrice: oldPrice ? Number(oldPrice) : null,
         level,
         duration: duration || null,

@@ -119,9 +119,9 @@ export async function POST(
           { status: 400 }
         );
       }
-      if (comment.trim().length > 1000) {
+      if (comment.trim().length > 500) {
         return NextResponse.json(
-          { error: "Комментарий не должен превышать 1000 символов" },
+          { error: "Комментарий не должен превышать 500 символов" },
           { status: 400 }
         );
       }

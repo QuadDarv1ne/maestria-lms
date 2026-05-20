@@ -98,6 +98,7 @@ export const RATE_LIMITS = {
   upload: { windowMs: 60_000, maxRequests: 10 },
   payments: { windowMs: 60_000, maxRequests: 20 },
   paymentUpdate: { windowMs: 60_000, maxRequests: 30 },
+  paymentConfirm: { windowMs: 60_000, maxRequests: 5 },
   enrollment: { windowMs: 60_000, maxRequests: 10 },
   progress: { windowMs: 60_000, maxRequests: 60 },
   review: { windowMs: 60_000, maxRequests: 10 },
