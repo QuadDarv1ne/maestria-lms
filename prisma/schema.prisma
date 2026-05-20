@@ -112,8 +112,8 @@ model Course {
 
   categoryId  String?
   category    Category?  @relation(fields: [categoryId], references: [id])
-  teacherId   String
-  teacher     User       @relation("TeacherCourses", fields: [teacherId], references: [id])
+  teacherId   String?
+  teacher     User?      @relation("TeacherCourses", fields: [teacherId], references: [id])
   modules     Module[]
   enrollments Enrollment[]
   reviews     Review[]

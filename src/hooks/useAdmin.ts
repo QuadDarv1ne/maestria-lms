@@ -6,7 +6,7 @@ export interface AdminCourse {
   isPublished: boolean;
   price: number;
   rating: number;
-  teacher: { name: string | null };
+  teacher: { name: string | null } | null;
   category: { name: string } | null;
   _count: { enrollments: number; reviews: number; modules: number };
 }
@@ -128,7 +128,7 @@ export interface StudentStats {
       level: string;
       category: { name: string } | null;
       teacher: { name: string | null } | null;
-      _count: { modules: number; lessons: number };
+      _count: { modules: number };
     };
     totalLessons: number;
     completedLessons: number;

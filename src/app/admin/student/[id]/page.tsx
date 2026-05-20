@@ -220,7 +220,7 @@ export default function StudentDetailPage() {
             icon: <Award className="w-5 h-5 text-amber-600" />,
           },
           {
-            label: "Активность (7 дней)",
+            label: t("admin.recentActivity", locale),
             value: stats.recentProgress,
             icon: <Activity className="w-5 h-5 text-green-600" />,
           },
@@ -269,6 +269,7 @@ export default function StudentDetailPage() {
                   <TableRow>
                     <TableHead>Курс</TableHead>
                     <TableHead>Уровень</TableHead>
+                    <TableHead>Преподаватель</TableHead>
                     <TableHead>Статус</TableHead>
                     <TableHead>Прогресс</TableHead>
                     <TableHead>Уроки</TableHead>
@@ -288,6 +289,9 @@ export default function StudentDetailPage() {
                           {levelLabels[enrollment.course.level] ||
                             enrollment.course.level}
                         </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {enrollment.course.teacher?.name || "—"}
                       </TableCell>
                       <TableCell>
                         {enrollment.status === "completed" ? (
