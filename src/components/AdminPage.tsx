@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -391,8 +391,8 @@ export function AdminPage() {
   const [userPage, setUserPage] = useState(1);
   const userPageSize = 20;
 
-  // Reset page when filters change
-  React.useEffect(() => { setUserPage(1); }, [userSearch, userRoleFilter]);
+  const handleUserSearch = (value: string) => { setUserSearch(value); setUserPage(1); };
+  const handleRoleFilter = (value: string) => { setUserRoleFilter(value); setUserPage(1); };
 
   const { data: coursesData, isLoading: coursesLoading } = useAdminCourses();
   const { data: usersData, isLoading: usersLoading } = useAdminUsers();
@@ -401,8 +401,8 @@ export function AdminPage() {
   const toggleStatus = useToggleUserStatus();
 
   const loading = coursesLoading || usersLoading;
-  const courses = React.useMemo(() => coursesData?.courses ?? [], [coursesData?.courses]);
-  const users = React.useMemo(() => usersData?.users ?? [], [usersData?.users]);
+  const courses = useMemo(() => coursesData?.courses ?? [], [coursesData?.courses]);
+  const users = useMemo(() => usersData?.users ?? [], [usersData?.users]);
 
   const handleUserRoleChange = async (userId: string, role: string) => {
     try {
@@ -813,11 +813,11 @@ export function AdminPage() {
                       <Input
                         placeholder={t("adminPage.userSearch", locale)}
                         value={userSearch}
-                        onChange={(e) => setUserSearch(e.target.value)}
+                        onChange={(e) => handleUserSearch(e.target.value)}
                         className="pl-9 h-9 w-full sm:w-[200px]"
                       />
                     </div>
-                    <Select value={userRoleFilter} onValueChange={setUserRoleFilter}>
+                    <Select value={userRoleFilter} onValueChange={handleRoleFilter}>
                       <SelectTrigger className="w-[140px] h-9">
                         <SelectValue placeholder={t("adminPage.userRoleFilter", locale)} />
                       </SelectTrigger>

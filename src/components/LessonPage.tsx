@@ -116,12 +116,10 @@ export function LessonPage({
   // Quiz state
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
-  const [, setQuizScores] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     setQuizAnswers({});
     setQuizSubmitted(false);
-    setQuizScores({});
   }, [lessonId]);
 
   useEffect(() => {
@@ -158,7 +156,6 @@ export function LessonPage({
       scores[assignment.id] =
         correctIndex >= 0 && quizAnswers[assignment.id] === correctIndex;
     });
-    setQuizScores(scores);
     setQuizSubmitted(true);
 
     const correctCount = Object.values(scores).filter(Boolean).length;
@@ -410,7 +407,6 @@ export function LessonPage({
                         onClick={() => {
                           setQuizSubmitted(false);
                           setQuizAnswers({});
-                          setQuizScores({});
                         }}
                       >
                         {t("lesson.tryAgain", locale)}

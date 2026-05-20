@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
 import { t, useLocale } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";

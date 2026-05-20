@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, Suspense } from "react";
+import { useEffect, Suspense } from "react";
 import { useAppStore } from "@/lib/store";
 import { HomePage } from "@/components/HomePage";
 import { RouterSync } from "@/components/RouterSync";

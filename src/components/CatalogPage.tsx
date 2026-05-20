@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -48,7 +48,7 @@ export function CatalogPage() {
     freeOnly: courseFilters.freeOnly || undefined,
   });
 
-  const courses = React.useMemo(() => data?.courses ?? [], [data?.courses]);
+  const courses = useMemo(() => data?.courses ?? [], [data?.courses]);
 
   const totalPages = data?.pagination?.totalPages ?? 0;
   const total = data?.pagination?.total ?? pagination.total;
@@ -120,7 +120,7 @@ export function CatalogPage() {
   const hasActiveFilters = courseFilters.category || courseFilters.search || courseFilters.level || courseFilters.freeOnly || courseFilters.sortBy !== "popular";
 
   // Client-side sorting as fallback (API may not support all sort options)
-  const sortedCourses = React.useMemo(() => {
+  const sortedCourses = useMemo(() => {
     const arr = [...courses];
     switch (courseFilters.sortBy) {
       case "rating":

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { useAppStore } from "@/lib/store";
 import type { Locale } from "@/lib/store";
 import { t } from "@/lib/i18n";

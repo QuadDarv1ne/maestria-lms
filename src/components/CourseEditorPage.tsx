@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { lessonTypeIcon } from "@/lib/constants";
@@ -474,13 +474,8 @@ export function CourseEditorPage() {
     (acc, m) => acc + m.lessons.filter((l) => l.isFree).length,
     0
   );
-  const categoryLabel =
-    CATEGORY_OPTIONS.find((c) => c.slug === form.categorySlug)?.labelKey
-      ? t(
-          CATEGORY_OPTIONS.find((c) => c.slug === form.categorySlug)!.labelKey,
-          locale
-        )
-      : "";
+  const categoryOption = CATEGORY_OPTIONS.find((c) => c.slug === form.categorySlug);
+  const categoryLabel = categoryOption ? t(categoryOption.labelKey, locale) : "";
 
   // ─── Render ──────────────────────────────────────────────────────────────
 
