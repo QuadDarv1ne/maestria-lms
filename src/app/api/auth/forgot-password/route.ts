@@ -53,17 +53,20 @@ export async function POST(request: NextRequest) {
     await db.verificationToken.create({
       data: {
         identifier: `reset-password:${email}`,
-        token,
+        token: await hashPassword(token), // хешируем токен перед сохранением
         expires,
       },
     });
 
-    // TODO: В продакшене отправить email с ссылкой для сброса пароля:
-    // ${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/reset-password?token=${token}
-    // Не логировать токен — это уязвимость безопасности!
+    // В dev-режиме возвращаем ссылку в ответе для тестирования
+    const resetUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/reset-password?token=${token}`;
+    const isDev = process.env.NODE_ENV !== "production";
 
     return NextResponse.json(
-      { message: "Если аккаунт существует, на email будет отправлена инструкция по сбросу пароля" },
+      {
+        message: "Если аккаунт существует, на email будет отправлена инструкция по сбросу пароля",
+        ...(isDev ? { resetUrl } : {}),
+      },
       { status: 200 }
     );
   } catch (error) {
@@ -77,6 +80,9 @@ export async function POST(request: NextRequest) {
 
 // PUT: Сброс пароля с использованием токена
 export async function PUT(request: NextRequest) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
+
   try {
     const body = await request.json();
     const validation = resetPasswordSchema.safeParse(body);
@@ -90,9 +96,12 @@ export async function PUT(request: NextRequest) {
 
     const { token, password } = validation.data;
 
+    // Хешируем входящий токен для сравнения с сохранённым
+    const hashedToken = await hashPassword(token);
+
     // Ищем токен верификации
     const verificationToken = await db.verificationToken.findUnique({
-      where: { token },
+      where: { token: hashedToken },
     });
 
     if (!verificationToken) {
@@ -104,15 +113,22 @@ export async function PUT(request: NextRequest) {
 
     if (verificationToken.expires < new Date()) {
       // Удаляем просроченный токен
-      await db.verificationToken.delete({ where: { token } });
+      await db.verificationToken.delete({ where: { token: hashedToken } });
       return NextResponse.json(
         { error: "Токен истёк. Запросите новый" },
         { status: 400 }
       );
     }
 
-    // Извлекаем email из идентификатора
-    const email = verificationToken.identifier.replace("reset-password:", "");
+    // Безопасно извлекаем email: убираем известный префикс
+    const expectedPrefix = "reset-password:";
+    if (!verificationToken.identifier.startsWith(expectedPrefix)) {
+      return NextResponse.json(
+        { error: "Недействительный токен" },
+        { status: 400 }
+      );
+    }
+    const email = verificationToken.identifier.slice(expectedPrefix.length);
 
     // Хешируем новый пароль
     const passwordHash = await hashPassword(password);

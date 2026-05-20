@@ -39,8 +39,9 @@ export default function Page() {
             });
           }
         }
-      } catch {
-        // Сессия не найдена — пользователь не авторизован
+      } catch (e) {
+        // Session not found — user is not authenticated
+        console.warn("Session not found, user is not authenticated:", e);
       }
     };
 

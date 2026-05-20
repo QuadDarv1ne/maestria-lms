@@ -143,7 +143,7 @@ export function LessonPage({
           }
         }
       } catch (e) {
-        console.error("Ошибка загрузки урока:", e);
+        console.error(t("profile.errorLoadingLesson", locale), e);
       } finally {
         if (!cancelled) {
           setLoading(false);

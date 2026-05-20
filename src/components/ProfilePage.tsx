@@ -138,8 +138,8 @@ export function ProfilePage() {
               const data = await res.json();
               titles[courseId] = data.course?.title || data.title || "";
             }
-          } catch {
-            // skip
+          } catch (e) {
+            console.error(`${t("profile.errorLoadingBookmarkCourse", locale)} ${courseId}:`, e);
           }
         })
       );
@@ -237,7 +237,7 @@ export function ProfilePage() {
         }
       } catch (e) {
         if (!cancelled) {
-          console.error("Ошибка загрузки профиля:", e);
+          console.error(t("profile.errorLoadingProfile", locale), e);
           setError(t("profile.networkError", locale));
         }
       } finally {
@@ -652,8 +652,16 @@ export function ProfilePage() {
                 return (
                   <Card
                     key={enrollment.id}
+                    role="button"
+                    tabIndex={0}
                     className="cursor-pointer hover:shadow-md transition-shadow border-0 shadow-sm"
                     onClick={() => navigate(`course/${enrollment.course.id}`)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        navigate(`course/${enrollment.course.id}`);
+                      }
+                    }}
                   >
                     <CardContent className="p-4">
                       <div className="flex items-start gap-3">
@@ -693,6 +701,7 @@ export function ProfilePage() {
                             )}
                             <button
                               className="ml-auto p-1 rounded hover:bg-muted transition-colors"
+                              aria-label={isFavorite(enrollment.course.id) ? t("profile.removeFromFavorites", locale) : t("profile.addToFavorites", locale)}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 toggleFavorite(enrollment.course.id);
@@ -823,7 +832,7 @@ export function ProfilePage() {
                           {cert.course.title}
                         </h3>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Выдан {formatDate(cert.issuedAt, locale)}
+                          {t("profile.issuedDate", locale)} {formatDate(cert.issuedAt, locale)}
                         </p>
                       </div>
                     </div>

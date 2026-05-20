@@ -54,11 +54,13 @@ export function Header() {
 
   const userInitials = user?.name
     ? user.name
-        .split(" ")
+        .trim()
+        .split(/\s+/)
         .map((n) => n[0])
+        .filter(Boolean)
         .join("")
         .toUpperCase()
-        .slice(0, 2)
+        .slice(0, 2) || "??"
     : "??";
 
   return (

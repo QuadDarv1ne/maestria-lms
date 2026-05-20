@@ -1,6 +1,5 @@
 "use client";
 
-
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,7 +42,7 @@ export function HomePage() {
         <div className="relative container mx-auto px-4 py-16 md:py-24">
           <div className="max-w-3xl">
             <Badge className="mb-4 bg-white/20 text-white border-0 hover:bg-white/30">
-              🎓 {t("home.heroTitle", locale)}
+              <GraduationCap className="w-4 h-4 mr-1" /> {t("home.heroTitle", locale)}
             </Badge>
             <h1 className="text-3xl md:text-5xl font-bold text-white mb-4 leading-tight">
               {t("home.heroSubtitle", locale)}

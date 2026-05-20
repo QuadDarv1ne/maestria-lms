@@ -30,7 +30,8 @@ export function AuthDialogs() {
   const { setUser, locale } = useAppStore();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [showPassword, setShowPassword] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
 
   // Форма входа
   const [loginForm, setLoginForm] = useState({
@@ -243,7 +244,7 @@ export function AuthDialogs() {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   id="login-password"
-                  type={showPassword ? "text" : "password"}
+                  type={showLoginPassword ? "text" : "password"}
                   placeholder={t("auth.enterPassword", locale)}
                   value={loginForm.password}
                   onChange={(e) =>
@@ -254,10 +255,10 @@ export function AuthDialogs() {
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
+                  onClick={() => setShowLoginPassword(!showLoginPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
-                  {showPassword ? (
+                  {showLoginPassword ? (
                     <EyeOff className="w-4 h-4" />
                   ) : (
                     <Eye className="w-4 h-4" />
@@ -418,7 +419,7 @@ export function AuthDialogs() {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   id="reg-password"
-                  type={showPassword ? "text" : "password"}
+                  type={showRegisterPassword ? "text" : "password"}
                   placeholder={t("auth.min6Chars", locale)}
                   value={registerForm.password}
                   onChange={(e) =>
@@ -427,10 +428,21 @@ export function AuthDialogs() {
                       password: e.target.value,
                     })
                   }
-                  className="pl-10"
+                  className="pl-10 pr-10"
                   required
                   minLength={6}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showRegisterPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
               </div>
             </div>
 
