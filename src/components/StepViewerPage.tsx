@@ -704,9 +704,9 @@ export function StepViewerPage({
               {codeSubmitted && (
                 <Card className="border-0 shadow-sm overflow-hidden">
                   <div className="bg-gray-800 px-4 py-2 flex items-center justify-between">
-                    <span className="text-sm text-gray-300 font-medium">Результат выполнения</span>
+                    <span className="text-sm text-gray-300 font-medium">{t("course.step.executionResult", locale)}</span>
                     <Badge className="bg-green-500/20 text-green-400 border-0 text-xs">
-                      Успешно
+                      {t("course.step.success", locale)}
                     </Badge>
                   </div>
                   <CardContent className="p-0">
@@ -725,7 +725,7 @@ export function StepViewerPage({
                   disabled={codeSubmitted}
                 >
                   <Send className="w-4 h-4 mr-2" />
-                  {codeSubmitted ? "Отправлено" : "Отправить код"}
+                  {codeSubmitted ? t("course.step.sent", locale) : t("course.step.submitCode", locale)}
                 </Button>
                 {codeSubmitted && (
                   <Button
@@ -736,7 +736,7 @@ export function StepViewerPage({
                     }}
                   >
                     <RotateCcw className="w-4 h-4 mr-2" />
-                    Попробовать снова
+                    {t("course.step.tryAgain", locale)}
                   </Button>
                 )}
               </div>
@@ -793,12 +793,12 @@ export function StepViewerPage({
                       <div className="flex items-center gap-2">
                         <HelpCircle className={`w-4 h-4 ${isSubmitted ? (isCorrect ? "text-green-600" : "text-red-600") : "text-orange-600"}`} />
                         <span className="font-medium text-sm">
-                          Вопрос {aIdx + 1}
+                          {t("course.step.question", locale)} {aIdx + 1}
                         </span>
                       </div>
                       {isSubmitted && (
                         <Badge className={`${isCorrect ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"} border-0 text-xs`}>
-                          {isCorrect ? "Правильно" : "Неверно"}
+                          {isCorrect ? t("course.step.correct", locale) : t("course.step.incorrect", locale)}
                         </Badge>
                       )}
                     </div>
@@ -869,7 +869,7 @@ export function StepViewerPage({
                             disabled={!selectedAnswers[assignment.id]}
                           >
                             <Send className="w-4 h-4 mr-2" />
-                            Ответить
+                            {t("course.step.answer", locale)}
                           </Button>
                         ) : (
                           <>
@@ -879,7 +879,7 @@ export function StepViewerPage({
                                 onClick={() => handleQuizReset(assignment.id)}
                               >
                                 <RotateCcw className="w-4 h-4 mr-2" />
-                                Попробовать снова
+                                {t("course.step.tryAgain", locale)}
                               </Button>
                             )}
                           </>
@@ -895,7 +895,7 @@ export function StepViewerPage({
                 <Card className="border-0 shadow-sm">
                   <CardContent className="p-8 text-center">
                     <HelpCircle className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-                    <p className="text-muted-foreground">Вопросы к тесту пока не добавлены</p>
+                    <p className="text-muted-foreground">{t("course.step.noQuestions", locale)}</p>
                   </CardContent>
                 </Card>
               )}
@@ -910,10 +910,10 @@ export function StepViewerPage({
                 <CardContent className="p-6">
                   <div className="flex items-center gap-2 mb-3 text-sm text-indigo-600">
                     <PenTool className="w-4 h-4" />
-                    <span className="font-medium">Практическое задание</span>
+                    <span className="font-medium">{t("course.step.practicalAssignment", locale)}</span>
                   </div>
                   <div className="prose prose-sm max-w-none whitespace-pre-wrap">
-                    {step.content || "Описание задания загружается..."}
+                    {step.content || t("course.step.loadingContent", locale)}
                   </div>
                 </CardContent>
               </Card>
@@ -921,9 +921,9 @@ export function StepViewerPage({
               {/* Answer input */}
               <Card className="border-0 shadow-sm">
                 <CardContent className="p-6">
-                  <h4 className="font-semibold mb-3">Ваш ответ</h4>
+                  <h4 className="font-semibold mb-3">{t("course.step.yourAnswer", locale)}</h4>
                   <Textarea
-                    placeholder="Напишите ваш ответ здесь..."
+                    placeholder={t("course.step.answerPlaceholder", locale)}
                     className="min-h-[120px] resize-y"
                     value={assignmentAnswer}
                     onChange={(e) => setAssignmentAnswer(e.target.value)}
@@ -936,11 +936,11 @@ export function StepViewerPage({
                       disabled={assignmentSubmitted}
                     >
                       <Send className="w-4 h-4 mr-2" />
-                      {assignmentSubmitted ? "Отправлено" : "Отправить ответ"}
+                      {assignmentSubmitted ? t("course.step.sent", locale) : t("course.step.submitAnswer", locale)}
                     </Button>
                     {assignmentSubmitted && (
                       <Badge className="bg-blue-100 text-blue-700 border-0">
-                        Ожидает проверки преподавателем
+                        {t("course.step.awaitingReview", locale)}
                       </Badge>
                     )}
                   </div>
@@ -964,8 +964,8 @@ export function StepViewerPage({
               className="flex-shrink-0"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Предыдущий шаг</span>
-              <span className="sm:hidden">Назад</span>
+              <span className="hidden sm:inline">{t("course.step.prev", locale)}</span>
+              <span className="sm:hidden">{t("course.step.back", locale)}</span>
             </Button>
 
             {/* Complete / Continue */}
@@ -977,13 +977,13 @@ export function StepViewerPage({
                   disabled={completing}
                 >
                   <CheckCircle2 className="w-4 h-4 mr-2" />
-                  {completing ? "Сохранение..." : "Завершить шаг"}
+                  {completing ? t("course.step.saving", locale) : t("course.step.saveAndComplete", locale)}
                 </Button>
               )}
               {step.completed && (
                 <Badge className="bg-green-100 text-green-700 border-0 px-4 py-2">
                   <CheckCircle2 className="w-4 h-4 mr-2" />
-                  Шаг пройден
+                  {t("course.step.completed", locale)}
                 </Badge>
               )}
             </div>
@@ -998,8 +998,8 @@ export function StepViewerPage({
               }
               className="flex-shrink-0"
             >
-              <span className="hidden sm:inline">Следующий шаг</span>
-              <span className="sm:hidden">Далее</span>
+              <span className="hidden sm:inline">{t("course.step.next", locale)}</span>
+              <span className="sm:hidden">{t("course.step.continue", locale)}</span>
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
@@ -1024,8 +1024,8 @@ export function StepViewerPage({
                 ))}
               </div>
               <div className="flex items-center justify-between text-xs text-muted-foreground mt-1">
-                <span>Начало</span>
-                <span>Конец</span>
+                <span>{t("course.step.start", locale)}</span>
+                <span>{t("course.step.end", locale)}</span>
               </div>
             </div>
           )}
