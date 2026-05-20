@@ -40,11 +40,41 @@ const defaultConfig: RateLimitConfig = {
 function getClientIp(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) {
-    return forwarded.split(",")[0].trim();
+    const firstIp = forwarded.split(",")[0].trim();
+    // Validate that it looks like a real IP (not a spoofed header value)
+    // Reject private/reserved ranges that would indicate spoofing
+    if (isValidPublicIp(firstIp)) {
+      return firstIp;
+    }
   }
   const realIp = request.headers.get("x-real-ip");
-  if (realIp) return realIp;
+  if (realIp && isValidPublicIp(realIp)) return realIp;
   return "anonymous";
+}
+
+/**
+ * Check if an IP is a valid public IP (not private, loopback, or reserved).
+ * This prevents attackers from spoofing rate limits by sending fake
+ * x-forwarded-for headers with private IPs.
+ */
+function isValidPublicIp(ip: string): boolean {
+  // Basic IPv4 validation
+  const ipv4Match = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(ip);
+  if (!ipv4Match) return false;
+
+  const [, a, b] = ipv4Match.map(Number);
+
+  // Reject private/reserved ranges:
+  // 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.0/8, 0.0.0.0/8
+  if (a === 10) return false;
+  if (a === 172 && b >= 16 && b <= 31) return false;
+  if (a === 192 && b === 168) return false;
+  if (a === 127) return false;
+  if (a === 0) return false;
+  // 169.254.0.0/16 (link-local)
+  if (a === 169 && b === 254) return false;
+
+  return true;
 }
 
 export function rateLimit(

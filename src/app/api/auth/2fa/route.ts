@@ -17,6 +17,7 @@ const verify2FASchema = z.object({
 
 const disable2FASchema = z.object({
   password: z.string().min(1, "Введите текущий пароль"),
+  code: z.string().length(6, "Код должен содержать 6 цифр"),
 });
 
 // Криптографически безопасная генерация секрета для 2FA
@@ -176,6 +177,18 @@ export async function DELETE(request: NextRequest) {
 
     if (!user.twoFactorEnabled) {
       return NextResponse.json({ error: "2FA не включена" }, { status: 400 });
+    }
+
+    // Verify the current 2FA code to ensure the user has access to their authenticator device
+    const { code } = validation.data;
+    let isValid = false;
+    try {
+      isValid = authenticator.verify({ token: code, secret: user.twoFactorSecret! });
+    } catch {
+      // Invalid token format
+    }
+    if (!isValid) {
+      return NextResponse.json({ error: "Неверный код подтверждения" }, { status: 400 });
     }
 
     // Отключаем 2FA и удаляем секрет

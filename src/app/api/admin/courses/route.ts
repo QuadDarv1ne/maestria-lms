@@ -122,21 +122,27 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Валидация
-    if (!title || title.length < 3) {
+    if (!title || title.length < 3 || title.length > 200) {
       return NextResponse.json(
-        { error: "Название должно быть не менее 3 символов" },
+        { error: "Название должно быть от 3 до 200 символов" },
         { status: 400 }
       );
     }
-    if (!slug || slug.length < 3) {
+    if (!slug || slug.length < 3 || slug.length > 100) {
       return NextResponse.json(
-        { error: "Slug обязателен (минимум 3 символа)" },
+        { error: "Slug должен быть от 3 до 100 символов" },
         { status: 400 }
       );
     }
-    if (!description || description.length < 10) {
+    if (!description || description.length < 10 || description.length > 5000) {
       return NextResponse.json(
-        { error: "Описание должно быть не менее 10 символов" },
+        { error: "Описание должно быть от 10 до 5000 символов" },
+        { status: 400 }
+      );
+    }
+    if (shortDesc && shortDesc.length > 500) {
+      return NextResponse.json(
+        { error: "Краткое описание не должно превышать 500 символов" },
         { status: 400 }
       );
     }
