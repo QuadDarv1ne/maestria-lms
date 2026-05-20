@@ -34,18 +34,19 @@ import {
   Activity,
 } from "lucide-react";
 
-function formatTime(seconds: number): string {
+const timeUnits: Record<string, { h: string; m: string }> = {
+  ru: { h: "ч", m: "м" },
+  en: { h: "h", m: "m" },
+  zh: { h: "小时", m: "分钟" },
+};
+
+function formatTime(seconds: number, locale: string): string {
+  const units = timeUnits[locale] || timeUnits.en;
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
-  if (hours > 0) return `${hours}ч ${minutes}м`;
-  return `${minutes}м`;
+  if (hours > 0) return `${hours}${units.h} ${minutes}${units.m}`;
+  return `${minutes}${units.m}`;
 }
-
-const levelLabels: Record<string, string> = {
-  beginner: "Начальный",
-  intermediate: "Средний",
-  advanced: "Продвинутый",
-};
 
 export default function StudentDetailPage() {
   const searchParams = useSearchParams();
@@ -55,13 +56,25 @@ export default function StudentDetailPage() {
 
   const { data, isLoading, error } = useStudentStats(userId);
 
+  const levelLabels: Record<string, string> = {
+    beginner: t("admin.levelBeginner", locale),
+    intermediate: t("admin.levelIntermediate", locale),
+    advanced: t("admin.levelAdvanced", locale),
+  };
+
+  const roleLabels: Record<string, string> = {
+    admin: t("role.admin", locale),
+    teacher: t("role.teacher", locale),
+    student: t("role.student", locale),
+  };
+
   if (!userId) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
-        <h2 className="text-xl font-semibold mb-2">ID пользователя не указан</h2>
+        <h2 className="text-xl font-semibold mb-2">{t("admin.studentDetail.noUserId", locale)}</h2>
         <Button onClick={() => router.push("/admin")}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Назад в админ-панель
+          {t("admin.studentDetail.backToAdmin", locale)}
         </Button>
       </div>
     );
@@ -90,13 +103,13 @@ export default function StudentDetailPage() {
         <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
           <User className="w-8 h-8 text-red-600" />
         </div>
-        <h2 className="text-xl font-semibold mb-2">Ошибка загрузки данных</h2>
+        <h2 className="text-xl font-semibold mb-2">{t("admin.studentDetail.loadError", locale)}</h2>
         <p className="text-muted-foreground mb-4">
-          {(error as Error)?.message || "Не удалось загрузить статистику студента"}
+          {(error as Error)?.message || t("admin.studentDetail.loadErrorMsg", locale)}
         </p>
         <Button onClick={() => router.push("/admin")}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Назад в админ-панель
+          {t("admin.studentDetail.backToAdmin", locale)}
         </Button>
       </div>
     );
@@ -104,19 +117,13 @@ export default function StudentDetailPage() {
 
   const { user, enrollments, reviews, certificates, payments, stats } = data;
 
-  const roleLabels: Record<string, string> = {
-    admin: t("role.admin", locale),
-    teacher: t("role.teacher", locale),
-    student: t("role.student", locale),
-  };
-
   return (
     <div className="p-4 sm:p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="outline" size="sm" onClick={() => router.push("/admin")}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Назад
+          {t("admin.studentDetail.back", locale)}
         </Button>
         <div className="flex items-center gap-4 flex-1">
           <Avatar className="w-14 h-14">
@@ -131,7 +138,7 @@ export default function StudentDetailPage() {
             </AvatarFallback>
           </Avatar>
           <div>
-            <h1 className="text-xl font-bold">{user.name || "Без имени"}</h1>
+            <h1 className="text-xl font-bold">{user.name || t("admin.studentDetail.noName", locale)}</h1>
             <p className="text-sm text-muted-foreground">{user.email}</p>
             <div className="flex items-center gap-2 mt-1">
               <Badge className="bg-violet-100 text-violet-700 border-0 text-xs">
@@ -147,7 +154,7 @@ export default function StudentDetailPage() {
                 {user.isActive ? t("admin.active", locale) : t("admin.blocked", locale)}
               </Badge>
               <span className="text-xs text-muted-foreground">
-                Регистрация:{" "}
+                {t("admin.studentDetail.registration", locale)}:{" "}
                 {formatDate(user.createdAt, locale)}
               </span>
             </div>
@@ -180,7 +187,7 @@ export default function StudentDetailPage() {
           },
           {
             label: t("profile.totalTime", locale),
-            value: formatTime(stats.totalTimeSpent),
+            value: formatTime(stats.totalTimeSpent, locale),
             icon: <Timer className="w-5 h-5 text-purple-600" />,
           },
           {
@@ -241,7 +248,7 @@ export default function StudentDetailPage() {
       {user.bio && (
         <Card className="border-0 shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">О студенте</CardTitle>
+            <CardTitle className="text-base">{t("admin.studentDetail.aboutStudent", locale)}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">{user.bio}</p>
@@ -254,28 +261,28 @@ export default function StudentDetailPage() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-blue-700" />
-            Курсы и прогресс
+            {t("admin.studentDetail.coursesProgress", locale)}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {enrollments.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
-              Студент ещё не записан ни на один курс
+              {t("admin.studentDetail.noEnrollments", locale)}
             </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Курс</TableHead>
-                    <TableHead>Уровень</TableHead>
-                    <TableHead>Преподаватель</TableHead>
-                    <TableHead>Статус</TableHead>
-                    <TableHead>Прогресс</TableHead>
-                    <TableHead>Уроки</TableHead>
-                    <TableHead>Время</TableHead>
-                    <TableHead>Ср. балл</TableHead>
-                    <TableHead>Последняя активность</TableHead>
+                    <TableHead>{t("admin.studentDetail.course", locale)}</TableHead>
+                    <TableHead>{t("admin.studentDetail.level", locale)}</TableHead>
+                    <TableHead>{t("admin.studentDetail.teacher", locale)}</TableHead>
+                    <TableHead>{t("admin.studentDetail.status", locale)}</TableHead>
+                    <TableHead>{t("admin.studentDetail.progress", locale)}</TableHead>
+                    <TableHead>{t("admin.studentDetail.lessons", locale)}</TableHead>
+                    <TableHead>{t("admin.studentDetail.time", locale)}</TableHead>
+                    <TableHead>{t("admin.studentDetail.avgScore", locale)}</TableHead>
+                    <TableHead>{t("admin.studentDetail.lastActivity", locale)}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -291,20 +298,20 @@ export default function StudentDetailPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm">
-                        {enrollment.course.teacher?.name || "—"}
+                        {enrollment.course.teacher?.name || t("admin.studentDetail.teacherNone", locale)}
                       </TableCell>
                       <TableCell>
                         {enrollment.status === "completed" ? (
                           <Badge className="bg-green-100 text-green-700 border-0 text-xs">
-                            Завершён
+                            {t("admin.studentDetail.completed", locale)}
                           </Badge>
                         ) : enrollment.progress === 0 ? (
                           <Badge className="bg-gray-100 text-gray-700 border-0 text-xs">
-                            Не начат
+                            {t("admin.studentDetail.notStarted", locale)}
                           </Badge>
                         ) : (
                           <Badge className="bg-blue-100 text-blue-700 border-0 text-xs">
-                            В процессе
+                            {t("admin.studentDetail.inProgress", locale)}
                           </Badge>
                         )}
                       </TableCell>
@@ -324,7 +331,7 @@ export default function StudentDetailPage() {
                         {enrollment.totalLessons}
                       </TableCell>
                       <TableCell className="text-sm">
-                        {formatTime(enrollment.totalTimeSpent)}
+                        {formatTime(enrollment.totalTimeSpent, locale)}
                       </TableCell>
                       <TableCell className="text-sm">
                         {enrollment.avgScore !== null
@@ -351,7 +358,7 @@ export default function StudentDetailPage() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <MessageSquare className="w-5 h-5 text-violet-600" />
-              Отзывы
+              {t("admin.studentDetail.reviews", locale)}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -359,10 +366,10 @@ export default function StudentDetailPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Курс</TableHead>
-                    <TableHead>Рейтинг</TableHead>
-                    <TableHead>Комментарий</TableHead>
-                    <TableHead>Дата</TableHead>
+                    <TableHead>{t("admin.studentDetail.course", locale)}</TableHead>
+                    <TableHead>{t("admin.studentDetail.rating", locale)}</TableHead>
+                    <TableHead>{t("admin.studentDetail.comment", locale)}</TableHead>
+                    <TableHead>{t("admin.studentDetail.date", locale)}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -401,7 +408,7 @@ export default function StudentDetailPage() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Award className="w-5 h-5 text-amber-600" />
-              Сертификаты
+              {t("admin.studentDetail.certificates", locale)}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -409,9 +416,9 @@ export default function StudentDetailPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Курс</TableHead>
-                    <TableHead>Номер сертификата</TableHead>
-                    <TableHead>Дата выдачи</TableHead>
+                    <TableHead>{t("admin.studentDetail.course", locale)}</TableHead>
+                    <TableHead>{t("admin.studentDetail.certificateNumber", locale)}</TableHead>
+                    <TableHead>{t("admin.studentDetail.issueDate", locale)}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -441,7 +448,7 @@ export default function StudentDetailPage() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <DollarSign className="w-5 h-5 text-emerald-600" />
-              Платежи
+              {t("admin.studentDetail.payments", locale)}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -449,11 +456,11 @@ export default function StudentDetailPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Курс</TableHead>
-                    <TableHead>Сумма</TableHead>
-                    <TableHead>Метод</TableHead>
-                    <TableHead>Статус</TableHead>
-                    <TableHead>Дата</TableHead>
+                    <TableHead>{t("admin.studentDetail.course", locale)}</TableHead>
+                    <TableHead>{t("admin.studentDetail.amount", locale)}</TableHead>
+                    <TableHead>{t("admin.studentDetail.method", locale)}</TableHead>
+                    <TableHead>{t("admin.studentDetail.status", locale)}</TableHead>
+                    <TableHead>{t("admin.studentDetail.date", locale)}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

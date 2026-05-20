@@ -83,19 +83,6 @@ export function rateLimit(
   };
 }
 
-export function withRateLimit(
-  handler: (request: Request, ...args: unknown[]) => Promise<NextResponse>,
-  routeId: string,
-  config: Partial<RateLimitConfig> = {}
-) {
-  const check = rateLimit(routeId, config);
-
-  return async (request: Request, ...args: unknown[]): Promise<NextResponse> => {
-    const blocked = check(request);
-    if (blocked) return blocked;
-    return handler(request, ...args);
-  };
-}
 
 export const RATE_LIMITS = {
   register: { windowMs: 60_000, maxRequests: 5 },

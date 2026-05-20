@@ -79,13 +79,6 @@ export function CatalogPage() {
     setPagination((prev) => ({ ...prev, page: 1 }));
   }, [searchInput, setCourseFilters]);
 
-  const _handleClearSearch = useCallback(() => {
-    setSearchInput("");
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    setCourseFilters({ search: "" });
-    setPagination((prev) => ({ ...prev, page: 1 }));
-  }, [setCourseFilters]);
-
   // Debounced live search
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
