@@ -44,7 +44,12 @@ const eslintConfig = [...nextCoreWebVitals, ...nextTypescript, {
 }, {
   files: ["**/*.ts", "**/*.tsx"],
   rules: {
-    "no-undef": "off", // TypeScript handles this better
+    "no-undef": "off",
+  },
+}, {
+  files: ["**/*.js"],
+  rules: {
+    "@typescript-eslint/no-require-imports": "off",
   },
 }, {
   ignores: ["node_modules/**", ".next/**", "out/**", "build/**", "next-env.d.ts", "examples/**", "skills", "eslint.config.mjs"]

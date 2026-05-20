@@ -149,7 +149,6 @@ function writeEnv(envPath, vars) {
 }
 
 function generateEnvExample(port) {
-  const secret = crypto.randomBytes(32).toString("base64");
   return `# Database (SQLite)
 DATABASE_URL=file:./data.db
 
@@ -177,7 +176,6 @@ async function validateAndGenerateEnv(port) {
   const envVars = parseEnv(ENV_FILE);
   const envLocalVars = parseEnv(ENV_LOCAL_FILE);
   const allVars = { ...envVars, ...envLocalVars };
-  const required = ["DATABASE_URL", "NEXTAUTH_URL", "NEXTAUTH_SECRET"];
 
   let changed = false;
 
@@ -227,7 +225,7 @@ function runCommand(cmd, label, cwd = ROOT) {
     execSync(cmd, { cwd, stdio: "inherit", shell: true });
     const elapsed = ((Date.now() - start) / 1000).toFixed(1);
     console.log(ok(`${label || cmd} (${elapsed}s)`));
-  } catch (e) {
+  } catch {
     console.log(err(`${label || cmd} failed`));
     process.exit(1);
   }
