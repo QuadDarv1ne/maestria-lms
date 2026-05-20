@@ -1,8 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
-export async function GET() {
+const checkRateLimit = rateLimit("adminStats", RATE_LIMITS.admin);
+
+export async function GET(request: NextRequest) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
   try {
     const session = await getAuthSession();
     if (!session?.user || session.user.role !== "admin") {

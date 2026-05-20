@@ -11,12 +11,15 @@ const updateProgressSchema = z.object({
 });
 
 const checkRateLimit = rateLimit("progress", RATE_LIMITS.progress);
+const checkLessonGetRateLimit = rateLimit("lessonGet", RATE_LIMITS.default);
 
 // GET: Получить содержимое шага (урока) с полной навигацией по курсу
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; lessonId: string }> }
 ) {
+  const blocked = checkLessonGetRateLimit(request);
+  if (blocked) return blocked;
   try {
     const { id: courseId, lessonId } = await params;
 

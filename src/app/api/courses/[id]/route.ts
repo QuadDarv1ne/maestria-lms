@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+
+const checkRateLimit = rateLimit("courseDetail", RATE_LIMITS.default);
 
 // GET: Детальная информация о курсе
 export const revalidate = 60;
@@ -9,6 +12,8 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
   try {
     const { id } = await params;
 

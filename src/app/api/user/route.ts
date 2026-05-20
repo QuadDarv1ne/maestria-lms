@@ -6,6 +6,7 @@ import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 const checkRateLimit = rateLimit("profile", RATE_LIMITS.profile);
+const checkProfileGetRateLimit = rateLimit("profileGet", RATE_LIMITS.profile);
 
 const updateProfileSchema = z.object({
   name: z.string().min(2, "Имя должно быть не менее 2 символов").max(50).optional(),
@@ -15,7 +16,9 @@ const updateProfileSchema = z.object({
 });
 
 // GET: Профиль текущего пользователя
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const blocked = checkProfileGetRateLimit(request);
+  if (blocked) return blocked;
   try {
     const session = await getAuthSession();
     if (!session?.user) {

@@ -10,6 +10,7 @@ const createPaymentSchema = z.object({
 });
 
 const checkRateLimit = rateLimit("payments", RATE_LIMITS.payments);
+const checkPaymentsGetRateLimit = rateLimit("paymentsGet", RATE_LIMITS.payments);
 
 // POST: Создать платёж
 export async function POST(request: NextRequest) {
@@ -133,6 +134,8 @@ export async function POST(request: NextRequest) {
 
 // GET: Список платежей пользователя
 export async function GET(request: NextRequest) {
+  const blocked = checkPaymentsGetRateLimit(request);
+  if (blocked) return blocked;
   try {
     const session = await getAuthSession();
     if (!session?.user) {

@@ -3,7 +3,8 @@ import { db } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
-const checkRateLimit = rateLimit("review", RATE_LIMITS.review);
+const checkPostRateLimit = rateLimit("review", RATE_LIMITS.review);
+const checkGetRateLimit = rateLimit("reviewGet", RATE_LIMITS.default);
 
 // GET: Get paginated reviews for a course
 export const revalidate = 60;
@@ -12,6 +13,8 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const blocked = checkGetRateLimit(request);
+  if (blocked) return blocked;
   try {
     const { id: courseId } = await params;
 
@@ -82,7 +85,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const blocked = checkRateLimit(request);
+  const blocked = checkPostRateLimit(request);
   if (blocked) return blocked;
   try {
     const { id: courseId } = await params;

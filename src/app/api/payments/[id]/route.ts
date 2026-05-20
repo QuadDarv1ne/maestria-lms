@@ -5,6 +5,7 @@ import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 const checkRateLimit = rateLimit("paymentUpdate", RATE_LIMITS.paymentUpdate);
+const checkPaymentGetRateLimit = rateLimit("paymentGet", RATE_LIMITS.payments);
 
 const updatePaymentStatusSchema = z.object({
   status: z.enum(["completed", "failed", "refunded"]),
@@ -56,6 +57,8 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const blocked = checkPaymentGetRateLimit(request);
+  if (blocked) return blocked;
   try {
     const { id } = await params;
     const session = await getAuthSession();

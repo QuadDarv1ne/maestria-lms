@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, Prisma } from "@/lib/db";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+
+const checkRateLimit = rateLimit("courses", RATE_LIMITS.default);
 
 // GET: Список всех опубликованных курсов с фильтрами
 export const revalidate = 60; // Cache for 60 seconds
 
 export async function GET(request: NextRequest) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
   try {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get("category");

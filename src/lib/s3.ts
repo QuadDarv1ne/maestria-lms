@@ -3,29 +3,34 @@ import { S3Client } from "@aws-sdk/client-s3";
 const s3AccessKey = process.env.S3_ACCESS_KEY;
 const s3SecretKey = process.env.S3_SECRET_KEY;
 
-if (!s3AccessKey || !s3SecretKey) {
-  throw new Error(
-    "S3_ACCESS_KEY and S3_SECRET_KEY environment variables are required. " +
-    "Please set them in your .env file."
-  );
-}
+const hasCredentials = !!(s3AccessKey && s3SecretKey);
 
 /**
  * S3 client configured for the project's object storage.
  * Endpoint: s3c3.001.gpucloud.ru
  * CDN for delivery: https://ui3adtb308.a.trbcdn.net
+ *
+ * Returns null when credentials are not configured — use isS3Available()
+ * to check before calling upload helpers.
  */
-export const s3Client = new S3Client({
-  region: process.env.S3_REGION || "auto",
-  endpoint: process.env.S3_ENDPOINT,
-  credentials: {
-    accessKeyId: s3AccessKey,
-    secretAccessKey: s3SecretKey,
-  },
-  forcePathStyle: true,
-});
+export const s3Client = hasCredentials
+  ? new S3Client({
+      region: process.env.S3_REGION || "auto",
+      endpoint: process.env.S3_ENDPOINT,
+      credentials: {
+        accessKeyId: s3AccessKey,
+        secretAccessKey: s3SecretKey,
+      },
+      forcePathStyle: true,
+    })
+  : null;
 
 export const S3_BUCKET = process.env.S3_BUCKET || "maestria-lms";
+
+/** Check whether S3 is configured and usable. */
+export function isS3Available(): boolean {
+  return hasCredentials;
+}
 
 /**
  * Build a CDN-deliverable URL from an S3 key.

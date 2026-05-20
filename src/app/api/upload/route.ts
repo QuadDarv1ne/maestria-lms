@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getAuthSession } from "@/lib/auth";
-import { s3Client, S3_BUCKET, toCdnUrl, makeFileKey } from "@/lib/s3";
+import { s3Client, S3_BUCKET, toCdnUrl, makeFileKey, isS3Available } from "@/lib/s3";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 const ALLOWED_TYPES = [
@@ -32,6 +32,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  if (!isS3Available()) {
+    return NextResponse.json(
+      { error: "Хранилище не настроено — обратитесь к администратору" },
+      { status: 503 }
+    );
+  }
+
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
@@ -57,6 +64,13 @@ export async function POST(req: NextRequest) {
 
     const key = makeFileKey(folder, file.name);
     const buffer = Buffer.from(await file.arrayBuffer());
+
+    if (!s3Client) {
+      return NextResponse.json(
+        { error: "Хранилище недоступно" },
+        { status: 503 }
+      );
+    }
 
     await s3Client.send(
       new PutObjectCommand({
