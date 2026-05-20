@@ -208,7 +208,7 @@ export function ProfilePage() {
               const scores = courseProgress.map((p: ProgressData) => p.score).filter((s): s is number => s != null);
               const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
               const lastAccessed = courseProgress.length > 0
-                ? courseProgress.sort((a: ProgressData, b: ProgressData) =>
+                ? [...courseProgress].sort((a: ProgressData, b: ProgressData) =>
                     new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime()
                   )[0].lastAccessed
                 : null;

@@ -154,45 +154,12 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
 
       if (res.ok) {
         if (data.requiresPayment && data.paymentId) {
-          // Confirm the payment that was created by the enroll endpoint
-          const confirmRes = await fetch(`/api/payments/${data.paymentId}/confirm`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-          });
-          const confirmData = await confirmRes.json();
-
-          if (confirmRes.ok) {
-            toast.success(t("common.success", locale));
-            showEnrollmentNotification();
-            invalidateCourse();
-          } else {
-            toast.error(confirmData.error || t("common.error", locale));
-          }
-        } else if (data.requiresPayment && data.paymentId === undefined) {
-          const paymentsRes = await fetch("/api/payments");
-          if (paymentsRes.ok) {
-            const paymentsData = await paymentsRes.json();
-            const pendingPayment = paymentsData.payments?.find(
-              (p: { courseId: string; status: string }) =>
-                p.courseId === courseId && p.status === "pending"
-            );
-            if (pendingPayment) {
-              const confirmRes = await fetch(`/api/payments/${pendingPayment.id}/confirm`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-              });
-              const confirmData = await confirmRes.json();
-              if (confirmRes.ok) {
-                toast.success(t("common.success", locale));
-                showEnrollmentNotification();
-                invalidateCourse();
-              } else {
-                toast.error(confirmData.error || t("common.error", locale));
-              }
-            } else {
-              toast.error(t("common.error", locale));
-            }
-          }
+          // Payment created — user needs to complete it through the payment gateway.
+          // Do NOT auto-confirm; that would make paid courses effectively free.
+          toast.info(
+            data.message || "Для завершения записи необходимо оплатить курс"
+          );
+          navigate(`profile`);
         } else {
           toast.success(data.message);
           showEnrollmentNotification();

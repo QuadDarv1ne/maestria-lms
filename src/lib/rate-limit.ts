@@ -24,7 +24,13 @@ function cleanup() {
   }
 }
 
-setInterval(cleanup, CLEANUP_INTERVAL);
+// Store interval ID so HMR/module reloads don't leak orphaned intervals
+let cleanupIntervalId: ReturnType<typeof setInterval>;
+const GLOBAL_MARKER = "__rateLimitCleanupInterval";
+if (typeof globalThis !== "undefined" && !(globalThis as Record<string, unknown>)[GLOBAL_MARKER]) {
+  cleanupIntervalId = setInterval(cleanup, CLEANUP_INTERVAL);
+  (globalThis as Record<string, unknown>)[GLOBAL_MARKER] = cleanupIntervalId;
+}
 
 const defaultConfig: RateLimitConfig = {
   windowMs: 60_000,
