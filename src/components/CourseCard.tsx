@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CourseImage } from "@/components/CourseImage";
 import { levelColors, levelLabels } from "@/lib/constants";
+import { formatNumber } from "@/lib/utils";
 import { Clock, BookOpen, Star, TrendingUp } from "lucide-react";
 
 interface CourseCardCourse {
@@ -126,11 +127,11 @@ export function CourseCard({ course, onClick }: CourseCardProps) {
                 <div className="flex items-center gap-2">
                   {course.oldPrice && (
                     <span className="text-xs text-muted-foreground line-through">
-                      {course.oldPrice.toLocaleString(locale === "zh" ? "zh-CN" : locale === "en" ? "en-US" : "ru-RU")} ₽
+                      {formatNumber(course.oldPrice, locale)} ₽
                     </span>
                   )}
                   <span className="text-sm font-bold text-foreground">
-                    {course.price.toLocaleString(locale === "zh" ? "zh-CN" : locale === "en" ? "en-US" : "ru-RU")} ₽
+                    {formatNumber(course.price, locale)} ₽
                   </span>
                 </div>
               )}

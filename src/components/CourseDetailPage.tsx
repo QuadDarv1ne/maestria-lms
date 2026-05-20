@@ -34,7 +34,7 @@ import { toast } from "sonner";
 
 import { ReviewForm } from "@/components/ReviewForm";
 import { CourseImage } from "@/components/CourseImage";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatNumber } from "@/lib/utils";
 import { levelLabels, levelColors } from "@/lib/constants";
 import { useCourse, useCourseReviews } from "@/hooks/useCourses";
 import { useQueryClient } from "@tanstack/react-query";
@@ -427,11 +427,11 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                           <div>
                             <div className="flex items-baseline gap-2">
                               <span className="text-3xl font-bold">
-                                {course.price.toLocaleString(locale === "ru" ? "ru-RU" : locale === "zh" ? "zh-CN" : "en-US")} ₽
+                                {formatNumber(course.price, locale)} ₽
                               </span>
                               {course.oldPrice && (
                                 <span className="text-lg text-muted-foreground line-through">
-                                  {course.oldPrice.toLocaleString(locale === "ru" ? "ru-RU" : locale === "zh" ? "zh-CN" : "en-US")} ₽
+                                  {formatNumber(course.oldPrice, locale)} ₽
                                 </span>
                               )}
                             </div>

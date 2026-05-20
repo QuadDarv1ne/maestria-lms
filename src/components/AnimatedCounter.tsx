@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAppStore } from "@/lib/store";
+import { formatNumber } from "@/lib/utils";
 
 interface AnimatedCounterProps {
   end: number;
@@ -68,7 +69,7 @@ export function AnimatedCounter({
 
   const formatted = decimals > 0
     ? count.toFixed(decimals)
-    : Math.round(count).toLocaleString(locale === "zh" ? "zh-CN" : locale === "en" ? "en-US" : "ru-RU");
+    : formatNumber(Math.round(count), locale);
 
   return (
     <span ref={ref}>
