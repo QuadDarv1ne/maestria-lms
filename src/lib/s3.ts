@@ -1,5 +1,15 @@
 import { S3Client } from "@aws-sdk/client-s3";
 
+const s3AccessKey = process.env.S3_ACCESS_KEY;
+const s3SecretKey = process.env.S3_SECRET_KEY;
+
+if (!s3AccessKey || !s3SecretKey) {
+  throw new Error(
+    "S3_ACCESS_KEY and S3_SECRET_KEY environment variables are required. " +
+    "Please set them in your .env file."
+  );
+}
+
 /**
  * S3 client configured for the project's object storage.
  * Endpoint: s3c3.001.gpucloud.ru
@@ -9,8 +19,8 @@ export const s3Client = new S3Client({
   region: process.env.S3_REGION || "auto",
   endpoint: process.env.S3_ENDPOINT,
   credentials: {
-    accessKeyId: process.env.S3_ACCESS_KEY || "",
-    secretAccessKey: process.env.S3_SECRET_KEY || "",
+    accessKeyId: s3AccessKey,
+    secretAccessKey: s3SecretKey,
   },
   forcePathStyle: true,
 });

@@ -26,7 +26,8 @@ export function CourseImage({
 
   if (!cdnUrl && !fallbackUrl) return null;
 
-  const finalSrc = (failed ? fallbackUrl : cdnUrl) as string;
+  const finalSrc = failed ? (fallbackUrl ?? null) : (cdnUrl ?? null);
+  if (!finalSrc) return null;
 
   return (
     <Image

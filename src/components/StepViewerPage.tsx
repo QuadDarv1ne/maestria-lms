@@ -241,17 +241,15 @@ export function StepViewerPage({
         });
         setStep((prev) => prev ? { ...prev, completed: true } : prev);
         // Update structure
-        if (courseStructure) {
-          setCourseStructure((prev) => {
-            if (!prev) return prev;
-            const completedLessons = prev.completedLessons + 1;
-            return {
-              ...prev,
-              completedLessons,
-              progress: Math.round((completedLessons / prev.totalLessons) * 100),
-            };
-          });
-        }
+        setCourseStructure((prev) => {
+          if (!prev) return prev;
+          const completedLessons = prev.completedLessons + 1;
+          return {
+            ...prev,
+            completedLessons,
+            progress: Math.round((completedLessons / prev.totalLessons) * 100),
+          };
+        });
         // Auto-navigate to next step after short delay
         if (step.nextStepId) {
           setTimeout(() => {
@@ -264,7 +262,7 @@ export function StepViewerPage({
     } finally {
       setCompleting(false);
     }
-  }, [user, step, courseId, lessonId, navigate, courseStructure, locale]);
+  }, [user, step, courseId, lessonId, navigate, locale]);
 
   // Submit quiz answer
   const handleQuizSubmit = useCallback((assignmentId: string) => {

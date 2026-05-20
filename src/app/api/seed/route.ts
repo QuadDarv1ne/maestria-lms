@@ -101,7 +101,7 @@ export async function POST() {
   const adminPasswordHash = await hashPassword("admin123");
   const teacherPasswordHash = await hashPassword("teacher123");
 
-  const _admin = await db.user.create({
+  await db.user.create({
     data: {
       email: "admin@maestro7it.ru",
       name: "Дуплей Максим Игоревич",
