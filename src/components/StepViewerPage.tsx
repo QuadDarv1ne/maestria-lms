@@ -144,6 +144,7 @@ export function StepViewerPage({
 
   // Load step data
   useEffect(() => {
+    let cancelled = false;
     const fetchStep = async () => {
       setLoading(true);
       setQuizSubmitted({});
@@ -158,24 +159,36 @@ export function StepViewerPage({
         const res = await fetch(`/api/courses/${courseId}/lessons/${lessonId}`);
         if (res.ok) {
           const data = await res.json();
-          setStep(data.lesson);
+          if (!cancelled) {
+            setStep(data.lesson);
+          }
         } else {
           const data = await res.json();
-          toast.error(data.error || t("course.step.errorAccess", locale));
-          navigate(`course/${courseId}`);
+          if (!cancelled) {
+            toast.error(data.error || t("course.step.errorAccess", locale));
+            navigate(`course/${courseId}`);
+          }
         }
       } catch (e) {
-        console.error(t("course.step.errorLoad", locale), e);
-        toast.error(t("course.step.errorLoad", locale));
+        if (!cancelled) {
+          console.error(t("course.step.errorLoad", locale), e);
+          toast.error(t("course.step.errorLoad", locale));
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
     fetchStep();
+    return () => {
+      cancelled = true;
+    };
   }, [courseId, lessonId, navigate, locale]);
 
   // Load course structure for sidebar
   useEffect(() => {
+    let cancelled = false;
     const fetchStructure = async () => {
       try {
         const res = await fetch(`/api/courses/${courseId}`);
@@ -206,20 +219,27 @@ export function StepViewerPage({
               lessons,
             };
           });
-          setCourseStructure({
-            id: course.id,
-            title: course.title,
-            modules,
-            totalLessons,
-            completedLessons,
-            progress: totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0,
-          });
+          if (!cancelled) {
+            setCourseStructure({
+              id: course.id,
+              title: course.title,
+              modules,
+              totalLessons,
+              completedLessons,
+              progress: totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0,
+            });
+          }
         }
       } catch (e) {
-        console.error(t("course.step.errorLoad", locale), e);
+        if (!cancelled) {
+          console.error(t("course.step.errorLoad", locale), e);
+        }
       }
     };
     fetchStructure();
+    return () => {
+      cancelled = true;
+    };
   }, [courseId, locale, step?.completed]);
 
   // Complete step handler

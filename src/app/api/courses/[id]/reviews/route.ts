@@ -112,11 +112,19 @@ export async function POST(
       );
     }
 
-    if (comment !== undefined && comment !== null && typeof comment !== "string") {
-      return NextResponse.json(
-        { error: "Комментарий должен быть строкой" },
-        { status: 400 }
-      );
+    if (comment !== undefined && comment !== null) {
+      if (typeof comment !== "string") {
+        return NextResponse.json(
+          { error: "Комментарий должен быть строкой" },
+          { status: 400 }
+        );
+      }
+      if (comment.trim().length > 1000) {
+        return NextResponse.json(
+          { error: "Комментарий не должен превышать 1000 символов" },
+          { status: 400 }
+        );
+      }
     }
 
     // Check if course exists
@@ -170,7 +178,7 @@ export async function POST(
           where: { id: existing.id },
           data: {
             rating,
-            comment: comment || null,
+            comment: comment?.trim() || null,
           },
           include: {
             user: {
@@ -189,7 +197,7 @@ export async function POST(
             userId,
             courseId,
             rating,
-            comment: comment || null,
+            comment: comment?.trim() || null,
           },
           include: {
             user: {
