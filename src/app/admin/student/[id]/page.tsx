@@ -1,6 +1,7 @@
 "use client";
 
 
+import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useStudentStats } from "@/hooks/useAdmin";
 import { useAppStore } from "@/lib/store";
@@ -49,7 +50,7 @@ function formatTime(seconds: number, locale: string): string {
   return `${minutes}${units.m}`;
 }
 
-export default function StudentDetailPage() {
+function StudentDetailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { locale } = useAppStore();
@@ -498,5 +499,13 @@ export default function StudentDetailPage() {
         </Card>
       )}
     </div>
+  );
+}
+
+export default function StudentDetailPage() {
+  return (
+    <Suspense fallback={<div className="p-6 animate-pulse"><div className="h-10 bg-muted rounded w-48" /></div>}>
+      <StudentDetailContent />
+    </Suspense>
   );
 }
