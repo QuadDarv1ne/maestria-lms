@@ -2,6 +2,8 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// Current provider: postgresql (default for production)
+// Change to "mysql" or "sqlite" as needed
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
@@ -10,7 +12,7 @@ datasource db {
 // ============ AUTH (NextAuth.js) ============
 
 model User {
-  id            String    @id @default(cuid())
+  id            String    @id @default(uuid())
   email         String    @unique
   name          String?
   passwordHash  String?
@@ -36,7 +38,7 @@ model User {
 }
 
 model Account {
-  id                String  @id @default(cuid())
+  id                String  @id @default(uuid())
   userId            String
   type              String
   provider          String
@@ -55,7 +57,7 @@ model Account {
 }
 
 model Session {
-  id           String   @id @default(cuid())
+  id           String   @id @default(uuid())
   sessionToken String   @unique
   userId       String
   expires      DateTime
@@ -74,7 +76,7 @@ model VerificationToken {
 // ============ COURSES ============
 
 model Category {
-  id          String   @id @default(cuid())
+  id          String   @id @default(uuid())
   name        String   @unique
   slug        String   @unique
   description String?
@@ -88,7 +90,7 @@ model Category {
 }
 
 model Course {
-  id          String   @id @default(cuid())
+  id          String   @id @default(uuid())
   title       String
   slug        String   @unique
   description String
@@ -129,7 +131,7 @@ model Course {
 }
 
 model Module {
-  id          String   @id @default(cuid())
+  id          String   @id @default(uuid())
   title       String
   description String?
   sortOrder   Int      @default(0)
@@ -142,7 +144,7 @@ model Module {
 }
 
 model Lesson {
-  id          String   @id @default(cuid())
+  id          String   @id @default(uuid())
   title       String
   type        String   @default("video") // video, text, quiz, coding, assignment
   content     String?  // HTML/Markdown content
@@ -160,7 +162,7 @@ model Lesson {
 }
 
 model Assignment {
-  id          String   @id @default(cuid())
+  id          String   @id @default(uuid())
   title       String
   description String
   type        String   @default("quiz") // quiz, coding, text
@@ -177,7 +179,7 @@ model Assignment {
 // ============ ENROLLMENT & PROGRESS ============
 
 model Enrollment {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   userId    String
   courseId  String
   status    String   @default("active") // active, completed, cancelled
@@ -192,7 +194,7 @@ model Enrollment {
 }
 
 model Progress {
-  id          String   @id @default(cuid())
+  id          String   @id @default(uuid())
   userId      String
   lessonId    String
   completed   Boolean  @default(false)
@@ -210,7 +212,7 @@ model Progress {
 // ============ REVIEWS ============
 
 model Review {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   rating    Int      // 1-5
   comment   String?
   userId    String
@@ -228,7 +230,7 @@ model Review {
 // ============ PAYMENTS ============
 
 model Payment {
-  id              String   @id @default(cuid())
+  id              String   @id @default(uuid())
   userId          String
   courseId        String
   amount          Float
@@ -247,7 +249,7 @@ model Payment {
 // ============ CERTIFICATES ============
 
 model Certificate {
-  id          String   @id @default(cuid())
+  id          String   @id @default(uuid())
   userId      String
   courseId    String
   certificateNumber String @unique

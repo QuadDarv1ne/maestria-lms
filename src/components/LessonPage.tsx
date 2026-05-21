@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { lessonTypeIcon } from "@/lib/constants";
+import { LessonSkeleton } from "@/components/skeletons/LessonSkeleton";
 
 function LessonVideo({ src }: { src: string }) {
   const [error, setError] = useState(false);
@@ -144,6 +145,7 @@ export function LessonPage({
         }
       } catch (e) {
         console.error(t("profile.errorLoadingLesson", locale), e);
+        if (!cancelled) toast.error(t("profile.errorLoadingLesson", locale));
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -202,14 +204,7 @@ export function LessonPage({
   };
 
   if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/2" />
-          <div className="h-64 bg-gray-200 rounded" />
-        </div>
-      </div>
-    );
+    return <LessonSkeleton />;
   }
 
   if (!lesson) {

@@ -4,13 +4,13 @@ import { useEffect, useState, type ReactNode } from "react";
 import { SessionProvider } from "next-auth/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useAppStore } from "@/lib/store";
+import { useSSENotifications } from "@/hooks/useSSENotifications";
 
 function ThemeAndLocaleSync() {
   const { theme, locale } = useAppStore();
 
   useEffect(() => {
     const html = document.documentElement;
-    // Remove all theme classes, then add the active one
     html.classList.remove("light", "dark", "amber");
     if (theme !== "light") {
       html.classList.add(theme);
@@ -18,6 +18,11 @@ function ThemeAndLocaleSync() {
     html.setAttribute("lang", locale);
   }, [theme, locale]);
 
+  return null;
+}
+
+function SSENotificationsSync() {
+  useSSENotifications();
   return null;
 }
 
@@ -39,6 +44,7 @@ export function Providers({ children }: { children: ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <SessionProvider>
         <ThemeAndLocaleSync />
+        <SSENotificationsSync />
         {children}
       </SessionProvider>
     </QueryClientProvider>

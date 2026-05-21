@@ -48,19 +48,23 @@ export function Header() {
   const unreadCount = unreadNotificationsCount();
 
   const handleLogout = async () => {
-    await signOut({ redirect: false });
+    try {
+      await signOut({ redirect: false });
+    } catch (e) {
+      console.error("Logout failed:", e);
+    }
     logout();
   };
 
   const userInitials = user?.name
-    ? user.name
+    ? (user.name
         .trim()
         .split(/\s+/)
         .map((n) => n[0])
         .filter(Boolean)
         .join("")
         .toUpperCase()
-        .slice(0, 2) || "??"
+        .slice(0, 2) || "??")
     : "??";
 
   return (

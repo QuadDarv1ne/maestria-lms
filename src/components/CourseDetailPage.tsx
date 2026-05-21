@@ -38,6 +38,7 @@ import { formatDate, formatNumber } from "@/lib/utils";
 import { levelLabels, levelColors } from "@/lib/constants";
 import { useCourse, useCourseReviews } from "@/hooks/useCourses";
 import { useQueryClient } from "@tanstack/react-query";
+import { CourseDetailSkeleton } from "@/components/skeletons/CourseDetailSkeleton";
 interface LessonItem {
   id: string;
   title: string;
@@ -109,7 +110,7 @@ interface CourseDetail {
 }
 
 export function CourseDetailPage({ courseId }: { courseId: string }) {
-  const { navigate, user, toggleFavorite, isFavorite, addNotification, locale } = useAppStore();
+  const { navigate, user, toggleFavorite, isFavorite, publishNotification, locale } = useAppStore();
   const queryClient = useQueryClient();
   const [enrolling, setEnrolling] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string>("sbp");
@@ -129,13 +130,14 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
   };
 
   const showEnrollmentNotification = () => {
-    addNotification({
+    if (!user) return;
+    publishNotification({
       type: "enrollment",
       title: t("notifications.type.enrollment", locale),
       message: t("course.enrollFree", locale),
       read: false,
       link: `course/${courseId}`,
-    });
+    }, user.id);
   };
 
   const handleEnroll = async () => {
@@ -181,7 +183,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
       return;
     }
     toggleFavorite(courseId);
-    toast.success(favored ? t("common.success", locale) : t("common.success", locale));
+    toast.success(favored ? t("profile.removeFromFavorites", locale) : t("profile.addToFavorites", locale));
   };
 
   const handleShare = async () => {
@@ -191,21 +193,18 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
         await navigator.share({ title: course?.title, url });
       } catch { /* user cancelled share dialog — safe to ignore */ }
     } else {
-      await navigator.clipboard.writeText(url);
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch {
+        toast.error(t("common.error", locale));
+        return;
+      }
       toast.success(t("common.success", locale));
     }
   };
 
   if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-3/4" />
-          <div className="h-4 bg-gray-200 rounded w-1/2" />
-          <div className="h-64 bg-gray-200 rounded" />
-        </div>
-      </div>
-    );
+    return <CourseDetailSkeleton />;
   }
 
   if (!course) {

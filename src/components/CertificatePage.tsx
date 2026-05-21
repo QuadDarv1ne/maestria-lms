@@ -93,7 +93,7 @@ export function CertificatePage({ courseId }: { courseId: string }) {
 
     try {
       // Dynamic import – will fail silently if package is not installed
-      const html2canvas = (await import("html2canvas" as string)).default;
+      const html2canvas = (await import("html2canvas")).default;
       const canvas = await html2canvas(certRef.current, {
         scale: 2,
         useCORS: true,

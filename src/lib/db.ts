@@ -1,5 +1,64 @@
 import { PrismaClient, Prisma } from '@prisma/client'
 
+export type DatabaseProvider = 'postgresql' | 'mysql' | 'sqlite'
+
+/**
+ * Get the current database provider from environment variables
+ * Defaults to 'postgresql' if not set
+ */
+export function getDatabaseProvider(): DatabaseProvider {
+  const provider = process.env.DATABASE_PROVIDER?.toLowerCase()
+
+  if (!provider || !['postgresql', 'mysql', 'sqlite'].includes(provider)) {
+    return 'postgresql'
+  }
+
+  return provider as DatabaseProvider
+}
+
+/**
+ * Get the appropriate connection URL format based on provider
+ */
+export function formatDatabaseUrl(url: string, provider: DatabaseProvider): string {
+  if (provider === 'sqlite' && !url.startsWith('file:')) {
+    return `file:${url}`
+  }
+
+  if ((provider === 'postgresql' || provider === 'mysql') && url.startsWith('file:')) {
+    throw new Error(
+      `Invalid DATABASE_URL for ${provider}. Expected format: ` +
+        (provider === 'postgresql'
+          ? 'postgresql://user:password@host:port/database'
+          : 'mysql://user:password@host:port/database')
+    )
+  }
+
+  return url
+}
+
+/**
+ * Validate database configuration
+ */
+export function validateDatabaseConfig(): { valid: boolean; errors: string[] } {
+  const errors: string[] = []
+  const provider = getDatabaseProvider()
+  const url = process.env.DATABASE_URL
+
+  if (!url) {
+    errors.push('DATABASE_URL environment variable is not set')
+  } else {
+    try {
+      formatDatabaseUrl(url, provider)
+    } catch (e) {
+      if (e instanceof Error) {
+        errors.push(e.message)
+      }
+    }
+  }
+
+  return { valid: errors.length === 0, errors }
+}
+
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }

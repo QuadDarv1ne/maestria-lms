@@ -4,34 +4,21 @@ import { useEffect, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { formatDate } from "@/lib/utils";
+import { toast } from "sonner";
 import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  User,
-  BookOpen,
-  Award,
-  Settings,
-  LogOut,
-  Edit3,
-  Save,
-  Clock,
-  CheckCircle2,
-  Trophy,
-  Bookmark,
-  BookmarkCheck,
-  Target,
-  MessageSquare,
-  Loader2,
-  Activity,
+  BookOpen, Award, Trophy, User, Activity, Clock, BookmarkCheck, Bookmark,
+  CheckCircle2, Edit3, Loader2, LogOut, MessageSquare, Save, Settings, Target,
 } from "lucide-react";
-import { toast } from "sonner";
+import { ProfileSkeleton } from "@/components/skeletons/ProfileSkeleton";
 import { AchievementsPage } from "@/components/AchievementsPage";
 
 function formatTime(seconds: number, locale?: string): string {
@@ -150,7 +137,7 @@ export function ProfilePage() {
     };
     fetchTitles();
     return () => { cancelled = true; };
-  }, [favorites]);
+  }, [favorites, locale]);
 
   const levelLabels: Record<string, string> = {
     beginner: t("catalog.beginner", locale),
@@ -197,7 +184,9 @@ export function ProfilePage() {
                     ) || [];
                     courseLessonsMap[enrollment.course.id] = lessonIds;
                   }
-                } catch { /* skip */ }
+                } catch (err) {
+                  console.error("Failed to fetch course details for enrollment stats:", err);
+                }
               })
             );
 
@@ -298,7 +287,11 @@ export function ProfilePage() {
   };
 
   const handleLogout = async () => {
-    await signOut({ redirect: false });
+    try {
+      await signOut({ redirect: false });
+    } catch (e) {
+      console.error("Logout failed:", e);
+    }
     logout();
     navigate("home");
   };
@@ -320,14 +313,7 @@ export function ProfilePage() {
   }
 
   if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="animate-pulse space-y-4">
-          <div className="h-32 bg-muted rounded" />
-          <div className="h-64 bg-muted rounded" />
-        </div>
-      </div>
-    );
+    return <ProfileSkeleton />;
   }
 
   if (error) {

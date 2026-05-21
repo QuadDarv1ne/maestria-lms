@@ -1,0 +1,9 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+// MySQL configuration (alternative production database)
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}

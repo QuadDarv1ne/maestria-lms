@@ -4,11 +4,12 @@ import { Component, type ErrorInfo, type ReactNode } from "react";
 import { t } from "@/lib/i18n";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Home, RefreshCw } from "lucide-react";
+import { AlertTriangle, Home, RefreshCw, RotateCcw } from "lucide-react";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
   fallback?: ReactNode;
+  onRetry?: () => void;
 }
 
 interface ErrorBoundaryState {
@@ -29,6 +30,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("[Maestria ErrorBoundary]", error, errorInfo);
   }
+
+  handleRetry = () => {
+    this.setState({ hasError: false, error: null });
+    this.props.onRetry?.();
+  };
 
   handleReload = () => {
     this.setState({ hasError: false, error: null });
@@ -52,7 +58,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       return (
         <div className="min-h-[60vh] flex items-center justify-center px-4">
           <div className="text-center max-w-md">
-            <div className="w-20 h-20 bg-gradient-to-br from-red-100 to-orange-100 rounded-2xl mx-auto mb-6 flex items-center justify-center">
+            <div className="w-20 h-20 bg-gradient-to-br from-red-100 to-orange-100 dark:from-red-900/30 dark:to-orange-900/30 rounded-2xl mx-auto mb-6 flex items-center justify-center">
               <AlertTriangle className="w-10 h-10 text-red-500" />
             </div>
             <h2 className="text-2xl font-bold mb-2">{t("error.somethingWrong", locale)}</h2>
@@ -64,7 +70,13 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 {this.state.error.message}
               </p>
             )}
-            <div className="flex gap-3 justify-center">
+            <div className="flex gap-3 justify-center flex-wrap">
+              {this.props.onRetry && (
+                <Button onClick={this.handleRetry} variant="outline">
+                  <RotateCcw className="w-4 h-4 mr-2" />
+                  {t("error.retry", locale)}
+                </Button>
+              )}
               <Button onClick={this.handleReload} variant="outline">
                 <RefreshCw className="w-4 h-4 mr-2" />
                 {t("error.reload", locale)}

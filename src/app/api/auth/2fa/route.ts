@@ -183,7 +183,7 @@ export async function DELETE(request: NextRequest) {
     const { code } = validation.data;
     let isValid = false;
     try {
-      isValid = authenticator.verify({ token: code, secret: user.twoFactorSecret! });
+      isValid = authenticator.verify({ token: code, secret: user.twoFactorSecret ?? "" });
     } catch {
       // Invalid token format
     }

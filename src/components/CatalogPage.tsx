@@ -3,8 +3,8 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import { CatalogSkeleton } from "@/components/skeletons/CatalogSkeleton";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Search,
   SlidersHorizontal,
@@ -92,7 +92,7 @@ export function CatalogPage() {
   }, [searchInput, setCourseFilters]);
 
   const handleCategoryChange = (value: string) => {
-    setCourseFilters({ category: value === "__all__" ? "" : value });
+    setCourseFilters({ category: value === "" ? "" : value });
     setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
@@ -256,19 +256,7 @@ export function CatalogPage() {
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Card key={i} className="border-0 shadow-sm">
-              <CardContent className="p-0">
-                <div className="h-40 bg-muted animate-pulse rounded-t-lg" />
-                <div className="p-4 space-y-3">
-                  <div className="h-4 bg-muted animate-pulse rounded" />
-                  <div className="h-3 bg-muted animate-pulse rounded w-2/3" />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <CatalogSkeleton />
       ) : error ? (
         <div className="text-center py-16">
           <X className="w-16 h-16 text-red-400 mx-auto mb-4" />

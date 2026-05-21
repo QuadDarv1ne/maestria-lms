@@ -29,43 +29,45 @@ interface TypeConfig {
   label: string;
 }
 
-const typeConfig: Record<NotificationType, TypeConfig> = {
-  enrollment: {
-    icon: BookOpen,
-    iconColor: "text-blue-600",
-    iconBg: "bg-blue-100",
-    badgeColor: "bg-blue-100 text-blue-700",
-    label: t("notifications.type.enrollment"),
-  },
-  completion: {
-    icon: Award,
-    iconColor: "text-green-600",
-    iconBg: "bg-green-100",
-    badgeColor: "bg-green-100 text-green-700",
-    label: t("notifications.type.completion"),
-  },
-  achievement: {
-    icon: Trophy,
-    iconColor: "text-amber-600",
-    iconBg: "bg-amber-100",
-    badgeColor: "bg-amber-100 text-amber-700",
-    label: t("notifications.type.achievement"),
-  },
-  review: {
-    icon: Star,
-    iconColor: "text-violet-600",
-    iconBg: "bg-violet-100",
-    badgeColor: "bg-violet-100 text-violet-700",
-    label: t("notifications.type.review"),
-  },
-  system: {
-    icon: Bell,
-    iconColor: "text-gray-500",
-    iconBg: "bg-gray-100",
-    badgeColor: "bg-gray-100 text-gray-600",
-    label: t("notifications.type.system"),
-  },
-};
+function getTypeConfig(locale: Locale): Record<NotificationType, TypeConfig> {
+  return {
+    enrollment: {
+      icon: BookOpen,
+      iconColor: "text-blue-600",
+      iconBg: "bg-blue-100",
+      badgeColor: "bg-blue-100 text-blue-700",
+      label: t("notifications.type.enrollment", locale),
+    },
+    completion: {
+      icon: Award,
+      iconColor: "text-green-600",
+      iconBg: "bg-green-100",
+      badgeColor: "bg-green-100 text-green-700",
+      label: t("notifications.type.completion", locale),
+    },
+    achievement: {
+      icon: Trophy,
+      iconColor: "text-amber-600",
+      iconBg: "bg-amber-100",
+      badgeColor: "bg-amber-100 text-amber-700",
+      label: t("notifications.type.achievement", locale),
+    },
+    review: {
+      icon: Star,
+      iconColor: "text-violet-600",
+      iconBg: "bg-violet-100",
+      badgeColor: "bg-violet-100 text-violet-700",
+      label: t("notifications.type.review", locale),
+    },
+    system: {
+      icon: Bell,
+      iconColor: "text-gray-500",
+      iconBg: "bg-gray-100",
+      badgeColor: "bg-gray-100 text-gray-600",
+      label: t("notifications.type.system", locale),
+    },
+  };
+}
 
 // ============ TIME AGO ============
 
@@ -118,6 +120,8 @@ export function NotificationsPage() {
   } = useAppStore();
 
   const unreadCount = unreadNotificationsCount();
+
+  const typeConfig = useMemo(() => getTypeConfig(locale), [locale]);
 
   // Sort by createdAt descending (newest first)
   const sortedNotifications = useMemo(() => {
