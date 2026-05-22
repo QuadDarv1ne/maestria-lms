@@ -248,18 +248,41 @@ export function StepViewerPage({
     };
   }, [courseId, locale, step?.completed]);
 
+  // Calculate quiz score (percentage of correct answers)
+  const quizScore = useMemo(() => {
+    if (step?.type !== "quiz" || !step.assignments?.length) return null;
+    const answered = step.assignments.filter((a) => quizSubmitted[a.id]);
+    if (answered.length === 0) return null;
+    const correct = answered.filter((a) => quizResults[a.id]).length;
+    return Math.round((correct / step.assignments.length) * 100);
+  }, [step, quizSubmitted, quizResults]);
+
+  const allQuizAnswered = useMemo(() => {
+    if (step?.type !== "quiz" || !step.assignments?.length) return true;
+    return step.assignments.every((a) => quizSubmitted[a.id]);
+  }, [step, quizSubmitted]);
+
   // Complete step handler
   const handleComplete = useCallback(async () => {
     if (!user || !step) return;
+    // Require all quiz questions answered before completing
+    if (step.type === "quiz" && !allQuizAnswered) {
+      toast.error(t("course.step.answerAllFirst", locale));
+      return;
+    }
     setCompleting(true);
     try {
+      const body: Record<string, unknown> = {
+        completed: true,
+        timeSpent: step.duration || 5,
+      };
+      if (step.type === "quiz" && quizScore !== null) {
+        body.score = quizScore;
+      }
       const res = await fetch(`/api/courses/${courseId}/lessons/${lessonId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          completed: true,
-          timeSpent: step.duration || 5,
-        }),
+        body: JSON.stringify(body),
       });
       if (res.ok) {
         toast.success(t("course.step.completed", locale), {
@@ -288,7 +311,7 @@ export function StepViewerPage({
     } finally {
       setCompleting(false);
     }
-  }, [user, step, courseId, lessonId, navigate, locale]);
+  }, [user, step, courseId, lessonId, navigate, locale, quizScore, allQuizAnswered]);
 
   // Submit quiz answer
   const handleQuizSubmit = useCallback((assignmentId: string) => {
@@ -629,6 +652,27 @@ export function StepViewerPage({
           {/* ==================== STEP TYPE: QUIZ ==================== */}
           {step.type === "quiz" && (
             <div className="space-y-4 mb-6">
+              {/* Quiz score banner */}
+              {quizScore !== null && (
+                <Card className={`border-0 shadow-sm ${quizScore >= 60 ? "bg-green-50" : "bg-red-50"}`}>
+                  <CardContent className="p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {quizScore >= 60 ? (
+                        <CheckCircle2 className="w-5 h-5 text-green-600" />
+                      ) : (
+                        <HelpCircle className="w-5 h-5 text-red-600" />
+                      )}
+                      <span className="font-medium text-sm">
+                        {t("course.step.result", locale)}: {quizScore}%
+                      </span>
+                    </div>
+                    <Badge className={quizScore >= 60 ? "bg-green-100 text-green-700 border-0" : "bg-red-100 text-red-700 border-0"}>
+                      {quizScore >= 60 ? t("course.step.passed", locale) : t("course.step.failed", locale)}
+                    </Badge>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Theory part */}
               {step.content && (
                 <Card className="border-0 shadow-sm">
@@ -857,7 +901,8 @@ export function StepViewerPage({
                 <Button
                   className="bg-blue-700 hover:bg-blue-800 text-white"
                   onClick={handleComplete}
-                  disabled={completing}
+                  disabled={completing || (step.type === "quiz" && !allQuizAnswered)}
+                  title={step.type === "quiz" && !allQuizAnswered ? (t("course.step.answerAllFirst", locale) || "Ответьте на все вопросы") : ""}
                 >
                   <CheckCircle2 className="w-4 h-4 mr-2" />
                   {completing ? t("course.step.saving", locale) : t("course.step.saveAndComplete", locale)}
