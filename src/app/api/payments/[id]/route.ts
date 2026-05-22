@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { createNotification } from "@/lib/notifications";
 
 const checkRateLimit = rateLimit("paymentUpdate", RATE_LIMITS.paymentUpdate);
 const checkPaymentGetRateLimit = rateLimit("paymentGet", RATE_LIMITS.payments);
@@ -237,7 +238,7 @@ export async function PUT(
     const { status } = validation.data;
 
     // Атомарное обновление: статус платежа + запись на курс
-    const updatedPayment = await db.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx) => {
       const updated = await tx.payment.update({
         where: { id },
         data: { status },
@@ -260,11 +261,28 @@ export async function PUT(
         });
       }
 
-      return updated;
+      return { updated, wasCompleted: status === "completed" && payment.status === "pending" };
     });
 
+    // Send notification for completed payment
+    if (result.wasCompleted) {
+      const courseData = await db.course.findUnique({
+        where: { id: payment.courseId },
+        select: { title: true },
+      });
+      if (courseData) {
+        createNotification({
+          userId: payment.userId,
+          type: "enrollment",
+          title: "Оплата прошла",
+          message: `Вы записаны на курс "${courseData.title}"`,
+          link: `course/${payment.courseId}`,
+        }).catch(() => {});
+      }
+    }
+
     return NextResponse.json(
-      { message: "Статус платежа обновлён", payment: updatedPayment },
+      { message: "Статус платежа обновлён", payment: result.updated },
       { status: 200 }
     );
   } catch (error) {

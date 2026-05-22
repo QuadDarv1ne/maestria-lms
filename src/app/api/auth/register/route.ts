@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { createNotification } from "@/lib/notifications";
 
 // Схема валидации с использованием Zod
 import { z } from "zod";
@@ -64,6 +65,15 @@ export async function POST(request: NextRequest) {
         createdAt: true,
       },
     });
+
+    // Send welcome notification
+    createNotification({
+      userId: user.id,
+      type: "system",
+      title: "Добро пожаловать!",
+      message: `Рады видеть вас, ${user.name}! Начните с каталога курсов.`,
+      link: "catalog",
+    }).catch(() => {});
 
     return NextResponse.json(
       { message: "Регистрация успешна", user },

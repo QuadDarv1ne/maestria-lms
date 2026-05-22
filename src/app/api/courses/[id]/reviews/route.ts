@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { createNotification } from "@/lib/notifications";
 
 const checkPostRateLimit = rateLimit("review", RATE_LIMITS.review);
 const checkGetRateLimit = rateLimit("reviewGet", RATE_LIMITS.default);
@@ -228,6 +229,23 @@ export async function POST(
 
       return { review: r, wasUpdated: !!existing };
     });
+
+    // Send notification for new review (not for updates)
+    if (!result.wasUpdated) {
+      const courseData = await db.course.findUnique({
+        where: { id: courseId },
+        select: { title: true, teacherId: true },
+      });
+      if (courseData?.teacherId) {
+        createNotification({
+          userId: courseData.teacherId,
+          type: "review",
+          title: "Новый отзыв",
+          message: `Студент оставил отзыв на курс "${courseData.title}"`,
+          link: `course/${courseId}`,
+        }).catch(() => {});
+      }
+    }
 
     return NextResponse.json(
       {

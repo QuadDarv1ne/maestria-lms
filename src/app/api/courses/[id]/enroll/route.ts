@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { createNotification } from "@/lib/notifications";
 
 const checkRateLimit = rateLimit("enrollment", RATE_LIMITS.enrollment);
 
@@ -147,6 +148,17 @@ export async function POST(
         { error: result.error },
         { status: result.status }
       );
+    }
+
+    // Send server notification for successful enrollment
+    if (course.price === 0) {
+      await createNotification({
+        userId,
+        type: "enrollment",
+        title: "Новый курс",
+        message: `Вы записаны на курс "${course.title}"`,
+        link: `course/${resolvedCourseId}`,
+      }).catch(() => {});
     }
 
     const { status, ...responseData } = result;

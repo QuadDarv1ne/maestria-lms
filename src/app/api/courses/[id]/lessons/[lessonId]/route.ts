@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { createNotification } from "@/lib/notifications";
 
 const updateProgressSchema = z.object({
   completed: z.boolean().optional(),
@@ -292,6 +293,7 @@ export async function POST(
       });
 
       if (enrollment) {
+        const wasAlreadyCompleted = enrollment.status === "completed";
         await db.enrollment.update({
           where: { id: enrollment.id },
           data: {
@@ -300,6 +302,17 @@ export async function POST(
             status: courseProgress === 100 ? "completed" : "active",
           },
         });
+
+        // Send notification on first-time course completion
+        if (courseProgress === 100 && !wasAlreadyCompleted) {
+          createNotification({
+            userId,
+            type: "completion",
+            title: "Курс пройден!",
+            message: `Поздравляем! Вы завершили курс "${course.title}"`,
+            link: `course/${courseId}`,
+          }).catch(() => {});
+        }
       }
     }
 

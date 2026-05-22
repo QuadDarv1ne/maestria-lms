@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
-import { pushNotification, pushUnreadCount } from "@/lib/sse";
-import type { NotificationItem } from "@/lib/stores/notifications";
+import { createNotification } from "@/lib/notifications";
+import type { CreateNotificationInput } from "@/lib/notifications";
 
 export async function POST(req: NextRequest) {
   const session = await getAuthSession();
@@ -11,18 +11,18 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { userId, notification } = body as {
-      userId: string;
-      notification: NotificationItem;
-    };
+    const input = body as CreateNotificationInput;
 
-    pushNotification(userId, notification);
-
-    if (body.unreadCount !== undefined) {
-      pushUnreadCount(userId, body.unreadCount);
+    if (!input.userId || !input.type || !input.title || !input.message) {
+      return NextResponse.json(
+        { error: "Missing required fields: userId, type, title, message" },
+        { status: 400 }
+      );
     }
 
-    return NextResponse.json({ ok: true });
+    const notification = await createNotification(input);
+
+    return NextResponse.json({ ok: true, notification });
   } catch {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }

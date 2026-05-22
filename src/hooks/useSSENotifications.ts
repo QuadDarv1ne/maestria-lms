@@ -9,11 +9,19 @@ export function useSSENotifications() {
   const user = useAppStore((s) => s.user);
   const locale = useAppStore((s) => s.locale);
   const addNotification = useAppStore((s) => s.addNotification);
+  const fetchNotifications = useAppStore((s) => s.fetchNotifications);
+  const hasFetchedRef = useRef(false);
 
   useEffect(() => {
     if (!user) return;
 
     let retryDelay = 1000;
+
+    // Fetch existing notifications from server on mount
+    if (!hasFetchedRef.current) {
+      hasFetchedRef.current = true;
+      fetchNotifications();
+    }
 
     function connect() {
       if (eventSourceRef.current) {
