@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
   const session = await getAuthSession();
   if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
   }
 
   try {
@@ -48,9 +48,9 @@ export async function GET(request: NextRequest) {
       unreadCount,
     });
   } catch (error) {
-    console.error("Error fetching notifications:", error);
+    console.error("Ошибка получения уведомлений:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Внутренняя ошибка сервера" },
       { status: 500 }
     );
   }
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
 export async function DELETE(_request: NextRequest) {
   const session = await getAuthSession();
   if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
   }
 
   try {
@@ -75,9 +75,9 @@ export async function DELETE(_request: NextRequest) {
 
     return NextResponse.json({ deleted: result.count });
   } catch (error) {
-    console.error("Error deleting old notifications:", error);
+    console.error("Ошибка удаления старых уведомлений:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Внутренняя ошибка сервера" },
       { status: 500 }
     );
   }

@@ -115,6 +115,13 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
 };
 
+// Validate NEXTAUTH_SECRET at startup — insecure default is dangerous in production
+if (process.env.NODE_ENV === "production" && !process.env.NEXTAUTH_SECRET) {
+  throw new Error(
+    "NEXTAUTH_SECRET must be set in production. Generate one with: openssl rand -base64 32"
+  );
+}
+
 /**
  * Typed wrapper for getServerSession to avoid repeating
  * `as ExtendedSession | null` across API routes.

@@ -6,14 +6,7 @@ export function addClient(userId: string, controller: ReadableStreamDefaultContr
   if (!clients.has(userId)) {
     clients.set(userId, new Set());
   }
-  const existing = clients.get(userId);
-  if (existing) {
-    existing.add(controller);
-  } else {
-    const set = new Set<ReadableStreamDefaultController>();
-    set.add(controller);
-    clients.set(userId, set);
-  }
+  clients.get(userId)!.add(controller);
 
   return () => {
     clients.get(userId)?.delete(controller);

@@ -23,13 +23,13 @@ export async function POST(req: NextRequest) {
   if (blocked) return blocked;
   const session = await getAuthSession();
   if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
   }
 
   const isAdmin = session.user.role === "admin";
   const isTeacher = session.user.role === "teacher";
   if (!isAdmin && !isTeacher) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
   }
 
   if (!isS3Available()) {
@@ -65,14 +65,7 @@ export async function POST(req: NextRequest) {
     const key = makeFileKey(folder, file.name);
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    if (!s3Client) {
-      return NextResponse.json(
-        { error: "Хранилище недоступно" },
-        { status: 503 }
-      );
-    }
-
-    await s3Client.send(
+    await s3Client!.send(
       new PutObjectCommand({
         Bucket: S3_BUCKET,
         Key: key,

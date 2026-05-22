@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 export async function GET(request: NextRequest) {
   const session = await getAuthSession();
   if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
   }
 
   try {
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
     if (!courseId) {
       return NextResponse.json(
-        { error: "courseId query parameter is required" },
+        { error: "Необходимо указать courseId" },
         { status: 400 }
       );
     }
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
 
     if (!certificate) {
       return NextResponse.json(
-        { error: "Certificate not found for this course" },
+        { error: "Сертификат для этого курса не найден" },
         { status: 404 }
       );
     }
@@ -56,9 +56,9 @@ export async function GET(request: NextRequest) {
       userName: session.user.name || session.user.email,
     });
   } catch (error) {
-    console.error("Error fetching certificate:", error);
+    console.error("Ошибка получения сертификата:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Внутренняя ошибка сервера" },
       { status: 500 }
     );
   }

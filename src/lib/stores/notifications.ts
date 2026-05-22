@@ -81,7 +81,8 @@ export const createNotificationsSlice: StateCreator<NotificationsSlice, [], [], 
         save("maestria-notifications", data.notifications);
         set({ notifications: data.notifications });
       }
-    } catch {
+    } catch (err) {
+      console.error("Failed to fetch notifications from server, using cached data:", err);
       // fallback to local storage
     }
   },

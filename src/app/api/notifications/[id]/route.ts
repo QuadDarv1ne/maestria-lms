@@ -11,7 +11,7 @@ export async function PATCH(
 ) {
   const session = await getAuthSession();
   if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
   }
 
   try {
@@ -23,13 +23,13 @@ export async function PATCH(
 
     if (!notification) {
       return NextResponse.json(
-        { error: "Notification not found" },
+        { error: "Уведомление не найдено" },
         { status: 404 }
       );
     }
 
     if (notification.userId !== session.user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
     }
 
     const body = await request.json();
@@ -56,9 +56,9 @@ export async function PATCH(
       unreadCount,
     });
   } catch (error) {
-    console.error("Error updating notification:", error);
+    console.error("Ошибка обновления уведомления:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Внутренняя ошибка сервера" },
       { status: 500 }
     );
   }
@@ -70,7 +70,7 @@ export async function DELETE(
 ) {
   const session = await getAuthSession();
   if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
   }
 
   try {
@@ -82,22 +82,22 @@ export async function DELETE(
 
     if (!notification) {
       return NextResponse.json(
-        { error: "Notification not found" },
+        { error: "Уведомление не найдено" },
         { status: 404 }
       );
     }
 
     if (notification.userId !== session.user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
     }
 
     await db.notification.delete({ where: { id } });
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("Error deleting notification:", error);
+    console.error("Ошибка удаления уведомления:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Внутренняя ошибка сервера" },
       { status: 500 }
     );
   }

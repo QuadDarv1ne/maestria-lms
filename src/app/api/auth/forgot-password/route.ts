@@ -16,6 +16,7 @@ const resetPasswordSchema = z.object({
 });
 
 const checkRateLimit = rateLimit("forgotPassword", RATE_LIMITS.forgotPassword);
+const checkResetRateLimit = rateLimit("resetPassword", RATE_LIMITS.forgotPassword);
 
 // POST: Запрос на сброс пароля
 export async function POST(request: NextRequest) {
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
 
 // PUT: Сброс пароля с использованием токена
 export async function PUT(request: NextRequest) {
-  const blocked = checkRateLimit(request);
+  const blocked = checkResetRateLimit(request);
   if (blocked) return blocked;
 
   try {

@@ -12,6 +12,14 @@ export function useSSENotifications() {
   const fetchNotifications = useAppStore((s) => s.fetchNotifications);
   const hasFetchedRef = useRef(false);
 
+  // Keep refs always up-to-date so the SSE handler uses latest callbacks
+  const addNotificationRef = useRef(addNotification);
+  const fetchNotificationsRef = useRef(fetchNotifications);
+  useEffect(() => {
+    addNotificationRef.current = addNotification;
+    fetchNotificationsRef.current = fetchNotifications;
+  }, [addNotification, fetchNotifications]);
+
   useEffect(() => {
     if (!user) return;
 
@@ -20,7 +28,7 @@ export function useSSENotifications() {
     // Fetch existing notifications from server on mount
     if (!hasFetchedRef.current) {
       hasFetchedRef.current = true;
-      fetchNotifications();
+      fetchNotificationsRef.current();
     }
 
     function connect() {
@@ -35,10 +43,10 @@ export function useSSENotifications() {
         try {
           const data = JSON.parse(event.data);
           if (data.type === "notification") {
-            addNotification(data.notification);
+            addNotificationRef.current(data.notification);
           }
-        } catch {
-          // ignore parse errors
+        } catch (err) {
+          console.error("SSE message parse error:", err);
         }
       };
 
@@ -68,5 +76,5 @@ export function useSSENotifications() {
         reconnectTimerRef.current = null;
       }
     };
-  }, [user?.id, locale]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user?.id, locale]);
 }

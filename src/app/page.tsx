@@ -39,9 +39,8 @@ export default function Page() {
             });
           }
         }
-      } catch (e) {
-        // Session not found — user is not authenticated
-        console.warn("Session not found, user is not authenticated:", e);
+      } catch {
+        // User is not authenticated — proceed without session
       }
     };
 

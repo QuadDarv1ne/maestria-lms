@@ -3,10 +3,12 @@ import { getAuthSession } from "@/lib/auth";
 import { createNotification } from "@/lib/notifications";
 import type { CreateNotificationInput } from "@/lib/notifications";
 
+export const runtime = "nodejs";
+
 export async function POST(req: NextRequest) {
   const session = await getAuthSession();
   if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
   }
 
   try {
@@ -15,7 +17,7 @@ export async function POST(req: NextRequest) {
 
     if (!input.userId || !input.type || !input.title || !input.message) {
       return NextResponse.json(
-        { error: "Missing required fields: userId, type, title, message" },
+        { error: "Необходимо указать userId, type, title и message" },
         { status: 400 }
       );
     }
@@ -24,6 +26,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, notification });
   } catch {
-    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    return NextResponse.json({ error: "Неверный запрос" }, { status: 400 });
   }
 }
