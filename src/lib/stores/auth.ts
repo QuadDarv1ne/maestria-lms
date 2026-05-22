@@ -11,7 +11,6 @@ export interface UserData {
 export interface AuthSlice {
   user: UserData | null;
   setUser: (user: UserData | null) => void;
-  logout: () => void;
 }
 
 export const createAuthSlice: StateCreator<AuthSlice, [], [], AuthSlice> = (set) => ({
@@ -19,17 +18,5 @@ export const createAuthSlice: StateCreator<AuthSlice, [], [], AuthSlice> = (set)
 
   setUser: (user: UserData | null) => {
     set({ user });
-  },
-
-  logout: () => {
-    if (typeof window !== "undefined") {
-      try {
-        window.localStorage.removeItem("maestria-favorites");
-        window.localStorage.removeItem("maestria-notifications");
-      } catch { /* safe to ignore */ }
-    }
-    set({
-      user: null,
-    });
   },
 });

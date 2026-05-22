@@ -7,11 +7,11 @@ export const runtime = "nodejs";
 export async function GET(_request: NextRequest) {
   const session = await getAuthSession();
   if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
   }
 
   if (session.user.role !== "teacher" && session.user.role !== "admin") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
   }
 
   try {
@@ -144,9 +144,9 @@ export async function GET(_request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error fetching teacher stats:", error);
+    console.error("Ошибка получения статистики преподавателя:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Внутренняя ошибка сервера" },
       { status: 500 }
     );
   }

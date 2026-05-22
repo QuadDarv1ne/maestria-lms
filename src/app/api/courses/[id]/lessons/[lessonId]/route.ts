@@ -317,14 +317,16 @@ export async function POST(
 
           // Auto-create certificate
           if (course.hasCertificate) {
-            const certNumber = `MAE-${new Date().getFullYear()}-${userId.slice(0, 4).toUpperCase()}-${courseId.slice(0, 4).toUpperCase()}`;
-            db.certificate.create({
+            const year = new Date().getFullYear();
+            const uniqueSuffix = crypto.randomUUID().slice(0, 8).toUpperCase();
+            const certNumber = `MAE-${year}-${uniqueSuffix}`;
+            await db.certificate.create({
               data: {
                 userId,
                 courseId,
                 certificateNumber: certNumber,
               },
-            }).catch((err) => console.error("Failed to auto-create certificate:", err));
+            });
           }
         }
       }

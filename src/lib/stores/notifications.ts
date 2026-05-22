@@ -57,15 +57,10 @@ export const createNotificationsSlice: StateCreator<NotificationsSlice, [], [], 
     save("maestria-notifications", updated);
     set({ notifications: updated });
 
-    Promise.all(
-      get().notifications.map((n) =>
-        fetch(`/api/notifications/${n.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ read: true }),
-        }).catch((err) => console.error("Failed to mark notification as read on server:", err))
-      )
-    ).catch((err) => console.error("Failed to mark all notifications as read:", err));
+    fetch("/api/notifications/mark-all", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+    }).catch((err) => console.error("Failed to mark all notifications as read on server:", err));
   },
 
   unreadNotificationsCount: (): number => {

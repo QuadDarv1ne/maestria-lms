@@ -87,8 +87,34 @@ export function TeacherDashboard() {
       navigate("home");
       return;
     }
-    fetchStats();
-  }, [user, navigate, fetchStats]);
+    let cancelled = false;
+    const wrappedFetch = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch("/api/teacher/stats");
+        if (cancelled) return;
+        if (!res.ok) {
+          if (res.status === 403) {
+            navigate("home");
+            return;
+          }
+          throw new Error("Failed to load stats");
+        }
+        const data = await res.json();
+        setCourses(data.courses);
+        setStats(data.stats);
+      } catch {
+        if (!cancelled) setError("Ошибка загрузки данных");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    wrappedFetch();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, navigate]);
 
   if (!user) return null;
 

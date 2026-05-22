@@ -1,12 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getAuthSession } from "@/lib/auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
+
+const checkRateLimit = rateLimit("certificates", RATE_LIMITS.default);
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const blocked = checkRateLimit(_request);
+  if (blocked) return blocked;
+
+  const session = await getAuthSession();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
+  }
+
   try {
     const { id } = await params;
 
@@ -33,9 +45,14 @@ export async function GET(
 
     if (!certificate) {
       return NextResponse.json(
-        { error: "Certificate not found" },
+        { error: "Сертификат не найден" },
         { status: 404 }
       );
+    }
+
+    // Only allow the certificate owner or admins to view full details
+    if (certificate.userId !== session.user.id && session.user.role !== "admin") {
+      return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
     }
 
     return NextResponse.json({
@@ -48,9 +65,9 @@ export async function GET(
       userEmail: certificate.user.email,
     });
   } catch (error) {
-    console.error("Error fetching certificate:", error);
+    console.error("Ошибка получения сертификата:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Внутренняя ошибка сервера" },
       { status: 500 }
     );
   }

@@ -11,7 +11,7 @@ import {
   type NotificationItem,
 } from "./stores/notifications";
 
-type AppStore = AuthSlice & UISlice & CatalogSlice & FavoritesSlice & NotificationsSlice;
+type AppStore = AuthSlice & UISlice & CatalogSlice & FavoritesSlice & NotificationsSlice & { logout: () => void };
 
 export const useAppStore = create<AppStore>()((set, get, api) => {
   const auth = createAuthSlice(set, get, api);

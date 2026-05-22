@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
       type: file.type,
     });
   } catch (error) {
-    console.error("Upload error:", error);
+    console.error("Ошибка загрузки файла:", error);
     return NextResponse.json(
       { error: "Ошибка загрузки файла" },
       { status: 500 }

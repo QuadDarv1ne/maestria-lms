@@ -4,6 +4,7 @@ import { getAuthSession } from "@/lib/auth";
 import { z } from "zod";
 import { authenticator } from "otplib";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import bcrypt from "bcryptjs";
 
 export const runtime = "nodejs";
 
@@ -70,6 +71,11 @@ export async function POST(request: NextRequest) {
 
     if (user.twoFactorEnabled) {
       return NextResponse.json({ error: "2FA уже включена" }, { status: 400 });
+    }
+
+    // Verify password before allowing 2FA setup
+    if (!user.passwordHash || !(await bcrypt.compare(body.password, user.passwordHash))) {
+      return NextResponse.json({ error: "Неверный пароль" }, { status: 401 });
     }
 
     // Генерируем секрет
@@ -179,6 +185,11 @@ export async function DELETE(request: NextRequest) {
 
     if (!user.twoFactorEnabled) {
       return NextResponse.json({ error: "2FA не включена" }, { status: 400 });
+    }
+
+    // Verify password before allowing 2FA disable
+    if (!user.passwordHash || !(await bcrypt.compare(body.password, user.passwordHash))) {
+      return NextResponse.json({ error: "Неверный пароль" }, { status: 401 });
     }
 
     // Verify the current 2FA code to ensure the user has access to their authenticator device
