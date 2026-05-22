@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-errors";
+import { log } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -54,8 +55,8 @@ export async function POST() {
       try { await db.$executeRawUnsafe(`DELETE FROM sqlite_sequence`); } catch { /* safe to ignore */ }
       await db.$executeRawUnsafe(`PRAGMA foreign_keys = ON`);
     }
-  } catch {
-    // Cleanup failed, but seed can continue
+  } catch (cleanupError) {
+    log.warn("Database cleanup before seed failed, proceeding anyway", { error: String(cleanupError) });
   }
 
   // ============ КАТЕГОРИИ ============

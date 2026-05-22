@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import { createNotification } from "@/lib/notifications";
 import type { CreateNotificationInput } from "@/lib/notifications";
+import { handleApiError } from "@/lib/api-errors";
 
 export const runtime = "nodejs";
 
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
     const notification = await createNotification(input);
 
     return NextResponse.json({ ok: true, notification });
-  } catch {
-    return NextResponse.json({ error: "Неверный запрос" }, { status: 400 });
+  } catch (error) {
+    return handleApiError(error, { route: "notifications/publish" });
   }
 }
