@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { handleApiError } from "@/lib/api-errors";
 
 export const runtime = "nodejs";
 
@@ -220,10 +221,6 @@ export async function GET(
       },
     }, { status: 200 });
   } catch (error) {
-    console.error("Ошибка получения курса:", error);
-    return NextResponse.json(
-      { error: "Внутренняя ошибка сервера" },
-      { status: 500 }
-    );
+    return handleApiError(error, { route: "courses/[id]" });
   }
 }

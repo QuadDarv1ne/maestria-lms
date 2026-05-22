@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import { getAuthSession } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { handleApiError } from "@/lib/api-errors";
 
 export const runtime = "nodejs";
 
@@ -73,11 +74,7 @@ export async function GET(request: NextRequest) {
       },
     }, { status: 200 });
   } catch (error) {
-    console.error("Ошибка получения курсов (админ):", error);
-    return NextResponse.json(
-      { error: "Внутренняя ошибка сервера" },
-      { status: 500 }
-    );
+    return handleApiError(error, { route: "admin/courses GET" });
   }
 }
 
@@ -264,10 +261,6 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Ошибка создания курса:", error);
-    return NextResponse.json(
-      { error: "Внутренняя ошибка сервера" },
-      { status: 500 }
-    );
+    return handleApiError(error, { route: "admin/courses POST" });
   }
 }

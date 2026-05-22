@@ -4,6 +4,8 @@ import { getAuthSession } from "@/lib/auth";
 import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
+import { handleApiError } from "@/lib/api-errors";
+import { log } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -175,11 +177,7 @@ export async function GET(
       },
     }, { status: 200 });
   } catch (error) {
-    console.error("Ошибка получения шага:", error);
-    return NextResponse.json(
-      { error: "Внутренняя ошибка сервера" },
-      { status: 500 }
-    );
+    return handleApiError(error, { route: "courses/[id]/lessons/[lessonId] GET" });
   }
 }
 
@@ -313,7 +311,7 @@ export async function POST(
             title: "Курс пройден!",
             message: `Поздравляем! Вы завершили курс "${course.title}"`,
             link: `course/${courseId}`,
-          }).catch((err) => console.error("Failed to send completion notification:", err));
+          }).catch((err) => log.error("Failed to send completion notification", { error: err }));
 
           // Auto-create certificate
           if (course.hasCertificate) {
@@ -340,10 +338,6 @@ export async function POST(
       { status: 200 }
     );
   } catch (error) {
-    console.error("Ошибка обновления прогресса:", error);
-    return NextResponse.json(
-      { error: "Внутренняя ошибка сервера" },
-      { status: 500 }
-    );
+    return handleApiError(error, { route: "courses/[id]/lessons/[lessonId] POST" });
   }
 }

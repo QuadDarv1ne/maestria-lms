@@ -3,6 +3,7 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getAuthSession } from "@/lib/auth";
 import { s3Client, S3_BUCKET, toCdnUrl, makeFileKey, isS3Available } from "@/lib/s3";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { handleApiError } from "@/lib/api-errors";
 
 const ALLOWED_TYPES = [
   "image/jpeg",
@@ -88,10 +89,6 @@ export async function POST(req: NextRequest) {
       type: file.type,
     });
   } catch (error) {
-    console.error("Ошибка загрузки файла:", error);
-    return NextResponse.json(
-      { error: "Ошибка загрузки файла" },
-      { status: 500 }
-    );
+    return handleApiError(error, { route: "upload" });
   }
 }

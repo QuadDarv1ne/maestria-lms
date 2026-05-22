@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, Prisma } from "@/lib/db";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { handleApiError } from "@/lib/api-errors";
 
 export const runtime = "nodejs";
 
@@ -157,10 +158,6 @@ export async function GET(request: NextRequest) {
       },
     }, { status: 200 });
   } catch (error) {
-    console.error("Ошибка получения курсов:", error);
-    return NextResponse.json(
-      { error: "Внутренняя ошибка сервера" },
-      { status: 500 }
-    );
+    return handleApiError(error, { route: "courses" });
   }
 }

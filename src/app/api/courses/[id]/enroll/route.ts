@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
+import { handleApiError } from "@/lib/api-errors";
+import { log } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -160,16 +162,12 @@ export async function POST(
         title: "Новый курс",
         message: `Вы записаны на курс "${course.title}"`,
         link: `course/${resolvedCourseId}`,
-      }).catch((err) => console.error("Failed to send enrollment notification:", err));
+      }).catch((err) => log.error("Failed to send enrollment notification", { error: err }));
     }
 
     const { status, ...responseData } = result;
     return NextResponse.json(responseData, { status });
   } catch (error) {
-    console.error("Ошибка записи на курс:", error);
-    return NextResponse.json(
-      { error: "Внутренняя ошибка сервера" },
-      { status: 500 }
-    );
+    return handleApiError(error, { route: "courses/[id]/enroll" });
   }
 }

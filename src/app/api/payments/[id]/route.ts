@@ -63,8 +63,10 @@ export async function GET(
 ) {
   const blocked = checkPaymentGetRateLimit(request);
   if (blocked) return blocked;
+  
+  const { id } = await params;
+  
   try {
-    const { id } = await params;
     const session = await getAuthSession();
 
     if (!session?.user) {
@@ -107,7 +109,7 @@ export async function GET(
 
     return NextResponse.json({ payment }, { status: 200 });
   } catch (error) {
-    log.error("Failed to fetch payment", { paymentId: params.toString(), error });
+    log.error("Failed to fetch payment", { paymentId: id, error });
     return NextResponse.json(
       { error: "Внутренняя ошибка сервера" },
       { status: 500 }

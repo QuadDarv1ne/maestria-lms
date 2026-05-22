@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import { getAuthSession } from "@/lib/auth";
 import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { handleApiError } from "@/lib/api-errors";
 
 export const runtime = "nodejs";
 
@@ -114,11 +115,7 @@ export async function GET(request: NextRequest) {
       progress,
     }, { status: 200 });
   } catch (error) {
-    console.error("Ошибка получения профиля:", error);
-    return NextResponse.json(
-      { error: "Внутренняя ошибка сервера" },
-      { status: 500 }
-    );
+    return handleApiError(error, { route: "profile GET" });
   }
 }
 
@@ -172,10 +169,6 @@ export async function PUT(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error("Ошибка обновления профиля:", error);
-    return NextResponse.json(
-      { error: "Внутренняя ошибка сервера" },
-      { status: 500 }
-    );
+    return handleApiError(error, { route: "profile PUT" });
   }
 }

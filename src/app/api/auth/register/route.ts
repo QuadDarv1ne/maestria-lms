@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
+import { handleApiError } from "@/lib/api-errors";
+import { log } from "@/lib/logger";
 
 // Схема валидации с использованием Zod
 import { z } from "zod";
@@ -75,17 +77,13 @@ export async function POST(request: NextRequest) {
       title: "Добро пожаловать!",
       message: `Рады видеть вас, ${user.name}! Начните с каталога курсов.`,
       link: "catalog",
-    }).catch((err) => console.error("Failed to send welcome notification:", err));
+    }).catch((err) => log.error("Failed to send welcome notification", { error: err }));
 
     return NextResponse.json(
       { message: "Регистрация успешна", user },
       { status: 201 }
     );
   } catch (error) {
-    console.error("Ошибка регистрации:", error);
-    return NextResponse.json(
-      { error: "Внутренняя ошибка сервера" },
-      { status: 500 }
-    );
+    return handleApiError(error, { route: "auth/register" });
   }
 }

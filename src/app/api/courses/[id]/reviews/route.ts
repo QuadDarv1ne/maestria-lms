@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
+import { handleApiError } from "@/lib/api-errors";
+import { log } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -75,11 +77,7 @@ export async function GET(
       { status: 200 }
     );
   } catch (error) {
-    console.error("Ошибка получения отзывов:", error);
-    return NextResponse.json(
-      { error: "Внутренняя ошибка сервера" },
-      { status: 500 }
-    );
+    return handleApiError(error, { route: "courses/[id]/reviews GET" });
   }
 }
 
@@ -245,7 +243,7 @@ export async function POST(
           title: "Новый отзыв",
           message: `Студент оставил отзыв на курс "${courseData.title}"`,
           link: `course/${courseId}`,
-        }).catch((err) => console.error("Failed to send review notification:", err));
+        }).catch((err) => log.error("Failed to send review notification", { error: err }));
       }
     }
 
@@ -257,10 +255,6 @@ export async function POST(
       { status: result.wasUpdated ? 200 : 201 }
     );
   } catch (error) {
-    console.error("Ошибка создания отзыва:", error);
-    return NextResponse.json(
-      { error: "Внутренняя ошибка сервера" },
-      { status: 500 }
-    );
+    return handleApiError(error, { route: "courses/[id]/reviews POST" });
   }
 }

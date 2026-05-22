@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { pushUnreadCount } from "@/lib/sse";
+import { handleApiError } from "@/lib/api-errors";
 
 export const runtime = "nodejs";
 
@@ -56,11 +57,7 @@ export async function PATCH(
       unreadCount,
     });
   } catch (error) {
-    console.error("Ошибка обновления уведомления:", error);
-    return NextResponse.json(
-      { error: "Внутренняя ошибка сервера" },
-      { status: 500 }
-    );
+    return handleApiError(error, { route: "notifications/[id] PATCH" });
   }
 }
 
@@ -95,10 +92,6 @@ export async function DELETE(
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("Ошибка удаления уведомления:", error);
-    return NextResponse.json(
-      { error: "Внутренняя ошибка сервера" },
-      { status: 500 }
-    );
+    return handleApiError(error, { route: "notifications/[id] DELETE" });
   }
 }

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { authenticator } from "otplib";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import bcrypt from "bcryptjs";
+import { handleApiError } from "@/lib/api-errors";
 
 export const runtime = "nodejs";
 
@@ -93,8 +94,7 @@ export async function POST(request: NextRequest) {
       otpauthUrl,
     }, { status: 200 });
   } catch (error) {
-    console.error("Ошибка включения 2FA:", error);
-    return NextResponse.json({ error: "Внутренняя ошибка сервера" }, { status: 500 });
+    return handleApiError(error, { route: "auth/2fa POST" });
   }
 }
 
@@ -150,8 +150,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ message: "Двухфакторная аутентификация успешно включена" }, { status: 200 });
   } catch (error) {
-    console.error("Ошибка подтверждения 2FA:", error);
-    return NextResponse.json({ error: "Внутренняя ошибка сервера" }, { status: 500 });
+    return handleApiError(error, { route: "auth/2fa PUT" });
   }
 }
 
@@ -215,7 +214,6 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ message: "Двухфакторная аутентификация отключена" }, { status: 200 });
   } catch (error) {
-    console.error("Ошибка отключения 2FA:", error);
-    return NextResponse.json({ error: "Внутренняя ошибка сервера" }, { status: 500 });
+    return handleApiError(error, { route: "auth/2fa DELETE" });
   }
 }
