@@ -3,10 +3,12 @@ import type { NotificationItem } from "./stores/notifications";
 const clients = new Map<string, Set<ReadableStreamDefaultController>>();
 
 export function addClient(userId: string, controller: ReadableStreamDefaultController) {
-  if (!clients.has(userId)) {
-    clients.set(userId, new Set());
+  let userClients = clients.get(userId);
+  if (!userClients) {
+    userClients = new Set();
+    clients.set(userId, userClients);
   }
-  clients.get(userId)!.add(controller);
+  userClients.add(controller);
 
   return () => {
     clients.get(userId)?.delete(controller);

@@ -39,6 +39,13 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  if (!s3Client) {
+    return NextResponse.json(
+      { error: "S3 клиент не инициализирован" },
+      { status: 500 }
+    );
+  }
+
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
@@ -65,7 +72,7 @@ export async function POST(req: NextRequest) {
     const key = makeFileKey(folder, file.name);
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    await s3Client!.send(
+    await s3Client.send(
       new PutObjectCommand({
         Bucket: S3_BUCKET,
         Key: key,
