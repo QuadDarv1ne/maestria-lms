@@ -7,14 +7,6 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "iili.io",
-      },
-      {
-        protocol: "https",
-        hostname: "freeimage.host",
-      },
-      {
-        protocol: "https",
         hostname: "api.dicebear.com",
       },
       {
