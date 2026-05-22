@@ -85,35 +85,47 @@ export async function POST(
       }
     }
 
-    // Проверяем пререквизиты
+    // Проверяем пререквизиты (outside transaction - read-only check)
+    let missingPrereqs: { id: string; title: string }[] = [];
     if (course.prerequisites) {
       try {
         const prerequisites: string[] = JSON.parse(course.prerequisites);
         if (prerequisites.length > 0) {
-          // Проверяем что пользователь прошел все пререквизиты
-          const completedPrereqs = await db.enrollment.count({
+          // Fetch all enrollments to check which prerequisites are completed
+          const completedEnrollments = await db.enrollment.findMany({
             where: {
               userId,
               courseId: { in: prerequisites },
               status: "completed",
             },
+            select: { courseId: true },
           });
 
-          if (completedPrereqs < prerequisites.length) {
-            return NextResponse.json(
-              { 
-                error: "Необходимо сначала пройти курсы-пререквизиты",
-                missingPrerequisites: prerequisites.filter(
-                  (prereqId) => !completedPrereqs
-                ),
-              },
-              { status: 400 }
-            );
+          const completedCourseIds = new Set(completedEnrollments.map(e => e.courseId));
+          const missingIds = prerequisites.filter(id => !completedCourseIds.has(id));
+
+          if (missingIds.length > 0) {
+            // Fetch missing course details for better error message
+            const missingCourses = await db.course.findMany({
+              where: { id: { in: missingIds } },
+              select: { id: true, title: true },
+            });
+            missingPrereqs = missingCourses.map(c => ({ id: c.id, title: c.title }));
           }
         }
       } catch {
         // Если не удалось распарсить пререквизиты, пропускаем проверку
       }
+    }
+
+    if (missingPrereqs.length > 0) {
+      return NextResponse.json(
+        {
+          error: "Необходимо сначала пройти курсы-пререквизиты",
+          missingPrerequisites: missingPrereqs,
+        },
+        { status: 400 }
+      );
     }
 
     // Use resolved course.id for all DB operations (courseId param could be a slug)

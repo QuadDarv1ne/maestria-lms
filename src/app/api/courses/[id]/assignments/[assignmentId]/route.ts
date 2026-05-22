@@ -7,7 +7,7 @@ import { z } from "zod";
 
 export const runtime = "nodejs";
 
-const checkRateLimit = rateLimit("submission", RATE_LIMITS.user);
+const checkRateLimit = rateLimit("submission", RATE_LIMITS.default);
 
 // Base schema for all submissions
 const baseSubmissionSchema = z.object({
