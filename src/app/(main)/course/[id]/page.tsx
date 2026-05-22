@@ -16,7 +16,7 @@ export async function generateMetadata({
     if (res.ok) {
       const course = await res.json();
       return {
-        title: `${course.name} — Maestria`,
+        title: `${course.title} — Maestria`,
         description: course.description,
       };
     }

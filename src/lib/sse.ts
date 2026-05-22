@@ -30,12 +30,16 @@ export function pushNotification(userId: string, notification: NotificationItem)
   const data = JSON.stringify({ type: "notification", notification });
   const encoder = new TextEncoder();
 
+  const failed: ReadableStreamDefaultController[] = [];
   for (const controller of userClients) {
     try {
       controller.enqueue(encoder.encode(`data: ${data}\n\n`));
     } catch {
-      userClients.delete(controller);
+      failed.push(controller);
     }
+  }
+  for (const controller of failed) {
+    userClients.delete(controller);
   }
 }
 
@@ -46,11 +50,15 @@ export function pushUnreadCount(userId: string, count: number) {
   const data = JSON.stringify({ type: "unreadCount", count });
   const encoder = new TextEncoder();
 
+  const failed: ReadableStreamDefaultController[] = [];
   for (const controller of userClients) {
     try {
       controller.enqueue(encoder.encode(`data: ${data}\n\n`));
     } catch {
-      userClients.delete(controller);
+      failed.push(controller);
     }
+  }
+  for (const controller of failed) {
+    userClients.delete(controller);
   }
 }
