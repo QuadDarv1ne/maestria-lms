@@ -147,6 +147,17 @@ export function Header() {
               {t("nav.achievements", locale)}
             </Button>
           )}
+          {user?.role === "teacher" && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("teacher")}
+              className="text-sm"
+            >
+              <GraduationCap className="w-4 h-4 mr-1" />
+              {t("nav.teacher", locale)}
+            </Button>
+          )}
           {user?.role === "admin" && (
             <Button
               variant="ghost"
@@ -286,6 +297,12 @@ export function Header() {
                     </span>
                   )}
                 </DropdownMenuItem>
+                {user.role === "teacher" && (
+                  <DropdownMenuItem onClick={() => navigate("teacher")}>
+                    <GraduationCap className="mr-2 h-4 w-4" />
+                    {t("nav.teacher", locale)}
+                  </DropdownMenuItem>
+                )}
                 {user.role === "admin" && (
                   <DropdownMenuItem onClick={() => navigate("admin")}>
                     <LayoutDashboard className="mr-2 h-4 w-4" />
@@ -401,6 +418,19 @@ export function Header() {
                   </span>
                 )}
               </Button>
+              {user.role === "teacher" && (
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start"
+                  onClick={() => {
+                    navigate("teacher");
+                    setSidebarOpen(false);
+                  }}
+                >
+                  <GraduationCap className="w-4 h-4 mr-2" />
+                  {t("nav.teacher", locale)}
+                </Button>
+              )}
               {user.role === "admin" && (
                 <Button
                   variant="ghost"

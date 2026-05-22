@@ -10,6 +10,7 @@ const ROUTE_MAP: Record<string, string> = {
   catalog: "/catalog",
   profile: "/profile",
   admin: "/admin",
+  teacher: "/teacher",
   about: "/about",
   achievements: "/achievements",
   notifications: "/notifications",
