@@ -50,6 +50,72 @@ export async function POST(
       );
     }
 
+    // Проверяем видимость курса
+    if (course.visibility === "private") {
+      // Приватные курсы доступны только по приглашению (через админку)
+      return NextResponse.json(
+        { error: "Запись на этот курс доступна только по приглашению" },
+        { status: 403 }
+      );
+    }
+
+    // Проверяем дату начала курса
+    if (course.startDate && new Date() < new Date(course.startDate)) {
+      return NextResponse.json(
+        { error: `Запись на курс откроется ${new Date(course.startDate).toLocaleDateString("ru-RU")}` },
+        { status: 400 }
+      );
+    }
+
+    // Проверяем дату окончания курса
+    if (course.endDate && new Date() > new Date(course.endDate)) {
+      return NextResponse.json(
+        { error: "Запись на курс закрыта" },
+        { status: 400 }
+      );
+    }
+
+    // Проверяем максимальное количество студентов
+    if (course.maxStudents && course.maxStudents > 0) {
+      if (course.studentCount >= course.maxStudents) {
+        return NextResponse.json(
+          { error: "Достигнут лимит студентов на курсе" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Проверяем пререквизиты
+    if (course.prerequisites) {
+      try {
+        const prerequisites: string[] = JSON.parse(course.prerequisites);
+        if (prerequisites.length > 0) {
+          // Проверяем что пользователь прошел все пререквизиты
+          const completedPrereqs = await db.enrollment.count({
+            where: {
+              userId,
+              courseId: { in: prerequisites },
+              status: "completed",
+            },
+          });
+
+          if (completedPrereqs < prerequisites.length) {
+            return NextResponse.json(
+              { 
+                error: "Необходимо сначала пройти курсы-пререквизиты",
+                missingPrerequisites: prerequisites.filter(
+                  (prereqId) => !completedPrereqs
+                ),
+              },
+              { status: 400 }
+            );
+          }
+        }
+      } catch {
+        // Если не удалось распарсить пререквизиты, пропускаем проверку
+      }
+    }
+
     // Use resolved course.id for all DB operations (courseId param could be a slug)
     const resolvedCourseId = course.id;
 

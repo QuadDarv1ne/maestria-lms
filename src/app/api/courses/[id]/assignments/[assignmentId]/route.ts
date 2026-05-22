@@ -9,14 +9,15 @@ export const runtime = "nodejs";
 
 const checkRateLimit = rateLimit("submission", RATE_LIMITS.user);
 
-const submitAssignmentSchema = z.object({
-  answer: z.string().min(1, "Ответ не может быть пустым"),
+// Base schema for all submissions
+const baseSubmissionSchema = z.object({
+  answer: z.union([z.string(), z.array(z.any()), z.record(z.any())]),
 });
 
 // POST: Submit an assignment answer
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string; assignmentId: string } }
+  { params }: { params: Promise<{ id: string; assignmentId: string }> }
 ) {
   const blocked = checkRateLimit(request);
   if (blocked) return blocked;
@@ -30,7 +31,7 @@ export async function POST(
       );
     }
 
-    const { id: courseId, assignmentId } = params;
+    const { id: courseId, assignmentId } = await params;
 
     // Проверяем что assignment существует и принадлежит курсу
     const assignment = await db.assignment.findFirst({
@@ -76,7 +77,7 @@ export async function POST(
     }
 
     const body = await request.json();
-    const validation = submitAssignmentSchema.safeParse(body);
+    const validation = baseSubmissionSchema.safeParse(body);
 
     if (!validation.success) {
       return NextResponse.json(
@@ -86,16 +87,20 @@ export async function POST(
     }
 
     const { answer } = validation.data;
+    const answerStr = typeof answer === "string" ? answer : JSON.stringify(answer);
 
-    // Определяем статус в зависимости от типа задания
-    let status = "submitted";
+    // Определяем статус и score в зависимости от типа задания
+    let status: string = "submitted";
+    let score: number | null = null;
+
     if (assignment.type === "quiz") {
       // Для quiz проверяем правильность ответа
       try {
         const correctAnswer = assignment.correctAnswer;
         if (correctAnswer) {
-          const userAnswer = JSON.parse(answer);
+          const userAnswer = typeof answer === "string" ? JSON.parse(answer) : answer;
           const correctAnswerParsed = JSON.parse(correctAnswer);
+          
           // Если все ответы совпадают - сразу ставим graded
           const isCorrect =
             Array.isArray(userAnswer) &&
@@ -105,10 +110,75 @@ export async function POST(
 
           if (isCorrect) {
             status = "graded";
+            score = 100;
+          } else {
+            // Частичный score за частичные ответы
+            const correctCount = userAnswer.filter((a: number) => correctAnswerParsed.includes(a)).length;
+            score = Math.round((correctCount / correctAnswerParsed.length) * 100);
+            status = "graded";
           }
         }
       } catch {
         // Если не удалось распарсить, оставляем submitted
+      }
+    } else if (assignment.type === "matching") {
+      // Auto-grading для matching
+      try {
+        const correctAnswer = assignment.correctAnswer;
+        if (correctAnswer) {
+          const userAnswer = typeof answer === "string" ? JSON.parse(answer) : answer;
+          const correctParsed = JSON.parse(correctAnswer);
+          
+          // Сравниваем пары
+          if (Array.isArray(userAnswer) && Array.isArray(correctParsed)) {
+            const isCorrect = userAnswer.every(
+              (pair: { left: string; right: string }, idx: number) =>
+                pair.left === correctParsed[idx]?.left && pair.right === correctParsed[idx]?.right
+            );
+            if (isCorrect) {
+              status = "graded";
+              score = 100;
+            } else {
+              const correctCount = userAnswer.filter(
+                (pair: { left: string; right: string }, idx: number) =>
+                  pair.left === correctParsed[idx]?.left && pair.right === correctParsed[idx]?.right
+              ).length;
+              score = Math.round((correctCount / correctParsed.length) * 100);
+              status = "graded";
+            }
+          }
+        }
+      } catch {
+        // Оставляем submitted
+      }
+    } else if (assignment.type === "ordering") {
+      // Auto-grading для ordering
+      try {
+        const correctAnswer = assignment.correctAnswer;
+        if (correctAnswer) {
+          const userAnswer = typeof answer === "string" ? JSON.parse(answer) : answer;
+          const correctParsed = JSON.parse(correctAnswer);
+          
+          // Сравниваем порядок
+          if (Array.isArray(userAnswer) && Array.isArray(correctParsed)) {
+            const isCorrect = userAnswer.every(
+              (item: string, idx: number) => item === correctParsed[idx]
+            );
+            if (isCorrect) {
+              status = "graded";
+              score = 100;
+            } else {
+              // Partial credit за правильные позиции
+              const correctCount = userAnswer.filter(
+                (item: string, idx: number) => item === correctParsed[idx]
+              ).length;
+              score = Math.round((correctCount / correctParsed.length) * 100);
+              status = "graded";
+            }
+          }
+        }
+      } catch {
+        // Оставляем submitted
       }
     }
 
@@ -123,19 +193,23 @@ export async function POST(
       create: {
         assignmentId,
         userId: session.user.id,
-        answer,
+        answer: answerStr,
         status,
+        score,
         maxScore: 100,
       },
       update: {
-        answer,
+        answer: answerStr,
         status,
-        // Сбрасываем оценку при повторной отправке
-        score: null,
-        grade: null,
-        feedback: null,
-        gradedAt: null,
-        gradedBy: null,
+        ...(score !== null && { score }),
+        // Сбрасываем оценку при повторной отправке если статус не graded
+        ...(status !== "graded" && {
+          score: null,
+          grade: null,
+          feedback: null,
+          gradedAt: null,
+          gradedBy: null,
+        }),
       },
     });
 
@@ -151,7 +225,7 @@ export async function POST(
 // GET: Get submission status for current user
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string; assignmentId: string } }
+  { params }: { params: Promise<{ id: string; assignmentId: string }> }
 ) {
   const blocked = checkRateLimit(request);
   if (blocked) return blocked;
@@ -165,7 +239,7 @@ export async function GET(
       );
     }
 
-    const { assignmentId } = params;
+    const { assignmentId } = await params;
 
     const submission = await db.assignmentSubmission.findUnique({
       where: {

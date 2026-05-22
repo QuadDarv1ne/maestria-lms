@@ -56,12 +56,12 @@ export function SettingsTab({ form, locale, onUpdateField, coursesList = [] }: S
         <CardHeader className="pb-4">
           <CardTitle className="text-lg flex items-center gap-2">
             <Calendar className="w-5 h-5 text-blue-700" />
-            Даты проведения
+            {t("courseEditor.settingsDates", locale)}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="startDate">Дата начала</Label>
+            <Label htmlFor="startDate">{t("courseEditor.startDate", locale)}</Label>
             <Input
               id="startDate"
               type="datetime-local"
@@ -70,7 +70,7 @@ export function SettingsTab({ form, locale, onUpdateField, coursesList = [] }: S
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="endDate">Дата окончания</Label>
+            <Label htmlFor="endDate">{t("courseEditor.endDate", locale)}</Label>
             <Input
               id="endDate"
               type="datetime-local"
@@ -80,10 +80,10 @@ export function SettingsTab({ form, locale, onUpdateField, coursesList = [] }: S
           </div>
           {form.startDate && form.endDate && (
             <Badge variant="secondary">
-              Длительность: {Math.ceil(
+              {t("courseEditor.daysDuration", locale).replace("{days}", String(Math.ceil(
                 (new Date(form.endDate).getTime() - new Date(form.startDate).getTime()) /
                   (1000 * 60 * 60 * 24)
-              )} дней
+              )))}
             </Badge>
           )}
         </CardContent>
@@ -94,12 +94,12 @@ export function SettingsTab({ form, locale, onUpdateField, coursesList = [] }: S
         <CardHeader className="pb-4">
           <CardTitle className="text-lg flex items-center gap-2">
             <Globe className="w-5 h-5 text-violet-600" />
-            Видимость и доступ
+            {t("courseEditor.settingsVisibility", locale)}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Видимость курса</Label>
+            <Label>{t("courseEditor.courseVisibility", locale)}</Label>
             <Select
               value={form.visibility}
               onValueChange={(v) => onUpdateField("visibility", v as CourseVisibility)}
@@ -108,33 +108,43 @@ export function SettingsTab({ form, locale, onUpdateField, coursesList = [] }: S
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {VISIBILITY_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    <div>
-                      <div className="font-medium">{opt.label}</div>
-                      <div className="text-xs text-muted-foreground">{opt.description}</div>
-                    </div>
-                  </SelectItem>
-                ))}
+                <SelectItem value="public">
+                  <div>
+                    <div className="font-medium">{t("courseEditor.visibilityPublic", locale)}</div>
+                    <div className="text-xs text-muted-foreground">{t("courseEditor.visibilityPublicDesc", locale)}</div>
+                  </div>
+                </SelectItem>
+                <SelectItem value="private">
+                  <div>
+                    <div className="font-medium">{t("courseEditor.visibilityPrivate", locale)}</div>
+                    <div className="text-xs text-muted-foreground">{t("courseEditor.visibilityPrivateDesc", locale)}</div>
+                  </div>
+                </SelectItem>
+                <SelectItem value="unlisted">
+                  <div>
+                    <div className="font-medium">{t("courseEditor.visibilityUnlisted", locale)}</div>
+                    <div className="text-xs text-muted-foreground">{t("courseEditor.visibilityUnlistedDesc", locale)}</div>
+                  </div>
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="maxStudents" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
-              Максимальное количество студентов
+              {t("courseEditor.maxStudents", locale)}
             </Label>
             <Input
               id="maxStudents"
               type="number"
               min={0}
-              placeholder="0 = без ограничения"
+              placeholder={t("courseEditor.maxStudentsPlaceholder", locale)}
               value={form.maxStudents || ""}
               onChange={(e) => onUpdateField("maxStudents", Number(e.target.value) || 0)}
             />
             {form.maxStudents > 0 && (
               <p className="text-xs text-muted-foreground">
-                Курс будет закрыт для записи после достижения лимита
+                {t("courseEditor.maxStudentsHint", locale)}
               </p>
             )}
           </div>
@@ -146,12 +156,12 @@ export function SettingsTab({ form, locale, onUpdateField, coursesList = [] }: S
         <CardHeader className="pb-4">
           <CardTitle className="text-lg flex items-center gap-2">
             <Globe className="w-5 h-5 text-amber-500" />
-            Язык курса
+            {t("courseEditor.settingsLanguage", locale)}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Основной язык курса</Label>
+            <Label>{t("courseEditor.courseLanguage", locale)}</Label>
             <Select
               value={form.language}
               onValueChange={(v) => onUpdateField("language", v)}
@@ -176,18 +186,18 @@ export function SettingsTab({ form, locale, onUpdateField, coursesList = [] }: S
         <CardHeader className="pb-4">
           <CardTitle className="text-lg flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-green-600" />
-            Предварительные требования
+            {t("courseEditor.settingsPrerequisites", locale)}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Курсы-пререквизиты</Label>
+            <Label>{t("courseEditor.prereqCourses", locale)}</Label>
             <Select
               value=""
               onValueChange={handleAddPrerequisite}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Добавить курс-пререквизит" />
+                <SelectValue placeholder={t("courseEditor.prereqAddPlaceholder", locale)} />
               </SelectTrigger>
               <SelectContent>
                 {coursesList
@@ -202,7 +212,7 @@ export function SettingsTab({ form, locale, onUpdateField, coursesList = [] }: S
           </div>
           {form.prerequisites.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs text-muted-foreground">Добавленные курсы:</p>
+              <p className="text-xs text-muted-foreground">{t("courseEditor.prereqAdded", locale)}</p>
               <div className="flex flex-wrap gap-2">
                 {form.prerequisites.map((prereqId) => (
                   <Badge key={prereqId} variant="secondary" className="flex items-center gap-1">
@@ -219,7 +229,7 @@ export function SettingsTab({ form, locale, onUpdateField, coursesList = [] }: S
             </div>
           )}
           <p className="text-xs text-muted-foreground">
-            Студенты должны пройти эти курсы перед записью на текущий курс
+            {t("courseEditor.prereqHint", locale)}
           </p>
         </CardContent>
       </Card>

@@ -25,6 +25,11 @@ import {
   RotateCcw,
   Lightbulb,
   GraduationCap,
+  ArrowUpDown,
+  Move,
+  Upload,
+  Pencil,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -35,7 +40,7 @@ import { StepSidebar } from "@/components/step-viewer/StepSidebar";
 interface StepData {
   id: string;
   title: string;
-  type: "video" | "text" | "coding" | "quiz" | "assignment";
+  type: "video" | "text" | "coding" | "quiz" | "assignment" | "matching" | "ordering" | "essay" | "file_upload";
   content: string | null;
   videoUrl: string | null;
   duration: number;
@@ -105,6 +110,10 @@ const stepTypeColors: Record<string, string> = {
   coding: "bg-amber-100 text-amber-700",
   quiz: "bg-orange-100 text-orange-700",
   assignment: "bg-indigo-100 text-indigo-700",
+  matching: "bg-teal-100 text-teal-700",
+  ordering: "bg-cyan-100 text-cyan-700",
+  essay: "bg-pink-100 text-pink-700",
+  file_upload: "bg-slate-100 text-slate-700",
 };
 
 // ==================== MAIN COMPONENT ====================
@@ -139,6 +148,22 @@ export function StepViewerPage({
   const [assignmentAnswer, setAssignmentAnswer] = useState("");
   const [assignmentSubmitted, setAssignmentSubmitted] = useState(false);
 
+  // Matching state
+  const [matchingAnswers, setMatchingAnswers] = useState<Record<string, string>>({});
+  const [matchingSubmitted, setMatchingSubmitted] = useState(false);
+
+  // Ordering state
+  const [orderingItems, setOrderingItems] = useState<string[]>([]);
+  const [orderingSubmitted, setOrderingSubmitted] = useState(false);
+
+  // Essay state
+  const [essayAnswer, setEssayAnswer] = useState("");
+  const [essaySubmitted, setEssaySubmitted] = useState(false);
+
+  // File upload state
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileUploaded, setFileUploaded] = useState(false);
+
   // Load step data
   useEffect(() => {
     let cancelled = false;
@@ -152,6 +177,14 @@ export function StepViewerPage({
       setCodeSubmitted(false);
       setAssignmentAnswer("");
       setAssignmentSubmitted(false);
+      setMatchingAnswers({});
+      setMatchingSubmitted(false);
+      setOrderingItems([]);
+      setOrderingSubmitted(false);
+      setEssayAnswer("");
+      setEssaySubmitted(false);
+      setSelectedFile(null);
+      setFileUploaded(false);
       try {
         const res = await fetch(`/api/courses/${courseId}/lessons/${lessonId}`);
         if (res.ok) {
@@ -326,7 +359,29 @@ export function StepViewerPage({
       return;
     }
 
-    const isCorrect = assignment.correctAnswer === selected;
+    // Parse correctAnswer consistently - support both index and value formats
+    let isCorrect = false;
+    if (assignment.correctAnswer) {
+      // Try parsing as index first (integer)
+      const parsedIndex = parseInt(assignment.correctAnswer, 10);
+      if (!Number.isNaN(parsedIndex)) {
+        // correctAnswer is an index, compare with option index
+        let options: string[] = [];
+        if (assignment.options) {
+          try {
+            options = JSON.parse(assignment.options);
+          } catch {
+            options = [];
+          }
+        }
+        const selectedIndex = options.indexOf(selected);
+        isCorrect = selectedIndex === parsedIndex;
+      } else {
+        // correctAnswer is a value, direct comparison
+        isCorrect = assignment.correctAnswer === selected;
+      }
+    }
+
     setQuizSubmitted((prev) => ({ ...prev, [assignmentId]: true }));
     setQuizResults((prev) => ({ ...prev, [assignmentId]: isCorrect }));
 
@@ -368,6 +423,88 @@ export function StepViewerPage({
     setAssignmentSubmitted(true);
     toast.success(t("course.step.answerSent", locale));
   }, [assignmentAnswer, locale]);
+
+  // Submit matching
+  const handleMatchingSubmit = useCallback(() => {
+    if (!step) return;
+    const assignment = step.assignments[0];
+    if (!assignment) return;
+
+    let pairs: Array<{ left: string; right: string }> = [];
+    if (assignment.options) {
+      try {
+        pairs = JSON.parse(assignment.options);
+      } catch {
+        pairs = [];
+      }
+    }
+
+    const allAnswered = pairs.every((p) => matchingAnswers[p.left]);
+    if (!allAnswered) {
+      toast.error(t("course.step.matchAllPairs", locale) || "Соедините все пары");
+      return;
+    }
+
+    setMatchingSubmitted(true);
+    toast.success(t("course.step.answerSent", locale));
+  }, [step, matchingAnswers, locale]);
+
+  // Move ordering item up or down
+  const moveOrderingItem = useCallback((index: number, direction: "up" | "down") => {
+    setOrderingItems((prev) => {
+      const newArr = [...prev];
+      const target = direction === "up" ? index - 1 : index + 1;
+      if (target < 0 || target >= newArr.length) return prev;
+      [newArr[index], newArr[target]] = [newArr[target], newArr[index]];
+      return newArr;
+    });
+  }, []);
+
+  // Submit ordering
+  const handleOrderingSubmit = useCallback(() => {
+    if (!orderingItems.length) {
+      toast.error(t("course.step.orderAllItems", locale) || "Расставьте все элементы");
+      return;
+    }
+    setOrderingSubmitted(true);
+    toast.success(t("course.step.answerSent", locale));
+  }, [orderingItems, locale]);
+
+  // Submit essay
+  const handleEssaySubmit = useCallback(() => {
+    if (!essayAnswer.trim()) {
+      toast.error(t("course.step.writeEssayFirst", locale) || "Напишите эссе");
+      return;
+    }
+    if (essayAnswer.trim().length < 100) {
+      toast.error(t("course.step.essayTooShort", locale) || "Эссе слишком короткое (минимум 100 символов)");
+      return;
+    }
+    setEssaySubmitted(true);
+    toast.success(t("course.step.answerSent", locale));
+  }, [essayAnswer, locale]);
+
+  // Handle file selection
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(t("course.step.fileTooLarge", locale) || "Файл слишком большой (макс. 10MB)");
+        return;
+      }
+      setSelectedFile(file);
+    }
+  }, [locale]);
+
+  // Submit file upload
+  const handleFileSubmit = useCallback(() => {
+    if (!selectedFile) {
+      toast.error(t("course.step.selectFileFirst", locale) || "Выберите файл");
+      return;
+    }
+    setFileUploaded(true);
+    toast.success(t("course.step.fileSent", locale) || "Файл отправлен");
+  }, [selectedFile, locale]);
 
   // Build flat step list for navigation
   const flatSteps = useMemo(() => {
@@ -742,7 +879,18 @@ export function StepViewerPage({
                       <div className="space-y-2">
                         {options.map((opt, optIdx) => {
                           const isSelected = selectedAnswers[assignment.id] === opt;
-                          const isCorrectOption = assignment.correctAnswer === opt;
+                          // Parse correctAnswer consistently - support both index and value formats
+                          let isCorrectOption = false;
+                          if (assignment.correctAnswer) {
+                            const parsedIndex = parseInt(assignment.correctAnswer, 10);
+                            if (!Number.isNaN(parsedIndex)) {
+                              // correctAnswer is an index
+                              isCorrectOption = optIdx === parsedIndex;
+                            } else {
+                              // correctAnswer is a value
+                              isCorrectOption = assignment.correctAnswer === opt;
+                            }
+                          }
 
                           let optionClass = "border-gray-200 hover:bg-gray-50 cursor-pointer";
                           if (isSubmitted) {
@@ -872,6 +1020,352 @@ export function StepViewerPage({
                       </Badge>
                     )}
                   </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* ==================== STEP TYPE: MATCHING ==================== */}
+          {step.type === "matching" && (
+            <div className="space-y-4 mb-6">
+              {/* Description */}
+              {step.content && (
+                <Card className="border-0 shadow-sm">
+                  <CardContent className="p-6">
+                    <div className="prose prose-sm max-w-none whitespace-pre-wrap">
+                      {step.content}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Matching exercise */}
+              <Card className="border-0 shadow-sm">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-2 mb-4 text-sm text-teal-600">
+                    <ArrowUpDown className="w-4 h-4" />
+                    <span className="font-medium">{t("course.step.matchingExercise", locale) || "Сопоставление"}</span>
+                  </div>
+
+                  {step.assignments[0] && (() => {
+                    let pairs: Array<{ left: string; right: string }> = [];
+                    if (step.assignments[0].options) {
+                      try {
+                        pairs = JSON.parse(step.assignments[0].options);
+                      } catch {
+                        pairs = [];
+                      }
+                    }
+
+                    if (pairs.length === 0) {
+                      return <p className="text-muted-foreground">{t("course.step.noPairs", locale) || "Нет пар для сопоставления"}</p>;
+                    }
+
+                    // Get all right options and shuffle them
+                    const rightOptions = pairs.map(p => p.right).sort(() => Math.random() - 0.5);
+
+                    return (
+                      <div className="space-y-4">
+                        {/* Left column (questions) */}
+                        <div className="space-y-2">
+                          {pairs.map((pair, idx) => (
+                            <div key={pair.left} className="flex items-center gap-4">
+                              <div className="flex-1 p-3 bg-teal-50 rounded-lg border border-teal-200">
+                                <span className="text-sm font-medium">{pair.left}</span>
+                              </div>
+                              <span className="text-muted-foreground">→</span>
+                              <select
+                                className="flex-1 p-2 border rounded-lg text-sm"
+                                value={matchingAnswers[pair.left] || ""}
+                                onChange={(e) =>
+                                  setMatchingAnswers((prev) => ({ ...prev, [pair.left]: e.target.value }))
+                                }
+                                disabled={matchingSubmitted}
+                              >
+                                <option value="">{t("course.step.selectMatch", locale) || "Выберите..."}</option>
+                                {rightOptions.map((opt) => (
+                                  <option key={opt} value={opt}>{opt}</option>
+                                ))}
+                              </select>
+                              {matchingSubmitted && (
+                                matchingAnswers[pair.left] === pair.right ? (
+                                  <CheckCircle2 className="w-5 h-5 text-green-600" />
+                                ) : (
+                                  <X className="w-5 h-5 text-red-600" />
+                                )
+                              )}
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2 mt-4">
+                          {!matchingSubmitted ? (
+                            <Button
+                              className="bg-teal-600 hover:bg-teal-700 text-white"
+                              onClick={handleMatchingSubmit}
+                            >
+                              <Send className="w-4 h-4 mr-2" />
+                              {t("course.step.submitAnswer", locale)}
+                            </Button>
+                          ) : (
+                            <Badge className="bg-green-100 text-green-700 border-0">
+                              {t("course.step.sent", locale)}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* ==================== STEP TYPE: ORDERING ==================== */}
+          {step.type === "ordering" && (
+            <div className="space-y-4 mb-6">
+              {/* Description */}
+              {step.content && (
+                <Card className="border-0 shadow-sm">
+                  <CardContent className="p-6">
+                    <div className="prose prose-sm max-w-none whitespace-pre-wrap">
+                      {step.content}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Ordering exercise */}
+              <Card className="border-0 shadow-sm">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-2 mb-4 text-sm text-cyan-600">
+                    <Move className="w-4 h-4" />
+                    <span className="font-medium">{t("course.step.orderingExercise", locale) || "Упорядочивание"}</span>
+                  </div>
+
+                  {step.assignments[0] && (() => {
+                    let items: string[] = [];
+                    if (step.assignments[0].options) {
+                      try {
+                        items = JSON.parse(step.assignments[0].options);
+                      } catch {
+                        items = [];
+                      }
+                    }
+
+                    // Initialize ordering items if not set
+                    if (orderingItems.length === 0 && items.length > 0) {
+                      setOrderingItems([...items].sort(() => Math.random() - 0.5));
+                    }
+
+                    if (orderingItems.length === 0) {
+                      return <p className="text-muted-foreground">{t("course.step.noItems", locale) || "Нет элементов для сортировки"}</p>;
+                    }
+
+                    return (
+                      <div className="space-y-2">
+                        {orderingItems.map((item, idx) => (
+                          <div key={item} className="flex items-center gap-2 p-3 bg-cyan-50 rounded-lg border border-cyan-200">
+                            <Badge variant="secondary" className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold">
+                              {idx + 1}
+                            </Badge>
+                            <span className="flex-1 text-sm">{item}</span>
+                            <div className="flex flex-col gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                disabled={idx === 0 || orderingSubmitted}
+                                onClick={() => moveOrderingItem(idx, "up")}
+                              >
+                                <ArrowLeft className="w-3 h-3 rotate-90" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                disabled={idx === orderingItems.length - 1 || orderingSubmitted}
+                                onClick={() => moveOrderingItem(idx, "down")}
+                              >
+                                <ArrowRight className="w-3 h-3 rotate-90" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2 mt-4">
+                          {!orderingSubmitted ? (
+                            <Button
+                              className="bg-cyan-600 hover:bg-cyan-700 text-white"
+                              onClick={handleOrderingSubmit}
+                            >
+                              <Send className="w-4 h-4 mr-2" />
+                              {t("course.step.submitAnswer", locale)}
+                            </Button>
+                          ) : (
+                            <Badge className="bg-green-100 text-green-700 border-0">
+                              {t("course.step.sent", locale)}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* ==================== STEP TYPE: ESSAY ==================== */}
+          {step.type === "essay" && (
+            <div className="space-y-4 mb-6">
+              {/* Description */}
+              {step.content && (
+                <Card className="border-0 shadow-sm">
+                  <CardContent className="p-6">
+                    <div className="prose prose-sm max-w-none whitespace-pre-wrap">
+                      {step.content}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Essay editor */}
+              <Card className="border-0 shadow-sm">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-2 mb-3 text-sm text-pink-600">
+                    <Pencil className="w-4 h-4" />
+                    <span className="font-medium">{t("course.step.essay", locale) || "Эссе"}</span>
+                  </div>
+                  <Textarea
+                    placeholder={t("course.step.essayPlaceholder", locale) || "Напишите развёрнутый ответ на вопрос..."}
+                    className="min-h-[300px] resize-y text-sm leading-relaxed"
+                    value={essayAnswer}
+                    onChange={(e) => setEssayAnswer(e.target.value)}
+                    disabled={essaySubmitted}
+                  />
+                  <div className="flex items-center justify-between mt-3">
+                    <span className="text-xs text-muted-foreground">
+                      {essayAnswer.length} {t("course.step.characters", locale) || "символов"}
+                      {essayAnswer.length < 100 && essayAnswer.length > 0 && (
+                        <span className="text-amber-600 ml-2">
+                          ({t("course.step.minimum", locale) || "мин."} 100)
+                        </span>
+                      )}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      {!essaySubmitted ? (
+                        <Button
+                          className="bg-pink-600 hover:bg-pink-700 text-white"
+                          onClick={handleEssaySubmit}
+                          disabled={essayAnswer.length < 100}
+                        >
+                          <Send className="w-4 h-4 mr-2" />
+                          {t("course.step.submitEssay", locale) || "Отправить эссе"}
+                        </Button>
+                      ) : (
+                        <Badge className="bg-blue-100 text-blue-700 border-0">
+                          {t("course.step.awaitingReview", locale)}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* ==================== STEP TYPE: FILE UPLOAD ==================== */}
+          {step.type === "file_upload" && (
+            <div className="space-y-4 mb-6">
+              {/* Description */}
+              {step.content && (
+                <Card className="border-0 shadow-sm">
+                  <CardContent className="p-6">
+                    <div className="prose prose-sm max-w-none whitespace-pre-wrap">
+                      {step.content}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* File upload */}
+              <Card className="border-0 shadow-sm">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-2 mb-4 text-sm text-slate-600">
+                    <Upload className="w-4 h-4" />
+                    <span className="font-medium">{t("course.step.fileUpload", locale) || "Загрузка файла"}</span>
+                  </div>
+
+                  {!fileUploaded ? (
+                    <div className="space-y-4">
+                      {/* File input */}
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
+                        <Upload className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {t("course.step.dragDropFile", locale) || "Перетащите файл сюда или"}
+                        </p>
+                        <label className="inline-block cursor-pointer">
+                          <span className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                            {t("course.step.browseFiles", locale) || "выберите файл"}
+                          </span>
+                          <input
+                            type="file"
+                            className="hidden"
+                            onChange={handleFileSelect}
+                            accept=".pdf,.doc,.docx,.txt,.zip,.jpg,.png"
+                          />
+                        </label>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {t("course.step.maxFileSize", locale) || "Макс. размер: 10MB"}
+                        </p>
+                      </div>
+
+                      {/* Selected file info */}
+                      {selectedFile && (
+                        <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border">
+                          <FileText className="w-5 h-5 text-slate-600" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{selectedFile.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0"
+                            onClick={() => setSelectedFile(null)}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* Submit button */}
+                      <Button
+                        className="bg-slate-600 hover:bg-slate-700 text-white"
+                        onClick={handleFileSubmit}
+                        disabled={!selectedFile}
+                      >
+                        <Send className="w-4 h-4 mr-2" />
+                        {t("course.step.submitFile", locale) || "Отправить файл"}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <CheckCircle2 className="w-12 h-12 text-green-600 mx-auto mb-3" />
+                      <p className="text-sm font-medium mb-1">{t("course.step.fileUploaded", locale) || "Файл загружен"}</p>
+                      {selectedFile && (
+                        <p className="text-xs text-muted-foreground">{selectedFile.name}</p>
+                      )}
+                      <Badge className="bg-blue-100 text-blue-700 border-0 mt-2">
+                        {t("course.step.awaitingReview", locale)}
+                      </Badge>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
