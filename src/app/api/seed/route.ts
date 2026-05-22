@@ -54,8 +54,8 @@ export async function POST() {
       try { await db.$executeRawUnsafe(`DELETE FROM sqlite_sequence`); } catch { /* safe to ignore */ }
       await db.$executeRawUnsafe(`PRAGMA foreign_keys = ON`);
     }
-  } catch (cleanupError) {
-    // Cleanup note: non-failure, seed can continue
+  } catch {
+    // Cleanup failed, but seed can continue
   }
 
   // ============ КАТЕГОРИИ ============
