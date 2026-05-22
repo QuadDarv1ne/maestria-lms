@@ -38,29 +38,37 @@ export const createNotificationsSlice: StateCreator<NotificationsSlice, [], [], 
     set({ notifications: updated });
   },
 
-  markNotificationRead: (id: string) => {
+  markNotificationRead: async (id: string) => {
     const updated = get().notifications.map((n) =>
       n.id === id ? { ...n, read: true } : n
     );
     save("maestria-notifications", updated);
     set({ notifications: updated });
 
-    fetch(`/api/notifications/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ read: true }),
-    }).catch((err) => console.error("Failed to mark notification as read on server:", err));
+    try {
+      await fetch(`/api/notifications/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ read: true }),
+      });
+    } catch {
+      // Server sync failed — local state already updated
+    }
   },
 
-  markAllNotificationsRead: () => {
+  markAllNotificationsRead: async () => {
     const updated = get().notifications.map((n) => ({ ...n, read: true }));
     save("maestria-notifications", updated);
     set({ notifications: updated });
 
-    fetch("/api/notifications/mark-all", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-    }).catch((err) => console.error("Failed to mark all notifications as read on server:", err));
+    try {
+      await fetch("/api/notifications/mark-all", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch {
+      // Server sync failed — local state already updated
+    }
   },
 
   unreadNotificationsCount: (): number => {

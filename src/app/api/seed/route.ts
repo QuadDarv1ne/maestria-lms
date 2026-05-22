@@ -153,7 +153,7 @@ export async function POST() {
     data: {
       email: "ivanova@maestro7it.ru",
       name: "Елена Иванова",
-      passwordHash: await hashPassword("teacher123"),
+      passwordHash: teacherPasswordHash,
       role: "teacher",
       isActive: true,
       bio: "Разработчик игр в Roblox, преподаватель с опытом работы с детьми и подростками.",
@@ -165,7 +165,7 @@ export async function POST() {
     data: {
       email: "sidorov@maestro7it.ru",
       name: "Дмитрий Сидоров",
-      passwordHash: await hashPassword("teacher123"),
+      passwordHash: teacherPasswordHash,
       role: "teacher",
       isActive: true,
       bio: "Data Scientist, преподаватель машинного обучения и анализа данных.",

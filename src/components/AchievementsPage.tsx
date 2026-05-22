@@ -83,7 +83,7 @@ export function AchievementsPage() {
           }
         }
       } catch (e) {
-        log.error("Error loading achievement data", { error: e instanceof Error ? e.message : String(e) });
+        log.error(t("achievements.errorLoad", locale), { error: e instanceof Error ? e.message : String(e) });
         if (!cancelled) {
           toast.error(t("achievements.errorLoad", locale));
         }
