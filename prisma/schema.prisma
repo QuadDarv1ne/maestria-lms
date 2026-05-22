@@ -177,6 +177,7 @@ model Assignment {
   options     String?  // JSON: quiz options, matching pairs, ordering items, etc.
   correctAnswer String?
   points      Int      @default(10)
+  maxAttempts Int      @default(0) // 0 = unlimited attempts
   lessonId    String
   lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   submissions AssignmentSubmission[]

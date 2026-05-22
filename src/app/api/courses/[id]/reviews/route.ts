@@ -249,7 +249,7 @@ export async function POST(
           type: "review",
           title: "Новый отзыв",
           message: `Студент оставил отзыв на курс "${courseData.title}"`,
-          link: `course/${resolvedCourseId}`,
+          link: `/course/${resolvedCourseId}`,
         }).catch((err) => log.error("Failed to send review notification", { error: err }));
       }
     }
