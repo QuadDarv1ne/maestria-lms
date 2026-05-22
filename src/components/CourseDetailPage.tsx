@@ -159,7 +159,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
           // Payment created — user needs to complete it through the payment gateway.
           // Do NOT auto-confirm; that would make paid courses effectively free.
           toast.info(
-            data.message || "Для завершения записи необходимо оплатить курс"
+            data.message || t("course.paymentRequired", locale)
           );
           navigate(`profile`);
         } else {

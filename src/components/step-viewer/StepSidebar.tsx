@@ -81,7 +81,7 @@ export function StepSidebar({
               {courseStructure?.title || t("course.step.module", locale)}
             </h2>
             <div className="flex items-center gap-2 text-xs text-blue-100 mb-2">
-              <span>{courseStructure?.completedLessons || 0} из {courseStructure?.totalLessons || 0} шагов</span>
+              <span>{courseStructure?.completedLessons || 0} {t("common.of", locale)} {courseStructure?.totalLessons || 0} {t("common.steps", locale)}</span>
               <span>•</span>
               <span>{courseStructure?.progress || 0}%</span>
             </div>

@@ -221,7 +221,7 @@ export function AuthDialogs() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <Label htmlFor="login-email">Email</Label>
+              <Label htmlFor="login-email">{t("auth.email", locale)}</Label>
               <div className="relative mt-1">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -396,7 +396,7 @@ export function AuthDialogs() {
             </div>
 
             <div>
-              <Label htmlFor="reg-email">Email</Label>
+              <Label htmlFor="reg-email">{t("auth.email", locale)}</Label>
               <div className="relative mt-1">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -521,7 +521,7 @@ export function AuthDialogs() {
                 {t("auth.recoveryInstructions", locale)}
               </p>
               <div>
-                <Label htmlFor="forgot-email">Email</Label>
+                <Label htmlFor="forgot-email">{t("auth.email", locale)}</Label>
                 <div className="relative mt-1">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input

@@ -137,7 +137,7 @@ function ResetPasswordContent() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">{t("common.loading", "en")}</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">{t("common.loading")}</div>}>
       <ResetPasswordContent />
     </Suspense>
   );
