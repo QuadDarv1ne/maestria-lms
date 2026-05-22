@@ -13,6 +13,12 @@ import {
   Code2,
   HelpCircle,
   ClipboardList,
+  AlignLeft,
+  ArrowUpDown,
+  Upload,
+  Pencil,
+  Move,
+  Blocks,
 } from "lucide-react";
 
 export const levelLabels: Record<string, string> = {
@@ -93,6 +99,12 @@ export function lessonTypeIcon(type: string, className = "w-4 h-4"): ReactNode {
     coding: <Code2 className={className} />,
     quiz: <HelpCircle className={className} />,
     assignment: <ClipboardList className={className} />,
+    interactive: <Blocks className={className} />,
+    matching: <ArrowUpDown className={className} />,
+    ordering: <Move className={className} />,
+    file_upload: <Upload className={className} />,
+    essay: <Pencil className={className} />,
+    drag_drop: <AlignLeft className={className} />,
   };
   return icons[type] || <FileText className={className} />;
 }

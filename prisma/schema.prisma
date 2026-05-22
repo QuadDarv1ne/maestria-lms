@@ -36,6 +36,7 @@ model User {
   progress      Progress[]
   teacherCourses Course[]  @relation("TeacherCourses")
   notifications  Notification[]
+  gradedSubmissions AssignmentSubmission[] @relation("GradedSubmissions")
 }
 
 model Account {
@@ -112,6 +113,11 @@ model Course {
   tags        String?  // comma-separated
   requirements String? // JSON array string
   whatYouLearn String? // JSON array string
+  startDate   DateTime?
+  endDate     DateTime?
+  visibility  String   @default("public") // public, private, unlisted
+  maxStudents Int?
+  prerequisites String? // JSON array of course IDs
 
   categoryId  String?
   category    Category?  @relation(fields: [categoryId], references: [id])
@@ -166,15 +172,42 @@ model Assignment {
   id          String   @id @default(uuid())
   title       String
   description String
-  type        String   @default("quiz") // quiz, coding, text
-  options     String?  // JSON: quiz options
+  type        String   @default("quiz") // quiz, coding, text, matching, ordering, file_upload, essay, drag_drop
+  options     String?  // JSON: quiz options, matching pairs, ordering items, etc.
   correctAnswer String?
   points      Int      @default(10)
   lessonId    String
   lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  submissions AssignmentSubmission[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model AssignmentSubmission {
+  id          String   @id @default(uuid())
+  assignmentId String
+  userId      String
+  answer      String   // JSON or text: student's answer
+  score       Int?
+  maxScore    Int      @default(100)
+  grade       String?  // grade letter or feedback
+  feedback    String?  // teacher feedback
+  status      String   @default("submitted") // draft, submitted, graded, failed
+  submittedAt DateTime @default(now())
+  gradedAt    DateTime?
+  gradedBy    String?  // teacher ID
+  grader      User?    @relation("GradedSubmissions", fields: [gradedBy], references: [id])
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([assignmentId, userId])
+  @@index([userId, status])
+  @@index([assignmentId])
 }
 
 // ============ ENROLLMENT & PROGRESS ============

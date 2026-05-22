@@ -1,12 +1,55 @@
+export type LessonType = "video" | "text" | "coding" | "quiz" | "assignment" | "interactive";
+export type AssignmentType = "quiz" | "coding" | "text" | "matching" | "ordering" | "file_upload" | "essay" | "drag_drop";
+export type CourseLevel = "beginner" | "intermediate" | "advanced";
+export type CourseVisibility = "public" | "private" | "unlisted";
+export type SubmissionStatus = "draft" | "submitted" | "graded" | "failed";
+
+export interface QuizOption {
+  id: string;
+  text: string;
+  isCorrect: boolean;
+}
+
+export interface MatchingPair {
+  id: string;
+  left: string;
+  right: string;
+}
+
+export interface OrderingItem {
+  id: string;
+  text: string;
+  correctPosition: number;
+}
+
 export interface LessonForm {
   id: string;
   title: string;
-  type: "video" | "text" | "coding" | "quiz" | "assignment";
+  type: LessonType;
   duration: number;
   isFree: boolean;
   content: string;
   videoUrl: string;
   sortOrder: number;
+  assignments: AssignmentForm[];
+}
+
+export interface AssignmentForm {
+  id: string;
+  title: string;
+  type: AssignmentType;
+  description: string;
+  points: number;
+  // Quiz-specific
+  quizOptions?: QuizOption[];
+  // Matching-specific
+  matchingPairs?: MatchingPair[];
+  // Ordering-specific
+  orderingItems?: OrderingItem[];
+  // General
+  correctAnswer?: string;
+  maxAttempts?: number;
+  timeLimit?: number; // minutes
 }
 
 export interface ModuleForm {
@@ -22,7 +65,7 @@ export interface CourseFormData {
   shortDesc: string;
   description: string;
   categorySlug: string;
-  level: "beginner" | "intermediate" | "advanced";
+  level: CourseLevel;
   duration: string;
   price: number;
   oldPrice: number;
@@ -33,6 +76,13 @@ export interface CourseFormData {
   whatYouLearn: string[];
   isPublished: boolean;
   isFeatured: boolean;
+  // New settings
+  startDate: string; // ISO date string
+  endDate: string; // ISO date string
+  visibility: CourseVisibility;
+  maxStudents: number;
+  prerequisites: string[]; // course IDs
+  language: string;
 }
 
 let _counter = 0;
@@ -57,6 +107,45 @@ export function createEmptyModule(): ModuleForm {
   };
 }
 
+export function createEmptyQuizOption(): QuizOption {
+  return {
+    id: uid(),
+    text: "",
+    isCorrect: false,
+  };
+}
+
+export function createEmptyMatchingPair(): MatchingPair {
+  return {
+    id: uid(),
+    left: "",
+    right: "",
+  };
+}
+
+export function createEmptyOrderingItem(): OrderingItem {
+  return {
+    id: uid(),
+    text: "",
+    correctPosition: 0,
+  };
+}
+
+export function createEmptyAssignment(): AssignmentForm {
+  return {
+    id: uid(),
+    title: "",
+    type: "quiz",
+    description: "",
+    points: 10,
+    quizOptions: [createEmptyQuizOption(), createEmptyQuizOption(), createEmptyQuizOption(), createEmptyQuizOption()],
+    matchingPairs: [createEmptyMatchingPair(), createEmptyMatchingPair(), createEmptyMatchingPair()],
+    orderingItems: [createEmptyOrderingItem(), createEmptyOrderingItem(), createEmptyOrderingItem()],
+    maxAttempts: 3,
+    timeLimit: 0,
+  };
+}
+
 export function createEmptyLesson(sortOrder: number): LessonForm {
   return {
     id: uid(),
@@ -67,6 +156,7 @@ export function createEmptyLesson(sortOrder: number): LessonForm {
     content: "",
     videoUrl: "",
     sortOrder,
+    assignments: [],
   };
 }
 
@@ -87,4 +177,11 @@ export const initialFormData: CourseFormData = {
   whatYouLearn: [""],
   isPublished: false,
   isFeatured: false,
+  // New settings
+  startDate: "",
+  endDate: "",
+  visibility: "public",
+  maxStudents: 0,
+  prerequisites: [],
+  language: "ru",
 };

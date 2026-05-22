@@ -7,13 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  ArrowLeft, ChevronDown, BookOpen, Eye, Settings, Save, Send,
+  ArrowLeft, ChevronDown, BookOpen, Eye, Settings, Save, Send, Calendar,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { CurriculumTab } from "@/components/course-editor/CurriculumTab";
 import { BasicTab } from "@/components/course-editor/BasicTab";
 import { PreviewTab } from "@/components/course-editor/PreviewTab";
+import { SettingsTab } from "@/components/course-editor/SettingsTab";
 import {
   type CourseFormData, type ModuleForm, type LessonForm,
   slugify, createEmptyModule, createEmptyLesson, initialFormData,
@@ -251,6 +252,13 @@ export function CourseEditorPage() {
           isPublished: publish,
           isFeatured: form.isFeatured,
           categorySlug: form.categorySlug,
+          // New settings
+          startDate: form.startDate || undefined,
+          endDate: form.endDate || undefined,
+          visibility: form.visibility,
+          maxStudents: form.maxStudents > 0 ? form.maxStudents : undefined,
+          prerequisites: form.prerequisites.length > 0 ? JSON.stringify(form.prerequisites) : undefined,
+          language: form.language,
           modules: form.modules.map((m, mIdx) => ({
             title: m.title.trim() || t("courseEditor.moduleName", locale).replace("{number}", String(mIdx + 1)),
             sortOrder: mIdx + 1,
@@ -350,6 +358,10 @@ export function CourseEditorPage() {
               <Settings className="w-4 h-4 mr-1.5" />
               {t("courseEditor.tabBasic", locale)}
             </TabsTrigger>
+            <TabsTrigger value="settings">
+              <Calendar className="w-4 h-4 mr-1.5" />
+              Настройки
+            </TabsTrigger>
             <TabsTrigger value="curriculum">
               <BookOpen className="w-4 h-4 mr-1.5" />
               {t("courseEditor.tabCurriculum", locale)}
@@ -367,14 +379,35 @@ export function CourseEditorPage() {
               levelOptions={LEVEL_OPTIONS}
               onUpdateField={updateField}
               onTitleChange={handleTitleChange}
-              onNextTab={() => setActiveTab("curriculum")}
+              onNextTab={() => setActiveTab("settings")}
             />
             <div className="flex justify-end mt-6">
               <Button
                 className="bg-blue-700 hover:bg-blue-800 text-white"
+                onClick={() => setActiveTab("settings")}
+              >
+                Далее: Настройки
+                <ChevronDown className="w-4 h-4 ml-1 rotate-[-90deg]" />
+              </Button>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <SettingsTab
+              form={form}
+              locale={locale}
+              onUpdateField={updateField}
+            />
+            <div className="flex justify-between mt-6">
+              <Button variant="outline" onClick={() => setActiveTab("basic")}>
+                <ArrowLeft className="w-4 h-4 mr-1" />
+                Назад
+              </Button>
+              <Button
+                className="bg-blue-700 hover:bg-blue-800 text-white"
                 onClick={() => setActiveTab("curriculum")}
               >
-                {t("courseEditor.nextCurriculum", locale)}
+                Далее: Программа
                 <ChevronDown className="w-4 h-4 ml-1 rotate-[-90deg]" />
               </Button>
             </div>
