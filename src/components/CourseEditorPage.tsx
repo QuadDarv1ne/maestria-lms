@@ -153,6 +153,39 @@ export function CourseEditorPage() {
     []
   );
 
+  const reorderModules = useCallback(
+    (sourceIdx: number, destIdx: number) => {
+      if (sourceIdx === destIdx) return;
+      setForm((prev) => {
+        const arr = [...prev.modules];
+        const [moved] = arr.splice(sourceIdx, 1);
+        arr.splice(destIdx, 0, moved);
+        return { ...prev, modules: arr };
+      });
+    },
+    []
+  );
+
+  const reorderLessons = useCallback(
+    (moduleIdx: number, sourceIdx: number, destIdx: number) => {
+      if (sourceIdx === destIdx) return;
+      setForm((prev) => ({
+        ...prev,
+        modules: prev.modules.map((m, i) => {
+          if (i !== moduleIdx) return m;
+          const arr = [...m.lessons];
+          const [moved] = arr.splice(sourceIdx, 1);
+          arr.splice(destIdx, 0, moved);
+          return {
+            ...m,
+            lessons: arr.map((l, li) => ({ ...l, sortOrder: li + 1 })),
+          };
+        }),
+      }));
+    },
+    []
+  );
+
   const updateLesson = useCallback(
     (
       moduleIdx: number,
@@ -362,6 +395,8 @@ export function CourseEditorPage() {
               onRemoveLesson={removeLesson}
               onMoveLesson={moveLesson}
               onUpdateLesson={updateLesson}
+              onReorderModules={reorderModules}
+              onReorderLessons={reorderLessons}
             />
           </TabsContent>
 
