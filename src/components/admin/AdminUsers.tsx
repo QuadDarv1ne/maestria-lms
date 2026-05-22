@@ -40,12 +40,6 @@ export function AdminUsers(props: AdminTabProps) {
   } = props;
   const { user, navigate } = useAppStore();
 
-  const dayLabelsI18n = [
-    t("common.dayMon", locale), t("common.dayTue", locale), t("common.dayWed", locale),
-    t("common.dayThu", locale), t("common.dayFri", locale), t("common.daySat", locale),
-    t("common.daySun", locale),
-  ];
-
   return (
     <div className="space-y-6">
       {/* User stats */}
@@ -116,9 +110,9 @@ export function AdminUsers(props: AdminTabProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <BarChart data={[65, 78, 52, 89, 72, 38, 42]} labels={dayLabelsI18n} color="#10b981" height={180} />
+            <BarChart data={[65, 78, 52, 89, 72, 38, 42]} labels={dayLabels} color="#10b981" height={180} />
             <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-              <span>{t("adminPage.statPeakDay", locale)}: <strong className="text-foreground">{`${dayLabelsI18n[3]} (89)`}</strong></span>
+              <span>{t("adminPage.statPeakDay", locale)}: <strong className="text-foreground">{`${dayLabels[3]} (89)`}</strong></span>
               <span>{t("adminPage.statAvgDayValue", locale)}: <strong className="text-foreground">{Math.round([65, 78, 52, 89, 72, 38, 42].reduce((a, b) => a + b, 0) / 7)}</strong></span>
             </div>
           </CardContent>

@@ -19,13 +19,7 @@ import {
 import type { AdminTabProps } from "./types";
 
 export function AdminMaterials(props: AdminTabProps) {
-  const { locale, dayLabels: _dayLabels, monthLabels } = props;
-
-  const dayLabelsI18n = [
-    t("common.dayMon", locale), t("common.dayTue", locale), t("common.dayWed", locale),
-    t("common.dayThu", locale), t("common.dayFri", locale), t("common.daySat", locale),
-    t("common.daySun", locale),
-  ];
+  const { locale, dayLabels, monthLabels } = props;
 
   return (
     <div className="space-y-6">
@@ -54,10 +48,10 @@ export function AdminMaterials(props: AdminTabProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <BarChart data={demoReadingSessions} labels={dayLabelsI18n} color="#4f46e5" height={200} />
+            <BarChart data={demoReadingSessions} labels={dayLabels} color="#4f46e5" height={200} />
             <div className="flex justify-between mt-3 text-xs text-muted-foreground">
               <span>{t("adminPage.statTotal", locale)}: <strong className="text-foreground">{demoReadingSessions.reduce((a, b) => a + b, 0)}</strong></span>
-              <span>{t("adminPage.statPeak", locale)}: <strong className="text-foreground">{`${dayLabelsI18n[demoReadingSessions.indexOf(Math.max(...demoReadingSessions))]} (${Math.max(...demoReadingSessions)})`}</strong></span>
+              <span>{t("adminPage.statPeak", locale)}: <strong className="text-foreground">{`${dayLabels[demoReadingSessions.indexOf(Math.max(...demoReadingSessions))]} (${Math.max(...demoReadingSessions)})`}</strong></span>
             </div>
           </CardContent>
         </Card>
@@ -70,7 +64,7 @@ export function AdminMaterials(props: AdminTabProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <LineChart data={demoAvgReadingTime} labels={dayLabelsI18n} color="#f59e0b" height={200} fillOpacity={0.12} />
+            <LineChart data={demoAvgReadingTime} labels={dayLabels} color="#f59e0b" height={200} fillOpacity={0.12} />
             <div className="flex justify-between mt-3 text-xs text-muted-foreground">
               <span>{t("adminPage.statMin", locale)}: <strong className="text-foreground">{Math.min(...demoAvgReadingTime)} {t("common.min", locale)}</strong></span>
               <span>{t("adminPage.statMax", locale)}: <strong className="text-foreground">{Math.max(...demoAvgReadingTime)} {t("common.min", locale)}</strong></span>
