@@ -76,11 +76,11 @@ export function TeacherDashboard() {
       setCourses(data.courses);
       setStats(data.stats);
     } catch {
-      setError("Ошибка загрузки данных");
+      setError(t("teacher.loadError", locale));
     } finally {
       setLoading(false);
     }
-  }, [navigate]);
+  }, [navigate, locale]);
 
   useEffect(() => {
     if (!user || (user.role !== "teacher" && user.role !== "admin")) {
@@ -105,7 +105,7 @@ export function TeacherDashboard() {
         setCourses(data.courses);
         setStats(data.stats);
       } catch {
-        if (!cancelled) setError("Ошибка загрузки данных");
+        if (!cancelled) setError(t("teacher.loadError", locale));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -114,7 +114,7 @@ export function TeacherDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [user, navigate]);
+  }, [user, navigate, locale]);
 
   if (!user) return null;
 
@@ -147,25 +147,25 @@ export function TeacherDashboard() {
   const kpiCards = stats
     ? [
         {
-          label: t("teacher.myCourses", locale) || "Мои курсы",
+          label: t("teacher.myCourses", locale),
           value: `${stats.publishedCourses}/${stats.totalCourses}`,
           icon: <BookOpen className="w-5 h-5 text-blue-600" />,
           bg: "bg-blue-50 dark:bg-blue-950/30",
         },
         {
-          label: t("teacher.totalStudents", locale) || "Студентов",
+          label: t("teacher.totalStudents", locale),
           value: stats.totalStudents,
           icon: <Users className="w-5 h-5 text-green-600" />,
           bg: "bg-green-50 dark:bg-green-950/30",
         },
         {
-          label: t("teacher.avgCompletion", locale) || "Завершили",
+          label: t("teacher.avgCompletion", locale),
           value: `${stats.avgCompletionRate}%`,
           icon: <GraduationCap className="w-5 h-5 text-violet-600" />,
           bg: "bg-violet-50 dark:bg-violet-950/30",
         },
         {
-          label: t("teacher.avgProgress", locale) || "Прогресс",
+          label: t("teacher.avgProgress", locale),
           value: `${stats.avgProgress}%`,
           icon: <TrendingUp className="w-5 h-5 text-amber-600" />,
           bg: "bg-amber-50 dark:bg-amber-950/30",
@@ -183,10 +183,10 @@ export function TeacherDashboard() {
             </div>
             <div>
               <h1 className="text-2xl md:text-3xl font-bold">
-                {t("teacher.dashboardTitle", locale) || "Панель преподавателя"}
+                {t("teacher.dashboardTitle", locale)}
               </h1>
               <p className="text-muted-foreground text-sm">
-                {t("teacher.dashboardSubtitle", locale) || `Добро пожаловать, ${user.name || "преподаватель"}`}
+                {t("teacher.dashboardSubtitle", locale)}{user.name ? `, ${user.name}` : ""}
               </p>
             </div>
           </div>
@@ -234,10 +234,10 @@ export function TeacherDashboard() {
           <div className="flex items-center justify-between">
             <CardTitle className="text-base flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-blue-700" />
-              {t("teacher.myCourses", locale) || "Мои курсы"}
+              {t("teacher.myCourses", locale)}
             </CardTitle>
             <span className="text-sm text-muted-foreground">
-              {courses.length} {t("courseEditor.modulesCount", locale).split(" ")[0] || "курсов"}
+              {courses.length} {t("courseEditor.coursesCount", locale)}
             </span>
           </div>
         </CardHeader>
@@ -246,7 +246,7 @@ export function TeacherDashboard() {
             <div className="text-center py-12">
               <BookOpen className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
               <p className="text-muted-foreground mb-4">
-                {t("teacher.noCourses", locale) || "У вас пока нет курсов"}
+                {t("teacher.noCourses", locale)}
               </p>
               <Button
                 onClick={() => navigate("course-editor")}
@@ -263,10 +263,10 @@ export function TeacherDashboard() {
                   <TableRow>
                     <TableHead>{t("adminPage.thCourse", locale)}</TableHead>
                     <TableHead>{t("adminPage.userRoleStudents", locale)}</TableHead>
-                    <TableHead>{t("teacher.completed", locale) || "Завершили"}</TableHead>
-                    <TableHead>{t("teacher.avgProgress", locale) || "Ср. прогресс"}</TableHead>
+                    <TableHead>{t("teacher.completed", locale)}</TableHead>
+                    <TableHead>{t("teacher.avgProgress", locale)}</TableHead>
                     <TableHead>{t("adminPage.thRating", locale)}</TableHead>
-                    <TableHead>{t("teacher.status", locale) || "Статус"}</TableHead>
+                    <TableHead>{t("teacher.status", locale)}</TableHead>
                     <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -318,8 +318,8 @@ export function TeacherDashboard() {
                           }
                         >
                           {course.isPublished
-                            ? (t("courseEditor.published", locale) || "Опубликован")
-                            : (t("courseEditor.draft", locale) || "Черновик")}
+                            ? t("courseEditor.published", locale)
+                            : t("courseEditor.draft", locale)}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -345,7 +345,7 @@ export function TeacherDashboard() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Clock className="w-5 h-5 text-violet-700" />
-              {t("teacher.recentActivity", locale) || "Последняя активность"}
+              {t("teacher.recentActivity", locale)}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -372,7 +372,7 @@ export function TeacherDashboard() {
                         {activity.name || activity.email}
                       </p>
                       <p className="text-xs text-muted-foreground truncate">
-                        {t("teacher.enrolledTo", locale) || "Записался на"} {activity.courseTitle}
+                        {t("teacher.enrolledTo", locale)} {activity.courseTitle}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
