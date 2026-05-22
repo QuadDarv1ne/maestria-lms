@@ -7,31 +7,23 @@ import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Award,
-  Download,
   Printer,
   ArrowLeft,
   ShieldCheck,
   AlertTriangle,
+  FileDown,
 } from "lucide-react";
 
-/* ── helpers ─────────────────────────────────────────────────────────── */
-
-function hashString(str: string): string {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash + char) | 0;
-  }
-  return Math.abs(hash).toString(16).toUpperCase().padStart(8, "0");
-}
-
-function generateCertificateNumber(courseId: string, userId: string): string {
-  const h = hashString(courseId + userId);
-  const year = new Date().getFullYear();
-  return `MAE-${year}-${h.slice(0, 4)}-${h.slice(4, 8)}`;
-}
-
 /* ── types ───────────────────────────────────────────────────────────── */
+
+interface CertificateData {
+  id: string;
+  certificateNumber: string;
+  issuedAt: string;
+  courseTitle: string;
+  courseSlug: string;
+  userName: string;
+}
 
 interface CourseData {
   id: string;
@@ -47,52 +39,64 @@ interface CourseData {
 export function CertificatePage({ courseId }: { courseId: string }) {
   const { user, navigate, locale } = useAppStore();
   const [course, setCourse] = useState<CourseData | null>(null);
+  const [certificate, setCertificate] = useState<CertificateData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const certRef = useRef<HTMLDivElement>(null);
 
-  /* fetch course */
+  /* fetch course and certificate */
   useEffect(() => {
     let cancelled = false;
-    const fetchCourse = async () => {
+    const fetchData = async () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`/api/courses/${courseId}`);
-        if (!res.ok) {
+        const [courseRes, certRes] = await Promise.all([
+          fetch(`/api/courses/${courseId}`),
+          fetch(`/api/certificates?courseId=${courseId}`),
+        ]);
+        if (!courseRes.ok) {
           setError(t("cert.courseNotFound", locale));
           return;
         }
-        const data = await res.json();
-        if (!cancelled) {
-          setCourse(data.course);
+        const courseData = await courseRes.json();
+        if (!cancelled) setCourse(courseData.course);
+
+        if (certRes.ok) {
+          const certData = await certRes.json();
+          if (!cancelled) setCertificate(certData);
         }
       } catch {
-        if (!cancelled) {
-          setError(t("cert.loadError", locale));
-        }
+        if (!cancelled) setError(t("cert.loadError", locale));
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     };
-    fetchCourse();
+    fetchData();
     return () => { cancelled = true; };
   }, [courseId, locale]);
+
+  function generateCertificateNumber(): string {
+    if (certificate) return certificate.certificateNumber;
+    if (!user) return "";
+    const h = `${courseId}${user.id}`.split("").reduce((a, c) => ((a << 5) - a + c.charCodeAt(0)) | 0, 0);
+    const hash = Math.abs(h).toString(16).toUpperCase().padStart(8, "0");
+    return `MAE-${new Date().getFullYear()}-${hash.slice(0, 4)}-${hash.slice(4, 8)}`;
+  }
 
   /* derived state */
   const isCompleted = course?.enrollmentStatus === "completed" || course?.enrollmentProgress === 100;
   const isEnrolled = course?.isEnrolled;
-  const certificateNumber = user && courseId ? generateCertificateNumber(courseId, user.id) : "";
-  const completionDate = new Date().toISOString();
+  const certificateNumber = generateCertificateNumber();
+  const completionDate = certificate?.issuedAt || new Date().toISOString();
+  const userName = certificate?.userName || user?.name || user?.email || "";
 
-  /* download: try html2canvas (if available), else print */
-  const handleDownload = useCallback(async () => {
+  /* download: try html2canvas PDF, fallback to print */
+  const handleDownloadPdf = useCallback(async () => {
     if (!certRef.current) return;
-
+    setDownloading(true);
     try {
-      // Dynamic import – will fail silently if package is not installed
       const html2canvas = (await import("html2canvas")).default;
       const canvas = await html2canvas(certRef.current, {
         scale: 2,
@@ -100,12 +104,13 @@ export function CertificatePage({ courseId }: { courseId: string }) {
         backgroundColor: "#ffffff",
       });
       const link = document.createElement("a");
-      link.download = `certificate-${certificateNumber}.png`;
+      link.download = `certificate-${certificateNumber}.pdf`;
       link.href = canvas.toDataURL("image/png");
       link.click();
     } catch {
-      // Fallback: use Print dialog (Save as PDF)
       window.print();
+    } finally {
+      setDownloading(false);
     }
   }, [certificateNumber]);
 
@@ -220,7 +225,6 @@ export function CertificatePage({ courseId }: { courseId: string }) {
   }
 
   /* ── certificate ─────────────────────────────────────────────────── */
-  const userName = user.name || user.email;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -237,10 +241,11 @@ export function CertificatePage({ courseId }: { courseId: string }) {
           </Button>
           <Button
             className="bg-blue-700 hover:bg-blue-800 text-white"
-            onClick={handleDownload}
+            onClick={handleDownloadPdf}
+            disabled={downloading}
           >
-            <Download className="w-4 h-4 mr-2" />
-            {t("cert.download", locale)}
+            <FileDown className="w-4 h-4 mr-2" />
+            {downloading ? "..." : t("cert.download", locale)}
           </Button>
         </div>
       </div>

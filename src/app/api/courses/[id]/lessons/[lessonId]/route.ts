@@ -312,6 +312,18 @@ export async function POST(
             message: `Поздравляем! Вы завершили курс "${course.title}"`,
             link: `course/${courseId}`,
           }).catch(() => {});
+
+          // Auto-create certificate
+          if (course.hasCertificate) {
+            const certNumber = `MAE-${new Date().getFullYear()}-${userId.slice(0, 4).toUpperCase()}-${courseId.slice(0, 4).toUpperCase()}`;
+            db.certificate.create({
+              data: {
+                userId,
+                courseId,
+                certificateNumber: certNumber,
+              },
+            }).catch(() => {});
+          }
         }
       }
     }
