@@ -365,3 +365,419 @@
 22. White-label решение
 23. SCORM поддержка
 24. Вебинары
+
+---
+
+## 15. Миграция на Next.js App Router Routing (критический)
+
+### Проблема
+Приложение построено на Next.js 16 с App Router, но использует **hash-based SPA маршрутизацию** через Zustand + `window.location.hash`. Это означает:
+- Отсутствие SSR/SSG преимуществ
+- Нет ISR для кэширования
+- SEO практически отсутствует
+- Не работает `next/navigation` properly
+- Нет proper page-level code splitting
+
+### План миграции
+- [ ] **Аудит текущих маршрутов** — составить полную карту hash-based роутов
+- [ ] **Создать файловую структуру App Router**:
+  - [ ] `(main)/catalog/page.tsx` → уже существует
+  - [ ] `(main)/profile/page.tsx` → уже существует
+  - [ ] `(main)/course/[id]/page.tsx` → уже существует
+  - [ ] `(main)/admin/page.tsx` → уже существует, но нужно разделить на `/admin/dashboard`, `/admin/users` и т.д.
+  - [ ] `(main)/teacher/page.tsx` → уже существует
+  - [ ] `(main)/course-editor/[id]/page.tsx` → уже существует
+  - [ ] `(auth)/login/page.tsx` — страница логина
+  - [ ] `(auth)/register/page.tsx` — страница регистрации
+- [ ] **Мигрировать роутинг из Zustand hash в `next/navigation`**:
+  - [ ] Заменить `window.location.hash` на `useRouter()` / `usePathname()` / `useSearchParams()`
+  - [ ] Обновить Zustand store slices (удалить роутинг из store)
+  - [ ] Обновить Header/Footer навигацию на `<Link>` компоненты
+  - [ ] Обновить все `onClick` навигационные хендлеры
+- [ ] **Server Components**:
+  - [ ] Перенести fetching данных на серверные компоненты
+  - [ ] Использовать `fetch()` с `revalidate` для ISR
+  - [ ] Разделить client/server компоненты
+- [ ] **Loading states**:
+  - [ ] Создать `loading.tsx` для каждого маршрута
+  - [ ] Создать `error.tsx` для обработки ошибок
+  - [ ] Создать `not-found.tsx` для 404 страниц
+- [ ] **Middleware**:
+  - [ ] Создать `middleware.ts` для защиты роутов (auth required)
+  - [ ] Редирект неаутентифицированных пользователей на `/login`
+  - [ ] Role-based access control на уровне middleware
+
+### Ожидаемые результаты
+- Full SSR для SEO
+- ISR для статичных страниц (каталог, legal pages)
+- Proper code splitting
+- Совместимость с Next.js 16 фичами
+- Улучшенная производительность
+
+---
+
+## 16. Завершение типов заданий (высокий приоритет)
+
+### drag_drop assignment type
+Сейчас определён в схеме и типах, но не имеет UI:
+- [ ] UI для создания drag-drop заданий в CourseEditor
+- [ ] UI для прохождения drag-drop заданий в LessonPage
+- [ ] Логика валидации правильных ответов
+- [ ] Система grading для drag-drop заданий
+- [ ] Поддержка изображений в drag-drop элементах
+- [ ] Поддержка категорий для группировки элементов
+
+### matching assignment type (улучшения)
+- [ ] Поддержка изображений в matching заданиях
+- [ ] Partial scoring (частичные баллы за частично правильные ответы)
+- [ ] Визуальное соединение линий (SVG overlay)
+
+### ordering assignment type (улучшения)
+- [ ] Частичные баллы за близко к правильному порядку
+- [ ] Поддержка drag-and-drop сортировки
+- [ ] Визуальная индикация правильности в реальном времени
+
+### essay assignment type (улучшения)
+- [ ] Rich text editor для написания эссе (TipTap / Slate.js)
+- [ ] Word count и character count лимиты
+- [ ] Rubric-based grading (критерии оценивания)
+- [ ] Peer review для эссе
+- [ ] AI-assisted grading suggestions
+
+### file_upload assignment type (улучшения)
+- [ ] Поддержка нескольких файлов
+- [ ] Предпросмотр загруженных файлов
+- [ ] Ограничения по типу и размеру файлов
+- [ ] Интеграция с S3 для хранения
+- [ ] Antivirus сканирование загруженных файлов
+
+---
+
+## 17. Версионирование контента (средний приоритет)
+
+### Проблема
+При обновлении курса теряется информация о том, какие студенты проходили какую версию курса.
+
+### Решение
+- [ ] **Система версий курсов**:
+  - [ ] Модель `CourseVersion` в Prisma
+  - [ ] Автоматическое создание новой версии при публикации изменений
+  - [ ] Привязка студентов к конкретной версии курса
+  - [ ] Возможность отката к предыдущей версии
+  - [ ] Changelog изменений между версиями
+- [ ] **Версионирование уроков**:
+  - [ ] История изменений каждого урока
+  - [ ] Diff viewer для сравнения версий
+  - [ ] Комментарии к изменениям
+- [ ] **Миграция студентов между версиями**:
+  - [ ] Автоматический перенос прогресса при незначительных изменениях
+  - [ ] Ручное подтверждение при значительных изменениях
+  - [ ] Уведомление студентов об обновлении курса
+- [ ] **A/B тестирование контента**:
+  - [ ] Разделение студентов на группы
+  - [ ] Сравнение метрик между версиями
+  - [ ] Статистическая значимость результатов
+
+---
+
+## 18. Multi-tenant и White-label (долгосрочный)
+
+### Архитектура
+- [ ] **Модель организации (Tenant/Organization)**:
+  - [ ] Модель `Organization` в Prisma
+  - [ ] Привязка курсов к организациям
+  - [ ] Привязка пользователей к организациям
+  - [ ] Row-level security для изоляции данных
+- [ ] **Кастомизация бренда**:
+  - [ ] Кастомный домен для каждой организации
+  - [ ] Кастомная тема (цвета, логотип, шрифты)
+  - [ ] Кастомный email-шаблон
+  - [ ] Кастомный legal pages
+- [ ] **Изоляция данных**:
+  - [ ] Middleware для определения tenant по домену/subdomain
+  - [ ] Prisma middleware для автоматической фильтрации по tenant
+  - [ ] S3 bucket isolation для файлов
+- [ ] **Биллинг**:
+  - [ ] Подписка по организациям
+  - [ ] Лимиты на количество курсов/студентов
+  - [ ] Usage analytics
+
+---
+
+## 19. Система рекомендаций (средний приоритет)
+
+### Rule-based рекомендации
+- [ ] "Похожие курсы" на основе категории и тегов
+- [ ] "Продолжить обучение" на основе прогресса
+- [ ] "Рекомендуемые" на основе пройденных курсов
+- [ ] "Популярные" на основе enrolment count и ratings
+
+### ML-based рекомендации (долгосрочный)
+- [ ] **Коллаборативная фильтрация**:
+  - [ ] Matrix factorization (ALS / SVD)
+  - [ ] User-item interaction matrix
+  - [ ] Similar users recommendations
+- [ ] **Content-based filtering**:
+  - [ ] TF-IDF векторизация описаний курсов
+  - [ ] Cosine similarity для похожих курсов
+  - [ ] NLP анализ отзывов для определения интересов
+- [ ] **Hybrid approach**:
+  - [ ] Комбинация collaborative + content-based
+  - [ ] Weight tuning на основе A/B тестов
+  - [ ] Real-time scoring при запросе
+- [ ] **Инфраструктура**:
+  - [ ] Feature store для хранения фич
+  - [ ] Model training pipeline (scikit-learn / LightFM)
+  - [ ] Model serving API
+  - [ ] A/B тестирование рекомендаций
+
+---
+
+## 20. Корпоративное обучение (долгосрочный)
+
+### Управление группами
+- [ ] **Группы студентов**:
+  - [ ] Модель `StudyGroup` с привязкой к курсу и организации
+  - [ ] Массовая запись студентов в группу
+  - [ ] Групповые задания и обсуждения
+  - [ ] Групповой прогресс и статистика
+- [ ] **Кураторы/Менторы**:
+  - [ ] Роль куратора с ограниченными правами
+  - [ ] Назначение кураторов на группы
+  - [ ] Куратор может видеть прогресс и ставить оценки
+
+### Корпоративный дашборд
+- [ ] **Для HR/Manager**:
+  - [ ] Прогресс обучения сотрудников
+  - [ ] Completion rate по курсам
+  - [ ] Средние баллы и рейтинги
+  - [ ] Отчёты для руководства
+  - [ ] Экспорт в Excel/PDF
+- [ ] **Для сотрудника**:
+  - [ ] Обязательные курсы к прохождению
+  - [ ] Дедлайны и напоминания
+  - [ ] Корпоративный рейтинг
+  - [ ] Карьерная траектория обучения
+
+### Compliance и сертификация
+- [ ] **Обязательное обучение**:
+  - [ ] Курсы с дедлайнами
+  - [ ] Автоматические напоминания
+  - [ ] Эскалация руководителю при просрочке
+- [ ] **Пересертификация**:
+  - [ ] Курсы с expiration date
+  - [ ] Автоматическое уведомление о необходимости пересдачи
+  - [ ] История сертификаций
+- [ ] **Отчёты для регуляторов**:
+  - [ ] Формат для ФИС ФРДО
+  - [ ] Протоколы сдачи экзаменов
+  - [ ] Ведомости и журналы
+
+---
+
+## 21. Расширенные возможности обучения (средний приоритет)
+
+### Learning Paths (Траектории обучения)
+- [ ] **Модель `LearningPath`**:
+  - [ ] Последовательность курсов для достижения цели
+  - [ ] Prerequisites между курсами в пути
+  - [ ] Прогресс по learning path
+  - [ ] Рекомендуемые learning paths на основе роли/целей
+- [ ] **UI**:
+  - [ ] Визуализация learning path (дерево/график)
+  - [ ] Отметка пройденных этапов
+  - [ ] Estimated time to completion
+
+### Микрообучение (Microlearning)
+- [ ] **Flashcards**:
+  - [ ] Модель `Flashcard` и `FlashcardDeck`
+  - [ ] Spaced repetition algorithm (SM-2 / Leitner)
+  - [ ] UI для изучения флеш-карт
+  - [ ] Импорт/экспорт колод
+- [ ] **Quick Quizzes**:
+  - [ ] Короткие тесты на 1-3 вопроса
+  - [ ] Daily quiz уведомления
+  - [ ] Gamification за прохождение
+
+### Сертификаты и бейджи
+- [ ] **Расширенные сертификаты**:
+  - [ ] Настраиваемые шаблоны сертификатов
+  - [ ] Верификация сертификатов по URL/QR
+  - [ ] Экспорт в PDF с цифровым подписью
+  - [ ] Интеграция с LinkedIn (Add to Profile)
+  - [ ] Open Badges стандарт (IMS Global)
+- [ ] **Badges**:
+  - [ ] Автоматическое начисление за достижения
+  - [ ] Визуальная коллекция бейджей в профиле
+  - [ ] Публичный профиль с бейджами
+
+---
+
+## 22. Улучшение архитектуры и DX (постоянный)
+
+### API улучшения
+- [ ] **API Versioning**:
+  - [ ] `/api/v1/...` префикс для всех эндпоинтов
+  - [ ] Backward compatibility policy
+  - [ ] Deprecation warnings для старых версий
+- [ ] **API Response Standardization**:
+  - [ ] Единый формат ответов `{ data, meta, error }`
+  - [ ] Pagination meta `{ page, perPage, total, totalPages }`
+  - [ ] Consistent error format
+- [ ] **API Rate Limiting**:
+  - [ ] Redis-based rate limiting вместо in-memory
+  - [ ] Different limits для разных ролей
+  - [ ] Rate limit headers в ответах (`X-RateLimit-*`)
+
+### Developer Experience
+- [ ] **Storybook**:
+  - [ ] Storybook для UI компонентов
+  - [ ] Visual regression tests (Chromatic)
+  - [ ] Documentation для каждого компонента
+- [ ] **Type Safety**:
+  - [ ] tRPC или zod-first API routes для end-to-end type safety
+  - [ ] Генерация TypeScript типов из Prisma schema
+  - [ ] Shared types между frontend и backend
+- [ ] **Testing Infrastructure**:
+  - [ ] Testcontainers для интеграционных тестов с БД
+  - [ ] MSW (Mock Service Worker) для мокирования API
+  - [ ] Factory pattern для создания тестовых данных
+  - [ ] Seed test database с фикстурами
+
+### Code Quality
+- [ ] **Code Review Automation**:
+  - [ ] Husky pre-commit hooks
+  - [ ] Lint-staged для linting только изменённых файлов
+  - [ ] Commitlint для conventional commits
+  - [ ] Changesets для changelog generation
+- [ ] **Performance Budgets**:
+  - [ ] Bundle size limits в CI
+  - [ ] Lighthouse CI для performance regression
+  - [ ] Web Vitals monitoring
+- [ ] **Error Handling**:
+  - [ ] Global error boundary для React
+  - [ ] Error tracking integration (Sentry)
+  - [ ] User-friendly error pages
+  - [ ] Graceful degradation
+
+### Database
+- [ ] **Миграции**:
+  - [ ] Перейти на Prisma Migrate вместо ручных SQL
+  - [ ] CI проверка миграций
+  - [ ] Rollback strategy
+- [ ] **Soft Deletes**:
+  - [ ] Prisma middleware для автоматического soft delete
+  - [ ] Восстановление удалённых записей
+  - [ ] Audit trail для удалений
+- [ ] **Database Seeding**:
+  - [ ] TypeScript seed вместо JavaScript
+  - [ ] Фикстуры для development
+  - [ ] Factory pattern для генерации данных
+
+---
+
+## 23. Интернационализация: новые рынки (долгосрочный)
+
+### Дополнительные языки
+- [ ] **Немецкий** (DE) — европейский рынок
+- [ ] **Испанский** (ES) — Латинская Америка
+- [ ] **Арабский** (AR) — MENA регион
+  - [ ] RTL (right-to-left) поддержка
+  - [ ] RTL layout adjustments
+- [ ] **Португальский** (PT-BR) — Бразилия
+- [ ] **Хинди** (HI) — Индия
+- [ ] **Турецкий** (TR) — Турция
+
+### Региональные особенности
+- [ ] **Валюты**:
+  - [ ] Мультивалютная поддержка (USD, EUR, CNY, TRY и т.д.)
+  - [ ] Автоматическая конвертация курсов
+  - [ ] Локализованные форматы цен
+- [ ] **Налоги**:
+  - [ ] VAT/GST calculation по регионам
+  - [ ] Налоговые чеки для разных стран
+  - [ ] Tax compliance reporting
+- [ ] **Локальные платёжные методы**:
+  - [ ] Stripe (международный)
+  - [ ] PayPal
+  - [ ] Alipay/WeChat Pay (Китай)
+  - [ ] UPI (Индия)
+  - [ ] Pix (Бразилия)
+
+---
+
+## Обновлённая приоритизация
+
+### Sprint 1-2 (ближайшие 2-4 недели) — КРИТИЧЕСКИЙ
+1. **Миграция на Next.js App Router** (#15) — фундамент для всего остального
+2. Завершить локализацию (#1) — LessonPage, CourseEditor, AdminPage
+3. Добавить formatDate/formatNumber утилиты (#1)
+4. Настроить SEO мета-теги и sitemap (#1)
+
+### Sprint 3-4 (1-2 месяца) — ВЫСОКИЙ ПРИОРИТЕТ
+5. Интеграция ЮKassa (базовый платежный поток) (#2)
+6. Email-уведомления (Resend) (#3)
+7. Завершение drag_drop assignment type (#16)
+8. Комментарии к урокам (#3)
+9. Файловые вложения (#7)
+10. E2E тесты (Playwright) — критические потоки (#11)
+11. Docker конфигурация (#11)
+
+### Sprint 5-6 (2-3 месяца) — СРЕДНИЙ ПРИОРИТЕТ
+12. Video транскодинг + адаптивный стриминг (#4)
+13. Coding engine (Judge0) (#5)
+14. Аналитика для преподавателей (#6)
+15. Question bank (#7)
+16. Accessibility (WCAG AA) (#9)
+17. Learning Paths (#21)
+18. Версионирование контента (#17)
+
+### Sprint 7-8 (3-4 месяца) — РАСШИРЕНИЕ
+19. AI-тьютор (#7)
+20. Геймификация (XP, уровни, leaderboard) (#8)
+21. PWA + offline режим (#9)
+22. Public API (#13)
+23. Система рекомендаций (#19)
+24. Расширенные сертификаты и бейджи (#21)
+
+### Sprint 9-10 (4-6 месяцев) — КОРПОРАТИВНЫЙ
+25. Корпоративный функционал (#13, #20)
+26. Multi-tenant архитектура (#18)
+27. LTI интеграции (#13)
+28. SSO/SAML для корпоративных клиентов (#13)
+
+### Долгосрочный план (6+ месяцев)
+29. Мобильные приложения (React Native) (#12)
+30. White-label решение (#13, #18)
+31. SCORM поддержка (#7)
+32. Вебинары (#7)
+33. ML-based рекомендации (#19)
+34. Новые языки и рынки (#23)
+35. Microlearning и flashcards (#21)
+
+---
+
+## Метрики успеха
+
+### Технические метрики
+- [ ] Lighthouse Performance score > 90
+- [ ] First Contentful Paint < 1.5s
+- [ ] Time to Interactive < 3.5s
+- [ ] Bundle size < 250KB (initial)
+- [ ] Test coverage > 80%
+- [ ] CI pipeline < 5 minutes
+- [ ] Zero critical vulnerabilities в npm audit
+
+### Бизнес метрики
+- [ ] Конверсия регистрация → запись на курс > 30%
+- [ ] Course completion rate > 50%
+- [ ] NPS (Net Promoter Score) > 50
+- [ ] Monthly active users growth > 10% MoM
+- [ ] Revenue growth > 20% QoQ
+
+### Пользовательские метрики
+- [ ] Среднее время сессии > 15 минут
+- [ ] Daily active users / Monthly active users > 20%
+- [ ] Student retention (30-day) > 40%
+- [ ] Course rating average > 4.5/5
+- [ ] Support ticket resolution time < 24h
