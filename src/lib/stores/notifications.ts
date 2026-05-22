@@ -1,5 +1,6 @@
 import type { StateCreator } from "zustand";
 import { load, save } from "@/lib/storage";
+import { log } from "@/lib/logger";
 
 export interface NotificationItem {
   id: string;
@@ -85,8 +86,9 @@ export const createNotificationsSlice: StateCreator<NotificationsSlice, [], [], 
         set({ notifications: data.notifications });
       }
     } catch (err) {
-      console.error("Failed to fetch notifications from server, using cached data:", err);
-      // fallback to local storage
+      log.warn("Failed to fetch notifications from server, keeping cached data", {
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   },
 

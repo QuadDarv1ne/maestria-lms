@@ -26,3 +26,14 @@ export function formatNumber(
 ): string {
   return value.toLocaleString(localeMap[locale] || "ru-RU");
 }
+
+export function parsePagination(
+  searchParams: URLSearchParams,
+  options: { defaultLimit?: number; maxLimit?: number } = {},
+) {
+  const { defaultLimit = 20, maxLimit = 50 } = options;
+  const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+  const limit = Math.min(maxLimit, Math.max(1, parseInt(searchParams.get("limit") || String(defaultLimit), 10)));
+  const skip = (page - 1) * limit;
+  return { page, limit, skip };
+}

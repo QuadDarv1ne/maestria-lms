@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, Prisma } from "@/lib/db";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
+import { parsePagination } from "@/lib/utils";
 
 export const runtime = "nodejs";
 
@@ -18,10 +19,8 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get("category");
     const search = searchParams.get("search");
     const level = searchParams.get("level");
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
-    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "12", 10)));
+    const { page, limit, skip } = parsePagination(searchParams, { defaultLimit: 12, maxLimit: 100 });
     const sortBy = searchParams.get("sortBy") || "new";
-    const skip = (page - 1) * limit;
 
     // Строим условия фильтрации
     const where: Prisma.CourseWhereInput = {

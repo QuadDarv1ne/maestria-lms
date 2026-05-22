@@ -294,16 +294,40 @@ export async function POST(
 
       if (enrollment) {
         const wasAlreadyCompleted = enrollment.status === "completed";
-        await db.enrollment.update({
-          where: { id: enrollment.id },
-          data: {
-            progress: courseProgress,
-            completedAt: courseProgress === 100 ? new Date() : null,
-            status: courseProgress === 100 ? "completed" : "active",
-          },
+
+        await db.$transaction(async (tx) => {
+          await tx.enrollment.update({
+            where: { id: enrollment.id },
+            data: {
+              progress: courseProgress,
+              completedAt: courseProgress === 100 ? new Date() : null,
+              status: courseProgress === 100 ? "completed" : "active",
+            },
+          });
+
+          // Auto-create certificate on first-time completion (inside transaction to prevent duplicates)
+          if (courseProgress === 100 && !wasAlreadyCompleted && course.hasCertificate) {
+            const existingCert = await tx.certificate.findFirst({
+              where: { userId, courseId },
+              select: { id: true },
+            });
+
+            if (!existingCert) {
+              const year = new Date().getFullYear();
+              const uniqueSuffix = crypto.randomUUID().slice(0, 8).toUpperCase();
+              const certNumber = `MAE-${year}-${uniqueSuffix}`;
+              await tx.certificate.create({
+                data: {
+                  userId,
+                  courseId,
+                  certificateNumber: certNumber,
+                },
+              });
+            }
+          }
         });
 
-        // Send notification on first-time course completion
+        // Send notification on first-time completion (outside transaction, fire-and-forget)
         if (courseProgress === 100 && !wasAlreadyCompleted) {
           createNotification({
             userId,
@@ -312,20 +336,6 @@ export async function POST(
             message: `Поздравляем! Вы завершили курс "${course.title}"`,
             link: `course/${courseId}`,
           }).catch((err) => log.error("Failed to send completion notification", { error: err }));
-
-          // Auto-create certificate
-          if (course.hasCertificate) {
-            const year = new Date().getFullYear();
-            const uniqueSuffix = crypto.randomUUID().slice(0, 8).toUpperCase();
-            const certNumber = `MAE-${year}-${uniqueSuffix}`;
-            await db.certificate.create({
-              data: {
-                userId,
-                courseId,
-                certificateNumber: certNumber,
-              },
-            });
-          }
         }
       }
     }

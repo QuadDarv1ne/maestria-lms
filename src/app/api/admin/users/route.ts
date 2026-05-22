@@ -5,6 +5,7 @@ import { getAuthSession } from "@/lib/auth";
 import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
+import { parsePagination } from "@/lib/utils";
 
 export const runtime = "nodejs";
 
@@ -31,11 +32,9 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
-    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
+    const { page, limit, skip } = parsePagination(searchParams, { defaultLimit: 20, maxLimit: 100 });
     const search = searchParams.get("search");
     const role = searchParams.get("role");
-    const skip = (page - 1) * limit;
 
     const where: Prisma.UserWhereInput = {};
     if (role) where.role = role;
