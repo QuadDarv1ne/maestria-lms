@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import { createNotification } from "@/lib/notifications";
-import type { CreateNotificationInput } from "@/lib/notifications";
 import { handleApiError } from "@/lib/api-errors";
+import { z } from "zod";
 
 export const runtime = "nodejs";
+
+const publishSchema = z.object({
+  userId: z.string().min(1, "userId обязателен"),
+  type: z.string().min(1, "type обязателен"),
+  title: z.string().min(1, "title обязателен"),
+  message: z.string().min(1, "message обязателен"),
+  link: z.string().optional(),
+});
 
 export async function POST(req: NextRequest) {
   const session = await getAuthSession();
@@ -14,12 +22,22 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const input = body as CreateNotificationInput;
+    const validation = publishSchema.safeParse(body);
 
-    if (!input.userId || !input.type || !input.title || !input.message) {
+    if (!validation.success) {
       return NextResponse.json(
-        { error: "Необходимо указать userId, type, title и message" },
+        { error: validation.error.issues[0]?.message || "Ошибка валидации" },
         { status: 400 }
+      );
+    }
+
+    const input = validation.data;
+
+    // Только админы могут отправлять уведомления другим пользователям
+    if (input.userId !== session.user.id && session.user.role !== "admin") {
+      return NextResponse.json(
+        { error: "Нет прав для отправки уведомлений другим пользователям" },
+        { status: 403 }
       );
     }
 

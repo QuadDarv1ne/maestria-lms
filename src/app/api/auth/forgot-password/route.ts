@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     //     html: `<p>Перейдите по ссылке для сброса пароля: <a href="${resetUrl}">Сбросить пароль</a></p>`,
     //   });
     if (!isDev) {
-      log.info("Password reset requested (email not configured)", { email, token });
+      log.info("Password reset requested (email not configured)", { email });
     }
 
     return NextResponse.json(

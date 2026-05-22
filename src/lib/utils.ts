@@ -32,8 +32,12 @@ export function parsePagination(
   options: { defaultLimit?: number; maxLimit?: number } = {},
 ) {
   const { defaultLimit = 20, maxLimit = 50 } = options;
-  const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
-  const limit = Math.min(maxLimit, Math.max(1, parseInt(searchParams.get("limit") || String(defaultLimit), 10)));
+  const rawPage = parseInt(searchParams.get("page") || "1", 10);
+  const rawLimit = parseInt(searchParams.get("limit") || String(defaultLimit), 10);
+  const page = Number.isNaN(rawPage) ? 1 : Math.max(1, rawPage);
+  const limit = Number.isNaN(rawLimit)
+    ? defaultLimit
+    : Math.min(maxLimit, Math.max(1, rawLimit));
   const skip = (page - 1) * limit;
   return { page, limit, skip };
 }
