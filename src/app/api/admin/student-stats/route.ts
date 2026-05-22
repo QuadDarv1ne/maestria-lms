@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
+export const runtime = "nodejs";
+
 const checkRateLimit = rateLimit("adminStudentStats", RATE_LIMITS.admin);
 
 // GET: Detailed statistics for a specific student

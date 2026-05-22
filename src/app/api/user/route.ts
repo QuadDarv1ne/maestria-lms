@@ -5,6 +5,8 @@ import { getAuthSession } from "@/lib/auth";
 import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
+export const runtime = "nodejs";
+
 const checkRateLimit = rateLimit("profile", RATE_LIMITS.profile);
 const checkProfileGetRateLimit = rateLimit("profileGet", RATE_LIMITS.profile);
 

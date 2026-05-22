@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
 
+export const runtime = "nodejs";
+
 // POST: Заполнить базу данных демо-данными (только для разработки)
 export async function POST() {
   // Полностью блокируем в production

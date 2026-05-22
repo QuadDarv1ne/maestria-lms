@@ -7,6 +7,8 @@ import { createNotification } from "@/lib/notifications";
 // Схема валидации с использованием Zod
 import { z } from "zod";
 
+export const runtime = "nodejs";
+
 const registerSchema = z.object({
   email: z.string().email("Введите корректный email"),
   password: z.string().min(6, "Пароль должен быть не менее 6 символов"),
@@ -73,7 +75,7 @@ export async function POST(request: NextRequest) {
       title: "Добро пожаловать!",
       message: `Рады видеть вас, ${user.name}! Начните с каталога курсов.`,
       link: "catalog",
-    }).catch(() => {});
+    }).catch((err) => console.error("Failed to send welcome notification:", err));
 
     return NextResponse.json(
       { message: "Регистрация успешна", user },

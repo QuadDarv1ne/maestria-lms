@@ -5,6 +5,8 @@ import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
 
+export const runtime = "nodejs";
+
 const updateProgressSchema = z.object({
   completed: z.boolean().optional(),
   score: z.number().int().min(0).max(100).optional().nullable(),
@@ -311,7 +313,7 @@ export async function POST(
             title: "Курс пройден!",
             message: `Поздравляем! Вы завершили курс "${course.title}"`,
             link: `course/${courseId}`,
-          }).catch(() => {});
+          }).catch((err) => console.error("Failed to send completion notification:", err));
 
           // Auto-create certificate
           if (course.hasCertificate) {
@@ -322,7 +324,7 @@ export async function POST(
                 courseId,
                 certificateNumber: certNumber,
               },
-            }).catch(() => {});
+            }).catch((err) => console.error("Failed to auto-create certificate:", err));
           }
         }
       }

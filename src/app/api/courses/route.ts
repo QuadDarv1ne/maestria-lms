@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, Prisma } from "@/lib/db";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
+export const runtime = "nodejs";
+
 const checkRateLimit = rateLimit("courses", RATE_LIMITS.default);
 
 // GET: Список всех опубликованных курсов с фильтрами

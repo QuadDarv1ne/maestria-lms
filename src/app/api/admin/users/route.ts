@@ -5,6 +5,8 @@ import { getAuthSession } from "@/lib/auth";
 import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
+export const runtime = "nodejs";
+
 const updateUserSchema = z.object({
   userId: z.string().min(1, "ID пользователя обязателен"),
   role: z.enum(["student", "teacher", "admin"]).optional(),

@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
+export const runtime = "nodejs";
+
 const checkRateLimit = rateLimit("achievements", RATE_LIMITS.default);
 
 // GET: Supplementary data for achievements calculation

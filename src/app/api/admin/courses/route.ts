@@ -4,6 +4,8 @@ import { Prisma } from "@prisma/client";
 import { getAuthSession } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
+export const runtime = "nodejs";
+
 const checkRateLimit = rateLimit("admin", RATE_LIMITS.admin);
 
 // GET: Все курсы (включая неопубликованные) — для админов

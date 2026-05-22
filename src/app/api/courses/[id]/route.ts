@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
+export const runtime = "nodejs";
+
 const checkRateLimit = rateLimit("courseDetail", RATE_LIMITS.default);
 
 // GET: Детальная информация о курсе

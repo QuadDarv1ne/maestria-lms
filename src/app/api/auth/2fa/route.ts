@@ -5,6 +5,8 @@ import { z } from "zod";
 import { authenticator } from "otplib";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
+export const runtime = "nodejs";
+
 const checkRateLimit = rateLimit("twoFactor", RATE_LIMITS.twoFactor);
 
 const enable2FASchema = z.object({

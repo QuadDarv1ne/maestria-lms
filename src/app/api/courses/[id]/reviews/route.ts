@@ -4,6 +4,8 @@ import { getAuthSession } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
 
+export const runtime = "nodejs";
+
 const checkPostRateLimit = rateLimit("review", RATE_LIMITS.review);
 const checkGetRateLimit = rateLimit("reviewGet", RATE_LIMITS.default);
 
@@ -243,7 +245,7 @@ export async function POST(
           title: "Новый отзыв",
           message: `Студент оставил отзыв на курс "${courseData.title}"`,
           link: `course/${courseId}`,
-        }).catch(() => {});
+        }).catch((err) => console.error("Failed to send review notification:", err));
       }
     }
 

@@ -5,6 +5,8 @@ import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
 
+export const runtime = "nodejs";
+
 const checkRateLimit = rateLimit("paymentUpdate", RATE_LIMITS.paymentUpdate);
 const checkPaymentGetRateLimit = rateLimit("paymentGet", RATE_LIMITS.payments);
 const checkPaymentConfirmRateLimit = rateLimit("paymentConfirm", RATE_LIMITS.paymentConfirm);
@@ -277,7 +279,7 @@ export async function PUT(
           title: "Оплата прошла",
           message: `Вы записаны на курс "${courseData.title}"`,
           link: `course/${payment.courseId}`,
-        }).catch(() => {});
+        }).catch((err) => console.error("Failed to send payment notification:", err));
       }
     }
 

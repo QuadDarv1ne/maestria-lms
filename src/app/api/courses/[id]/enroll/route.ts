@@ -4,6 +4,8 @@ import { getAuthSession } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
 
+export const runtime = "nodejs";
+
 const checkRateLimit = rateLimit("enrollment", RATE_LIMITS.enrollment);
 
 // POST: Записаться на курс
@@ -158,7 +160,7 @@ export async function POST(
         title: "Новый курс",
         message: `Вы записаны на курс "${course.title}"`,
         link: `course/${resolvedCourseId}`,
-      }).catch(() => {});
+      }).catch((err) => console.error("Failed to send enrollment notification:", err));
     }
 
     const { status, ...responseData } = result;

@@ -49,7 +49,7 @@ export const createNotificationsSlice: StateCreator<NotificationsSlice, [], [], 
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ read: true }),
-    }).catch(() => {});
+    }).catch((err) => console.error("Failed to mark notification as read on server:", err));
   },
 
   markAllNotificationsRead: () => {
@@ -63,9 +63,9 @@ export const createNotificationsSlice: StateCreator<NotificationsSlice, [], [], 
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ read: true }),
-        }).catch(() => {})
+        }).catch((err) => console.error("Failed to mark notification as read on server:", err))
       )
-    ).catch(() => {});
+    ).catch((err) => console.error("Failed to mark all notifications as read:", err));
   },
 
   unreadNotificationsCount: (): number => {

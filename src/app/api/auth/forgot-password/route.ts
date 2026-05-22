@@ -4,6 +4,8 @@ import { hashPassword } from "@/lib/auth";
 import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
+export const runtime = "nodejs";
+
 const forgotPasswordSchema = z.object({
   email: z.string().email("Введите корректный email"),
 });

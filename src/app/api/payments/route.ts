@@ -4,6 +4,8 @@ import { getAuthSession } from "@/lib/auth";
 import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
+export const runtime = "nodejs";
+
 const createPaymentSchema = z.object({
   courseId: z.string().min(1, "ID курса обязателен"),
   paymentMethod: z.enum(["sbp", "yookassa", "tinkoff", "card"]),
