@@ -37,6 +37,7 @@ model User {
   teacherCourses Course[]  @relation("TeacherCourses")
   notifications  Notification[]
   gradedSubmissions AssignmentSubmission[] @relation("GradedSubmissions")
+  assignmentSubmissions AssignmentSubmission[]
 }
 
 model Account {

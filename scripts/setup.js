@@ -240,28 +240,113 @@ function runPrerequisites(pm) {
 
 // --- Phase 5: Start Dev Server ---
 function startDevServer(pm, port) {
-  console.log("");
-  console.log(head(`  Dev server starting at ${color(`http://localhost:${port}`, C.green)}`));
-  console.log("");
+  const tryStart = (startPort, attempts = 0) => {
+    if (attempts > 10) {
+      console.log(err(`Failed to find available port after 10 attempts`));
+      process.exit(1);
+    }
 
-  const child = spawn(pm.cmd, ["next", "dev", "--port", String(port)], {
-    cwd: ROOT,
-    stdio: "inherit",
-    shell: process.platform === "win32",
-  });
+    // Re-check port availability right before starting
+    findAvailablePort(startPort).then((actualPort) => {
+      if (actualPort !== startPort) {
+        console.log(warn(`Port ${startPort} is now in use, using port ${actualPort} instead`));
+      }
 
-  child.on("error", (e) => {
-    console.log(err(`Failed to start dev server: ${e.message}`));
-    process.exit(1);
-  });
+      console.log("");
+      console.log(head(`  Dev server starting at ${color(`http://localhost:${actualPort}`, C.green)}`));
+      console.log("");
 
-  child.on("close", (code) => {
-    process.exit(code || 0);
-  });
+      const child = spawn(pm.cmd, ["next", "dev", "--port", String(actualPort)], {
+        cwd: ROOT,
+        stdio: ["inherit", "pipe", "pipe"],
+        shell: process.platform === "win32",
+      });
 
-  // Forward signals to child
-  process.on("SIGINT", () => child.kill("SIGINT"));
-  process.on("SIGTERM", () => child.kill("SIGTERM"));
+      let hasError = false;
+
+      child.stderr.on("data", (data) => {
+        const msg = data.toString();
+        process.stderr.write(data);
+        if (msg.includes("EADDRINUSE")) {
+          hasError = true;
+          console.log(warn(`Port ${actualPort} is in use, trying next port...`));
+          tryStart(actualPort + 1, attempts + 1);
+        }
+      });
+
+      child.stdout.on("data", (data) => {
+        process.stdout.write(data);
+      });
+
+      child.on("error", (e) => {
+        if (e.message.includes("EADDRINUSE") && !hasError) {
+          console.log(warn(`Port ${actualPort} is in use, trying next port...`));
+          tryStart(actualPort + 1, attempts + 1);
+        } else if (!hasError) {
+          console.log(err(`Failed to start dev server: ${e.message}`));
+          process.exit(1);
+        }
+      });
+
+      child.on("close", (code) => {
+        if (!hasError) {
+          process.exit(code || 0);
+        }
+      });
+
+      // Forward signals to child
+      process.on("SIGINT", () => child.kill("SIGINT"));
+      process.on("SIGTERM", () => child.kill("SIGTERM"));
+    }).catch(() => {
+      // If port detection fails, try with the original port
+      console.log("");
+      console.log(head(`  Dev server starting at ${color(`http://localhost:${startPort}`, C.green)}`));
+      console.log("");
+
+      const child = spawn(pm.cmd, ["next", "dev", "--port", String(startPort)], {
+        cwd: ROOT,
+        stdio: ["inherit", "pipe", "pipe"],
+        shell: process.platform === "win32",
+      });
+
+      let hasError = false;
+
+      child.stderr.on("data", (data) => {
+        const msg = data.toString();
+        process.stderr.write(data);
+        if (msg.includes("EADDRINUSE")) {
+          hasError = true;
+          console.log(warn(`Port ${startPort} is in use, trying next port...`));
+          tryStart(startPort + 1, attempts + 1);
+        }
+      });
+
+      child.stdout.on("data", (data) => {
+        process.stdout.write(data);
+      });
+
+      child.on("error", (e) => {
+        if (e.message.includes("EADDRINUSE") && !hasError) {
+          console.log(warn(`Port ${startPort} is in use, trying next port...`));
+          tryStart(startPort + 1, attempts + 1);
+        } else if (!hasError) {
+          console.log(err(`Failed to start dev server: ${e.message}`));
+          process.exit(1);
+        }
+      });
+
+      child.on("close", (code) => {
+        if (!hasError) {
+          process.exit(code || 0);
+        }
+      });
+
+      process.on("SIGINT", () => child.kill("SIGINT"));
+      process.on("SIGTERM", () => child.kill("SIGTERM"));
+    });
+  };
+
+  tryStart(port);
 }
 
 // --- Main ---
