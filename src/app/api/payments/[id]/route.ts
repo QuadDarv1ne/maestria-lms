@@ -4,12 +4,12 @@ import { getAuthSession } from "@/lib/auth";
 import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
+import { log } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
 const checkRateLimit = rateLimit("paymentUpdate", RATE_LIMITS.paymentUpdate);
 const checkPaymentGetRateLimit = rateLimit("paymentGet", RATE_LIMITS.payments);
-const checkPaymentConfirmRateLimit = rateLimit("paymentConfirm", RATE_LIMITS.paymentConfirm);
 
 const updatePaymentStatusSchema = z.object({
   status: z.enum(["completed", "failed", "refunded"]),
@@ -107,79 +107,7 @@ export async function GET(
 
     return NextResponse.json({ payment }, { status: 200 });
   } catch (error) {
-    console.error("Ошибка получения платежа:", error);
-    return NextResponse.json(
-      { error: "Внутренняя ошибка сервера" },
-      { status: 500 }
-    );
-  }
-}
-
-// POST: Подтвердить платёж (пользователь может подтвердить только свой pending платёж).
-// Это временное решение до интеграции с реальным платёжным шлюзом.
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const blocked = checkPaymentConfirmRateLimit(request);
-  if (blocked) return blocked;
-  try {
-    const { id } = await params;
-    const session = await getAuthSession();
-
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Необходимо авторизоваться" },
-        { status: 401 }
-      );
-    }
-
-    const userId = session.user.id;
-
-    const payment = await db.payment.findUnique({
-      where: { id },
-    });
-
-    if (!payment) {
-      return NextResponse.json(
-        { error: "Платёж не найден" },
-        { status: 404 }
-      );
-    }
-
-    // Пользователь может подтвердить только свой платёж
-    if (payment.userId !== userId) {
-      return NextResponse.json(
-        { error: "Доступ запрещён" },
-        { status: 403 }
-      );
-    }
-
-    if (payment.status !== "pending") {
-      return NextResponse.json(
-        { error: `Платёж уже имеет статус "${payment.status}"` },
-        { status: 400 }
-      );
-    }
-
-    // Атомарное обновление: статус платежа + запись на курс
-    const updatedPayment = await db.$transaction(async (tx) => {
-      const updated = await tx.payment.update({
-        where: { id },
-        data: { status: "completed" },
-      });
-
-      await ensureEnrollment(tx, payment.userId, payment.courseId);
-
-      return updated;
-    });
-
-    return NextResponse.json(
-      { message: "Платёж подтверждён", payment: updatedPayment },
-      { status: 200 }
-    );
-  } catch (error) {
-    console.error("Ошибка подтверждения платежа:", error);
+    log.error("Failed to fetch payment", { paymentId: params.toString(), error });
     return NextResponse.json(
       { error: "Внутренняя ошибка сервера" },
       { status: 500 }
@@ -196,9 +124,10 @@ export async function PUT(
 ) {
   const blocked = checkRateLimit(request);
   if (blocked) return blocked;
+  
+  const { id } = await params;
+  
   try {
-    const { id } = await params;
-
     const session = await getAuthSession();
     if (!session?.user) {
       return NextResponse.json(
@@ -211,6 +140,11 @@ export async function PUT(
 
     // Только администраторы могут менять статус платежа
     if (userRole !== "admin") {
+      log.warn("Non-admin attempted to update payment status", {
+        paymentId: id,
+        userId: session.user.id,
+        userRole,
+      });
       return NextResponse.json(
         { error: "Доступ запрещён" },
         { status: 403 }
@@ -231,6 +165,11 @@ export async function PUT(
     const body = await request.json();
     const validation = updatePaymentStatusSchema.safeParse(body);
     if (!validation.success) {
+      log.warn("Invalid payment status update request", {
+        paymentId: id,
+        body,
+        errors: validation.error.flatten(),
+      });
       return NextResponse.json(
         { error: "Неверный статус платежа. Допустимые значения: completed, failed, refunded" },
         { status: 400 }
@@ -279,16 +218,22 @@ export async function PUT(
           title: "Оплата прошла",
           message: `Вы записаны на курс "${courseData.title}"`,
           link: `course/${payment.courseId}`,
-        }).catch((err) => console.error("Failed to send payment notification:", err));
+        }).catch((err) => log.error("Failed to send payment notification", { error: err }));
       }
     }
+
+    log.info("Payment status updated by admin", {
+      paymentId: id,
+      status,
+      adminId: session.user.id,
+    });
 
     return NextResponse.json(
       { message: "Статус платежа обновлён", payment: result.updated },
       { status: 200 }
     );
   } catch (error) {
-    console.error("Ошибка обновления платежа:", error);
+    log.error("Failed to update payment status", { paymentId: id?.toString(), error });
     return NextResponse.json(
       { error: "Внутренняя ошибка сервера" },
       { status: 500 }
