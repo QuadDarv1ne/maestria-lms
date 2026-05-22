@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import { log } from "@/lib/logger";
 import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -94,10 +95,14 @@ export function CertificatePage({ courseId }: { courseId: string }) {
 
   /* download: try html2canvas PDF, fallback to print */
   const handleDownloadPdf = useCallback(async () => {
-    if (!certRef.current) return;
+    if (!certRef.current) {
+      log.error("Certificate download failed: certificate ref is null");
+      return;
+    }
     setDownloading(true);
     try {
-      const html2canvas = (await import("html2canvas")).default;
+      const html2canvasModule = await import("html2canvas");
+      const html2canvas = html2canvasModule.default;
       const canvas = await html2canvas(certRef.current, {
         scale: 2,
         useCORS: true,
@@ -107,7 +112,9 @@ export function CertificatePage({ courseId }: { courseId: string }) {
       link.download = `certificate-${certificateNumber}.pdf`;
       link.href = canvas.toDataURL("image/png");
       link.click();
-    } catch {
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      log.error("Certificate download failed, falling back to print", { error: message });
       window.print();
     } finally {
       setDownloading(false);

@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import { log } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -82,7 +83,7 @@ export function AchievementsPage() {
           }
         }
       } catch (e) {
-        console.error("Error loading achievement data:", e);
+        log.error("Error loading achievement data", { error: e instanceof Error ? e.message : String(e) });
         if (!cancelled) {
           toast.error(t("achievements.errorLoad", locale));
         }

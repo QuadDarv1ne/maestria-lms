@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useAppStore } from "@/lib/store";
 import { t, useLocale } from "@/lib/i18n";
+import { log } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -167,7 +168,7 @@ export function StepViewerPage({
         }
       } catch (e) {
         if (!cancelled) {
-          console.error(t("course.step.errorLoad", locale), e);
+          log.error(t("course.step.errorLoad", locale), { error: e instanceof Error ? e.message : String(e) });
           toast.error(t("course.step.errorLoad", locale));
         }
       } finally {
@@ -237,7 +238,7 @@ export function StepViewerPage({
         }
       } catch (e) {
         if (!cancelled) {
-          console.error(t("course.step.errorLoad", locale), e);
+          log.error(t("course.step.errorLoad", locale), { error: e instanceof Error ? e.message : String(e) });
           toast.error(t("course.step.errorLoad", locale));
         }
       }

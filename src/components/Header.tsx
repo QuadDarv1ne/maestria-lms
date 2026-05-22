@@ -3,6 +3,7 @@
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { signOut } from "next-auth/react";
+import { log } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import {
   GraduationCap,
@@ -45,13 +46,14 @@ export function Header() {
     { value: "en", flag: "🇬🇧", label: t("locale.en", locale) },
     { value: "zh", flag: "🇨🇳", label: t("locale.zh", locale) },
   ];
+
   const unreadCount = unreadNotificationsCount();
 
   const handleLogout = async () => {
     try {
       await signOut({ redirect: false });
     } catch (e) {
-      console.error("Logout failed:", e);
+      log.error("Logout failed", { error: e instanceof Error ? e.message : String(e) });
     }
     logout();
   };

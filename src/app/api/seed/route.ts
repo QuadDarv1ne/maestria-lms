@@ -24,16 +24,38 @@ export async function POST() {
   try {
   // Очистка базы данных перед заполнением
   try {
-    await db.$executeRawUnsafe(`PRAGMA foreign_keys = OFF`);
-    const tables = ['Progress', 'Enrollment', 'Assignment', 'Lesson', 'Module', 'Certificate', 'Review', 'Payment', 'Course', 'Category', 'Session', 'Account', 'VerificationToken', 'User'];
-    for (const table of tables) {
-      await db.$executeRawUnsafe(`DELETE FROM "${table}"`);
+    const dbUrl = process.env.DATABASE_URL || "";
+    const isPostgres = dbUrl.startsWith("postgresql://") || dbUrl.startsWith("postgres://");
+    const isMySQL = dbUrl.startsWith("mysql://");
+
+    if (isPostgres) {
+      // PostgreSQL: disable foreign keys, truncate all tables
+      await db.$executeRawUnsafe(`SET session_replication_role = 'replica'`);
+      const tables = ['Progress', 'Enrollment', 'Assignment', 'Lesson', 'Module', 'Certificate', 'Review', 'Payment', 'Course', 'Category', 'Session', 'Account', 'VerificationToken', 'User'];
+      for (const table of tables) {
+        await db.$executeRawUnsafe(`TRUNCATE TABLE "${table}" RESTART IDENTITY CASCADE`);
+      }
+      await db.$executeRawUnsafe(`SET session_replication_role = 'origin'`);
+    } else if (isMySQL) {
+      // MySQL: disable foreign key checks, delete all rows
+      await db.$executeRawUnsafe(`SET FOREIGN_KEY_CHECKS = 0`);
+      const tables = ['Progress', 'Enrollment', 'Assignment', 'Lesson', 'Module', 'Certificate', 'Review', 'Payment', 'Course', 'Category', 'Session', 'Account', 'VerificationToken', 'User'];
+      for (const table of tables) {
+        await db.$executeRawUnsafe(`DELETE FROM \`${table}\``);
+      }
+      await db.$executeRawUnsafe(`SET FOREIGN_KEY_CHECKS = 1`);
+    } else {
+      // SQLite (default)
+      await db.$executeRawUnsafe(`PRAGMA foreign_keys = OFF`);
+      const tables = ['Progress', 'Enrollment', 'Assignment', 'Lesson', 'Module', 'Certificate', 'Review', 'Payment', 'Course', 'Category', 'Session', 'Account', 'VerificationToken', 'User'];
+      for (const table of tables) {
+        await db.$executeRawUnsafe(`DELETE FROM "${table}"`);
+      }
+      try { await db.$executeRawUnsafe(`DELETE FROM sqlite_sequence`); } catch { /* safe to ignore */ }
+      await db.$executeRawUnsafe(`PRAGMA foreign_keys = ON`);
     }
-    // sqlite_sequence may not exist if no AUTOINCREMENT tables were created
-    try { await db.$executeRawUnsafe(`DELETE FROM sqlite_sequence`); } catch { /* safe to ignore */ }
-    await db.$executeRawUnsafe(`PRAGMA foreign_keys = ON`);
   } catch (cleanupError) {
-    console.error('Cleanup note:', String(cleanupError));
+    // Cleanup note: non-failure, seed can continue
   }
 
   // ============ КАТЕГОРИИ ============

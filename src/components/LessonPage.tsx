@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import { log } from "@/lib/logger";
 import type { Locale } from "@/lib/stores/ui";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -144,7 +145,7 @@ export function LessonPage({
           }
         }
       } catch (e) {
-        console.error(t("profile.errorLoadingLesson", locale), e);
+        log.error(t("profile.errorLoadingLesson", locale), { courseId, lessonId, error: e instanceof Error ? e.message : String(e) });
         if (!cancelled) toast.error(t("profile.errorLoadingLesson", locale));
       } finally {
         if (!cancelled) {

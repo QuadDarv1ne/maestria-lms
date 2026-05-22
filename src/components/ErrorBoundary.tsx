@@ -2,6 +2,7 @@
 
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { t } from "@/lib/i18n";
+import { log } from "@/lib/logger";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Home, RefreshCw, RotateCcw } from "lucide-react";
@@ -28,7 +29,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("[Maestria ErrorBoundary]", error, errorInfo);
+    log.error("[Maestria ErrorBoundary]", {
+      error: error.message,
+      stack: errorInfo.componentStack,
+    });
   }
 
   handleRetry = () => {

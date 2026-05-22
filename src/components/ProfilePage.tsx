@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import { log } from "@/lib/logger";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 import { signOut } from "next-auth/react";
@@ -126,7 +127,7 @@ export function ProfilePage() {
               titles[courseId] = data.course?.title || data.title || "";
             }
           } catch (e) {
-            console.error(`${t("profile.errorLoadingBookmarkCourse", locale)} ${courseId}:`, e);
+            log.error(`${t("profile.errorLoadingBookmarkCourse", locale)} ${courseId}`, { error: e instanceof Error ? e.message : String(e) });
           }
         })
       );
@@ -185,7 +186,7 @@ export function ProfilePage() {
                     courseLessonsMap[enrollment.course.id] = lessonIds;
                   }
                 } catch (err) {
-                  console.error("Failed to fetch course details for enrollment stats:", err);
+                  log.error("Failed to fetch course details for enrollment stats", { error: err instanceof Error ? err.message : String(err) });
                 }
               })
             );
@@ -226,7 +227,7 @@ export function ProfilePage() {
         }
       } catch (e) {
         if (!cancelled) {
-          console.error(t("profile.errorLoadingProfile", locale), e);
+          log.error(t("profile.errorLoadingProfile", locale), { error: e instanceof Error ? e.message : String(e) });
           setError(t("profile.networkError", locale));
         }
       } finally {
@@ -290,7 +291,7 @@ export function ProfilePage() {
     try {
       await signOut({ redirect: false });
     } catch (e) {
-      console.error("Logout failed:", e);
+      log.error("Logout failed", { error: e instanceof Error ? e.message : String(e) });
     }
     logout();
     navigate("home");
