@@ -418,7 +418,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Обновляем курс
-    const course = await db.course.update({
+    await db.course.update({
       where: { id: courseId },
       data: {
         title,

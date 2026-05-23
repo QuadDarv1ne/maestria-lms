@@ -20,7 +20,7 @@ const gradeSubmissionSchema = z.object({
 // GET: Get all submissions for a course (teacher only)
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const blocked = checkRateLimit(request);
   if (blocked) return blocked;
@@ -42,7 +42,7 @@ export async function GET(
       );
     }
 
-    const courseId = params.id;
+    const { id: courseId } = await params;
 
     // Проверяем что курс принадлежит преподавателю или пользователь админ
     const course = await db.course.findUnique({
@@ -145,7 +145,7 @@ export async function GET(
 // PUT: Grade a submission (teacher only)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string; submissionId: string } }
+  { params }: { params: Promise<{ id: string; submissionId: string }> }
 ) {
   const blocked = checkRateLimit(request);
   if (blocked) return blocked;
@@ -167,8 +167,7 @@ export async function PUT(
       );
     }
 
-    const courseId = params.id;
-    const submissionId = params.submissionId;
+    const { id: courseId, submissionId } = await params;
 
     // Проверяем что курс принадлежит преподавателю
     const course = await db.course.findUnique({
@@ -211,6 +210,11 @@ export async function PUT(
               courseId,
             },
           },
+        },
+      },
+      include: {
+        assignment: {
+          select: { title: true },
         },
       },
     });

@@ -16,12 +16,6 @@ import {
 } from "@/components/ui/select";
 import { Calendar, Globe, Users, BookOpen, X } from "lucide-react";
 
-const VISIBILITY_OPTIONS = [
-  { value: "public", label: "Публичный", description: "Виден всем пользователям" },
-  { value: "private", label: "Приватный", description: "Доступ только по приглашению" },
-  { value: "unlisted", label: "Скрытый", description: "Виден только по прямой ссылке" },
-];
-
 const LANGUAGE_OPTIONS = [
   { value: "ru", label: "Русский" },
   { value: "en", label: "English" },

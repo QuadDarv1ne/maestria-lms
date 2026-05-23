@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 
 const publishSchema = z.object({
   userId: z.string().min(1, "userId обязателен"),
-  type: z.string().min(1, "type обязателен"),
+  type: z.enum(["enrollment", "completion", "achievement", "review", "payment", "system"]),
   title: z.string().min(1, "title обязателен"),
   message: z.string().min(1, "message обязателен"),
   link: z.string().optional(),

@@ -1,16 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { t } from "@/lib/i18n";
 import type { Locale } from "@/lib/stores/ui";
 import type { AssignmentForm, QuizOption, MatchingPair, OrderingItem } from "./types";
-import { uid, createEmptyQuizOption, createEmptyMatchingPair, createEmptyOrderingItem } from "./types";
+import { createEmptyQuizOption, createEmptyMatchingPair, createEmptyOrderingItem } from "./types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -33,21 +30,6 @@ import {
   Upload,
   Pencil,
 } from "lucide-react";
-import {
-  DndContext,
-  closestCenter,
-  DragEndEvent,
-  PointerSensor,
-  KeyboardSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-  useSortable,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 
 const ASSIGNMENT_TYPE_OPTIONS = [
   { value: "quiz", label: "Тест", icon: HelpCircle, description: "Выбор правильного ответа" },
@@ -189,14 +171,7 @@ interface AssignmentEditorProps {
   onRemove: () => void;
 }
 
-export function AssignmentEditor({ assignment, locale, onUpdate, onRemove }: AssignmentEditorProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
-
+export function AssignmentEditor({ assignment, locale: _locale, onUpdate, onRemove }: AssignmentEditorProps) {
   const assignmentType = assignment.type;
 
   return (
@@ -204,10 +179,10 @@ export function AssignmentEditor({ assignment, locale, onUpdate, onRemove }: Ass
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
-            {ASSIGNMENT_TYPE_OPTIONS.find((o) => o.value === assignmentType)?.icon && (
-              // @ts-ignore
-              ASSIGNMENT_TYPE_OPTIONS.find((o) => o.value === assignmentType)?.icon({ className: "w-5 h-5 text-blue-700" })
-            )}
+            {(() => {
+              const Icon = ASSIGNMENT_TYPE_OPTIONS.find((o) => o.value === assignmentType)?.icon;
+              return Icon ? <Icon className="w-5 h-5 text-blue-700" /> : null;
+            })()}
             <Input
               className="flex-1 max-w-md h-8 text-sm font-normal"
               placeholder="Название задания"

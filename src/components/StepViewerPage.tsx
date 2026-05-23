@@ -1068,7 +1068,7 @@ export function StepViewerPage({
                       <div className="space-y-4">
                         {/* Left column (questions) */}
                         <div className="space-y-2">
-                          {pairs.map((pair, idx) => (
+                          {pairs.map((pair) => (
                             <div key={pair.left} className="flex items-center gap-4">
                               <div className="flex-1 p-3 bg-teal-50 rounded-lg border border-teal-200">
                                 <span className="text-sm font-medium">{pair.left}</span>

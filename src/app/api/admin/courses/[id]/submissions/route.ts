@@ -12,7 +12,7 @@ const checkRateLimit = rateLimit("grading", RATE_LIMITS.admin);
 // GET: Get all submissions for a course (teacher only)
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const blocked = checkRateLimit(request);
   if (blocked) return blocked;
@@ -34,7 +34,7 @@ export async function GET(
       );
     }
 
-    const courseId = params.id;
+    const { id: courseId } = await params;
 
     // Проверяем что курс принадлежит преподавателю или пользователь админ
     const course = await db.course.findUnique({

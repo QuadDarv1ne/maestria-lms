@@ -11,7 +11,7 @@ const checkRateLimit = rateLimit("submission", RATE_LIMITS.default);
 
 // Base schema for all submissions
 const baseSubmissionSchema = z.object({
-  answer: z.union([z.string(), z.array(z.any()), z.record(z.any())]),
+  answer: z.any(),
 });
 
 // POST: Submit an assignment answer

@@ -46,16 +46,12 @@ function isPrismaError(error: unknown): error is { code: string; message: string
  * Check if an error object looks like a Zod validation error.
  */
 function isZodError(error: unknown): error is { issues: Array<{ message: string }> } {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "issues" in error &&
-    Array.isArray((error as { issues: unknown }).issues) &&
-    (error as { issues: Array<unknown> }).issues.length > 0 &&
-    typeof (error as { issues: Array<unknown> }).issues[0] === "object" &&
-    (error as { issues: Array<unknown> }).issues[0] !== null &&
-    "message" in (error as { issues: Array<unknown> }).issues[0]
-  );
+  if (typeof error !== "object" || error === null) return false;
+  if (!("issues" in error)) return false;
+  const issues = (error as { issues: unknown }).issues;
+  if (!Array.isArray(issues) || issues.length === 0) return false;
+  const first = issues[0];
+  return typeof first === "object" && first !== null && "message" in first;
 }
 
 /**
