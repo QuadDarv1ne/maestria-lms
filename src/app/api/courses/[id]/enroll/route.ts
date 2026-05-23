@@ -38,7 +38,7 @@ export async function POST(
     // Проверяем существование курса (по ID или slug)
     const courseIdNum = parseInt(courseId, 10);
     const course = await db.course.findFirst({
-      where: isNaN(courseIdNum) ? { slug: courseId } : { id: courseId },
+      where: !Number.isFinite(courseIdNum) ? { slug: courseId } : { id: courseId },
     });
 
     if (!course) {

@@ -27,7 +27,7 @@ export async function GET(
     // Check if course exists (support both ID and slug)
     const courseIdNum = parseInt(courseId, 10);
     const course = await db.course.findFirst({
-      where: isNaN(courseIdNum) ? { slug: courseId } : { id: courseId },
+      where: !Number.isFinite(courseIdNum) ? { slug: courseId } : { id: courseId },
       select: { id: true },
     });
 
@@ -134,7 +134,7 @@ export async function POST(
     // Check if course exists (support both ID and slug)
     const courseIdNum = parseInt(courseId, 10);
     const course = await db.course.findFirst({
-      where: isNaN(courseIdNum) ? { slug: courseId } : { id: courseId },
+      where: !Number.isFinite(courseIdNum) ? { slug: courseId } : { id: courseId },
       select: { id: true, rating: true, reviewCount: true },
     });
 

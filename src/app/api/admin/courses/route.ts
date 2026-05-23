@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
     } = validation.data;
 
     const parsedPrice = Number(price);
-    if (isNaN(parsedPrice) || parsedPrice < 0) {
+    if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
       return NextResponse.json(
         { error: "Цена должна быть неотрицательным числом" },
         { status: 400 }
@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
 
     if (oldPrice !== undefined && oldPrice !== null) {
       const parsedOldPrice = Number(oldPrice);
-      if (isNaN(parsedOldPrice) || parsedOldPrice < 0) {
+      if (!Number.isFinite(parsedOldPrice) || parsedOldPrice < 0) {
         return NextResponse.json(
           { error: "Старая цена должна быть неотрицательным числом" },
           { status: 400 }
@@ -390,7 +390,7 @@ export async function PUT(request: NextRequest) {
     } = validation.data;
 
     const parsedPrice = Number(price);
-    if (isNaN(parsedPrice) || parsedPrice < 0) {
+    if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
       return NextResponse.json(
         { error: "Цена должна быть неотрицательным числом" },
         { status: 400 }
