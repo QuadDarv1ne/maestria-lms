@@ -2,6 +2,26 @@ import type { NotificationItem } from "./stores/notifications";
 
 const clients = new Map<string, Set<ReadableStreamDefaultController>>();
 
+function broadcastToClients(userId: string, data: string) {
+  const userClients = clients.get(userId);
+  if (!userClients) return;
+
+  const encoder = new TextEncoder();
+  const failed: ReadableStreamDefaultController[] = [];
+
+  for (const controller of userClients) {
+    try {
+      controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+    } catch {
+      failed.push(controller);
+    }
+  }
+
+  for (const controller of failed) {
+    userClients.delete(controller);
+  }
+}
+
 export function addClient(userId: string, controller: ReadableStreamDefaultController) {
   let userClients = clients.get(userId);
   if (!userClients) {
@@ -19,41 +39,11 @@ export function addClient(userId: string, controller: ReadableStreamDefaultContr
 }
 
 export function pushNotification(userId: string, notification: NotificationItem) {
-  const userClients = clients.get(userId);
-  if (!userClients) return;
-
   const data = JSON.stringify({ type: "notification", notification });
-  const encoder = new TextEncoder();
-
-  const failed: ReadableStreamDefaultController[] = [];
-  for (const controller of userClients) {
-    try {
-      controller.enqueue(encoder.encode(`data: ${data}\n\n`));
-    } catch {
-      failed.push(controller);
-    }
-  }
-  for (const controller of failed) {
-    userClients.delete(controller);
-  }
+  broadcastToClients(userId, data);
 }
 
 export function pushUnreadCount(userId: string, count: number) {
-  const userClients = clients.get(userId);
-  if (!userClients) return;
-
   const data = JSON.stringify({ type: "unreadCount", count });
-  const encoder = new TextEncoder();
-
-  const failed: ReadableStreamDefaultController[] = [];
-  for (const controller of userClients) {
-    try {
-      controller.enqueue(encoder.encode(`data: ${data}\n\n`));
-    } catch {
-      failed.push(controller);
-    }
-  }
-  for (const controller of failed) {
-    userClients.delete(controller);
-  }
+  broadcastToClients(userId, data);
 }
