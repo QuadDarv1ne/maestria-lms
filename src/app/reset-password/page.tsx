@@ -60,13 +60,20 @@ function ResetPasswordContent() {
       }
 
       setSuccess(true);
-      setTimeout(() => router.push("/"), 3000);
     } catch {
       setError(t("auth.networkError", locale));
     } finally {
       setLoading(false);
     }
   };
+
+  // Redirect after success with proper cleanup on unmount
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => router.push("/"), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [success, router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">

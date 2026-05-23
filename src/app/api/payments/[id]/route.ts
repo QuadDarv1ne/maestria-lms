@@ -5,6 +5,7 @@ import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
 import { log } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-errors";
 
 export const runtime = "nodejs";
 
@@ -109,11 +110,7 @@ export async function GET(
 
     return NextResponse.json({ payment }, { status: 200 });
   } catch (error) {
-    log.error("Failed to fetch payment", { paymentId: id, error });
-    return NextResponse.json(
-      { error: "Внутренняя ошибка сервера" },
-      { status: 500 }
-    );
+    return handleApiError(error, { route: "payments/[id]/GET", metadata: { paymentId: id } });
   }
 }
 
@@ -235,10 +232,6 @@ export async function PUT(
       { status: 200 }
     );
   } catch (error) {
-    log.error("Failed to update payment status", { paymentId: id?.toString(), error });
-    return NextResponse.json(
-      { error: "Внутренняя ошибка сервера" },
-      { status: 500 }
-    );
+    return handleApiError(error, { route: "payments/[id]/PUT", metadata: { paymentId: id?.toString() } });
   }
 }

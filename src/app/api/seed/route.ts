@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { hashPassword } from "@/lib/auth";
+import { hashPassword, getAuthSession } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
 
@@ -20,6 +20,12 @@ export async function POST() {
       { error: "Seed-данные отключены. Установите ALLOW_SEED_DATA=true для активации." },
       { status: 403 }
     );
+  }
+
+  // Defense-in-depth: только администраторы могут запускать seed
+  const session = await getAuthSession();
+  if (!session?.user || session.user.role !== "admin") {
+    return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
   }
 
   try {

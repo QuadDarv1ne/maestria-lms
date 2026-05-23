@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import { createNotification } from "@/lib/notifications";
 import { handleApiError } from "@/lib/api-errors";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -15,6 +16,9 @@ const publishSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  const rateLimitResult = rateLimit("notifications/publish", RATE_LIMITS.default)(req);
+  if (rateLimitResult) return rateLimitResult;
+
   const session = await getAuthSession();
   if (!session?.user) {
     return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
