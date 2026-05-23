@@ -4,6 +4,17 @@ import { loadString, saveString } from "@/lib/storage";
 export type Theme = "light" | "dark" | "amber";
 export type Locale = "ru" | "en" | "zh";
 
+const VALID_THEMES: readonly Theme[] = ["light", "dark", "amber"] as const;
+const VALID_LOCALES: readonly Locale[] = ["ru", "en", "zh"] as const;
+
+function validateTheme(value: string): Theme {
+  return VALID_THEMES.includes(value as Theme) ? (value as Theme) : "light";
+}
+
+function validateLocale(value: string): Locale {
+  return VALID_LOCALES.includes(value as Locale) ? (value as Locale) : "ru";
+}
+
 // Маппинг hash-роутов → Next.js paths (перенесено сюда для устранения circular dependency)
 const ROUTE_MAP: Record<string, string> = {
   home: "/",
@@ -69,8 +80,8 @@ export interface UISlice {
 }
 
 export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
-  theme: loadString("maestria-theme", "light") as Theme,
-  locale: loadString("maestria-locale", "ru") as Locale,
+  theme: validateTheme(loadString("maestria-theme", "light")),
+  locale: validateLocale(loadString("maestria-locale", "ru")),
   sidebarOpen: false,
   isLoading: false,
   currentPage: "home",

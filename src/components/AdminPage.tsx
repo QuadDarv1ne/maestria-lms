@@ -33,7 +33,8 @@ import { getInitials } from "@/lib/utils";
 type AdminTab = "dashboard" | "users" | "tests" | "materials" | "finance" | "courses" | "reports" | "logs" | "settings";
 
 export function AdminPage() {
-  const { user, navigate } = useAppStore();
+  const user = useAppStore((s) => s.user);
+  const navigate = useAppStore((s) => s.navigate);
   const locale = useAppStore((s) => s.locale);
   const monthLabels = [
     t("common.monthJan", locale), t("common.monthFeb", locale), t("common.monthMar", locale),

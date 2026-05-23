@@ -6,7 +6,7 @@ import { DocumentPageLayout } from "@/components/DocumentPageLayout";
 import { Scale } from "lucide-react";
 
 export function RulesPage() {
-  const { locale } = useAppStore();
+  const locale = useAppStore((s) => s.locale);
 
   const tocItems = [
     { id: "rules-1", label: t("rules.toc1", locale) },

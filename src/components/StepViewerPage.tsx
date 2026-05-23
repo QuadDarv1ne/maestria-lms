@@ -125,7 +125,8 @@ export function StepViewerPage({
   courseId: string;
   lessonId: string;
 }) {
-  const { navigate, user } = useAppStore();
+  const navigate = useAppStore((s) => s.navigate);
+  const user = useAppStore((s) => s.user);
   const { locale } = useLocale();
   const [step, setStep] = useState<StepData | null>(null);
   const [courseStructure, setCourseStructure] = useState<CourseStructure | null>(null);

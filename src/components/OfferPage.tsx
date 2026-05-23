@@ -6,7 +6,7 @@ import { DocumentPageLayout } from "@/components/DocumentPageLayout";
 import { FileSignature } from "lucide-react";
 
 export function OfferPage() {
-  const { locale } = useAppStore();
+  const locale = useAppStore((s) => s.locale);
 
   const tocItems = [
     { id: "offer-1", label: t("offer.toc1", locale) },

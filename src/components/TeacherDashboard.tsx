@@ -55,7 +55,9 @@ interface TeacherStats {
 }
 
 export function TeacherDashboard() {
-  const { user, navigate, locale } = useAppStore();
+  const user = useAppStore((s) => s.user);
+  const navigate = useAppStore((s) => s.navigate);
+  const locale = useAppStore((s) => s.locale);
   const [courses, setCourses] = useState<TeacherCourse[]>([]);
   const [stats, setStats] = useState<TeacherStats | null>(null);
   const [loading, setLoading] = useState(true);

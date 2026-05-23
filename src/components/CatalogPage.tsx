@@ -27,7 +27,10 @@ import { CATEGORIES } from "@/lib/constants";
 import { useCourses } from "@/hooks/useCourses";
 
 export function CatalogPage() {
-  const { navigate, courseFilters, setCourseFilters, locale } = useAppStore();
+  const navigate = useAppStore((s) => s.navigate);
+  const courseFilters = useAppStore((s) => s.courseFilters);
+  const setCourseFilters = useAppStore((s) => s.setCourseFilters);
+  const locale = useAppStore((s) => s.locale);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 12,

@@ -6,7 +6,7 @@ import { DocumentPageLayout } from "@/components/DocumentPageLayout";
 import { Baby } from "lucide-react";
 
 export function AgeRatingPage() {
-  const { locale } = useAppStore();
+  const locale = useAppStore((s) => s.locale);
 
   const tocItems = [
     { id: "age-1", label: t("age.toc1", locale) },

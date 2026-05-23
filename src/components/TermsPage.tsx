@@ -6,7 +6,7 @@ import { DocumentPageLayout } from "@/components/DocumentPageLayout";
 import { FileText } from "lucide-react";
 
 export function TermsPage() {
-  const { locale } = useAppStore();
+  const locale = useAppStore((s) => s.locale);
 
   const tocItems = [
     { id: "section-1", label: t("terms.toc1", locale) || "Общие положения" },

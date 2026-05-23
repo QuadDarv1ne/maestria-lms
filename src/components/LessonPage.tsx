@@ -109,7 +109,8 @@ export function LessonPage({
   courseId: string;
   lessonId: string;
 }) {
-  const { navigate, user } = useAppStore();
+  const navigate = useAppStore((s) => s.navigate);
+  const user = useAppStore((s) => s.user);
   const locale = useAppStore((s) => s.locale);
   const [lesson, setLesson] = useState<LessonData | null>(null);
   const [loading, setLoading] = useState(true);

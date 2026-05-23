@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import {
@@ -14,13 +14,15 @@ import {
 import type { Locale } from "@/lib/store";
 
 export function Footer() {
-  const { navigate, locale, setLocale } = useAppStore();
+  const navigate = useAppStore((s) => s.navigate);
+  const locale = useAppStore((s) => s.locale);
+  const setLocale = useAppStore((s) => s.setLocale);
 
-  const localeLabels: { value: Locale; flag: string; label: string }[] = [
+  const localeLabels = useMemo<{ value: Locale; flag: string; label: string }[]>(() => [
     { value: "ru", flag: "🇷🇺", label: t("locale.ru", locale) },
     { value: "en", flag: "🇬🇧", label: t("locale.en", locale) },
     { value: "zh", flag: "🇨🇳", label: t("locale.zh", locale) },
-  ];
+  ], [locale]);
 
   return (
     <footer className="border-t bg-muted/40 mt-auto">

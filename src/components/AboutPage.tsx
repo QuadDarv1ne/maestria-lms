@@ -30,7 +30,8 @@ import {
 } from "lucide-react";
 
 export function AboutPage() {
-  const { navigate, locale } = useAppStore();
+  const navigate = useAppStore((s) => s.navigate);
+  const locale = useAppStore((s) => s.locale);
   const tr = (key: string) => t(key, locale);
 
   return (

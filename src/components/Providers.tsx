@@ -7,7 +7,8 @@ import { useAppStore } from "@/lib/store";
 import { useSSENotifications } from "@/hooks/useSSENotifications";
 
 function ThemeAndLocaleSync() {
-  const { theme, locale } = useAppStore();
+  const theme = useAppStore((s) => s.theme);
+  const locale = useAppStore((s) => s.locale);
 
   useEffect(() => {
     const html = document.documentElement;

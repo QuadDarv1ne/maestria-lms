@@ -6,7 +6,7 @@ import { DocumentPageLayout } from "@/components/DocumentPageLayout";
 import { Cookie } from "lucide-react";
 
 export function CookiePage() {
-  const { locale } = useAppStore();
+  const locale = useAppStore((s) => s.locale);
 
   const tocItems = [
     { id: "cookie-1", label: t("cookie.toc1", locale) },

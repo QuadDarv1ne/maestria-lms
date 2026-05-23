@@ -91,7 +91,14 @@ interface ProgressData {
 }
 
 export function ProfilePage() {
-  const { user, navigate, setUser, logout, favorites, toggleFavorite, isFavorite, locale } = useAppStore();
+  const user = useAppStore((s) => s.user);
+  const navigate = useAppStore((s) => s.navigate);
+  const setUser = useAppStore((s) => s.setUser);
+  const logout = useAppStore((s) => s.logout);
+  const favorites = useAppStore((s) => s.favorites);
+  const toggleFavorite = useAppStore((s) => s.toggleFavorite);
+  const isFavorite = useAppStore((s) => s.isFavorite);
+  const locale = useAppStore((s) => s.locale);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [enrollmentDetails, setEnrollmentDetails] = useState<EnrollmentDetail[]>([]);

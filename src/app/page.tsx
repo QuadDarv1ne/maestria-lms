@@ -19,7 +19,7 @@ import { PageWrapper } from "@/components/PageWrapper";
  * Все остальные маршруты (/catalog, /profile и т.д.) используют (main)/layout.tsx.
  */
 export default function Page() {
-  const { setUser } = useAppStore();
+  const setUser = useAppStore((s) => s.setUser);
 
   // Загрузка сессии пользователя
   useEffect(() => {

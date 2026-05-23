@@ -110,14 +110,12 @@ function formatTimeAgo(timestamp: number, locale: Locale): string {
 // ============ COMPONENT ============
 
 export function NotificationsPage() {
-  const {
-    notifications,
-    markNotificationRead,
-    markAllNotificationsRead,
-    unreadNotificationsCount,
-    navigate,
-    locale,
-  } = useAppStore();
+  const notifications = useAppStore((s) => s.notifications);
+  const markNotificationRead = useAppStore((s) => s.markNotificationRead);
+  const markAllNotificationsRead = useAppStore((s) => s.markAllNotificationsRead);
+  const unreadNotificationsCount = useAppStore((s) => s.unreadNotificationsCount);
+  const navigate = useAppStore((s) => s.navigate);
+  const locale = useAppStore((s) => s.locale);
 
   const unreadCount = unreadNotificationsCount();
 

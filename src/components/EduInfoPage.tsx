@@ -7,7 +7,7 @@ import { DocumentPageLayout } from "@/components/DocumentPageLayout";
 import { School } from "lucide-react";
 
 export function EduInfoPage() {
-  const { locale } = useAppStore();
+  const locale = useAppStore((s) => s.locale);
 
   const tocItems = [
     { id: "edu-1", label: t("eduinfo.toc1", locale) },

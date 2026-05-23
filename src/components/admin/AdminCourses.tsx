@@ -12,7 +12,7 @@ import type { AdminTabProps } from "./types";
 
 export function AdminCourses(props: AdminTabProps) {
   const { locale, courses, avgRating } = props;
-  const { navigate } = useAppStore();
+  const navigate = useAppStore((s) => s.navigate);
 
   return (
     <div className="space-y-6">

@@ -38,7 +38,8 @@ export function AdminUsers(props: AdminTabProps) {
     handleUserSearch, handleRoleFilter, handleUserRoleChange,
     handleUserStatusChange, setUserPage,
   } = props;
-  const { user, navigate } = useAppStore();
+  const user = useAppStore((s) => s.user);
+  const navigate = useAppStore((s) => s.navigate);
 
   return (
     <div className="space-y-6">

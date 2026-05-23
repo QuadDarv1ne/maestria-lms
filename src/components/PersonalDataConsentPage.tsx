@@ -6,7 +6,7 @@ import { DocumentPageLayout } from "@/components/DocumentPageLayout";
 import { ShieldCheck } from "lucide-react";
 
 export function PersonalDataConsentPage() {
-  const { locale } = useAppStore();
+  const locale = useAppStore((s) => s.locale);
 
   const tocItems = [
     { id: "pdc-1", label: t("pdc.toc1", locale) },

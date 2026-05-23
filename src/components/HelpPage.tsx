@@ -61,7 +61,8 @@ function getCategories(locale: Locale) {
 }
 
 export function HelpPage() {
-  const { navigate, locale } = useAppStore();
+  const navigate = useAppStore((s) => s.navigate);
+  const locale = useAppStore((s) => s.locale);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [openItems, setOpenItems] = useState<Set<string>>(new Set());

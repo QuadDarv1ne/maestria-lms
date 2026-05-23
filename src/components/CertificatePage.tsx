@@ -38,7 +38,9 @@ interface CourseData {
 /* ── component ───────────────────────────────────────────────────────── */
 
 export function CertificatePage({ courseId }: { courseId: string }) {
-  const { user, navigate, locale } = useAppStore();
+  const user = useAppStore((s) => s.user);
+  const navigate = useAppStore((s) => s.navigate);
+  const locale = useAppStore((s) => s.locale);
   const [course, setCourse] = useState<CourseData | null>(null);
   const [certificate, setCertificate] = useState<CertificateData | null>(null);
   const [loading, setLoading] = useState(true);

@@ -50,7 +50,9 @@ interface Enrollment {
 // ============ COMPONENT ============
 
 export function AchievementsPage() {
-  const { user, navigate, locale } = useAppStore();
+  const user = useAppStore((s) => s.user);
+  const navigate = useAppStore((s) => s.navigate);
+  const locale = useAppStore((s) => s.locale);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [achievementData, setAchievementData] = useState<AchievementData | null>(null);

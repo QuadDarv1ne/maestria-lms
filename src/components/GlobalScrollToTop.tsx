@@ -20,7 +20,8 @@ export function GlobalScrollToTop() {
   const [hovered, setHovered] = useState(false);
   const [progress, setProgress] = useState(0);
   const rafRef = useRef<number>(0);
-  const { locale, theme } = useAppStore();
+  const locale = useAppStore((s) => s.locale);
+  const theme = useAppStore((s) => s.theme);
 
   const checkScroll = useCallback(() => {
     cancelAnimationFrame(rafRef.current);

@@ -20,7 +20,8 @@ import { useCourses } from "@/hooks/useCourses";
 import { t } from "@/lib/i18n";
 
 export function HomePage() {
-  const { navigate, locale } = useAppStore();
+  const navigate = useAppStore((s) => s.navigate);
+  const locale = useAppStore((s) => s.locale);
   const { data: coursesData, isLoading } = useCourses({ limit: 6 });
   const featuredCourses = coursesData?.courses ?? [];
   const loading = isLoading;

@@ -6,7 +6,7 @@ import { DocumentPageLayout } from "@/components/DocumentPageLayout";
 import { Shield } from "lucide-react";
 
 export function PrivacyPage() {
-  const { locale } = useAppStore();
+  const locale = useAppStore((s) => s.locale);
 
   const tocItems = [
     { id: "privacy-1", label: t("privacy.toc1", locale) || "Общие сведения" },

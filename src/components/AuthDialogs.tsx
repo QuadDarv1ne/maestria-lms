@@ -27,7 +27,8 @@ import { t } from "@/lib/i18n";
 import { toast } from "sonner";
 
 export function AuthDialogs() {
-  const { setUser, locale } = useAppStore();
+  const setUser = useAppStore((s) => s.setUser);
+  const locale = useAppStore((s) => s.locale);
   const searchParams = useSearchParams();
   const router = useRouter();
   const [showLoginPassword, setShowLoginPassword] = useState(false);

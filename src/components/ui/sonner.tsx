@@ -5,7 +5,7 @@ import { Toaster as Sonner, ToasterProps } from "sonner"
 import { useAppStore } from "@/lib/store"
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme } = useAppStore()
+  const theme = useAppStore((s) => s.theme)
 
   return (
     <Sonner

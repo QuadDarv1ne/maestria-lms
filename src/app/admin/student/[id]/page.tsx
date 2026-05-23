@@ -53,7 +53,7 @@ function formatTime(seconds: number, locale: string): string {
 function StudentDetailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { locale } = useAppStore();
+  const locale = useAppStore((s) => s.locale);
   const userId = searchParams.get("userId") || "";
 
   const { data, isLoading, error } = useStudentStats(userId);

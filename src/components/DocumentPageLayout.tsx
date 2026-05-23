@@ -13,7 +13,7 @@ import type { LucideIcon } from "lucide-react";
    ═══════════════════════════════════════════════════════════════════════ */
 function ReadingProgressBar() {
   const [progress, setProgress] = useState(0);
-  const { theme } = useAppStore();
+  const theme = useAppStore((s) => s.theme);
   const rafRef = useRef<number>(0);
 
   const updateProgress = useCallback(() => {
@@ -97,7 +97,8 @@ export function DocumentPageLayout({
   headerExtra,
   footer,
 }: DocumentPageLayoutProps) {
-  const { navigate, locale } = useAppStore();
+  const navigate = useAppStore((s) => s.navigate);
+  const locale = useAppStore((s) => s.locale);
 
   return (
     <>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { getInitials } from "@/lib/utils";
@@ -40,13 +41,22 @@ const themeOptions: { value: Theme; icon: string; labelKey: string }[] = [
 ];
 
 export function Header() {
-  const { user, sidebarOpen, setSidebarOpen, navigate, logout, unreadNotificationsCount, theme, setTheme, locale, setLocale } = useAppStore();
+  const user = useAppStore((s) => s.user);
+  const sidebarOpen = useAppStore((s) => s.sidebarOpen);
+  const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
+  const navigate = useAppStore((s) => s.navigate);
+  const logout = useAppStore((s) => s.logout);
+  const unreadNotificationsCount = useAppStore((s) => s.unreadNotificationsCount);
+  const theme = useAppStore((s) => s.theme);
+  const setTheme = useAppStore((s) => s.setTheme);
+  const locale = useAppStore((s) => s.locale);
+  const setLocale = useAppStore((s) => s.setLocale);
 
-  const localeOptions: { value: Locale; flag: string; label: string }[] = [
+  const localeOptions = useMemo<{ value: Locale; flag: string; label: string }[]>(() => [
     { value: "ru", flag: "🇷🇺", label: t("locale.ru", locale) },
     { value: "en", flag: "🇬🇧", label: t("locale.en", locale) },
     { value: "zh", flag: "🇨🇳", label: t("locale.zh", locale) },
-  ];
+  ], [locale]);
 
   const unreadCount = unreadNotificationsCount();
 
@@ -254,7 +264,7 @@ export function Header() {
                   className="relative h-9 w-9 rounded-full"
                 >
                   <Avatar className="h-9 w-9">
-                    <AvatarImage src={user.image || ""} alt={user.name || ""} />
+                    {user.image && <AvatarImage src={user.image} alt={user.name || ""} />}
                     <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-semibold">
                       {userInitials}
                     </AvatarFallback>

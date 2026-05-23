@@ -10,6 +10,7 @@ import { GlobalScrollToTop } from "@/components/GlobalScrollToTop";
 import { PageTransition } from "@/components/PageTransition";
 import { PageWrapper } from "@/components/PageWrapper";
 import { RouterSync } from "@/components/RouterSync";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function MainLayout({
   children,
@@ -19,22 +20,24 @@ export default function MainLayout({
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground">
-      <RouterSync />
-      <CustomCursor />
-      <GlobalScrollToTop />
-      <Header />
-      <main className="flex-1">
-        <PageWrapper>
-          <PageTransition pageKey={pathname}>
-            {children}
-          </PageTransition>
-        </PageWrapper>
-      </main>
-      <Footer />
-      <Suspense fallback={null}>
-        <AuthDialogs />
-      </Suspense>
-    </div>
+    <ErrorBoundary>
+      <div className="min-h-screen flex flex-col bg-background text-foreground">
+        <RouterSync />
+        <CustomCursor />
+        <GlobalScrollToTop />
+        <Header />
+        <main className="flex-1">
+          <PageWrapper>
+            <PageTransition pageKey={pathname}>
+              {children}
+            </PageTransition>
+          </PageWrapper>
+        </main>
+        <Footer />
+        <Suspense fallback={null}>
+          <AuthDialogs />
+        </Suspense>
+      </div>
+    </ErrorBoundary>
   );
 }

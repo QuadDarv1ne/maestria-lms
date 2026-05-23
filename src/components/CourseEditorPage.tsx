@@ -21,7 +21,8 @@ import {
 } from "@/components/course-editor/types";
 
 export function CourseEditorPage() {
-  const { navigate, user } = useAppStore();
+  const navigate = useAppStore((s) => s.navigate);
+  const user = useAppStore((s) => s.user);
   const locale = useAppStore((s) => s.locale);
   const [activeTab, setActiveTab] = useState("basic");
 

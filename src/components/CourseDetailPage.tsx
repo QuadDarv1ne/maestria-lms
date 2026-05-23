@@ -110,7 +110,12 @@ interface CourseDetail {
 }
 
 export function CourseDetailPage({ courseId }: { courseId: string }) {
-  const { navigate, user, toggleFavorite, isFavorite, publishNotification, locale } = useAppStore();
+  const navigate = useAppStore((s) => s.navigate);
+  const user = useAppStore((s) => s.user);
+  const toggleFavorite = useAppStore((s) => s.toggleFavorite);
+  const isFavorite = useAppStore((s) => s.isFavorite);
+  const publishNotification = useAppStore((s) => s.publishNotification);
+  const locale = useAppStore((s) => s.locale);
   const queryClient = useQueryClient();
   const [enrolling, setEnrolling] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string>("sbp");
