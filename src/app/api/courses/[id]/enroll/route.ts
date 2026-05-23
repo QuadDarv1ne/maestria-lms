@@ -80,16 +80,6 @@ export async function POST(
       );
     }
 
-    // Проверяем максимальное количество студентов
-    if (course.maxStudents && course.maxStudents > 0) {
-      if (course.studentCount >= course.maxStudents) {
-        return NextResponse.json(
-          { error: "Достигнут лимит студентов на курсе" },
-          { status: 400 }
-        );
-      }
-    }
-
     // Проверяем пререквизиты (outside transaction - read-only check)
     let missingPrereqs: { id: string; title: string }[] = [];
     if (course.prerequisites) {
@@ -151,6 +141,17 @@ export async function POST(
     // Wrap enrollment logic in a transaction to prevent race conditions
     // when a user sends multiple concurrent requests.
     const result = await db.$transaction(async (tx) => {
+      // Проверяем максимальное количество студентов (inside transaction for atomicity)
+      if (course.maxStudents && course.maxStudents > 0) {
+        const currentCourse = await tx.course.findUnique({
+          where: { id: resolvedCourseId },
+          select: { studentCount: true, maxStudents: true },
+        });
+        if (currentCourse && currentCourse.maxStudents != null && currentCourse.studentCount >= currentCourse.maxStudents) {
+          return { error: "Достигнут лимит студентов на курсе", status: 400 as const };
+        }
+      }
+
       // Проверяем, не записан ли уже пользователь (inside transaction for atomicity)
       const existingEnrollment = await tx.enrollment.findUnique({
         where: {

@@ -453,20 +453,17 @@ export async function PUT(request: NextRequest) {
       },
     });
 
-    // Если переданы модули, обновляем их
+    // Если переданы модули, обновляем их с сохранением существующих ID
     if (modules !== undefined) {
-      // Удаляем все существующие модули и создаём новые
-      await db.module.deleteMany({
-        where: { courseId },
-      });
-
       type ModuleInput = {
+        id?: string;
         title?: string;
         description?: string;
         sortOrder?: number;
         lessons?: LessonInput[];
       };
       type LessonInput = {
+        id?: string;
         title?: string;
         type?: string;
         content?: string;
@@ -476,38 +473,134 @@ export async function PUT(request: NextRequest) {
         isFree?: boolean;
       };
 
-      await db.module.createMany({
-        data: (modules as ModuleInput[]).map((mod, mIdx) => ({
-          title: mod.title || `Модуль ${mIdx + 1}`,
-          description: mod.description || null,
-          sortOrder: mod.sortOrder || mIdx + 1,
-          courseId,
-        })),
-      });
-
-      // Создаём уроки для каждого модуля
-      const createdModules = await db.module.findMany({
+      const existingModules = await db.module.findMany({
         where: { courseId },
+        include: { lessons: true },
         orderBy: { sortOrder: "asc" },
       });
 
-      for (let mIdx = 0; mIdx < createdModules.length; mIdx++) {
-        const mod = modules[mIdx] as ModuleInput;
-        if (mod.lessons && mod.lessons.length > 0) {
-          await db.lesson.createMany({
-            data: mod.lessons.map((lesson, lIdx) => ({
-              title: lesson.title || `Урок ${lIdx + 1}`,
-              type: lesson.type || "text",
-              content: lesson.content || null,
-              videoUrl: lesson.videoUrl || null,
-              duration: Number(lesson.duration) || 0,
-              sortOrder: lesson.sortOrder || lIdx + 1,
-              isFree: lesson.isFree || false,
-              moduleId: createdModules[mIdx].id,
-            })),
-          });
+      const existingModuleMap = new Map<string, (typeof existingModules)[number]>();
+      for (const mod of existingModules) {
+        existingModuleMap.set(mod.id, mod);
+      }
+
+      const incomingModuleIds = new Set<string>();
+      for (const mod of modules as ModuleInput[]) {
+        if (mod.id && existingModuleMap.has(mod.id)) {
+          incomingModuleIds.add(mod.id);
         }
       }
+
+      // Cache existing module data before transaction (needed for lesson diff)
+      const existingModuleData = new Map<string, (typeof existingModules)[number]>();
+      for (const [id, mod] of existingModuleMap) {
+        if (incomingModuleIds.has(id)) {
+          existingModuleData.set(id, mod);
+        }
+      }
+
+      await db.$transaction(async (tx) => {
+        for (let mIdx = 0; mIdx < (modules as ModuleInput[]).length; mIdx++) {
+          const mod = (modules as ModuleInput[])[mIdx];
+          const existingId = mod.id && existingModuleMap.has(mod.id) ? mod.id : null;
+
+          if (existingId) {
+            await tx.module.update({
+              where: { id: existingId },
+              data: {
+                title: mod.title || `Модуль ${mIdx + 1}`,
+                description: mod.description || null,
+                sortOrder: mod.sortOrder ?? mIdx + 1,
+              },
+            });
+
+            const existingMod = existingModuleData.get(existingId);
+            if (!existingMod) continue;
+
+            const existingLessonMap = new Map<string, (typeof existingMod.lessons)[number]>();
+            for (const lesson of existingMod.lessons) {
+              existingLessonMap.set(lesson.id, lesson);
+            }
+
+            const incomingLessonIds = new Set<string>();
+            for (const lesson of mod.lessons || []) {
+              if (lesson.id && existingLessonMap.has(lesson.id)) {
+                incomingLessonIds.add(lesson.id);
+              }
+            }
+
+            for (let lIdx = 0; lIdx < (mod.lessons || []).length; lIdx++) {
+              const lesson = (mod.lessons || [])[lIdx];
+              const existingLessonId = lesson.id && existingLessonMap.has(lesson.id) ? lesson.id : null;
+
+              if (existingLessonId) {
+                await tx.lesson.update({
+                  where: { id: existingLessonId },
+                  data: {
+                    title: lesson.title || `Урок ${lIdx + 1}`,
+                    type: lesson.type || "text",
+                    content: lesson.content || null,
+                    videoUrl: lesson.videoUrl || null,
+                    duration: Number(lesson.duration) || 0,
+                    sortOrder: lesson.sortOrder ?? lIdx + 1,
+                    isFree: lesson.isFree || false,
+                  },
+                });
+              } else {
+                await tx.lesson.create({
+                  data: {
+                    moduleId: existingId,
+                    title: lesson.title || `Урок ${lIdx + 1}`,
+                    type: lesson.type || "text",
+                    content: lesson.content || null,
+                    videoUrl: lesson.videoUrl || null,
+                    duration: Number(lesson.duration) || 0,
+                    sortOrder: lesson.sortOrder ?? lIdx + 1,
+                    isFree: lesson.isFree || false,
+                  },
+                });
+              }
+            }
+
+            for (const [lessonId, _existingLesson] of existingLessonMap) {
+              if (!incomingLessonIds.has(lessonId)) {
+                await tx.lesson.delete({ where: { id: lessonId } });
+              }
+            }
+          } else {
+            const newModule = await tx.module.create({
+              data: {
+                courseId,
+                title: mod.title || `Модуль ${mIdx + 1}`,
+                description: mod.description || null,
+                sortOrder: mod.sortOrder ?? mIdx + 1,
+              },
+            });
+
+            for (let lIdx = 0; lIdx < (mod.lessons || []).length; lIdx++) {
+              const lesson = (mod.lessons || [])[lIdx];
+              await tx.lesson.create({
+                data: {
+                  moduleId: newModule.id,
+                  title: lesson.title || `Урок ${lIdx + 1}`,
+                  type: lesson.type || "text",
+                  content: lesson.content || null,
+                  videoUrl: lesson.videoUrl || null,
+                  duration: Number(lesson.duration) || 0,
+                  sortOrder: lesson.sortOrder ?? lIdx + 1,
+                  isFree: lesson.isFree || false,
+                },
+              });
+            }
+          }
+        }
+
+        for (const [moduleId] of existingModuleMap) {
+          if (!incomingModuleIds.has(moduleId)) {
+            await tx.module.delete({ where: { id: moduleId } });
+          }
+        }
+      });
     }
 
     // Перечитываем курс с модулями

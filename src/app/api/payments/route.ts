@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
         status: "pending",
         paymentMethod,
         paymentProvider: providerMap[paymentMethod] || paymentMethod,
-        transactionId: `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        transactionId: `txn_${Date.now()}_${crypto.randomUUID()}`,
       },
     });
 

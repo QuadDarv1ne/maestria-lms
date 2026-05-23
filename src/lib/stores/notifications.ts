@@ -52,8 +52,11 @@ export const createNotificationsSlice: StateCreator<NotificationsSlice, [], [], 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ read: true }),
       });
-    } catch {
-      // Server sync failed — local state already updated
+    } catch (err) {
+      log.warn("Failed to sync notification read status to server", {
+        notificationId: id,
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   },
 
@@ -67,8 +70,10 @@ export const createNotificationsSlice: StateCreator<NotificationsSlice, [], [], 
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
       });
-    } catch {
-      // Server sync failed — local state already updated
+    } catch (err) {
+      log.warn("Failed to sync mark-all read status to server", {
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   },
 
