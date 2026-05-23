@@ -34,7 +34,7 @@ export function middleware(_request: NextRequest) {
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: https://api.dicebear.com https://*.trbcdn.net",
       "font-src 'self'",
-      "connect-src 'self'",
+      "connect-src 'self' https://s3c3.001.gpucloud.ru",
       "frame-ancestors 'none'",
     ].join("; ")
   );
