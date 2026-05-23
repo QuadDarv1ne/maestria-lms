@@ -1,16 +1,16 @@
 import { PrismaClient, Prisma } from '@prisma/client'
 
-export type DatabaseProvider = 'postgresql' | 'mysql' | 'sqlite'
+export type DatabaseProvider = 'postgresql' | 'mysql' | 'sqlite' | 'mongodb'
 
 /**
  * Get the current database provider from environment variables
- * Defaults to 'postgresql' if not set
+ * Defaults to 'sqlite' if not set
  */
 export function getDatabaseProvider(): DatabaseProvider {
   const provider = process.env.DATABASE_PROVIDER?.toLowerCase()
 
-  if (!provider || !['postgresql', 'mysql', 'sqlite'].includes(provider)) {
-    return 'postgresql'
+  if (!provider || !['postgresql', 'mysql', 'sqlite', 'mongodb'].includes(provider)) {
+    return 'sqlite'
   }
 
   return provider as DatabaseProvider
@@ -20,6 +20,13 @@ export function getDatabaseProvider(): DatabaseProvider {
  * Get the appropriate connection URL format based on provider
  */
 export function formatDatabaseUrl(url: string, provider: DatabaseProvider): string {
+  if (provider === 'mongodb') {
+    if (!url.startsWith('mongodb://') && !url.startsWith('mongodb+srv://')) {
+      throw new Error('Invalid DATABASE_URL for mongodb. Expected format: mongodb://host:port/database')
+    }
+    return url
+  }
+
   if (provider === 'sqlite' && !url.startsWith('file:')) {
     return `file:${url}`
   }
@@ -72,3 +79,6 @@ export const db =
 export { Prisma }
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
+
+// Export unified database abstraction for use across the app
+export { database as unifiedDb } from './database'

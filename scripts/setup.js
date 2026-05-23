@@ -118,6 +118,25 @@ function findAvailablePort(startPort = 3000, maxAttempts = 10) {
   });
 }
 
+/**
+ * Find available ports for database services
+ * Returns an object with recommended ports for each DB type
+ */
+async function findAvailableDbPorts() {
+  const defaults = { postgresql: 5432, mysql: 3306, mongodb: 27017 }
+  const ports = {}
+
+  for (const [db, port] of Object.entries(defaults)) {
+    try {
+      ports[db] = await findAvailablePort(port, 20)
+    } catch {
+      ports[db] = port // fallback to default
+    }
+  }
+
+  return ports
+}
+
 // --- Phase 3: .env Validation & Generation ---
 function parseEnv(filePath) {
   const result = {};
@@ -186,6 +205,14 @@ async function validateAndGenerateEnv(port) {
     console.log(info(`Set DATABASE_URL=file:./data.db`));
   }
 
+  // Ensure DATABASE_PROVIDER
+  if (!envVars.DATABASE_PROVIDER) {
+    const provider = detectProviderFromUrl(envVars.DATABASE_URL)
+    envVars.DATABASE_PROVIDER = provider || "sqlite"
+    changed = true
+    console.log(info(`Set DATABASE_PROVIDER=${envVars.DATABASE_PROVIDER}`))
+  }
+
   // Ensure NEXTAUTH_SECRET (prefer .env.local)
   if (!allVars.NEXTAUTH_SECRET) {
     const secret = crypto.randomBytes(32).toString("base64");
@@ -212,9 +239,30 @@ async function validateAndGenerateEnv(port) {
     console.log(ok(".env updated"));
   }
 
+  // Detect DB ports and display info
+  try {
+    const dbPorts = await findAvailableDbPorts()
+    console.log(info(`Available DB ports — PostgreSQL: ${dbPorts.postgresql}, MySQL: ${dbPorts.mysql}, MongoDB: ${dbPorts.mongodb}`))
+  } catch {
+    // Ignore port detection errors during startup
+  }
+
   // Generate .env.example (always, to keep it in sync)
   fs.writeFileSync(ENV_EXAMPLE_FILE, generateEnvExample(port), "utf8");
   console.log(ok(".env.example generated"));
+}
+
+/**
+ * Detect database provider from URL (duplicated from db-setup.js for setup)
+ */
+function detectProviderFromUrl(databaseUrl) {
+  if (!databaseUrl) return null
+  const url = databaseUrl.toLowerCase()
+  if (url.startsWith('file:') || url.endsWith('.db') || url.endsWith('.sqlite')) return 'sqlite'
+  if (url.startsWith('postgresql://') || url.startsWith('postgres://')) return 'postgresql'
+  if (url.startsWith('mysql://') || url.startsWith('mariadb://')) return 'mysql'
+  if (url.startsWith('mongodb://') || url.startsWith('mongodb+srv://')) return 'mongodb'
+  return null
 }
 
 // --- Phase 4: Prerequisites ---
@@ -234,6 +282,16 @@ function runCommand(cmd, label, cwd = ROOT) {
 function runPrerequisites(pm) {
   const cmd = pm.cmd;
   runCommand(`${cmd} install`, "Installing dependencies");
+
+  // Check if using MongoDB — skip Prisma commands
+  const envVars = parseEnv(ENV_FILE);
+  const provider = detectProviderFromUrl(envVars.DATABASE_URL) || envVars.DATABASE_PROVIDER || "sqlite"
+
+  if (provider === 'mongodb') {
+    console.log(info('MongoDB detected — skipping Prisma generate/push'))
+    return
+  }
+
   runCommand(`${cmd} run db:generate`, "Generating Prisma client");
   runCommand(`${cmd} run db:push`, "Pushing Prisma schema");
 }
@@ -361,6 +419,12 @@ async function main() {
   }
 
   await validateAndGenerateEnv(port);
+
+  // Show database provider info
+  const envVars = parseEnv(ENV_FILE);
+  const provider = detectProviderFromUrl(envVars.DATABASE_URL) || envVars.DATABASE_PROVIDER || "sqlite"
+  console.log(info(`Database provider: ${provider}`))
+
   runPrerequisites(pm);
   startDevServer(pm, port);
 }
