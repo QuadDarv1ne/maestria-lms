@@ -57,6 +57,7 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model Session {
@@ -149,6 +150,8 @@ model Module {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([courseId])
 }
 
 model Lesson {
@@ -167,6 +170,8 @@ model Lesson {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([moduleId])
 }
 
 model Assignment {
@@ -184,6 +189,8 @@ model Assignment {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([lessonId])
 }
 
 model AssignmentSubmission {
@@ -227,6 +234,9 @@ model Enrollment {
   course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@unique([userId, courseId])
+
+  @@index([courseId])
+  @@index([status])
 }
 
 model Progress {
@@ -280,6 +290,12 @@ model Payment {
   course          Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([status])
+  @@index([transactionId])
+  @@index([userId, courseId, status])
 }
 
 // ============ CERTIFICATES ============
@@ -311,4 +327,6 @@ model Certificate {
   course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
 }
