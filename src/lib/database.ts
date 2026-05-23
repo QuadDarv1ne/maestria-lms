@@ -6,10 +6,13 @@ const provider = process.env.DATABASE_PROVIDER || "sqlite"
 const isMongo = provider === "mongodb"
 
 function toObjectId(id: string): ObjectId {
+  if (!id || typeof id !== 'string') {
+    throw new Error(`Invalid ObjectId: expected non-empty string, got ${typeof id} (${id})`)
+  }
   try {
     return new ObjectId(id)
-  } catch {
-    return id as unknown as ObjectId
+  } catch (error) {
+    throw new Error(`Invalid ObjectId format: ${id}. Error: ${error instanceof Error ? error.message : String(error)}`)
   }
 }
 
