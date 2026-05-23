@@ -141,4 +141,18 @@ export async function getAuthSession(): Promise<ExtendedSession | null> {
   return getServerSession(authOptions) as Promise<ExtendedSession | null>;
 }
 
+/**
+ * Helper to check if user is authenticated and has admin role.
+ * Returns error response if not authorized.
+ */
+export function requireAdmin(session: ExtendedSession | null) {
+  if (!session?.user || session.user.role !== "admin") {
+    return new Response(
+      JSON.stringify({ error: "Доступ запрещён. Требуются права администратора" }),
+      { status: 403, headers: { "Content-Type": "application/json" } }
+    );
+  }
+  return null;
+}
+
 export { hashPassword };

@@ -8,7 +8,10 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   const session = await getAuthSession();
   if (!session?.user) {
-    return new Response("Необходимо авторизоваться", { status: 401 });
+    return new Response(JSON.stringify({ error: "Необходимо авторизоваться" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   const userId = session.user.id;

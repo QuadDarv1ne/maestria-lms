@@ -75,6 +75,7 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+  @@index([identifier])
 }
 
 // ============ COURSES ============
@@ -137,6 +138,7 @@ model Course {
   @@index([isPublished])
   @@index([isFeatured, createdAt])
   @@index([categoryId])
+  @@index([teacherId])
 }
 
 model Module {

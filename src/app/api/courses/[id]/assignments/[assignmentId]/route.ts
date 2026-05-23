@@ -10,9 +10,13 @@ export const runtime = "nodejs";
 
 const checkRateLimit = rateLimit("submission", RATE_LIMITS.default);
 
-// Base schema for all submissions
+// Base schema for all submissions - validate answer type and size
 const baseSubmissionSchema = z.object({
-  answer: z.any(),
+  answer: z.union([
+    z.string().max(10000),
+    z.array(z.unknown()).max(100),
+    z.record(z.string(), z.unknown()),
+  ]),
 });
 
 // POST: Submit an assignment answer

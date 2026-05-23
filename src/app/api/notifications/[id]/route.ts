@@ -4,8 +4,11 @@ import { getAuthSession } from "@/lib/auth";
 import { pushUnreadCount } from "@/lib/sse";
 import { handleApiError } from "@/lib/api-errors";
 import { z } from "zod";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
+
+const checkRateLimit = rateLimit("notification", RATE_LIMITS.default);
 
 const notificationPatchSchema = z.object({
   read: z.boolean().optional(),
@@ -15,6 +18,9 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
+
   const session = await getAuthSession();
   if (!session?.user) {
     return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
@@ -79,6 +85,9 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
+
   const session = await getAuthSession();
   if (!session?.user) {
     return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
