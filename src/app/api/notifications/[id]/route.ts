@@ -3,8 +3,13 @@ import { db } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { pushUnreadCount } from "@/lib/sse";
 import { handleApiError } from "@/lib/api-errors";
+import { z } from "zod";
 
 export const runtime = "nodejs";
+
+const notificationPatchSchema = z.object({
+  read: z.boolean().optional(),
+});
 
 export async function PATCH(
   request: NextRequest,
@@ -34,9 +39,18 @@ export async function PATCH(
     }
 
     const body = await request.json();
+    const validation = notificationPatchSchema.safeParse(body);
+
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: validation.error.issues[0]?.message || "Ошибка валидации" },
+        { status: 400 }
+      );
+    }
+
     const updated = await db.notification.update({
       where: { id },
-      data: { read: body.read ?? true },
+      data: { read: validation.data.read ?? true },
     });
 
     const unreadCount = await db.notification.count({

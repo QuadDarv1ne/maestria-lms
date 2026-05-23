@@ -3,10 +3,13 @@ import { db, Prisma } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
+import { z } from "zod";
 
 export const runtime = "nodejs";
 
 const checkRateLimit = rateLimit("adminStudentStats", RATE_LIMITS.admin);
+
+const userIdSchema = z.string().uuid("Неверный формат ID пользователя");
 
 // GET: Detailed statistics for a specific student
 export async function GET(request: NextRequest) {
@@ -27,6 +30,14 @@ export async function GET(request: NextRequest) {
     if (!userId) {
       return NextResponse.json(
         { error: "ID пользователя обязателен" },
+        { status: 400 }
+      );
+    }
+
+    const validation = userIdSchema.safeParse(userId);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: validation.error.issues[0]?.message || "Неверный формат ID" },
         { status: 400 }
       );
     }

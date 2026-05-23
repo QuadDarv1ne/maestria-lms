@@ -4,6 +4,7 @@ import { getAuthSession } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { z } from "zod";
+import { log } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -119,7 +120,7 @@ export async function POST(
           }
         }
       } catch {
-        // Если не удалось распарсить, оставляем submitted
+        log.warn("Failed to parse assignment answer for grading", { assignmentId: assignment.id, type: assignment.type });
       }
     } else if (assignment.type === "matching") {
       // Auto-grading для matching
@@ -149,7 +150,7 @@ export async function POST(
           }
         }
       } catch {
-        // Оставляем submitted
+        log.warn("Failed to parse assignment answer for grading", { assignmentId: assignment.id, type: assignment.type });
       }
     } else if (assignment.type === "ordering") {
       // Auto-grading для ordering
@@ -178,7 +179,7 @@ export async function POST(
           }
         }
       } catch {
-        // Оставляем submitted
+        log.warn("Failed to parse assignment answer for grading", { assignmentId: assignment.id, type: assignment.type });
       }
     }
 

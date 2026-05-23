@@ -6,6 +6,7 @@ import { authenticator } from "otplib";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import bcrypt from "bcryptjs";
 import { handleApiError } from "@/lib/api-errors";
+import { log } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -136,7 +137,7 @@ export async function PUT(request: NextRequest) {
     try {
       isValid = authenticator.verify({ token: code, secret: user.twoFactorSecret });
     } catch {
-      // Невалидный формат токена
+      log.warn("Invalid 2FA token format during verification", { userId });
     }
     if (!isValid) {
       return NextResponse.json({ error: "Неверный код подтверждения" }, { status: 400 });
@@ -197,7 +198,7 @@ export async function DELETE(request: NextRequest) {
     try {
       isValid = authenticator.verify({ token: code, secret: user.twoFactorSecret ?? "" });
     } catch {
-      // Invalid token format
+      log.warn("Invalid 2FA token format during disable", { userId });
     }
     if (!isValid) {
       return NextResponse.json({ error: "Неверный код подтверждения" }, { status: 400 });

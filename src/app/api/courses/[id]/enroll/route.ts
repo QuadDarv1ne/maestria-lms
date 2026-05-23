@@ -5,10 +5,15 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
+import { z } from "zod";
 
 export const runtime = "nodejs";
 
 const checkRateLimit = rateLimit("enrollment", RATE_LIMITS.enrollment);
+
+const paymentMethodSchema = z
+  .enum(["card", "sbp", "crypto"])
+  .default("sbp");
 
 // POST: Записаться на курс
 export async function POST(
@@ -135,10 +140,13 @@ export async function POST(
     let paymentMethod = "sbp";
     try {
       const body = await request.json();
-      if (body?.paymentMethod) {
-        paymentMethod = body.paymentMethod;
+      const parsed = paymentMethodSchema.safeParse(body?.paymentMethod);
+      if (parsed.success) {
+        paymentMethod = parsed.data;
       }
-    } catch { /* no body or invalid JSON — use default */ }
+    } catch (err) {
+      log.warn("Malformed request body for enroll, using default payment method", { error: err });
+    }
 
     // Wrap enrollment logic in a transaction to prevent race conditions
     // when a user sends multiple concurrent requests.

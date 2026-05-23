@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useAppStore } from "@/lib/store";
+import { log } from "@/lib/logger";
 
 export function useSSENotifications() {
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -46,7 +47,7 @@ export function useSSENotifications() {
             addNotificationRef.current(data.notification);
           }
         } catch (err) {
-          console.error("SSE message parse error:", err);
+          log.warn("SSE message parse error", { error: err });
         }
       };
 
