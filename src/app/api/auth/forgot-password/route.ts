@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createHash } from "node:crypto";
 import { db } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
 import { z } from "zod";
@@ -53,12 +54,13 @@ export async function POST(request: NextRequest) {
 
     // Создаём токен верификации
     const token = crypto.randomUUID();
+    const tokenHash = createHash("sha256").update(token).digest("hex");
     const expires = new Date(Date.now() + 3600000); // 1 час
 
     await db.verificationToken.create({
       data: {
         identifier: `reset-password:${email}`,
-        token: await hashPassword(token), // хешируем токен перед сохранением
+        token: tokenHash,
         expires,
       },
     });
@@ -109,12 +111,12 @@ export async function PUT(request: NextRequest) {
 
     const { token, password } = validation.data;
 
-    // Хешируем входящий токен для сравнения с сохранённым
-    const hashedToken = await hashPassword(token);
+    // Используем SHA-256 (детерминированный) для поиска токена
+    const tokenHash = createHash("sha256").update(token).digest("hex");
 
     // Ищем токен верификации
     const verificationToken = await db.verificationToken.findUnique({
-      where: { token: hashedToken },
+      where: { token: tokenHash },
     });
 
     if (!verificationToken) {
@@ -126,7 +128,7 @@ export async function PUT(request: NextRequest) {
 
     if (verificationToken.expires < new Date()) {
       // Удаляем просроченный токен
-      await db.verificationToken.delete({ where: { token: hashedToken } });
+      await db.verificationToken.delete({ where: { token: tokenHash } });
       return NextResponse.json(
         { error: "Токен истёк. Запросите новый" },
         { status: 400 }
