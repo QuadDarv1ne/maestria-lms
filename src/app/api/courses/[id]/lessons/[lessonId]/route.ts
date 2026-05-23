@@ -334,7 +334,7 @@ export async function POST(
             type: "completion",
             title: "Курс пройден!",
             message: `Поздравляем! Вы завершили курс "${course.title}"`,
-            link: `course/${courseId}`,
+            link: `/course/${course.id}`,
           }).catch((err) => log.error("Failed to send completion notification", { error: err }));
         }
       }

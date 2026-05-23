@@ -219,7 +219,7 @@ export async function PUT(
           type: "enrollment",
           title: "Оплата прошла",
           message: `Вы записаны на курс "${courseData.title}"`,
-          link: `course/${payment.courseId}`,
+          link: `/course/${payment.courseId}`,
         }).catch((err) => log.error("Failed to send payment notification", { error: err }));
       }
     }

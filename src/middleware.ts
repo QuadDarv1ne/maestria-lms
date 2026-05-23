@@ -10,11 +10,13 @@ export function middleware(_request: NextRequest) {
   // Prevent MIME type sniffing
   response.headers.set("X-Content-Type-Options", "nosniff");
 
-  // Enforce HTTPS (1 year, include subdomains, preload)
-  response.headers.set(
-    "Strict-Transport-Security",
-    "max-age=63072000; includeSubDomains; preload"
-  );
+  // Enforce HTTPS only in production (1 year, include subdomains, preload)
+  if (process.env.NODE_ENV === "production") {
+    response.headers.set(
+      "Strict-Transport-Security",
+      "max-age=63072000; includeSubDomains; preload"
+    );
+  }
 
   // Referrer policy - limit information leakage
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
@@ -30,7 +32,7 @@ export function middleware(_request: NextRequest) {
     "Content-Security-Policy",
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "script-src 'self' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: https://api.dicebear.com https://*.trbcdn.net",
       "font-src 'self'",

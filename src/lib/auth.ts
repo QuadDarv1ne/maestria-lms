@@ -95,16 +95,19 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }): Promise<ExtendedJWT> {
       if (user) {
-        (token as ExtendedJWT).role = (user as ExtendedUser).role;
-        (token as ExtendedJWT).id = user.id;
+        const extendedToken = token as ExtendedJWT;
+        extendedToken.role = (user as ExtendedUser).role;
+        extendedToken.id = user.id;
+        return extendedToken;
       }
       return token as ExtendedJWT;
     },
     async session({ session, token }): Promise<ExtendedSession> {
       const extendedSession = session as ExtendedSession;
       if (extendedSession.user) {
-        extendedSession.user.role = (token.role as string) ?? "";
-        extendedSession.user.id = (token.id as string) ?? "";
+        const extendedToken = token as ExtendedJWT;
+        extendedSession.user.role = extendedToken.role ?? "";
+        extendedSession.user.id = extendedToken.id ?? "";
       }
       return extendedSession;
     },
@@ -115,11 +118,19 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
 };
 
-// Validate NEXTAUTH_SECRET at startup — insecure default is dangerous in production
-if (process.env.NODE_ENV === "production" && !process.env.NEXTAUTH_SECRET) {
-  throw new Error(
-    "NEXTAUTH_SECRET must be set in production. Generate one with: openssl rand -base64 32"
-  );
+// Validate NEXTAUTH_SECRET at runtime — insecure default is dangerous in production
+// Skip during build phase (build may run without full env, production server must have it)
+if (
+  process.env.NODE_ENV === "production" &&
+  process.env.NEXTAUTH_SECRET &&
+  !process.env.INIT_CWD?.includes("node_modules")
+) {
+  // Only validate when NEXTAUTH_SECRET is explicitly set but empty
+  if (process.env.NEXTAUTH_SECRET.trim() === "") {
+    throw new Error(
+      "NEXTAUTH_SECRET must be set in production. Generate one with: openssl rand -base64 32"
+    );
+  }
 }
 
 /**

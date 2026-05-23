@@ -50,7 +50,17 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
-    const folder = (formData.get("folder") as string) || "uploads";
+    const rawFolder = (formData.get("folder") as string) || "uploads";
+
+    // Validate folder to prevent path traversal
+    const folderRegex = /^[a-zA-Z0-9_-]+$/;
+    if (!folderRegex.test(rawFolder)) {
+      return NextResponse.json(
+        { error: "Недопустимое имя папки" },
+        { status: 400 }
+      );
+    }
+    const folder = rawFolder;
 
     if (!file) {
       return NextResponse.json({ error: "Файл не выбран" }, { status: 400 });

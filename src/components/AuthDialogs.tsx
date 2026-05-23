@@ -112,12 +112,13 @@ export function AuthDialogs() {
         if (sessionRes.ok) {
           const sessionData = await sessionRes.json();
           if (sessionData?.user) {
+            const userData = sessionData.user as { id?: string; role?: string };
             setUser({
-              id: (sessionData.user as { id?: string }).id || "",
+              id: userData.id || "",
               email: sessionData.user.email || "",
               name: sessionData.user.name || null,
               image: sessionData.user.image || null,
-              role: (sessionData.user as { role?: string }).role || "student",
+              role: userData.role || "student",
             });
             toast.success(
               `${t("auth.welcome", locale)}, ${sessionData.user.name || t("auth.user", locale)}!`

@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // В dev-режиме возвращаем ссылку в ответе для тестирования
+    // В dev-режиме логируем ссылку в консоль для тестирования
     const resetUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/reset-password?token=${token}`;
     const isDev = process.env.NODE_ENV !== "production";
 
@@ -77,14 +77,15 @@ export async function POST(request: NextRequest) {
     //     subject: "Сброс пароля — Maestria LMS",
     //     html: `<p>Перейдите по ссылке для сброса пароля: <a href="${resetUrl}">Сбросить пароль</a></p>`,
     //   });
-    if (!isDev) {
+    if (isDev) {
+      log.info("Password reset URL (dev mode, check console)", { resetUrl });
+    } else {
       log.info("Password reset requested (email not configured)", { email });
     }
 
     return NextResponse.json(
       {
         message: "Если аккаунт существует, на email будет отправлена инструкция по сбросу пароля",
-        ...(isDev ? { resetUrl } : {}),
       },
       { status: 200 }
     );
