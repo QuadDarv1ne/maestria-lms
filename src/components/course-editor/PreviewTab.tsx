@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { t } from "@/lib/i18n";
 import { lessonTypeIcon, levelLabels, levelColors, CATEGORIES } from "@/lib/constants";
-import { formatNumber } from "@/lib/utils";
+import { formatNumber, getInitials } from "@/lib/utils";
 import type { Locale } from "@/lib/stores/ui";
 import type { CourseFormData } from "./types";
 import type { UserData } from "@/lib/store";
@@ -260,7 +260,7 @@ export function PreviewTab({
                 <Card className="border-0 shadow-sm">
                   <CardContent className="p-4 flex items-center gap-4">
                     <div className="w-16 h-16 bg-violet-100 rounded-full flex items-center justify-center text-violet-700 font-bold text-xl">
-                      {user?.name?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "T"}
+                      {getInitials(user?.name, "?")}
                     </div>
                     <div>
                       <h3 className="font-semibold">

@@ -28,6 +28,7 @@ import { AdminCourses } from "@/components/admin/AdminCourses";
 import { AdminReports } from "@/components/admin/AdminReports";
 import { AdminLogs } from "@/components/admin/AdminLogs";
 import { AdminSettings } from "@/components/admin/AdminSettings";
+import { getInitials } from "@/lib/utils";
 
 type AdminTab = "dashboard" | "users" | "tests" | "materials" | "finance" | "courses" | "reports" | "logs" | "settings";
 
@@ -210,7 +211,7 @@ export function AdminPage() {
           <div className="px-3 py-2 bg-muted/50 rounded-lg">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 bg-gradient-to-br from-blue-600 to-violet-600 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0">
-                {user?.name?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "AD"}
+                {getInitials(user?.name, "AD")}
               </div>
               <div className="overflow-hidden">
                 <p className="text-xs font-medium truncate">{user?.name || "Admin"}</p>

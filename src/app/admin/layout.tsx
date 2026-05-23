@@ -11,7 +11,7 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen bg-background text-foreground">
       <RouterSync />
-      <PageWrapper withErrorBoundary={false}>{children}</PageWrapper>
+      <PageWrapper withErrorBoundary={true}>{children}</PageWrapper>
     </div>
   );
 }

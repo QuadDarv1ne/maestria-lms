@@ -98,7 +98,7 @@ export function HelpPage() {
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-1 text-sm text-muted-foreground mb-6">
-        <button onClick={() => navigate("home")} className="hover:text-foreground transition-colors flex items-center gap-1">
+        <button onClick={() => navigate("home")} className="hover:text-foreground transition-colors flex items-center gap-1" aria-label={t("nav.home", locale)} type="button">
           <Home className="w-4 h-4" />
           {t("nav.home", locale)}
         </button>

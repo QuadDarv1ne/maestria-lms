@@ -2,6 +2,7 @@
 
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import { getInitials } from "@/lib/utils";
 import { signOut } from "next-auth/react";
 import { log } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
@@ -58,16 +59,7 @@ export function Header() {
     logout();
   };
 
-  const userInitials = user?.name
-    ? (user.name
-        .trim()
-        .split(/\s+/)
-        .map((n) => n[0])
-        .filter(Boolean)
-        .join("")
-        .toUpperCase()
-        .slice(0, 2) || "??")
-    : "??";
+  const userInitials = getInitials(user?.name, "??");
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">

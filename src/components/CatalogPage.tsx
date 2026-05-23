@@ -53,17 +53,17 @@ export function CatalogPage() {
   const totalPages = data?.pagination?.totalPages ?? 0;
   const total = data?.pagination?.total ?? pagination.total;
 
-  const categories = [
+  const categories = useMemo(() => [
     { value: "", label: t("catalog.allCategories", locale) },
     ...CATEGORIES.map((c) => ({ value: c.slug, label: t(c.labelKey, locale) })),
-  ];
+  ], [locale]);
 
-  const levels = [
+  const levels = useMemo(() => [
     { value: "", label: t("catalog.allLevels", locale) },
     { value: "beginner", label: t("catalog.beginner", locale) },
     { value: "intermediate", label: t("catalog.intermediate", locale) },
     { value: "advanced", label: t("catalog.advanced", locale) },
-  ];
+  ], [locale]);
 
   const sortOptions: { value: SortBy; label: string }[] = [
     { value: "popular", label: t("catalog.sortPopular", locale) },
@@ -91,31 +91,31 @@ export function CatalogPage() {
     };
   }, [searchInput, setCourseFilters]);
 
-  const handleCategoryChange = (value: string) => {
+  const handleCategoryChange = useCallback((value: string) => {
     setCourseFilters({ category: value === "" ? "" : value });
     setPagination((prev) => ({ ...prev, page: 1 }));
-  };
+  }, [setCourseFilters]);
 
-  const handleLevelChange = (value: string) => {
+  const handleLevelChange = useCallback((value: string) => {
     setCourseFilters({ level: value === "__all__" ? "" : value });
     setPagination((prev) => ({ ...prev, page: 1 }));
-  };
+  }, [setCourseFilters]);
 
-  const handleSortChange = (value: string) => {
+  const handleSortChange = useCallback((value: string) => {
     setCourseFilters({ sortBy: value as SortBy });
     setPagination((prev) => ({ ...prev, page: 1 }));
-  };
+  }, [setCourseFilters]);
 
-  const handleFreeOnlyToggle = () => {
+  const handleFreeOnlyToggle = useCallback(() => {
     setCourseFilters({ freeOnly: !courseFilters.freeOnly });
     setPagination((prev) => ({ ...prev, page: 1 }));
-  };
+  }, [setCourseFilters, courseFilters.freeOnly]);
 
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setCourseFilters({ category: "", search: "", level: "", sortBy: "popular", freeOnly: false });
     setSearchInput("");
     setPagination((prev) => ({ ...prev, page: 1 }));
-  };
+  }, [setCourseFilters]);
 
   const hasActiveFilters = courseFilters.category || courseFilters.search || courseFilters.level || courseFilters.freeOnly || courseFilters.sortBy !== "popular";
 

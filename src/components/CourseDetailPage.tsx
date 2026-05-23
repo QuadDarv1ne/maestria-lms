@@ -34,7 +34,7 @@ import { toast } from "sonner";
 
 import { ReviewForm } from "@/components/ReviewForm";
 import { CourseImage } from "@/components/CourseImage";
-import { formatDate, formatNumber } from "@/lib/utils";
+import { formatDate, formatNumber, getInitials } from "@/lib/utils";
 import { levelLabels, levelColors } from "@/lib/constants";
 import { useCourse, useCourseReviews } from "@/hooks/useCourses";
 import { useQueryClient } from "@tanstack/react-query";
@@ -268,6 +268,8 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
               <Button
                 variant="ghost"
                 size="icon"
+                aria-label={favored ? "Удалить из избранного" : "Добавить в избранное"}
+                type="button"
                 className="text-white hover:bg-white/10"
                 onClick={handleToggleFavorite}
               >
@@ -276,6 +278,8 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
               <Button
                 variant="ghost"
                 size="icon"
+                aria-label="Поделиться"
+                type="button"
                 className="text-white hover:bg-white/10"
                 onClick={handleShare}
               >
@@ -606,12 +610,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
               <Card className="border-0 shadow-sm">
                 <CardContent className="p-4 flex items-center gap-4">
                   <div className="w-16 h-16 bg-violet-100 rounded-full flex items-center justify-center text-violet-700 font-bold text-xl">
-                    {course.teacher?.name
-                      ?.split(" ")
-                      .map((n) => n[0])
-                      .join("")
-                      .toUpperCase()
-                      .slice(0, 2) || "T"}
+                    {getInitials(course.teacher?.name, "T")}
                   </div>
                   <div>
                     <h3 className="font-semibold">
@@ -686,12 +685,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                       <CardContent className="p-4">
                         <div className="flex items-center gap-3 mb-2">
                           <div className="w-8 h-8 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center text-xs font-semibold">
-                            {review.user?.name
-                              ?.split(" ")
-                              .map((n: string) => n[0])
-                              .join("")
-                              .toUpperCase()
-                              .slice(0, 2) || "U"}
+                            {getInitials(review.user?.name, "U")}
                           </div>
                           <div className="flex-1">
                             <span className="text-sm font-medium">

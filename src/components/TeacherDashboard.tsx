@@ -18,6 +18,7 @@ import {
   BookOpen, Users, TrendingUp, Star, Plus, GraduationCap,
   Clock, RefreshCw, BarChart3, ExternalLink,
 } from "lucide-react";
+import { getInitials } from "@/lib/utils";
 
 interface TeacherCourse {
   id: string;
@@ -365,7 +366,7 @@ export function TeacherDashboard() {
                     className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50"
                   >
                     <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-teal-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0">
-                      {(activity.name ?? "?").split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
+                      {getInitials(activity.name, "?")}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">

@@ -41,3 +41,17 @@ export function parsePagination(
   const skip = (page - 1) * limit;
   return { page, limit, skip };
 }
+
+/**
+ * Extract initials from a name (e.g., "John Doe" → "JD").
+ * Returns up to 2 characters, uppercase. Falls back to given fallback string.
+ */
+export function getInitials(name: string | null | undefined, fallback = "?"): string {
+  if (!name?.trim()) return fallback;
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
