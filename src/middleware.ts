@@ -48,11 +48,13 @@ export function middleware(request: NextRequest) {
   );
 
   // Content-Security-Policy - only allow trusted sources
+  // Note: 'unsafe-inline' for script-src is required by Next.js for hydration scripts
+  // 'strict-dynamic' allows dynamically loaded scripts from trusted sources
   response.headers.set(
     "Content-Security-Policy",
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline'",
+      "script-src 'self' 'unsafe-inline' 'strict-dynamic'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: https://api.dicebear.com https://*.trbcdn.net",
       "font-src 'self'",

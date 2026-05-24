@@ -5,7 +5,18 @@ export const lessonSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   type: z.string().optional(),
   content: z.string().optional(),
-  videoUrl: z.string().optional(),
+  videoUrl: z.string().optional().refine(
+    (val) => {
+      if (!val) return true;
+      try {
+        const url = new URL(val);
+        return url.protocol === "http:" || url.protocol === "https:";
+      } catch {
+        return false;
+      }
+    },
+    { message: "videoUrl должен быть корректным http или https URL" }
+  ),
   duration: z.union([z.string(), z.number()]).optional(),
   sortOrder: z.number().optional(),
   isFree: z.boolean().optional(),

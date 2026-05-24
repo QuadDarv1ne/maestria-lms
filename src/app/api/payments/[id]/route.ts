@@ -189,9 +189,9 @@ export async function PUT(
         await ensureEnrollment(tx, payment.userId, payment.courseId);
       }
 
-      // Если платёж возвращён — отменяем запись
+      // Если платёж возвращён — отменяем запись и декрементируем studentCount
       if (status === "refunded") {
-        await tx.enrollment.updateMany({
+        const cancelled = await tx.enrollment.updateMany({
           where: {
             userId: payment.userId,
             courseId: payment.courseId,
@@ -199,6 +199,12 @@ export async function PUT(
           },
           data: { status: "cancelled" },
         });
+        if (cancelled.count > 0) {
+          await tx.course.update({
+            where: { id: payment.courseId },
+            data: { studentCount: { decrement: 1 } },
+          });
+        }
       }
 
       return { updated, wasCompleted: status === "completed" && payment.status === "pending" };

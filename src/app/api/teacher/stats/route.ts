@@ -31,6 +31,10 @@ export async function GET(_request: NextRequest) {
             },
           },
         },
+        payments: {
+          where: { status: "completed" },
+          select: { amount: true },
+        },
         _count: {
           select: {
             enrollments: true,
@@ -124,10 +128,7 @@ export async function GET(_request: NextRequest) {
         : 0;
 
     const totalRevenue = courses.reduce(
-      (sum, c) =>
-        sum +
-        c.enrollments.filter((e) => e.status === "completed" || e.status === "active").length *
-          c.price,
+      (sum, c) => sum + c.payments.reduce((pSum, p) => pSum + Number(p.amount), 0),
       0
     );
 

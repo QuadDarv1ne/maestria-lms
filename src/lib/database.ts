@@ -42,8 +42,8 @@ export const database = {
 
     update: (args: AnyArgs) =>
       isMongo
-        ? mongoCollections.users().then(c => {
-            c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
+        ? mongoCollections.users().then(async c => {
+            await c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
             return c.findOne({ _id: toObjectId(args.where.id) })
           })
         : prismaDb.user.update(args),
@@ -86,8 +86,8 @@ export const database = {
 
     update: (args: AnyArgs) =>
       isMongo
-        ? mongoCollections.courses().then(c => {
-            c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
+        ? mongoCollections.courses().then(async c => {
+            await c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
             return c.findOne({ _id: toObjectId(args.where.id) })
           })
         : prismaDb.course.update(args),
@@ -121,8 +121,8 @@ export const database = {
 
     update: (args: AnyArgs) =>
       isMongo
-        ? mongoCollections.categories().then(c => {
-            c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
+        ? mongoCollections.categories().then(async c => {
+            await c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
             return c.findOne({ _id: toObjectId(args.where.id) })
           })
         : prismaDb.category.update(args),
@@ -146,8 +146,8 @@ export const database = {
 
     update: (args: AnyArgs) =>
       isMongo
-        ? mongoCollections.modules().then(c => {
-            c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
+        ? mongoCollections.modules().then(async c => {
+            await c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
             return c.findOne({ _id: toObjectId(args.where.id) })
           })
         : prismaDb.module.update(args),
@@ -176,8 +176,8 @@ export const database = {
 
     update: (args: AnyArgs) =>
       isMongo
-        ? mongoCollections.lessons().then(c => {
-            c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
+        ? mongoCollections.lessons().then(async c => {
+            await c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
             return c.findOne({ _id: toObjectId(args.where.id) })
           })
         : prismaDb.lesson.update(args),
@@ -210,8 +210,8 @@ export const database = {
 
     update: (args: AnyArgs) =>
       isMongo
-        ? mongoCollections.enrollments().then(c => {
-            c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
+        ? mongoCollections.enrollments().then(async c => {
+            await c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
             return c.findOne({ _id: toObjectId(args.where.id) })
           })
         : prismaDb.enrollment.update(args),
@@ -249,8 +249,8 @@ export const database = {
 
     update: (args: AnyArgs) =>
       isMongo
-        ? mongoCollections.progress().then(c => {
-            c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
+        ? mongoCollections.progress().then(async c => {
+            await c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
             return c.findOne({ _id: toObjectId(args.where.id) })
           })
         : prismaDb.progress.update(args),
@@ -305,8 +305,8 @@ export const database = {
 
     update: (args: AnyArgs) =>
       isMongo
-        ? mongoCollections.assignments().then(c => {
-            c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
+        ? mongoCollections.assignments().then(async c => {
+            await c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
             return c.findOne({ _id: toObjectId(args.where.id) })
           })
         : prismaDb.assignment.update(args),
@@ -330,8 +330,8 @@ export const database = {
 
     update: (args: AnyArgs) =>
       isMongo
-        ? mongoCollections.assignmentSubmissions().then(c => {
-            c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
+        ? mongoCollections.assignmentSubmissions().then(async c => {
+            await c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
             return c.findOne({ _id: toObjectId(args.where.id) })
           })
         : prismaDb.assignmentSubmission.update(args),
@@ -355,8 +355,8 @@ export const database = {
 
     update: (args: AnyArgs) =>
       isMongo
-        ? mongoCollections.payments().then(c => {
-            c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
+        ? mongoCollections.payments().then(async c => {
+            await c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
             return c.findOne({ _id: toObjectId(args.where.id) })
           })
         : prismaDb.payment.update(args),
@@ -380,8 +380,8 @@ export const database = {
 
     update: (args: AnyArgs) =>
       isMongo
-        ? mongoCollections.notifications().then(c => {
-            c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
+        ? mongoCollections.notifications().then(async c => {
+            await c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
             return c.findOne({ _id: toObjectId(args.where.id) })
           })
         : prismaDb.notification.update(args),
@@ -453,8 +453,8 @@ export const database = {
 
     update: (args: AnyArgs) =>
       isMongo
-        ? mongoCollections.sessions().then(c => {
-            c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
+        ? mongoCollections.sessions().then(async c => {
+            await c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
             return c.findOne({ _id: toObjectId(args.where.id) })
           })
         : prismaDb.session.update(args),
