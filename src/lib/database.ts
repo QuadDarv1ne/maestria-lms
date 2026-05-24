@@ -1,3 +1,10 @@
+/**
+ * Cross-database abstraction layer supporting Prisma (SQLite/PostgreSQL/MySQL)
+ * and native MongoDB. Uses `any` type intentionally since Prisma and MongoDB
+ * have fundamentally incompatible type systems (e.g., Prisma uses filter objects
+ * like { name: { contains: "x" } } while MongoDB uses { name: /x/ }).
+ * Type safety is enforced at the API route level via Zod validation.
+ */
 import { db as prismaDb } from "./db"
 import { collections as mongoCollections } from "./mongodb"
 import { ObjectId } from "mongodb"
@@ -21,26 +28,26 @@ function fromObjectId(id: ObjectId | string): string {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyArgs = any
+type DbArgs = any
 
 export const database = {
   user: {
-    findUnique: (args: AnyArgs) =>
+    findUnique: (args: DbArgs) =>
       isMongo
         ? mongoCollections.users().then(c => c.findOne(args.where?.email ? { email: args.where.email } : { _id: toObjectId(args.where.id) }))
         : prismaDb.user.findUnique(args),
 
-    findMany: (args?: AnyArgs) =>
+    findMany: (args?: DbArgs) =>
       isMongo
         ? mongoCollections.users().then(c => c.find(args?.where || {}).toArray())
         : prismaDb.user.findMany(args),
 
-    create: (args: AnyArgs) =>
+    create: (args: DbArgs) =>
       isMongo
         ? mongoCollections.users().then(c => c.insertOne(args.data).then(r => ({ ...args.data, id: fromObjectId(r.insertedId) })))
         : prismaDb.user.create(args),
 
-    update: (args: AnyArgs) =>
+    update: (args: DbArgs) =>
       isMongo
         ? mongoCollections.users().then(async c => {
             await c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
@@ -48,24 +55,24 @@ export const database = {
           })
         : prismaDb.user.update(args),
 
-    delete: (args: AnyArgs) =>
+    delete: (args: DbArgs) =>
       isMongo
         ? mongoCollections.users().then(c => c.deleteOne({ _id: toObjectId(args.where.id) }))
         : prismaDb.user.delete(args),
 
-    count: (args?: AnyArgs) =>
+    count: (args?: DbArgs) =>
       isMongo
         ? mongoCollections.users().then(c => c.countDocuments(args?.where || {}))
         : prismaDb.user.count(args),
   },
 
   course: {
-    findUnique: (args: AnyArgs) =>
+    findUnique: (args: DbArgs) =>
       isMongo
         ? mongoCollections.courses().then(c => c.findOne(args.where?.id ? { _id: toObjectId(args.where.id) } : { slug: args.where.slug }))
         : prismaDb.course.findUnique(args),
 
-    findMany: (args?: AnyArgs) =>
+    findMany: (args?: DbArgs) =>
       isMongo
         ? mongoCollections.courses().then(c => {
             let query = c.find(args?.where || {})
@@ -79,12 +86,12 @@ export const database = {
           })
         : prismaDb.course.findMany(args),
 
-    create: (args: AnyArgs) =>
+    create: (args: DbArgs) =>
       isMongo
         ? mongoCollections.courses().then(c => c.insertOne(args.data).then(r => ({ ...args.data, id: fromObjectId(r.insertedId) })))
         : prismaDb.course.create(args),
 
-    update: (args: AnyArgs) =>
+    update: (args: DbArgs) =>
       isMongo
         ? mongoCollections.courses().then(async c => {
             await c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
@@ -92,34 +99,34 @@ export const database = {
           })
         : prismaDb.course.update(args),
 
-    delete: (args: AnyArgs) =>
+    delete: (args: DbArgs) =>
       isMongo
         ? mongoCollections.courses().then(c => c.deleteOne({ _id: toObjectId(args.where.id) }))
         : prismaDb.course.delete(args),
 
-    count: (args?: AnyArgs) =>
+    count: (args?: DbArgs) =>
       isMongo
         ? mongoCollections.courses().then(c => c.countDocuments(args?.where || {}))
         : prismaDb.course.count(args),
   },
 
   category: {
-    findUnique: (args: AnyArgs) =>
+    findUnique: (args: DbArgs) =>
       isMongo
         ? mongoCollections.categories().then(c => c.findOne(args.where?.id ? { _id: toObjectId(args.where.id) } : { slug: args.where.slug }))
         : prismaDb.category.findUnique(args),
 
-    findMany: (args?: AnyArgs) =>
+    findMany: (args?: DbArgs) =>
       isMongo
         ? mongoCollections.categories().then(c => c.find(args?.where || {}).toArray())
         : prismaDb.category.findMany(args),
 
-    create: (args: AnyArgs) =>
+    create: (args: DbArgs) =>
       isMongo
         ? mongoCollections.categories().then(c => c.insertOne(args.data).then(r => ({ ...args.data, id: fromObjectId(r.insertedId) })))
         : prismaDb.category.create(args),
 
-    update: (args: AnyArgs) =>
+    update: (args: DbArgs) =>
       isMongo
         ? mongoCollections.categories().then(async c => {
             await c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
@@ -127,24 +134,24 @@ export const database = {
           })
         : prismaDb.category.update(args),
 
-    delete: (args: AnyArgs) =>
+    delete: (args: DbArgs) =>
       isMongo
         ? mongoCollections.categories().then(c => c.deleteOne({ _id: toObjectId(args.where.id) }))
         : prismaDb.category.delete(args),
   },
 
   module: {
-    findMany: (args?: AnyArgs) =>
+    findMany: (args?: DbArgs) =>
       isMongo
         ? mongoCollections.modules().then(c => c.find(args?.where || {}).toArray())
         : prismaDb.module.findMany(args),
 
-    create: (args: AnyArgs) =>
+    create: (args: DbArgs) =>
       isMongo
         ? mongoCollections.modules().then(c => c.insertOne(args.data).then(r => ({ ...args.data, id: fromObjectId(r.insertedId) })))
         : prismaDb.module.create(args),
 
-    update: (args: AnyArgs) =>
+    update: (args: DbArgs) =>
       isMongo
         ? mongoCollections.modules().then(async c => {
             await c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
@@ -152,29 +159,29 @@ export const database = {
           })
         : prismaDb.module.update(args),
 
-    delete: (args: AnyArgs) =>
+    delete: (args: DbArgs) =>
       isMongo
         ? mongoCollections.modules().then(c => c.deleteOne({ _id: toObjectId(args.where.id) }))
         : prismaDb.module.delete(args),
   },
 
   lesson: {
-    findUnique: (args: AnyArgs) =>
+    findUnique: (args: DbArgs) =>
       isMongo
         ? mongoCollections.lessons().then(c => c.findOne({ _id: toObjectId(args.where.id) }))
         : prismaDb.lesson.findUnique(args),
 
-    findMany: (args?: AnyArgs) =>
+    findMany: (args?: DbArgs) =>
       isMongo
         ? mongoCollections.lessons().then(c => c.find(args?.where || {}).toArray())
         : prismaDb.lesson.findMany(args),
 
-    create: (args: AnyArgs) =>
+    create: (args: DbArgs) =>
       isMongo
         ? mongoCollections.lessons().then(c => c.insertOne(args.data).then(r => ({ ...args.data, id: fromObjectId(r.insertedId) })))
         : prismaDb.lesson.create(args),
 
-    update: (args: AnyArgs) =>
+    update: (args: DbArgs) =>
       isMongo
         ? mongoCollections.lessons().then(async c => {
             await c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
@@ -182,14 +189,14 @@ export const database = {
           })
         : prismaDb.lesson.update(args),
 
-    delete: (args: AnyArgs) =>
+    delete: (args: DbArgs) =>
       isMongo
         ? mongoCollections.lessons().then(c => c.deleteOne({ _id: toObjectId(args.where.id) }))
         : prismaDb.lesson.delete(args),
   },
 
   enrollment: {
-    findUnique: (args: AnyArgs) =>
+    findUnique: (args: DbArgs) =>
       isMongo
         ? mongoCollections.enrollments().then(c => c.findOne(
             args.where?.userId_courseId
@@ -198,17 +205,17 @@ export const database = {
           ))
         : prismaDb.enrollment.findUnique(args),
 
-    findMany: (args?: AnyArgs) =>
+    findMany: (args?: DbArgs) =>
       isMongo
         ? mongoCollections.enrollments().then(c => c.find(args?.where || {}).toArray())
         : prismaDb.enrollment.findMany(args),
 
-    create: (args: AnyArgs) =>
+    create: (args: DbArgs) =>
       isMongo
         ? mongoCollections.enrollments().then(c => c.insertOne(args.data).then(r => ({ ...args.data, id: fromObjectId(r.insertedId) })))
         : prismaDb.enrollment.create(args),
 
-    update: (args: AnyArgs) =>
+    update: (args: DbArgs) =>
       isMongo
         ? mongoCollections.enrollments().then(async c => {
             await c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
@@ -216,19 +223,19 @@ export const database = {
           })
         : prismaDb.enrollment.update(args),
 
-    delete: (args: AnyArgs) =>
+    delete: (args: DbArgs) =>
       isMongo
         ? mongoCollections.enrollments().then(c => c.deleteOne({ _id: toObjectId(args.where.id) }))
         : prismaDb.enrollment.delete(args),
 
-    count: (args?: AnyArgs) =>
+    count: (args?: DbArgs) =>
       isMongo
         ? mongoCollections.enrollments().then(c => c.countDocuments(args?.where || {}))
         : prismaDb.enrollment.count(args),
   },
 
   progress: {
-    findUnique: (args: AnyArgs) =>
+    findUnique: (args: DbArgs) =>
       isMongo
         ? mongoCollections.progress().then(c => c.findOne(
             args.where?.userId_lessonId
@@ -237,17 +244,17 @@ export const database = {
           ))
         : prismaDb.progress.findUnique(args),
 
-    findMany: (args?: AnyArgs) =>
+    findMany: (args?: DbArgs) =>
       isMongo
         ? mongoCollections.progress().then(c => c.find(args?.where || {}).toArray())
         : prismaDb.progress.findMany(args),
 
-    create: (args: AnyArgs) =>
+    create: (args: DbArgs) =>
       isMongo
         ? mongoCollections.progress().then(c => c.insertOne(args.data).then(r => ({ ...args.data, id: fromObjectId(r.insertedId) })))
         : prismaDb.progress.create(args),
 
-    update: (args: AnyArgs) =>
+    update: (args: DbArgs) =>
       isMongo
         ? mongoCollections.progress().then(async c => {
             await c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
@@ -255,7 +262,7 @@ export const database = {
           })
         : prismaDb.progress.update(args),
 
-    upsert: (args: AnyArgs) =>
+    upsert: (args: DbArgs) =>
       isMongo
         ? mongoCollections.progress().then(c => c.updateOne(
             { userId: args.where.userId_lessonId.userId, lessonId: args.where.userId_lessonId.lessonId },
@@ -266,44 +273,44 @@ export const database = {
   },
 
   review: {
-    findMany: (args?: AnyArgs) =>
+    findMany: (args?: DbArgs) =>
       isMongo
         ? mongoCollections.reviews().then(c => c.find(args?.where || {}).toArray())
         : prismaDb.review.findMany(args),
 
-    create: (args: AnyArgs) =>
+    create: (args: DbArgs) =>
       isMongo
         ? mongoCollections.reviews().then(c => c.insertOne(args.data).then(r => ({ ...args.data, id: fromObjectId(r.insertedId) })))
         : prismaDb.review.create(args),
 
-    delete: (args: AnyArgs) =>
+    delete: (args: DbArgs) =>
       isMongo
         ? mongoCollections.reviews().then(c => c.deleteOne({ _id: toObjectId(args.where.id) }))
         : prismaDb.review.delete(args),
 
-    count: (args?: AnyArgs) =>
+    count: (args?: DbArgs) =>
       isMongo
         ? mongoCollections.reviews().then(c => c.countDocuments(args?.where || {}))
         : prismaDb.review.count(args),
   },
 
   assignment: {
-    findUnique: (args: AnyArgs) =>
+    findUnique: (args: DbArgs) =>
       isMongo
         ? mongoCollections.assignments().then(c => c.findOne({ _id: toObjectId(args.where.id) }))
         : prismaDb.assignment.findUnique(args),
 
-    findMany: (args?: AnyArgs) =>
+    findMany: (args?: DbArgs) =>
       isMongo
         ? mongoCollections.assignments().then(c => c.find(args?.where || {}).toArray())
         : prismaDb.assignment.findMany(args),
 
-    create: (args: AnyArgs) =>
+    create: (args: DbArgs) =>
       isMongo
         ? mongoCollections.assignments().then(c => c.insertOne(args.data).then(r => ({ ...args.data, id: fromObjectId(r.insertedId) })))
         : prismaDb.assignment.create(args),
 
-    update: (args: AnyArgs) =>
+    update: (args: DbArgs) =>
       isMongo
         ? mongoCollections.assignments().then(async c => {
             await c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
@@ -311,24 +318,24 @@ export const database = {
           })
         : prismaDb.assignment.update(args),
 
-    delete: (args: AnyArgs) =>
+    delete: (args: DbArgs) =>
       isMongo
         ? mongoCollections.assignments().then(c => c.deleteOne({ _id: toObjectId(args.where.id) }))
         : prismaDb.assignment.delete(args),
   },
 
   assignmentSubmission: {
-    findMany: (args?: AnyArgs) =>
+    findMany: (args?: DbArgs) =>
       isMongo
         ? mongoCollections.assignmentSubmissions().then(c => c.find(args?.where || {}).toArray())
         : prismaDb.assignmentSubmission.findMany(args),
 
-    create: (args: AnyArgs) =>
+    create: (args: DbArgs) =>
       isMongo
         ? mongoCollections.assignmentSubmissions().then(c => c.insertOne(args.data).then(r => ({ ...args.data, id: fromObjectId(r.insertedId) })))
         : prismaDb.assignmentSubmission.create(args),
 
-    update: (args: AnyArgs) =>
+    update: (args: DbArgs) =>
       isMongo
         ? mongoCollections.assignmentSubmissions().then(async c => {
             await c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
@@ -338,22 +345,22 @@ export const database = {
   },
 
   payment: {
-    findMany: (args?: AnyArgs) =>
+    findMany: (args?: DbArgs) =>
       isMongo
         ? mongoCollections.payments().then(c => c.find(args?.where || {}).toArray())
         : prismaDb.payment.findMany(args),
 
-    findUnique: (args: AnyArgs) =>
+    findUnique: (args: DbArgs) =>
       isMongo
         ? mongoCollections.payments().then(c => c.findOne({ _id: toObjectId(args.where.id) }))
         : prismaDb.payment.findUnique(args),
 
-    create: (args: AnyArgs) =>
+    create: (args: DbArgs) =>
       isMongo
         ? mongoCollections.payments().then(c => c.insertOne(args.data).then(r => ({ ...args.data, id: fromObjectId(r.insertedId) })))
         : prismaDb.payment.create(args),
 
-    update: (args: AnyArgs) =>
+    update: (args: DbArgs) =>
       isMongo
         ? mongoCollections.payments().then(async c => {
             await c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
@@ -361,24 +368,24 @@ export const database = {
           })
         : prismaDb.payment.update(args),
 
-    count: (args?: AnyArgs) =>
+    count: (args?: DbArgs) =>
       isMongo
         ? mongoCollections.payments().then(c => c.countDocuments(args?.where || {}))
         : prismaDb.payment.count(args),
   },
 
   notification: {
-    findMany: (args?: AnyArgs) =>
+    findMany: (args?: DbArgs) =>
       isMongo
         ? mongoCollections.notifications().then(c => c.find(args?.where || {}).toArray())
         : prismaDb.notification.findMany(args),
 
-    create: (args: AnyArgs) =>
+    create: (args: DbArgs) =>
       isMongo
         ? mongoCollections.notifications().then(c => c.insertOne(args.data).then(r => ({ ...args.data, id: fromObjectId(r.insertedId) })))
         : prismaDb.notification.create(args),
 
-    update: (args: AnyArgs) =>
+    update: (args: DbArgs) =>
       isMongo
         ? mongoCollections.notifications().then(async c => {
             await c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
@@ -386,24 +393,24 @@ export const database = {
           })
         : prismaDb.notification.update(args),
 
-    delete: (args: AnyArgs) =>
+    delete: (args: DbArgs) =>
       isMongo
         ? mongoCollections.notifications().then(c => c.deleteOne({ _id: toObjectId(args.where.id) }))
         : prismaDb.notification.delete(args),
 
-    count: (args?: AnyArgs) =>
+    count: (args?: DbArgs) =>
       isMongo
         ? mongoCollections.notifications().then(c => c.countDocuments(args?.where || {}))
         : prismaDb.notification.count(args),
   },
 
   certificate: {
-    findMany: (args?: AnyArgs) =>
+    findMany: (args?: DbArgs) =>
       isMongo
         ? mongoCollections.certificates().then(c => c.find(args?.where || {}).toArray())
         : prismaDb.certificate.findMany(args),
 
-    findUnique: (args: AnyArgs) =>
+    findUnique: (args: DbArgs) =>
       isMongo
         ? mongoCollections.certificates().then(c => c.findOne(
             args.where?.userId_courseId
@@ -412,46 +419,59 @@ export const database = {
           ))
         : prismaDb.certificate.findUnique(args),
 
-    create: (args: AnyArgs) =>
+    create: (args: DbArgs) =>
       isMongo
         ? mongoCollections.certificates().then(c => c.insertOne(args.data).then(r => ({ ...args.data, id: fromObjectId(r.insertedId) })))
         : prismaDb.certificate.create(args),
+
+    update: (args: DbArgs) =>
+      isMongo
+        ? mongoCollections.certificates().then(async c => {
+            await c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
+            return c.findOne({ _id: toObjectId(args.where.id) })
+          })
+        : prismaDb.certificate.update(args),
+
+    delete: (args: DbArgs) =>
+      isMongo
+        ? mongoCollections.certificates().then(c => c.deleteOne({ _id: toObjectId(args.where.id) }))
+        : prismaDb.certificate.delete(args),
   },
 
   account: {
-    findMany: (args?: AnyArgs) =>
+    findMany: (args?: DbArgs) =>
       isMongo
         ? mongoCollections.accounts().then(c => c.find(args?.where || {}).toArray())
         : prismaDb.account.findMany(args),
 
-    create: (args: AnyArgs) =>
+    create: (args: DbArgs) =>
       isMongo
         ? mongoCollections.accounts().then(c => c.insertOne(args.data).then(r => ({ ...args.data, id: fromObjectId(r.insertedId) })))
         : prismaDb.account.create(args),
 
-    delete: (args: AnyArgs) =>
+    delete: (args: DbArgs) =>
       isMongo
         ? mongoCollections.accounts().then(c => c.deleteOne(args.where))
         : prismaDb.account.delete(args),
   },
 
   session: {
-    findMany: (args?: AnyArgs) =>
+    findMany: (args?: DbArgs) =>
       isMongo
         ? mongoCollections.sessions().then(c => c.find(args?.where || {}).toArray())
         : prismaDb.session.findMany(args),
 
-    findUnique: (args: AnyArgs) =>
+    findUnique: (args: DbArgs) =>
       isMongo
         ? mongoCollections.sessions().then(c => c.findOne({ sessionToken: args.where.sessionToken }))
         : prismaDb.session.findUnique(args),
 
-    create: (args: AnyArgs) =>
+    create: (args: DbArgs) =>
       isMongo
         ? mongoCollections.sessions().then(c => c.insertOne(args.data).then(r => ({ ...args.data, id: fromObjectId(r.insertedId) })))
         : prismaDb.session.create(args),
 
-    update: (args: AnyArgs) =>
+    update: (args: DbArgs) =>
       isMongo
         ? mongoCollections.sessions().then(async c => {
             await c.updateOne({ _id: toObjectId(args.where.id) }, { $set: args.data })
@@ -459,14 +479,14 @@ export const database = {
           })
         : prismaDb.session.update(args),
 
-    delete: (args: AnyArgs) =>
+    delete: (args: DbArgs) =>
       isMongo
-        ? mongoCollections.sessions().then(c => c.deleteOne({ sessionToken: args.where.sessionToken }))
+        ? mongoCollections.sessions().then(c => c.deleteOne(args.where.sessionToken ? { sessionToken: args.where.sessionToken } : { _id: toObjectId(args.where.id) }))
         : prismaDb.session.delete(args),
   },
 
   verificationToken: {
-    findUnique: (args: AnyArgs) =>
+    findUnique: (args: DbArgs) =>
       isMongo
         ? mongoCollections.verificationTokens().then(c => c.findOne(
             args.where?.identifier_token
@@ -475,12 +495,12 @@ export const database = {
           ))
         : prismaDb.verificationToken.findUnique(args),
 
-    create: (args: AnyArgs) =>
+    create: (args: DbArgs) =>
       isMongo
         ? mongoCollections.verificationTokens().then(c => c.insertOne(args.data).then(r => ({ ...args.data, id: fromObjectId(r.insertedId) })))
         : prismaDb.verificationToken.create(args),
 
-    delete: (args: AnyArgs) =>
+    delete: (args: DbArgs) =>
       isMongo
         ? mongoCollections.verificationTokens().then(c => c.deleteOne(
             args.where?.identifier_token
@@ -490,16 +510,16 @@ export const database = {
         : prismaDb.verificationToken.delete(args),
   },
 
-  $transaction: async (operations: (() => Promise<unknown>)[]) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  $transaction: async (operations: any) => {
     if (isMongo) {
-      const results = []
-      for (const op of operations) {
+      const results: unknown[] = []
+      for (const op of operations as (() => Promise<unknown>)[]) {
         results.push(await op())
       }
       return results
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return prismaDb.$transaction(operations as any)
+    return prismaDb.$transaction(operations)
   },
 
   provider,

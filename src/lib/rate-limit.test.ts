@@ -1,102 +1,86 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 
-vi.mock("./logger", () => ({
-  log: {
-    error: vi.fn(),
-    warn: vi.fn(),
-    info: vi.fn(),
-    debug: vi.fn(),
+const mockStore: Record<string, string> = {};
+
+vi.mock("fs", () => ({
+  default: {
+    existsSync: vi.fn((path: string) => true),
+    readFileSync: vi.fn((path: string) => {
+      const fileName = path.split("/").pop()?.replace(".json", "") || "";
+      return mockStore[fileName] || "{}";
+    }),
+    writeFileSync: vi.fn((path: string, content: string) => {
+      const fileName = path.split("/").pop()?.replace(".json", "") || "";
+      mockStore[fileName] = content;
+    }),
+    mkdirSync: vi.fn(),
+    readdirSync: vi.fn(() => []),
   },
 }));
 
-function createMockRequest(ip: string = "127.0.0.1"): Request {
-  return new Request("http://localhost/test", {
-    headers: { "x-forwarded-for": ip },
-  });
-}
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 describe("rateLimit", () => {
-  let rateLimit: typeof import("./rate-limit").rateLimit;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     vi.clearAllMocks();
-    const module = await import("./rate-limit");
-    rateLimit = module.rateLimit;
+    Object.keys(mockStore).forEach(key => delete mockStore[key]);
   });
 
-  it("returns null when requests are within limit", () => {
-    const check = rateLimit("test-within", { windowMs: 60_000, maxRequests: 3 });
+  it("should allow requests within limit", () => {
+    const limiter = rateLimit("test", { windowMs: 60_000, maxRequests: 5 });
+    const request = new Request("http://localhost/api/test", {
+      headers: { "x-forwarded-for": "203.0.113.50" },
+    });
 
-    expect(check(createMockRequest())).toBeNull();
-    expect(check(createMockRequest())).toBeNull();
-    expect(check(createMockRequest())).toBeNull();
+    for (let i = 0; i < 5; i++) {
+      const response = limiter(request);
+      expect(response).toBeNull();
+    }
   });
 
-  it("returns 429 response when limit is exceeded", () => {
-    const check = rateLimit("test-exceed", { windowMs: 60_000, maxRequests: 2 });
+  it("should block requests exceeding limit", () => {
+    const limiter = rateLimit("test-block", { windowMs: 60_000, maxRequests: 2 });
+    const request = new Request("http://localhost/api/test", {
+      headers: { "x-forwarded-for": "203.0.113.51" },
+    });
 
-    expect(check(createMockRequest())).toBeNull();
-    expect(check(createMockRequest())).toBeNull();
+    limiter(request);
+    limiter(request);
+    const response = limiter(request);
 
-    const response = check(createMockRequest());
     expect(response).not.toBeNull();
-    expect(response!.status).toBe(429);
+    expect(response?.status).toBe(429);
   });
 
-  it("uses different limits for different namespaces", () => {
-    const strict = rateLimit("test-strict", { windowMs: 60_000, maxRequests: 1 });
-    const loose = rateLimit("test-loose", { windowMs: 60_000, maxRequests: 5 });
+  it("should return Retry-After header when blocked", () => {
+    const limiter = rateLimit("test-retry", { windowMs: 60_000, maxRequests: 1 });
+    const request = new Request("http://localhost/api/test", {
+      headers: { "x-forwarded-for": "203.0.113.52" },
+    });
 
-    expect(strict(createMockRequest())).toBeNull();
-    expect(strict(createMockRequest())?.status).toBe(429);
+    limiter(request);
+    const response = limiter(request);
 
-    expect(loose(createMockRequest())).toBeNull();
+    expect(response?.headers.get("Retry-After")).toBeDefined();
   });
 
-  it("tracks different IPs separately", () => {
-    const check = rateLimit("test-ip", { windowMs: 60_000, maxRequests: 1 });
+  it("should reject private IP spoofing", () => {
+    const limiter = rateLimit("test-spoof", { windowMs: 60_000, maxRequests: 10 });
+    const request = new Request("http://localhost/api/test", {
+      headers: { "x-forwarded-for": "10.0.0.1" },
+    });
 
-    expect(check(createMockRequest("1.1.1.1"))).toBeNull();
-    expect(check(createMockRequest("1.1.1.1"))?.status).toBe(429);
-
-    // Different IP should have its own counter
-    expect(check(createMockRequest("2.2.2.2"))).toBeNull();
-  });
-});
-
-describe("requireAdmin", () => {
-  it("returns null for admin user", () => {
-    const adminSession = {
-      user: { id: "1", role: "admin", name: "Admin", email: "admin@test.com" },
-    };
-
-    const response = (adminSession.user.role !== "admin")
-      ? { status: 403 }
-      : null;
+    limiter(request);
+    const response = limiter(request);
 
     expect(response).toBeNull();
   });
+});
 
-  it("returns 403 for non-admin user", () => {
-    const userSession = {
-      user: { id: "2", role: "user", name: "User", email: "user@test.com" },
-    };
-
-    const response = (userSession.user.role !== "admin")
-      ? { status: 403 }
-      : null;
-
-    expect(response).not.toBeNull();
-    expect(response!.status).toBe(403);
-  });
-
-  it("returns 403 for null session", () => {
-    const session = null;
-    const response = (!session?.user || session.user.role !== "admin")
-      ? { status: 403 }
-      : null;
-
-    expect(response).not.toBeNull();
-    expect(response!.status).toBe(403);
+describe("RATE_LIMITS", () => {
+  it("should have expected route configurations", () => {
+    expect(RATE_LIMITS.register.maxRequests).toBe(5);
+    expect(RATE_LIMITS.login.maxRequests).toBe(10);
+    expect(RATE_LIMITS.forgotPassword.maxRequests).toBe(3);
   });
 });

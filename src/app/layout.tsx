@@ -5,6 +5,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "@/components/Providers";
+import { log } from "@/lib/logger";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,8 +35,8 @@ async function getLocaleFromCookie(): Promise<SupportedLocale> {
     if (locale && SUPPORTED_LOCALES.includes(locale as SupportedLocale)) {
       return locale as SupportedLocale;
     }
-  } catch {
-    // cookies() may throw during static generation
+  } catch (error) {
+    log.debug("Locale cookie read failed during static generation", { error: error instanceof Error ? error.message : String(error) });
   }
   return "ru";
 }

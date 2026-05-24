@@ -11,6 +11,7 @@ import { CustomCursor } from "@/components/CustomCursor";
 import { GlobalScrollToTop } from "@/components/GlobalScrollToTop";
 import { PageTransition } from "@/components/PageTransition";
 import { PageWrapper } from "@/components/PageWrapper";
+import { log } from "@/lib/logger";
 
 /**
  * Root page (/) — HomePage with full layout.
@@ -39,8 +40,8 @@ export default function Page() {
             });
           }
         }
-      } catch {
-        // User is not authenticated — proceed without session
+      } catch (error) {
+        log.debug("Session load skipped for unauthenticated user", { error: error instanceof Error ? error.message : String(error) });
       }
     };
 
