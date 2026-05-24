@@ -209,10 +209,10 @@ export function AdminUsers(props: AdminTabProps) {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="sm" onClick={() => window.location.href = `/admin/student/${u.id}`}>
+                        <Button variant="ghost" size="sm" aria-label={t("admin.userStats", locale)} onClick={() => window.location.href = `/admin/student/${u.id}`}>
                           <BarChart3 className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => navigate("profile")}>
+                        <Button variant="ghost" size="sm" aria-label={t("admin.viewProfile", locale)} onClick={() => navigate("profile")}>
                           <Eye className="w-4 h-4" />
                         </Button>
                       </div>

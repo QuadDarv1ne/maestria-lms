@@ -257,6 +257,7 @@ export function AuthDialogs() {
                 <button
                   type="button"
                   onClick={() => setShowLoginPassword(!showLoginPassword)}
+                  aria-label={showLoginPassword ? t("auth.hidePassword", locale) : t("auth.showPassword", locale)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
                   {showLoginPassword ? (
@@ -436,6 +437,7 @@ export function AuthDialogs() {
                 <button
                   type="button"
                   onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                  aria-label={showRegisterPassword ? t("auth.hidePassword", locale) : t("auth.showPassword", locale)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
                   {showRegisterPassword ? (

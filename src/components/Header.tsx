@@ -261,6 +261,7 @@ export function Header() {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
+                  aria-label={t("nav.profile", locale)}
                   className="relative h-9 w-9 rounded-full"
                 >
                   <Avatar className="h-9 w-9">

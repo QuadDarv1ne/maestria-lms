@@ -121,6 +121,7 @@ export function ReviewForm({ courseId, onReviewSubmitted }: ReviewFormProps) {
         {/* Comment textarea */}
         <div className="mt-4">
           <Textarea
+            aria-label={t("review.comment", locale)}
             placeholder={t("review.commentPlaceholder", locale)}
             value={comment}
             onChange={(e) => {

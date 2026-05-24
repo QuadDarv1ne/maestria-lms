@@ -185,12 +185,12 @@ export function AdminPage() {
           <button
             key={item.id}
             onClick={() => { setActiveTab(item.id); setMobileSidebarOpen(false); }}
+            aria-label={item.label}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
               activeTab === item.id
                 ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
                 : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
             } ${sidebarCollapsed ? "justify-center" : ""}`}
-            title={sidebarCollapsed ? item.label : undefined}
           >
             {item.icon}
             {!sidebarCollapsed && (
@@ -223,8 +223,8 @@ export function AdminPage() {
         )}
         <button
           onClick={() => navigate("home")}
+          aria-label={t("adminPage.exitPanel", locale)}
           className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors ${sidebarCollapsed ? "justify-center" : ""}`}
-          title={t("adminPage.exitPanel", locale)}
         >
           <LogOut className="w-4 h-4" />
           {!sidebarCollapsed && <span>{t("adminPage.exitPanel", locale)}</span>}
@@ -278,7 +278,7 @@ export function AdminPage() {
         <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b px-4 sm:px-6 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileSidebarOpen(true)}>
+              <Button variant="ghost" size="icon" aria-label={t("adminPage.openMenu", locale)} className="lg:hidden" onClick={() => setMobileSidebarOpen(true)}>
                 <Menu className="w-5 h-5" />
               </Button>
               <div>
