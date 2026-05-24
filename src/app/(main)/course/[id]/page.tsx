@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { use } from "react";
 import { CourseDetailPage } from "@/components/CourseDetailPage";
 
@@ -13,20 +14,17 @@ export async function generateMetadata({
     const res = await fetch(`${siteUrl}/api/courses/${id}`, {
       cache: "no-store",
     });
-    if (res.ok) {
-      const course = await res.json();
-      return {
-        title: `${course.title} — Maestria`,
-        description: course.description,
-      };
+    if (!res.ok) {
+      notFound();
     }
+    const course = await res.json();
+    return {
+      title: `${course.title} — Maestria`,
+      description: course.description,
+    };
   } catch {
-    // Fallback to default
+    notFound();
   }
-  return {
-    title: "Курс — Maestria",
-    description: "Интерактивный курс на платформе Maestria",
-  };
 }
 
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
