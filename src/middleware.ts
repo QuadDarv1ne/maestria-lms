@@ -1,7 +1,27 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(_request: NextRequest) {
+const PROTECTED_ROUTES = ["/admin", "/teacher", "/course-editor"];
+
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Check if the current path is a protected route
+  const isProtectedRoute = PROTECTED_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
+
+  if (isProtectedRoute) {
+    const sessionCookie = request.cookies.get("next-auth.session-token")
+      ?? request.cookies.get("__Secure-next-auth.session-token");
+
+    if (!sessionCookie) {
+      // Not authenticated — redirect to login
+      const loginUrl = new URL("/#login", request.url);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
   const response = NextResponse.next();
 
   // Prevent clickjacking
