@@ -288,7 +288,7 @@ export function TeacherDashboard() {
                       <TableCell className="text-sm">{course.completedStudents}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <div className="w-16 h-2 bg-gray-100 rounded-full overflow-hidden">
+                          <div className="w-16 h-2 bg-gray-100 rounded-full overflow-hidden" role="progressbar" aria-valuenow={course.averageProgress} aria-valuemin={0} aria-valuemax={100} aria-label={`${course.title} progress: ${course.averageProgress}%`}>
                             <div
                               className={`h-full rounded-full ${
                                 course.averageProgress >= 70

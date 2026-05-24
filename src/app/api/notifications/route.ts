@@ -53,7 +53,10 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function DELETE(_request: NextRequest) {
+export async function DELETE(request: NextRequest) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
+
   const session = await getAuthSession();
   if (!session?.user) {
     return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });

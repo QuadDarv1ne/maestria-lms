@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import { sanitizeContent } from "@/lib/sanitize";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -506,9 +507,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
             {/* Описание */}
             <div>
               <h2 className="text-xl font-bold mb-4">{t("course.aboutCourse", locale)}</h2>
-              <div className="prose prose-sm max-w-none text-muted-foreground whitespace-pre-wrap">
-                {course.description}
-              </div>
+              <div className="prose prose-sm max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: sanitizeContent(course.description || "") }} />
             </div>
 
             {/* Требования */}
@@ -716,9 +715,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                           </span>
                         </div>
                         {review.comment && (
-                          <p className="text-sm text-muted-foreground">
-                            {review.comment}
-                          </p>
+                          <p className="text-sm text-muted-foreground" dangerouslySetInnerHTML={{ __html: sanitizeContent(review.comment) }} />
                         )}
                       </CardContent>
                     </Card>

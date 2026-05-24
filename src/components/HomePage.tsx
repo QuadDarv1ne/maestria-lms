@@ -84,6 +84,7 @@ export function HomePage() {
               <div
                 key={i}
                 className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-white"
+                aria-label={`${stat.label}: ${stat.value}${stat.suffix}`}
               >
                 <div className="flex items-center gap-2 mb-1">
                   {stat.icon}
@@ -115,11 +116,21 @@ export function HomePage() {
           {defaultCategories.map((cat) => (
             <Card
               key={cat.id}
+              role="button"
+              tabIndex={0}
               className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 border-0 shadow-sm"
               onClick={() => {
                 navigate("catalog");
                 useAppStore.getState().setCourseFilters({ category: cat.slug, search: "", level: "", sortBy: "popular", freeOnly: false });
               }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  navigate("catalog");
+                  useAppStore.getState().setCourseFilters({ category: cat.slug, search: "", level: "", sortBy: "popular", freeOnly: false });
+                }
+              }}
+              aria-label={`${cat.name}: ${cat.description}`}
             >
               <CardContent className="p-4 text-center">
                 <div

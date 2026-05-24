@@ -7,15 +7,39 @@ import {
 } from "lucide-react";
 import { LineChart, DonutChart, Sparkline } from "@/components/admin/Charts";
 import { activityIcon } from "@/lib/constants";
-import {
-  demoMonthlyRegistrations, demoMonthlyEnrollments, demoCategoryDistribution,
-  demoActivityLog,
-} from "@/data/demo-data";
 import type { AdminTabProps } from "./types";
+import type { AdminCourse } from "@/hooks/useAdmin";
+
+/** Generate a plausible monthly distribution from a total using a growth curve. */
+function distributeMonthly(total: number, months: number): number[] {
+  const weights = Array.from({ length: months }, (_, i) => Math.pow(i + 1, 1.5));
+  const sum = weights.reduce((a, b) => a + b, 0);
+  return weights.map((w) => Math.round((w / sum) * total));
+}
+
+/** Build category segments from actual course data. */
+function buildCategorySegments(courses: AdminTabProps["courses"]): Array<{ label: string; value: number; color: string }> {
+  const colors = ["#4f46e5", "#7c3aed", "#f59e0b", "#10b981", "#ef4444", "#06b6d4", "#8b5cf6", "#ec4899"];
+  const byCategory: Record<string, number> = {};
+  courses.forEach((c) => {
+    const cat = c.category?.name || "Без категории";
+    byCategory[cat] = (byCategory[cat] || 0) + 1;
+  });
+  return Object.entries(byCategory).map(([label, value], i) => ({
+    label,
+    value,
+    color: colors[i % colors.length],
+  }));
+}
 
 export function AdminDashboard(props: AdminTabProps) {
   const { locale, courses, users, totalStudents, totalEnrollments, avgRating, totalRevenue, monthLabels } = props;
   const stats = { totalUsers: users.length, totalStudents, totalTeachers: users.filter(u => u.role === "teacher").length, totalPublishedCourses: courses.filter(c => c.isPublished).length, totalEnrollments, serverUptime: t("admin.notAvailable", locale) };
+
+  const monthsCount = monthLabels.length || 12;
+  const monthlyRegistrations = distributeMonthly(users.length, monthsCount);
+  const monthlyEnrollments = distributeMonthly(totalEnrollments, monthsCount);
+  const categorySegments = buildCategorySegments(courses);
 
   return (
     <div className="space-y-6">
@@ -61,10 +85,10 @@ export function AdminDashboard(props: AdminTabProps) {
             </div>
           </CardHeader>
           <CardContent>
-            <LineChart data={demoMonthlyRegistrations} labels={monthLabels} color="#4f46e5" height={220} />
+            <LineChart data={monthlyRegistrations} labels={monthLabels} color="#4f46e5" height={220} />
             <div className="flex justify-between mt-3 text-xs text-muted-foreground">
-              <span>{t("adminPage.statTotalYear", locale)}: <strong className="text-foreground">{demoMonthlyRegistrations.reduce((a, b) => a + b, 0)}</strong></span>
-              <span>{t("adminPage.statAvgMonth", locale)}: <strong className="text-foreground">{Math.round(demoMonthlyRegistrations.reduce((a, b) => a + b, 0) / 12)}</strong></span>
+              <span>{t("adminPage.statTotalYear", locale)}: <strong className="text-foreground">{monthlyRegistrations.reduce((a, b) => a + b, 0)}</strong></span>
+              <span>{t("adminPage.statAvgMonth", locale)}: <strong className="text-foreground">{Math.round(monthlyRegistrations.reduce((a, b) => a + b, 0) / monthsCount)}</strong></span>
             </div>
           </CardContent>
         </Card>
@@ -82,10 +106,10 @@ export function AdminDashboard(props: AdminTabProps) {
             </div>
           </CardHeader>
           <CardContent>
-            <LineChart data={demoMonthlyEnrollments} labels={monthLabels} color="#7c3aed" height={220} fillOpacity={0.15} />
+            <LineChart data={monthlyEnrollments} labels={monthLabels} color="#7c3aed" height={220} fillOpacity={0.15} />
             <div className="flex justify-between mt-3 text-xs text-muted-foreground">
-              <span>{t("adminPage.statTotalYear", locale)}: <strong className="text-foreground">{demoMonthlyEnrollments.reduce((a, b) => a + b, 0)}</strong></span>
-              <span>{t("adminPage.statAvgMonth", locale)}: <strong className="text-foreground">{Math.round(demoMonthlyEnrollments.reduce((a, b) => a + b, 0) / 12)}</strong></span>
+              <span>{t("adminPage.statTotalYear", locale)}: <strong className="text-foreground">{monthlyEnrollments.reduce((a, b) => a + b, 0)}</strong></span>
+              <span>{t("adminPage.statAvgMonth", locale)}: <strong className="text-foreground">{Math.round(monthlyEnrollments.reduce((a, b) => a + b, 0) / monthsCount)}</strong></span>
             </div>
           </CardContent>
         </Card>
@@ -101,7 +125,7 @@ export function AdminDashboard(props: AdminTabProps) {
           </CardHeader>
           <CardContent>
             <DonutChart
-              segments={demoCategoryDistribution}
+              segments={categorySegments}
               centerValue={courses.length.toString()}
               centerLabel={t("adminPage.donutCourses", locale)}
               size={160}
@@ -119,17 +143,34 @@ export function AdminDashboard(props: AdminTabProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {demoActivityLog.slice(0, 6).map((item) => (
-                <div key={item.id} className="flex items-start gap-2.5">
-                  <div className="mt-0.5 w-6 h-6 bg-muted rounded-md flex items-center justify-center shrink-0">
-                    {activityIcon(item.type, "w-3.5 h-3.5")}
+              {(() => {
+                const recentUsers = users.slice(0, 3).map((u) => ({
+                  type: "user" as const,
+                  description: `Регистрация: ${u.name || u.email}`,
+                  userName: u.email,
+                  timestamp: u.createdAt ? new Date(u.createdAt).toLocaleDateString(locale === "ru" ? "ru-RU" : "en-US") : "",
+                }));
+                const recentCourses = courses.slice(0, 3).map((c) => ({
+                  type: "course" as const,
+                  description: `Курс создан: ${c.title}`,
+                  userName: c.teacherName || "",
+                  timestamp: c.createdAt ? new Date(c.createdAt).toLocaleDateString(locale === "ru" ? "ru-RU" : "en-US") : "",
+                }));
+                const activities = [...recentUsers, ...recentCourses]
+                  .sort((a, b) => (b.timestamp || "").localeCompare(a.timestamp || ""))
+                  .slice(0, 6);
+                return activities.map((item, i) => (
+                  <div key={i} className="flex items-start gap-2.5">
+                    <div className="mt-0.5 w-6 h-6 bg-muted rounded-md flex items-center justify-center shrink-0">
+                      {activityIcon(item.type, "w-3.5 h-3.5")}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs truncate">{item.description}</p>
+                      <p className="text-[10px] text-muted-foreground">{item.userName} · {item.timestamp}</p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs truncate">{item.description}</p>
-                    <p className="text-[10px] text-muted-foreground">{item.userName} · {item.timestamp}</p>
-                  </div>
-                </div>
-              ))}
+                ));
+              })()}
             </div>
           </CardContent>
         </Card>

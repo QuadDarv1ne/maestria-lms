@@ -50,8 +50,9 @@ export function getInitials(name: string | null | undefined, fallback = "?"): st
   if (!name?.trim()) return fallback;
   return name
     .split(" ")
+    .filter(Boolean)
     .map((n) => n[0])
     .join("")
     .toUpperCase()
-    .slice(0, 2);
+    .slice(0, 2) || fallback;
 }
