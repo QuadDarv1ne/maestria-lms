@@ -56,23 +56,55 @@ function getClientIp(request: Request): string {
  * x-forwarded-for headers with private IPs.
  */
 function isValidPublicIp(ip: string): boolean {
-  // Basic IPv4 validation
+  // IPv4 validation
   const ipv4Match = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(ip);
-  if (!ipv4Match) return false;
+  if (ipv4Match) {
+    const [, a, b] = ipv4Match.map(Number);
 
-  const [, a, b] = ipv4Match.map(Number);
+    // Reject private/reserved ranges:
+    // 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.0/8, 0.0.0.0/8
+    if (a === 10) return false;
+    if (a === 172 && b >= 16 && b <= 31) return false;
+    if (a === 192 && b === 168) return false;
+    if (a === 127) return false;
+    if (a === 0) return false;
+    // 169.254.0.0/16 (link-local)
+    if (a === 169 && b === 254) return false;
 
-  // Reject private/reserved ranges:
-  // 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.0/8, 0.0.0.0/8
-  if (a === 10) return false;
-  if (a === 172 && b >= 16 && b <= 31) return false;
-  if (a === 192 && b === 168) return false;
-  if (a === 127) return false;
-  if (a === 0) return false;
-  // 169.254.0.0/16 (link-local)
-  if (a === 169 && b === 254) return false;
+    return true;
+  }
 
-  return true;
+  // IPv6 validation
+  const normalizedIp = ip.toLowerCase();
+
+  // Reject loopback (::1) and unspecified (::)
+  if (normalizedIp === "::1" || normalizedIp === "::") return false;
+
+  // Reject ::ffff:127.0.0.1 (IPv4-mapped loopback)
+  if (normalizedIp.startsWith("::ffff:7f")) return false;
+
+  // Reject ::ffff:10.x.x.x (IPv4-mapped private)
+  if (normalizedIp.startsWith("::ffff:10.")) return false;
+
+  // Reject ::ffff:192.168.x.x (IPv4-mapped private)
+  if (normalizedIp.startsWith("::ffff:192.168.")) return false;
+
+  // Reject ::ffff:172.16-31.x.x (IPv4-mapped private)
+  const ipv4MappedMatch = /^::ffff:(\d{1,3})\.(\d{1,3})/.exec(normalizedIp);
+  if (ipv4MappedMatch) {
+    const [, a, b] = ipv4MappedMatch.map(Number);
+    if (a === 172 && b >= 16 && b <= 31) return false;
+  }
+
+  // Reject unique local addresses (fc00::/7 → fc and fd prefix)
+  if (normalizedIp.startsWith("fc") || normalizedIp.startsWith("fd")) return false;
+
+  // Reject link-local addresses (fe80::/10 → fe80 to febf prefix)
+  if (normalizedIp.startsWith("fe8") || normalizedIp.startsWith("fe9") ||
+      normalizedIp.startsWith("fea") || normalizedIp.startsWith("feb")) return false;
+
+  // Basic format check for valid IPv6 (contains at least one colon and hex digits)
+  return /^([0-9a-f]{0,4}:){2,7}[0-9a-f]{0,4}$/.test(normalizedIp);
 }
 
 export function rateLimit(

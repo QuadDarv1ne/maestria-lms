@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cn, parsePagination } from '@/lib/utils';
+import { cn, parsePagination, formatDate, formatNumber, getInitials } from '@/lib/utils';
 
 describe('cn', () => {
   it('merges class names', () => {
@@ -47,5 +47,70 @@ describe('parsePagination', () => {
   it('enforces minimum page of 1', () => {
     const params = new URLSearchParams({ page: '-2' });
     expect(parsePagination(params)).toEqual({ page: 1, limit: 20, skip: 0 });
+  });
+});
+
+describe('formatDate', () => {
+  it('formats a date string in Russian by default', () => {
+    const result = formatDate('2024-01-15');
+    expect(result).toContain('2024');
+  });
+
+  it('formats in English locale', () => {
+    const result = formatDate('2024-01-15', 'en');
+    expect(result).toContain('2024');
+  });
+
+  it('formats in Chinese locale', () => {
+    const result = formatDate('2024-01-15', 'zh');
+    expect(result).toContain('2024');
+  });
+
+  it('accepts Date object', () => {
+    const date = new Date('2024-06-15');
+    const result = formatDate(date);
+    expect(result).toContain('2024');
+  });
+});
+
+describe('formatNumber', () => {
+  it('formats number in Russian locale', () => {
+    expect(formatNumber(1000000, 'ru')).toBe('1\u00a0000\u00a0000');
+  });
+
+  it('formats number in English locale', () => {
+    expect(formatNumber(1000000, 'en')).toBe('1,000,000');
+  });
+
+  it('formats number in Chinese locale', () => {
+    expect(formatNumber(1000000, 'zh')).toBe('1,000,000');
+  });
+});
+
+describe('getInitials', () => {
+  it('extracts initials from full name', () => {
+    expect(getInitials('John Doe')).toBe('JD');
+  });
+
+  it('returns single letter for single name', () => {
+    expect(getInitials('Alice')).toBe('A');
+  });
+
+  it('returns uppercase for lowercase input', () => {
+    expect(getInitials('john doe')).toBe('JD');
+  });
+
+  it('limits to 2 characters', () => {
+    expect(getInitials('John Michael Doe')).toBe('JM');
+  });
+
+  it('returns fallback for empty/null/undefined', () => {
+    expect(getInitials('')).toBe('?');
+    expect(getInitials(null)).toBe('?');
+    expect(getInitials(undefined)).toBe('?');
+  });
+
+  it('allows custom fallback', () => {
+    expect(getInitials('', 'N/A')).toBe('N/A');
   });
 });
