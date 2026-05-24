@@ -275,7 +275,8 @@ export function ProfilePage() {
         const data = await res.json();
         toast.error(data.error || t("profile.updateError", locale));
       }
-    } catch {
+    } catch (error) {
+      log.error("Failed to save profile", { error: String(error) });
       toast.error(t("profile.updateError", locale));
     } finally {
       setSaving(false);
@@ -459,6 +460,7 @@ export function ProfilePage() {
                   onChange={(e) =>
                     setEditForm({ ...editForm, name: e.target.value })
                   }
+                  disabled={saving}
                 />
               </div>
               <div>
@@ -470,6 +472,7 @@ export function ProfilePage() {
                     setEditForm({ ...editForm, bio: e.target.value })
                   }
                   rows={3}
+                  disabled={saving}
                 />
               </div>
               <div>
@@ -480,6 +483,7 @@ export function ProfilePage() {
                   onChange={(e) =>
                     setEditForm({ ...editForm, phone: e.target.value })
                   }
+                  disabled={saving}
                 />
               </div>
               <div>
@@ -491,6 +495,7 @@ export function ProfilePage() {
                     setEditForm({ ...editForm, image: e.target.value })
                   }
                   placeholder="https://example.com/avatar.jpg"
+                  disabled={saving}
                 />
               </div>
               <div className="flex gap-2">

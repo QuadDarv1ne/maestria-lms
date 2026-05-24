@@ -68,13 +68,13 @@ export function CatalogPage() {
     { value: "advanced", label: t("catalog.advanced", locale) },
   ], [locale]);
 
-  const sortOptions: { value: SortBy; label: string }[] = [
+  const sortOptions = useMemo<{ value: SortBy; label: string }[]>(() => [
     { value: "popular", label: t("catalog.sortPopular", locale) },
     { value: "new", label: t("catalog.sortNew", locale) },
     { value: "rating", label: t("catalog.sortRating", locale) },
     { value: "priceAsc", label: t("catalog.sortPriceAsc", locale) },
     { value: "priceDesc", label: t("catalog.sortPriceDesc", locale) },
-  ];
+  ], [locale]);
 
   const handleSearch = useCallback(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);

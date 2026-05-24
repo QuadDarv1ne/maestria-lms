@@ -6,8 +6,14 @@ import { createNotification } from "@/lib/notifications";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
 import { parsePagination } from "@/lib/utils";
+import { z } from "zod";
 
 export const runtime = "nodejs";
+
+const reviewSchema = z.object({
+  rating: z.number().int().min(1).max(5, "Оценка должна быть числом от 1 до 5"),
+  comment: z.string().max(500, "Комментарий не должен превышать 500 символов").optional().nullable(),
+});
 
 const checkPostRateLimit = rateLimit("review", RATE_LIMITS.review);
 const checkGetRateLimit = rateLimit("reviewGet", RATE_LIMITS.default);
@@ -107,29 +113,16 @@ export async function POST(
 
     // Parse and validate request body
     const body = await request.json();
-    const { rating, comment } = body;
+    const validation = reviewSchema.safeParse(body);
 
-    if (!rating || typeof rating !== "number" || rating < 1 || rating > 5) {
+    if (!validation.success) {
       return NextResponse.json(
-        { error: "Оценка должна быть числом от 1 до 5" },
+        { error: validation.error.issues[0]?.message || "Ошибка валидации" },
         { status: 400 }
       );
     }
 
-    if (comment !== undefined && comment !== null) {
-      if (typeof comment !== "string") {
-        return NextResponse.json(
-          { error: "Комментарий должен быть строкой" },
-          { status: 400 }
-        );
-      }
-      if (comment.trim().length > 500) {
-        return NextResponse.json(
-          { error: "Комментарий не должен превышать 500 символов" },
-          { status: 400 }
-        );
-      }
-    }
+    const { rating, comment } = validation.data;
 
     // Check if course exists (support both ID and slug)
     const courseIdNum = parseInt(courseId, 10);
