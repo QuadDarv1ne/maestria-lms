@@ -81,6 +81,27 @@ export async function POST(
       );
     }
 
+    // Проверяем лимит попыток
+    if (assignment.maxAttempts > 0) {
+      const attemptCount = await db.assignmentSubmission.count({
+        where: {
+          assignmentId,
+          userId: session.user.id,
+        },
+      });
+
+      if (attemptCount >= assignment.maxAttempts) {
+        return NextResponse.json(
+          {
+            error: `Превышен лимит попыток для этого задания (максимум ${assignment.maxAttempts})`,
+            maxAttempts: assignment.maxAttempts,
+            attemptCount,
+          },
+          { status: 403 }
+        );
+      }
+    }
+
     const body = await request.json();
     const validation = baseSubmissionSchema.safeParse(body);
 
@@ -246,6 +267,14 @@ export async function GET(
 
     const { assignmentId } = await params;
 
+    // Получаем информацию о попытках
+    const attemptCount = await db.assignmentSubmission.count({
+      where: {
+        assignmentId,
+        userId: session.user.id,
+      },
+    });
+
     const submission = await db.assignmentSubmission.findUnique({
       where: {
         assignmentId_userId: {
@@ -267,13 +296,21 @@ export async function GET(
 
     if (!submission) {
       return NextResponse.json(
-        { submission: null },
+        {
+          submission: null,
+          attemptCount,
+          maxAttempts: 0,
+        },
         { status: 200 }
       );
     }
 
     return NextResponse.json(
-      { submission },
+      {
+        submission,
+        attemptCount,
+        maxAttempts: submission.assignment.maxAttempts,
+      },
       { status: 200 }
     );
   } catch (error) {
