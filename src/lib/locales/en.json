@@ -1195,6 +1195,10 @@
     "notFound.toHome": "Go home",
     "notFound.toCatalog": "Course catalog",
 
+    "error.serverErrorTitle": "Server Error",
+    "error.serverErrorDescription": "An error occurred on the server. Please try again later.",
+    "error.tryAgain": "Try again",
+
     "lesson.typeVideo": "Video Lesson",
     "lesson.typeText": "Text Lesson",
     "lesson.typeCoding": "Practice",

@@ -1195,6 +1195,10 @@
     "notFound.toHome": "На главную",
     "notFound.toCatalog": "Каталог курсов",
 
+    "error.serverErrorTitle": "Ошибка сервера",
+    "error.serverErrorDescription": "Произошла ошибка на сервере. Пожалуйста, попробуйте позже.",
+    "error.tryAgain": "Попробовать снова",
+
     "lesson.typeVideo": "Видеоурок",
     "lesson.typeText": "Текстовый урок",
     "lesson.typeCoding": "Практика",

@@ -1195,6 +1195,10 @@
     "notFound.toHome": "返回首页",
     "notFound.toCatalog": "课程目录",
 
+    "error.serverErrorTitle": "服务器错误",
+    "error.serverErrorDescription": "服务器发生错误，请稍后再试。",
+    "error.tryAgain": "重试",
+
     "lesson.typeVideo": "视频课程",
     "lesson.typeText": "文本课程",
     "lesson.typeCoding": "实践",
