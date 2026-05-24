@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useMemo } from "react";
+import React, { Fragment, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import {
@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import type { Locale } from "@/lib/store";
 
-export function Footer() {
+export const Footer = React.memo(function Footer() {
   const navigate = useAppStore((s) => s.navigate);
   const locale = useAppStore((s) => s.locale);
   const setLocale = useAppStore((s) => s.setLocale);
@@ -282,4 +282,6 @@ export function Footer() {
       </div>
     </footer>
   );
-}
+});
+
+Footer.displayName = "Footer";

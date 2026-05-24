@@ -47,9 +47,15 @@ export function toCdnUrl(key: string): string {
 /**
  * Generate a unique S3 key for an uploaded file.
  * Pattern: {folder}/{timestamp}-{random}.{ext}
+ * Sanitizes the original filename to prevent path traversal and special character issues.
  */
 export function makeFileKey(folder: string, originalName: string): string {
-  const ext = originalName.split(".").pop() || "bin";
+  // Extract extension and sanitize it (alphanumeric only)
+  const parts = originalName.split(".");
+  const rawExt = parts.pop() || "bin";
+  // Sanitize extension: remove any non-alphanumeric characters
+  const ext = rawExt.replace(/[^a-zA-Z0-9]/g, "").slice(0, 10) || "bin";
+
   const timestamp = Date.now();
   const random = Math.random().toString(36).slice(2, 8);
   return `${folder}/${timestamp}-${random}.${ext}`;

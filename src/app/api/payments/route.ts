@@ -97,23 +97,54 @@ export async function POST(request: NextRequest) {
       card: "Эквайринг",
     };
 
-    // Создаём платёж
-    const payment = await db.payment.create({
-      data: {
-        userId,
-        courseId,
-        amount: course.price,
-        currency: course.currency,
-        status: "pending",
-        paymentMethod,
-        paymentProvider: providerMap[paymentMethod] || paymentMethod,
-        transactionId: `txn_${Date.now()}_${crypto.randomUUID()}`,
-      },
-    });
+    // Wrap check and creation in a transaction to prevent race conditions
+    // where concurrent requests could create duplicate payments
+    const result = await db.$transaction(async (tx) => {
+      // Check for existing payment INSIDE transaction to prevent race conditions
+      const existingPayment = await tx.payment.findFirst({
+        where: {
+          userId,
+          courseId,
+          status: { in: ["pending", "completed"] },
+        },
+      });
 
-    return NextResponse.json(
-      {
-        message: "Платёж создан",
+      if (existingPayment?.status === "completed") {
+        throw new Error("COURSE_ALREADY_PAID");
+      }
+
+      if (existingPayment?.status === "pending") {
+        return {
+          existing: true,
+          payment: {
+            id: existingPayment.id,
+            amount: existingPayment.amount,
+            currency: existingPayment.currency,
+            status: existingPayment.status,
+            paymentMethod: existingPayment.paymentMethod,
+            paymentProvider: existingPayment.paymentProvider,
+            transactionId: existingPayment.transactionId,
+            createdAt: existingPayment.createdAt,
+          },
+        };
+      }
+
+      // Create new payment
+      const payment = await tx.payment.create({
+        data: {
+          userId,
+          courseId,
+          amount: course.price,
+          currency: course.currency,
+          status: "pending",
+          paymentMethod,
+          paymentProvider: providerMap[paymentMethod] || paymentMethod,
+          transactionId: `txn_${Date.now()}_${crypto.randomUUID()}`,
+        },
+      });
+
+      return {
+        existing: false,
         payment: {
           id: payment.id,
           amount: payment.amount,
@@ -124,10 +155,35 @@ export async function POST(request: NextRequest) {
           transactionId: payment.transactionId,
           createdAt: payment.createdAt,
         },
+      };
+    });
+
+    if (result.existing) {
+      return NextResponse.json(
+        {
+          message: "У вас уже есть ожидающий платёж",
+          paymentId: result.payment.id,
+          amount: result.payment.amount,
+          currency: result.payment.currency,
+        },
+        { status: 200 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        message: "Платёж создан",
+        payment: result.payment,
       },
       { status: 201 }
     );
   } catch (error) {
+    if (error instanceof Error && error.message === "COURSE_ALREADY_PAID") {
+      return NextResponse.json(
+        { error: "Курс уже оплачен" },
+        { status: 400 }
+      );
+    }
     return handleApiError(error, { route: "payments POST" });
   }
 }

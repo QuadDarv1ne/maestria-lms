@@ -116,6 +116,7 @@ export async function POST(request: NextRequest) {
       slug,
       description,
       shortDesc,
+      price = 0,
       oldPrice,
       level = "beginner",
       duration,
@@ -135,8 +136,8 @@ export async function POST(request: NextRequest) {
       language = "ru",
     } = validation.data;
 
-    const parsedPrice = Number(body.price);
-    const priceError = validatePrices(body.price, body.oldPrice);
+    const parsedPrice = Number(price);
+    const priceError = validatePrices(price, oldPrice);
     if (priceError) {
       return NextResponse.json(
         { error: priceError.error },
@@ -300,6 +301,7 @@ export async function PUT(request: NextRequest) {
       slug,
       description,
       shortDesc,
+      price = 0,
       oldPrice,
       level = "beginner",
       duration,
@@ -319,8 +321,8 @@ export async function PUT(request: NextRequest) {
       language = "ru",
     } = validation.data;
 
-    const parsedPrice = Number(body.price);
-    const priceError = validatePrices(body.price, body.oldPrice);
+    const parsedPrice = Number(price);
+    const priceError = validatePrices(price, oldPrice);
     if (priceError) {
       return NextResponse.json(
         { error: priceError.error },

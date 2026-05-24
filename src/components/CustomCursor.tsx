@@ -74,6 +74,11 @@ export function CustomCursor() {
     const isFinePointer = window.matchMedia("(pointer: fine)").matches;
     if (!isFinePointer) return;
 
+    // Проверяем prefers-reduced-motion — отключаем анимацию для пользователей
+    // с вестибулярными расстройствами
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReducedMotion) return;
+
     const dot = dotRef.current;
     const outline = outlineRef.current;
     if (!dot || !outline) return;

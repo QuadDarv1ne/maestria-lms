@@ -1,6 +1,6 @@
 "use client";
 
-
+import React from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { Card, CardContent } from "@/components/ui/card";
@@ -44,7 +44,7 @@ interface CourseCardProps {
   onClick?: () => void;
 }
 
-export function CourseCard({ course, onClick }: CourseCardProps) {
+export const CourseCard = React.memo(function CourseCard({ course, onClick }: CourseCardProps) {
   const locale = useAppStore((s) => s.locale);
 
   return (
@@ -141,4 +141,6 @@ export function CourseCard({ course, onClick }: CourseCardProps) {
       </CardContent>
     </Card>
   );
-}
+});
+
+CourseCard.displayName = "CourseCard";
