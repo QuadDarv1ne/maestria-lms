@@ -6,6 +6,7 @@ import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
+import { sendEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 
@@ -69,18 +70,22 @@ export async function POST(request: NextRequest) {
     const resetUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/reset-password?token=${token}`;
     const isDev = process.env.NODE_ENV !== "production";
 
-    // TODO: Integrate email provider (e.g. Resend, SendGrid, AWS SES) to send reset link.
-    // In production, the resetUrl should be sent via email, never returned in the API response.
-    // Example integration:
-    //   await sendEmail({
-    //     to: email,
-    //     subject: "Сброс пароля — Maestria LMS",
-    //     html: `<p>Перейдите по ссылке для сброса пароля: <a href="${resetUrl}">Сбросить пароль</a></p>`,
-    //   });
     if (isDev) {
       log.info("Password reset URL (dev mode, check console)", { resetUrl });
     } else {
-      log.info("Password reset requested (email not configured)", { email });
+      await sendEmail({
+        to: email,
+        subject: "Сброс пароля — Maestria LMS",
+        html: `
+          <p>Здравствуйте!</p>
+          <p>Вы запросили сброс пароля для аккаунта Maestria LMS.</p>
+          <p>Перейдите по ссылке ниже для сброса пароля:</p>
+          <p><a href="${resetUrl}">Сбросить пароль</a></p>
+          <p>Ссылка действительна в течение 1 часа.</p>
+          <p>Если вы не запрашивали сброс пароля, проигнорируйте это письмо.</p>
+        `,
+        text: `Перейдите по ссылке для сброса пароля: ${resetUrl}`,
+      });
     }
 
     return NextResponse.json(
