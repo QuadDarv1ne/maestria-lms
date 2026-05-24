@@ -37,6 +37,14 @@ export async function POST(req: NextRequest) {
 
     const input = validation.data;
 
+    // System notifications are admin-only
+    if (input.type === "system" && session.user.role !== "admin") {
+      return NextResponse.json(
+        { error: "Системные уведомления могут создаваться только администраторами" },
+        { status: 403 }
+      );
+    }
+
     // Только админы могут отправлять уведомления другим пользователям
     if (input.userId !== session.user.id && session.user.role !== "admin") {
       return NextResponse.json(

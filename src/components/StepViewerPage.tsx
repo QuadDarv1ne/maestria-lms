@@ -102,6 +102,21 @@ interface LessonStructure {
   completed: boolean;
 }
 
+// ==================== UTILITIES ====================
+
+/**
+ * Fisher-Yates shuffle — unbiased O(n) array permutation.
+ * Replaces the biased .sort(() => Math.random() - 0.5) pattern.
+ */
+function shuffleArray<T>(arr: T[]): T[] {
+  const result = [...arr];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
 // ==================== MAIN COMPONENT ====================
 
 const stepTypeColors: Record<string, string> = {
@@ -156,6 +171,26 @@ export function StepViewerPage({
   // Ordering state
   const [orderingItems, setOrderingItems] = useState<string[]>([]);
   const [orderingSubmitted, setOrderingSubmitted] = useState(false);
+
+  // Initialize ordering items when step changes
+  useEffect(() => {
+    const assignment = step?.assignments?.[0];
+    if (!assignment?.options) {
+      setOrderingItems([]);
+      return;
+    }
+    try {
+      const items: string[] = JSON.parse(assignment.options);
+      if (Array.isArray(items) && items.length > 0) {
+        setOrderingItems(shuffleArray(items));
+      } else {
+        setOrderingItems([]);
+      }
+    } catch {
+      setOrderingItems([]);
+    }
+    setOrderingSubmitted(false);
+  }, [step?.id, step?.assignments?.[0]?.options]);
 
   // Essay state
   const [essayAnswer, setEssayAnswer] = useState("");
@@ -576,6 +611,7 @@ export function StepViewerPage({
                 variant="ghost"
                 size="icon"
                 className="lg:hidden"
+                aria-label={t("nav.openMenu", locale)}
                 onClick={() => setSidebarOpen(true)}
               >
                 <Menu className="w-5 h-5" />
@@ -1063,7 +1099,7 @@ export function StepViewerPage({
                     }
 
                     // Get all right options and shuffle them
-                    const rightOptions = pairs.map(p => p.right).sort(() => Math.random() - 0.5);
+                    const rightOptions = shuffleArray(pairs.map(p => p.right));
 
                     return (
                       <div className="space-y-4">
@@ -1153,11 +1189,6 @@ export function StepViewerPage({
                       } catch {
                         items = [];
                       }
-                    }
-
-                    // Initialize ordering items if not set
-                    if (orderingItems.length === 0 && items.length > 0) {
-                      setOrderingItems([...items].sort(() => Math.random() - 0.5));
                     }
 
                     if (orderingItems.length === 0) {

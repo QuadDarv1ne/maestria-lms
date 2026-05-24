@@ -561,7 +561,7 @@ export function ProfilePage() {
                     "bg-blue-500", "bg-violet-500", "bg-amber-500",
                     "bg-green-500", "bg-orange-500", "bg-red-500",
                   ];
-                  const colorIndex = enrollment.course.title.length % colors.length;
+                  const colorIndex = (enrollment.course?.title?.length ?? 0) % colors.length;
                   return (
                     <div key={enrollment.id}>
                       <div className="flex items-center justify-between text-sm mb-1">
@@ -903,7 +903,7 @@ export function ProfilePage() {
                   "bg-blue-500", "bg-violet-500", "bg-amber-500",
                   "bg-green-500", "bg-orange-500", "bg-red-500",
                 ];
-                const colorIndex = detail.course.title.length % colors.length;
+                const colorIndex = (detail.course?.title?.length ?? 0) % colors.length;
 
                 return (
                   <Card key={detail.id} className="border-0 shadow-sm">

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import { addClient } from "@/lib/sse";
+import { log } from "@/lib/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,20 +20,28 @@ export async function GET(req: NextRequest) {
 
   const stream = new ReadableStream({
     start(controller) {
-      const cleanup = addClient(userId, controller);
+      let cleanup: (() => void) | null = null;
+
+      try {
+        cleanup = addClient(userId, controller);
+      } catch (error) {
+        log.error("Failed to add SSE client", { userId, error: error instanceof Error ? error.message : String(error) });
+        controller.error(error);
+        return;
+      }
 
       const heartbeat = setInterval(() => {
         try {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "ping" })}\n\n`));
         } catch {
           clearInterval(heartbeat);
-          cleanup();
+          cleanup?.();
         }
       }, 30000);
 
       req.signal.addEventListener("abort", () => {
         clearInterval(heartbeat);
-        cleanup();
+        cleanup?.();
       });
     },
   });
