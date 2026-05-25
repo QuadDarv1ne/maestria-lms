@@ -1,39 +1,20 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef, type ReactNode } from "react";
+import { useState, useCallback, useRef, type ReactNode } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronRight, Home } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useScrollProgress } from "@/hooks/useScrollProgress";
 
 /* ═══════════════════════════════════════════════════════════════════════
    ReadingProgressBar — тонкая полоска прогресса чтения документа
    Показывает, сколько документа пользователь уже прочитал (прокрутил)
    ═══════════════════════════════════════════════════════════════════════ */
 function ReadingProgressBar() {
-  const [progress, setProgress] = useState(0);
+  const progress = useScrollProgress();
   const theme = useAppStore((s) => s.theme);
-  const rafRef = useRef<number>(0);
-
-  const updateProgress = useCallback(() => {
-    cancelAnimationFrame(rafRef.current);
-    rafRef.current = requestAnimationFrame(() => {
-      const scrollTop = window.scrollY;
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const percent = docHeight > 0 ? Math.min((scrollTop / docHeight) * 100, 100) : 0;
-      setProgress(percent);
-    });
-  }, []);
-
-  useEffect(() => {
-    window.addEventListener("scroll", updateProgress, { passive: true });
-    updateProgress();
-    return () => {
-      window.removeEventListener("scroll", updateProgress);
-      cancelAnimationFrame(rafRef.current);
-    };
-  }, [updateProgress]);
 
   // Цвет прогресс-бара подстраивается под тему
   const barColor =

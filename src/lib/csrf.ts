@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { timingSafeEqual } from "node:crypto";
 
 const SAFE_METHODS = ["GET", "HEAD", "OPTIONS"];
 const CSRF_COOKIE_NAME = "csrf-token";
@@ -43,7 +44,7 @@ export function validateCsrf(request: NextRequest): boolean {
   const cookieBytes = encoder.encode(cookieToken);
   const headerBytes = encoder.encode(headerToken);
 
-  return (globalThis.crypto as any).timingSafeEqual(cookieBytes, headerBytes);
+  return timingSafeEqual(cookieBytes, headerBytes);
 }
 
 export function csrfProtection(request: NextRequest): NextResponse | null {

@@ -47,11 +47,17 @@ export const createNotificationsSlice: StateCreator<NotificationsSlice, [], [], 
     set({ notifications: updated });
 
     try {
-      await fetch(`/api/notifications/${id}`, {
+      const res = await fetch(`/api/notifications/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ read: true }),
       });
+      if (!res.ok) {
+        log.warn("Server failed to mark notification as read", {
+          notificationId: id,
+          status: res.status,
+        });
+      }
     } catch (err) {
       log.warn("Failed to sync notification read status to server", {
         notificationId: id,
@@ -66,10 +72,15 @@ export const createNotificationsSlice: StateCreator<NotificationsSlice, [], [], 
     set({ notifications: updated });
 
     try {
-      await fetch("/api/notifications/mark-all", {
+      const res = await fetch("/api/notifications/mark-all", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
       });
+      if (!res.ok) {
+        log.warn("Server failed to mark all notifications as read", {
+          status: res.status,
+        });
+      }
     } catch (err) {
       log.warn("Failed to sync mark-all read status to server", {
         error: err instanceof Error ? err.message : String(err),
@@ -84,7 +95,10 @@ export const createNotificationsSlice: StateCreator<NotificationsSlice, [], [], 
   fetchNotifications: async () => {
     try {
       const res = await fetch("/api/notifications?limit=100");
-      if (!res.ok) return;
+      if (!res.ok) {
+        log.warn("Server failed to fetch notifications", { status: res.status });
+        return;
+      }
       const data = await res.json();
       if (data.notifications) {
         save("maestria-notifications", data.notifications);

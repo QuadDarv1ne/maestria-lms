@@ -1,47 +1,25 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { ArrowUp } from "lucide-react";
+import { useScrollProgress } from "@/hooks/useScrollProgress";
 
-/**
- * GlobalScrollToTop — глобальная кнопка «Наверх» для всего сайта.
- *
- * Особенности:
- * - Появляется после прокрутки на 300px
- * - Показывает прогресс чтения через SVG-кольцо
- * - Плавно возвращает наверх при клике
- * - Адаптируется под тему (light/dark/amber)
- * - Имеет data-cursor="pointer" для кастомного курсора
- */
 export function GlobalScrollToTop() {
   const [visible, setVisible] = useState(false);
   const [hovered, setHovered] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const rafRef = useRef<number>(0);
+  const progress = useScrollProgress();
   const locale = useAppStore((s) => s.locale);
   const theme = useAppStore((s) => s.theme);
 
-  const checkScroll = useCallback(() => {
-    cancelAnimationFrame(rafRef.current);
-    rafRef.current = requestAnimationFrame(() => {
-      const scrollTop = window.scrollY;
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const percent = docHeight > 0 ? Math.min((scrollTop / docHeight) * 100, 100) : 0;
-      setProgress(percent);
-      setVisible(scrollTop > 300);
-    });
-  }, []);
-
+  // Track visibility separately from progress
   useEffect(() => {
-    window.addEventListener("scroll", checkScroll, { passive: true });
-    checkScroll();
-    return () => {
-      window.removeEventListener("scroll", checkScroll);
-      cancelAnimationFrame(rafRef.current);
-    };
-  }, [checkScroll]);
+    setVisible(window.scrollY > 300);
+    const handleScroll = () => setVisible(window.scrollY > 300);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const scrollToTop = useCallback(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });

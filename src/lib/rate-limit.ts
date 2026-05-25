@@ -127,10 +127,18 @@ function cleanupMemoryExpiredEntries() {
 
 const GLOBAL_MARKER = "__rateLimitMemoryCleanupInterval";
 if (typeof globalThis !== "undefined" && !(globalThis as Record<string, unknown>)[GLOBAL_MARKER]) {
-  (globalThis as Record<string, unknown>)[GLOBAL_MARKER] = setInterval(
+  const intervalId = setInterval(
     cleanupMemoryExpiredEntries,
     MEMORY_CLEANUP_INTERVAL,
   );
+  (globalThis as Record<string, unknown>)[GLOBAL_MARKER] = intervalId;
+
+  // Clean up on process exit to prevent leaks in serverless/long-running processes
+  if (typeof process !== "undefined") {
+    process.on("beforeExit", () => clearInterval(intervalId));
+    process.on("SIGTERM", () => clearInterval(intervalId));
+    process.on("SIGINT", () => clearInterval(intervalId));
+  }
 }
 
 async function checkRedisLimit(

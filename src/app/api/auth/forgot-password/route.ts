@@ -67,7 +67,17 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const resetUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/reset-password?code=${token}`;
+    const baseUrl = process.env.NEXTAUTH_URL;
+    if (!baseUrl) {
+      log.error("NEXTAUTH_URL is not set, cannot generate password reset link", { email });
+      if (process.env.NODE_ENV === "production") {
+        return NextResponse.json(
+          { error: "Ошибка конфигурации. Обратитесь в поддержку." },
+          { status: 500 }
+        );
+      }
+    }
+    const resetUrl = `${baseUrl || "http://localhost:3000"}/reset-password?code=${token}`;
     const isDev = process.env.NODE_ENV !== "production";
 
     if (isDev) {
