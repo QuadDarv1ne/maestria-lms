@@ -142,7 +142,7 @@ export function AuthDialogs() {
       return;
     }
 
-    if (registerForm.password.length < 6) {
+    if (registerForm.password.length < 8) {
       toast.error(t("auth.passwordMinLength", locale));
       return;
     }
@@ -422,7 +422,7 @@ export function AuthDialogs() {
                 <Input
                   id="reg-password"
                   type={showRegisterPassword ? "text" : "password"}
-                  placeholder={t("auth.min6Chars", locale)}
+                  placeholder={t("auth.min8Chars", locale)}
                   value={registerForm.password}
                   onChange={(e) =>
                     setRegisterForm({
@@ -432,7 +432,7 @@ export function AuthDialogs() {
                   }
                   className="pl-10 pr-10"
                   required
-                  minLength={6}
+                  minLength={8}
                 />
                 <button
                   type="button"

@@ -740,6 +740,7 @@
     "auth.name": "Имя",
     "auth.yourName": "Ваше имя",
     "auth.min6Chars": "Минимум 6 символов",
+    "auth.min8Chars": "Минимум 8 символов",
     "auth.confirmPassword": "Подтвердите пароль",
     "auth.repeatPassword": "Повторите пароль",
     "auth.registering": "Регистрация...",

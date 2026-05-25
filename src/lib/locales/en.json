@@ -741,6 +741,7 @@
     "auth.name": "Name",
     "auth.yourName": "Your name",
     "auth.min6Chars": "Minimum 6 characters",
+    "auth.min8Chars": "Minimum 8 characters",
     "auth.confirmPassword": "Confirm password",
     "auth.repeatPassword": "Repeat password",
     "auth.registering": "Registering...",

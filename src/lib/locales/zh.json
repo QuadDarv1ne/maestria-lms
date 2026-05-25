@@ -741,6 +741,7 @@
     "auth.name": "姓名",
     "auth.yourName": "您的姓名",
     "auth.min6Chars": "至少6个字符",
+    "auth.min8Chars": "至少8个字符",
     "auth.confirmPassword": "确认密码",
     "auth.repeatPassword": "重复密码",
     "auth.registering": "注册中...",
