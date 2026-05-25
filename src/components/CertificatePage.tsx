@@ -111,7 +111,7 @@ export function CertificatePage({ courseId }: { courseId: string }) {
         backgroundColor: "#ffffff",
       });
       const link = document.createElement("a");
-      link.download = `certificate-${certificateNumber}.pdf`;
+      link.download = `certificate-${certificateNumber}.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
     } catch (err) {

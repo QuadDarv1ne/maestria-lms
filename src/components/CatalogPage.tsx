@@ -76,13 +76,7 @@ export function CatalogPage() {
     { value: "priceDesc", label: t("catalog.sortPriceDesc", locale) },
   ], [locale]);
 
-  const handleSearch = useCallback(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    setCourseFilters({ search: searchInput });
-    setPagination((prev) => ({ ...prev, page: 1 }));
-  }, [searchInput, setCourseFilters]);
-
-  // Debounced live search
+  // Debounced live search — handles all search updates
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
@@ -95,7 +89,7 @@ export function CatalogPage() {
   }, [searchInput, setCourseFilters]);
 
   const handleCategoryChange = useCallback((value: string) => {
-    setCourseFilters({ category: value === "" ? "" : value });
+    setCourseFilters({ category: value === "__all__" ? "" : value });
     setPagination((prev) => ({ ...prev, page: 1 }));
   }, [setCourseFilters]);
 
@@ -164,11 +158,11 @@ export function CatalogPage() {
               placeholder={t("catalog.search", locale)}
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              onKeyDown={(e) => e.key === "Enter" && setPagination((prev) => ({ ...prev, page: 1 }))}
               className="pl-10"
             />
           </div>
-          <Button onClick={handleSearch} className="bg-blue-700 hover:bg-blue-800 text-white">
+          <Button className="bg-blue-700 hover:bg-blue-800 text-white">
             {t("common.find", locale)}
           </Button>
           <Button

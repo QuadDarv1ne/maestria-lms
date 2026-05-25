@@ -229,9 +229,15 @@ export function StepViewerPage({
             setStep(data.lesson);
           }
         } else {
-          const data = await res.json();
+          let errorMessage = t("course.step.errorAccess", locale);
+          try {
+            const data = await res.json();
+            errorMessage = data.error || errorMessage;
+          } catch {
+            // Response may not be JSON, use default message
+          }
           if (!cancelled) {
-            toast.error(data.error || t("course.step.errorAccess", locale));
+            toast.error(errorMessage);
             navigate(`course/${courseId}`);
           }
         }

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Lock, CheckCircle2, AlertCircle } from "lucide-react";
+import { passwordStrengthSchema } from "@/lib/password-strength";
 
 function ResetPasswordContent() {
   const router = useRouter();
@@ -31,9 +32,9 @@ function ResetPasswordContent() {
   const passwordScore = Object.values(passwordStrength).filter(Boolean).length;
   const strengthLabel =
     passwordScore === 0 ? "" :
-    passwordScore <= 1 ? "Слабый" :
-    passwordScore <= 2 ? "Средний" :
-    passwordScore <= 3 ? "Хороший" : "Надёжный";
+    passwordScore <= 1 ? t("auth.strengthWeak", locale) :
+    passwordScore <= 2 ? t("auth.strengthMedium", locale) :
+    passwordScore <= 3 ? t("auth.strengthGood", locale) : t("auth.strengthStrong", locale);
   const strengthColor =
     passwordScore <= 1 ? "text-red-500" :
     passwordScore <= 2 ? "text-yellow-500" :
@@ -69,20 +70,9 @@ function ResetPasswordContent() {
       setError(t("auth.passwordMismatch", locale));
       return;
     }
-    if (password.length < 8) {
-      setError("Пароль должен быть не менее 8 символов");
-      return;
-    }
-    if (!/[A-ZА-ЯЁ]/.test(password)) {
-      setError("Пароль должен содержать хотя бы одну заглавную букву");
-      return;
-    }
-    if (!/[a-zа-яё]/.test(password)) {
-      setError("Пароль должен содержать хотя бы одну строчную букву");
-      return;
-    }
-    if (!/[0-9]/.test(password)) {
-      setError("Пароль должен содержать хотя бы одну цифру");
+    const passwordValidation = passwordStrengthSchema.safeParse(password);
+    if (!passwordValidation.success) {
+      setError(passwordValidation.error.issues[0]?.message ?? t("auth.passwordWeak", locale));
       return;
     }
     if (!token) {
