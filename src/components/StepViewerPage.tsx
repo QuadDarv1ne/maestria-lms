@@ -1182,15 +1182,6 @@ export function StepViewerPage({
                   </div>
 
                   {step.assignments[0] && (() => {
-                    let items: string[] = [];
-                    if (step.assignments[0].options) {
-                      try {
-                        items = JSON.parse(step.assignments[0].options);
-                      } catch {
-                        items = [];
-                      }
-                    }
-
                     if (orderingItems.length === 0) {
                       return <p className="text-muted-foreground">{t("course.step.noItems", locale) || "Нет элементов для сортировки"}</p>;
                     }

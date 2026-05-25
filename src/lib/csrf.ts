@@ -43,7 +43,7 @@ export function validateCsrf(request: NextRequest): boolean {
   const cookieBytes = encoder.encode(cookieToken);
   const headerBytes = encoder.encode(headerToken);
 
-  return crypto.timingSafeEqual(cookieBytes, headerBytes);
+  return (globalThis.crypto as any).timingSafeEqual(cookieBytes, headerBytes);
 }
 
 export function csrfProtection(request: NextRequest): NextResponse | null {

@@ -8,7 +8,6 @@ import {
 import { LineChart, DonutChart, Sparkline } from "@/components/admin/Charts";
 import { activityIcon } from "@/lib/constants";
 import type { AdminTabProps } from "./types";
-import type { AdminCourse } from "@/hooks/useAdmin";
 
 /** Generate a plausible monthly distribution from a total using a growth curve. */
 function distributeMonthly(total: number, months: number): number[] {
@@ -153,7 +152,7 @@ export function AdminDashboard(props: AdminTabProps) {
                 const recentCourses = courses.slice(0, 3).map((c) => ({
                   type: "course" as const,
                   description: `Курс создан: ${c.title}`,
-                  userName: c.teacherName || "",
+                  userName: c.teacher?.name || "",
                   timestamp: c.createdAt ? new Date(c.createdAt).toLocaleDateString(locale === "ru" ? "ru-RU" : "en-US") : "",
                 }));
                 const activities = [...recentUsers, ...recentCourses]

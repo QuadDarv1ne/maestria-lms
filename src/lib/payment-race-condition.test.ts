@@ -25,7 +25,7 @@ const mockTx = {
   },
 };
 
-const mockDb = {
+const _mockDb = {
   $transaction: vi.fn(),
   payment: {
     findUnique: vi.fn(),

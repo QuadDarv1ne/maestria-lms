@@ -11,6 +11,7 @@ export interface AdminCourse {
   teacher: { name: string | null } | null;
   category: { name: string } | null;
   _count: { enrollments: number; reviews: number; modules: number };
+  createdAt?: string;
 }
 
 export interface AdminUser {

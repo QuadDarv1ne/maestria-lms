@@ -1,0 +1,58 @@
+version: "3.8"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: maestria-lms
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=file:./data/dev.db
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-change-me-in-production}
+      - EMAIL_SERVER=${EMAIL_SERVER:-}
+      - EMAIL_FROM=${EMAIL_FROM:-}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_REGION=${AWS_REGION:-}
+      - AWS_BUCKET=${AWS_BUCKET:-}
+    volumes:
+      - sqlite-data:/app/data
+      - uploads-data:/app/public/uploads
+    depends_on:
+      - db
+    networks:
+      - maestria-network
+
+  db:
+    image: postgres:16-alpine
+    container_name: maestria-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=maestria
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-maestria_secret}
+      - POSTGRES_DB=maestria_lms
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - maestria-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U maestria"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  sqlite-data:
+  postgres-data:
+  uploads-data:
+
+networks:
+  maestria-network:
+    driver: bridge

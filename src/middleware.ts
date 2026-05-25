@@ -29,7 +29,7 @@ export async function middleware(request: NextRequest) {
     }
 
     const role = (token as { role?: string }).role;
-    if (!role || !allowedRoles.includes(role)) {
+    if (!role || !allowedRoles.includes(role as any)) {
       const homeUrl = new URL("/", request.url);
       return NextResponse.redirect(homeUrl);
     }

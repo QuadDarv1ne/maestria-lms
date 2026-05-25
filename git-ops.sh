@@ -1,12 +1,24 @@
 #!/bin/bash
-cd M:/GitHub/maestria-lms || exit 1
+# Git operations script for Maestria LMS
+# Automatically detects repository root and performs common operations
+
+set -e
+
+# Navigate to repository root
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+if [ -z "$REPO_ROOT" ]; then
+  echo "Error: Not in a git repository"
+  exit 1
+fi
+
+cd "$REPO_ROOT" || exit 1
 
 echo "=== GIT STATUS ==="
 git status --short
 
 echo ""
-echo "=== STAGING FILES ==="
-git add src/lib/auth.ts src/components/LessonPage.tsx src/components/ProfilePage.tsx
+echo "=== STAGING ALL CHANGES ==="
+git add -A
 
 echo ""
 echo "=== STATUS AFTER STAGE ==="
@@ -14,16 +26,9 @@ git status --short
 
 echo ""
 echo "=== COMMITTING ==="
-git commit -m "$(cat <<'EOF'
-fix: heatmap crash, quiz NaN, bookmark IDs, and improve course progress UI
-
-- Fix undefined totalWeeks/weekSize causing ProfilePage heatmap crash
-- Fix unsafe type casting in auth.ts session callback preventing null dereference
-- Add NaN guard for quiz answer checking when correctAnswer is invalid
-- Replace raw cuid ID fallback in bookmarks with proper loading state
-- Enhance enrolled course cards with color-coded progress bars and completion icons
-EOF
-)"
+# Use provided commit message or default
+COMMIT_MSG="${1:-chore: automated commit}"
+git commit -m "$COMMIT_MSG"
 
 echo ""
 echo "=== LOCAL BRANCHES BEFORE CLEANUP ==="
@@ -31,9 +36,14 @@ git branch
 
 echo ""
 echo "=== DELETING NON-MAIN BRANCHES ==="
+CURRENT_BRANCH=$(git branch --show-current)
 for branch in $(git branch --format='%(refname:short)' | grep -v '^main$'); do
+  if [ "$branch" = "$CURRENT_BRANCH" ]; then
+    echo "Skipping current branch: $branch"
+    continue
+  fi
   echo "Deleting: $branch"
-  git branch -D "$branch" 2>/dev/null || git branch -d "$branch" 2>/dev/null || echo "  Skipped (current branch or protected)"
+  git branch -D "$branch" 2>/dev/null || echo "  Skipped (has unmerged commits)"
 done
 
 echo ""
@@ -55,13 +65,6 @@ git pull origin main 2>&1 || echo "Pull may need authentication"
 echo ""
 echo "=== PUSHING ==="
 git push origin main 2>&1 || echo "Push may need authentication"
-
-echo ""
-echo "=== DELETING REMOTE NON-MAIN BRANCHES ==="
-for branch in $(git branch -r --format='%(refname:short)' | grep 'origin/' | grep -v 'origin/main$' | grep -v 'origin/HEAD' | sed 's|origin/||'); do
-  echo "Deleting remote: $branch"
-  git push origin --delete "$branch" 2>&1 || echo "  Skipped (protected or already deleted)"
-done
 
 echo ""
 echo "=== FINAL STATUS ==="
