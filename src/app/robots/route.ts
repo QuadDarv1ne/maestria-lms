@@ -2,8 +2,8 @@ import { env } from "@/lib/env";
 
 const SITE_URL = env.siteUrl;
 
-export function generateRobotsTxt() {
-  return `User-agent: Googlebot
+export async function GET() {
+  const robots = `User-agent: Googlebot
 Allow: /
 
 User-agent: Bingbot
@@ -20,4 +20,10 @@ Allow: /
 
 Sitemap: ${SITE_URL}/sitemap.xml
 `;
+
+  return new Response(robots, {
+    headers: {
+      "Content-Type": "text/plain",
+    },
+  });
 }
