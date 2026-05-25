@@ -1,56 +1,27 @@
 #!/usr/bin/env node
 /**
- * Automatic Prisma wrapper that detects database provider from DATABASE_URL
- * and updates schema.prisma accordingly before executing Prisma commands
- * Skips Prisma commands entirely for MongoDB
+ * ═══════════════════════════════════════════════════════════════════════════
+ *  Prisma Auto — Automatic Prisma wrapper with provider detection
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ *  Uses scripts/lib/env-manager.js for unified provider detection.
+ *  - Detects provider from DATABASE_URL / DATABASE_PROVIDER
+ *  - Updates schema.prisma datasource block
+ *  - Skips Prisma entirely for MongoDB
  */
 
 const { execSync } = require('child_process')
 const fs = require('fs')
 const path = require('path')
 
-const envFile = path.join(__dirname, '..', '.env')
-const schemaFile = path.join(__dirname, '..', 'prisma', 'schema.prisma')
+const env = require('./lib/env-manager')
+
+const ROOT = path.join(__dirname, '..')
+const SCHEMA_FILE = path.join(ROOT, 'prisma', 'schema.prisma')
+const ENV_FILE = path.join(ROOT, '.env')
 
 /**
- * Detect database provider from URL
- */
-function detectProvider(databaseUrl) {
-  if (!databaseUrl) return null
-
-  const url = databaseUrl.toLowerCase()
-
-  if (url.startsWith('file:') || url.endsWith('.db') || url.endsWith('.sqlite')) {
-    return 'sqlite'
-  }
-  if (url.startsWith('postgresql://') || url.startsWith('postgres://')) {
-    return 'postgresql'
-  }
-  if (url.startsWith('mysql://') || url.startsWith('mariadb://')) {
-    return 'mysql'
-  }
-  if (url.startsWith('mongodb://') || url.startsWith('mongodb+srv://')) {
-    return 'mongodb'
-  }
-
-  return null
-}
-
-/**
- * Read DATABASE_URL from .env
- */
-function readDatabaseUrl() {
-  if (!fs.existsSync(envFile)) {
-    return null
-  }
-
-  const content = fs.readFileSync(envFile, 'utf8')
-  const match = content.match(/^DATABASE_URL=(.+)$/m)
-  return match ? match[1].trim() : null
-}
-
-/**
- * Update schema.prisma with detected provider
+ * Update schema.prisma datasource block
  */
 function updateSchemaProvider(provider) {
   if (provider === 'mongodb') {
@@ -58,7 +29,7 @@ function updateSchemaProvider(provider) {
     return
   }
 
-  const schema = fs.readFileSync(schemaFile, 'utf8')
+  const schema = fs.readFileSync(SCHEMA_FILE, 'utf8')
 
   const newDatasource = `datasource db {
   provider = "${provider}"
@@ -66,19 +37,18 @@ function updateSchemaProvider(provider) {
 }`
 
   const updatedSchema = schema.replace(/datasource db \{[\s\S]*?\}/, newDatasource)
-  fs.writeFileSync(schemaFile, updatedSchema)
+  fs.writeFileSync(SCHEMA_FILE, updatedSchema)
 
   console.log(`[auto-db] Detected provider: ${provider}`)
 }
 
-// Main execution
+// ─── Main ───
 try {
-  const databaseUrl = process.env.DATABASE_URL || readDatabaseUrl()
-  const provider = detectProvider(databaseUrl)
+  const envVars = env.parseEnv(ENV_FILE)
+  const databaseUrl = process.env.DATABASE_URL || envVars.DATABASE_URL
+  const provider = env.detectProvider(databaseUrl) || envVars.DATABASE_PROVIDER || 'sqlite'
 
-  if (provider) {
-    updateSchemaProvider(provider)
-  }
+  updateSchemaProvider(provider)
 
   // Skip Prisma commands for MongoDB
   if (provider === 'mongodb') {
@@ -92,7 +62,7 @@ try {
 
   execSync(command, {
     stdio: 'inherit',
-    cwd: path.join(__dirname, '..'),
+    cwd: ROOT,
     env: { ...process.env }
   })
 } catch (error) {
