@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useAppStore } from "@/lib/store";
+import type { Locale } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { log } from "@/lib/logger";
 import { formatDate, getInitials } from "@/lib/utils";
@@ -29,6 +30,16 @@ function formatTime(seconds: number, locale?: string): string {
   const m = locale === "en" ? "m" : locale === "zh" ? "分钟" : "м";
   if (hours > 0) return `${hours}${h} ${minutes}${m}`;
   return `${minutes}${m}`;
+}
+
+// Use translation keys version:
+function formatTimeLocalized(seconds: number, tFn: typeof t, locale?: Locale): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const hAbbrev = t("common.hoursAbbrev", locale);
+  const mAbbrev = t("common.minutesAbbrev", locale);
+  if (hours > 0) return `${hours}${hAbbrev} ${minutes}${mAbbrev}`;
+  return `${minutes}${mAbbrev}`;
 }
 
 interface UserProfile {
@@ -125,19 +136,18 @@ export function ProfilePage() {
 
     const fetchTitles = async () => {
       const titles: Record<string, string> = {};
-      await Promise.all(
-        favorites.map(async (courseId) => {
-          try {
-            const res = await fetch(`/api/courses/${courseId}`);
-            if (res.ok) {
-              const data = await res.json();
-              titles[courseId] = data.course?.title || data.title || "";
-            }
-          } catch (e: unknown) {
-            log.error(`${t("profile.errorLoadingBookmarkCourse", locale)} ${courseId}`, { error: e instanceof Error ? e.message : String(e) });
+      try {
+        const ids = favorites.join(",");
+        const res = await fetch(`/api/courses?ids=${ids}`);
+        if (res.ok) {
+          const data = await res.json();
+          for (const course of data.courses) {
+            titles[course.id] = course.title || "";
           }
-        })
-      );
+        }
+      } catch (e: unknown) {
+        log.error(`${t("profile.errorLoadingBookmarkCourse", locale)}`, { error: e instanceof Error ? e.message : String(e) });
+      }
       if (!cancelled) {
         setBookmarkCourses(titles);
         setBookmarksLoading(false);
@@ -870,7 +880,7 @@ export function ProfilePage() {
                     </div>
                     <div className="bg-muted/50 rounded-lg p-4 text-center">
                       <p className="text-2xl font-bold text-amber-600">
-                        {formatTime(enrollmentDetails.reduce((s, e) => s + e.totalTimeSpent, 0), locale)}
+                        {formatTimeLocalized(enrollmentDetails.reduce((s, e) => s + e.totalTimeSpent, 0), t, locale)}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">{t("profile.totalTime", locale)}</p>
                     </div>
@@ -946,7 +956,7 @@ export function ProfilePage() {
                         </div>
                         <div className="bg-muted/50 rounded-lg p-3 text-center">
                           <p className="text-lg font-bold">
-                            {formatTime(detail.totalTimeSpent, locale)}
+                            {formatTimeLocalized(detail.totalTimeSpent, t, locale)}
                           </p>
                           <p className="text-xs text-muted-foreground">{t("profile.time", locale)}</p>
                         </div>

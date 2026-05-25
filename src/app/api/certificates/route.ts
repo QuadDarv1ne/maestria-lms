@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getAuthSession } from "@/lib/auth";
+import { getAuthSession, requireAuth } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-errors";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
@@ -12,9 +12,8 @@ export async function GET(request: NextRequest) {
   const blocked = checkRateLimit(request);
   if (blocked) return blocked;
   const session = await getAuthSession();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
-  }
+  const authError = requireAuth(session);
+  if (authError) return authError;
 
   try {
     const url = new URL(request.url);
@@ -30,7 +29,7 @@ export async function GET(request: NextRequest) {
     const certificate = await db.certificate.findUnique({
       where: {
         userId_courseId: {
-          userId: session.user.id,
+          userId: session!.user.id,
           courseId,
         },
       },
@@ -59,7 +58,7 @@ export async function GET(request: NextRequest) {
       issuedAt: certificate.issuedAt,
       courseTitle: certificate.course.title,
       courseSlug: certificate.course.slug,
-      userName: session.user.name || session.user.email,
+      userName: session!.user.name || session!.user.email,
     });
   } catch (error: unknown) {
     return handleApiError(error, { route: "certificates" });

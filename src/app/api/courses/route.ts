@@ -16,6 +16,18 @@ export async function GET(request: NextRequest) {
   if (blocked) return blocked;
   try {
     const { searchParams } = new URL(request.url);
+    const ids = searchParams.get("ids");
+
+    // Batch fetch by IDs - lightweight response for bookmark/title fetching
+    if (ids) {
+      const idList = ids.split(",").filter(Boolean);
+      const courses = await db.course.findMany({
+        where: { id: { in: idList }, isPublished: true },
+        select: { id: true, title: true, slug: true },
+      });
+      return NextResponse.json({ courses }, { status: 200 });
+    }
+
     const category = searchParams.get("category");
     const search = searchParams.get("search");
     const level = searchParams.get("level");

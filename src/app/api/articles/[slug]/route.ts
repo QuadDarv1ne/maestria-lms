@@ -1,13 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, Prisma } from "@/lib/db";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { z } from "zod";
 
 export const runtime = "nodejs";
 
 const checkRateLimit = rateLimit("article", RATE_LIMITS.default);
+
+const articleUpdateSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  slug: z.string().min(1).max(200).optional(),
+  content: z.string().min(1).optional(),
+  excerpt: z.string().max(500).optional().nullable(),
+  image: z.string().url().optional().nullable(),
+  category: z.string().optional(),
+  tags: z.string().optional().nullable(),
+  readTime: z.number().int().min(1).max(120).optional(),
+});
 
 export async function GET(
   request: NextRequest,
@@ -60,6 +72,9 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
@@ -86,10 +101,15 @@ export async function PATCH(
     }
 
     const body = await request.json();
+    const validation = articleUpdateSchema.safeParse(body);
+
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error.issues[0]?.message || "Invalid input" }, { status: 400 });
+    }
 
     const updated = await db.article.update({
       where: { id: article.id },
-      data: body,
+      data: validation.data,
     });
 
     return NextResponse.json(updated, { status: 200 });
@@ -102,6 +122,9 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {

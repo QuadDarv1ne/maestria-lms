@@ -147,13 +147,13 @@ export function AdminDashboard(props: AdminTabProps) {
                   type: "user" as const,
                   description: `Регистрация: ${u.name || u.email}`,
                   userName: u.email,
-                  timestamp: u.createdAt ? new Date(u.createdAt).toLocaleDateString(locale === "ru" ? "ru-RU" : "en-US") : "",
+                  timestamp: u.createdAt ? new Date(u.createdAt).toLocaleDateString(locale === "ru" ? "ru-RU" : locale === "zh" ? "zh-CN" : "en-US") : "",
                 }));
                 const recentCourses = courses.slice(0, 3).map((c) => ({
                   type: "course" as const,
                   description: `Курс создан: ${c.title}`,
                   userName: c.teacher?.name || "",
-                  timestamp: c.createdAt ? new Date(c.createdAt).toLocaleDateString(locale === "ru" ? "ru-RU" : "en-US") : "",
+                  timestamp: c.createdAt ? new Date(c.createdAt).toLocaleDateString(locale === "ru" ? "ru-RU" : locale === "zh" ? "zh-CN" : "en-US") : "",
                 }));
                 const activities = [...recentUsers, ...recentCourses]
                   .sort((a, b) => (b.timestamp || "").localeCompare(a.timestamp || ""))

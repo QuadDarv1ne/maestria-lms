@@ -11,6 +11,7 @@ export function useScrollProgress(): number {
   const rafRef = useRef<number>(0);
 
   const updateProgress = useCallback(() => {
+    if (typeof window === "undefined") return;
     cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(() => {
       const scrollTop = window.scrollY;
@@ -21,6 +22,7 @@ export function useScrollProgress(): number {
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
     window.addEventListener("scroll", updateProgress, { passive: true });
     updateProgress();
     return () => {

@@ -23,6 +23,7 @@ export function AnimatedCounter({
   const [hasStarted, setHasStarted] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
   const rafRef = useRef<number>(0);
+  const hasStartedRef = useRef(false);
   const locale = useAppStore((s) => s.locale);
 
   useEffect(() => {
@@ -31,7 +32,8 @@ export function AnimatedCounter({
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && !hasStarted) {
+        if (entry.isIntersecting && !hasStartedRef.current) {
+          hasStartedRef.current = true;
           setHasStarted(true);
         }
       },
@@ -40,7 +42,7 @@ export function AnimatedCounter({
 
     observer.observe(el);
     return () => observer.disconnect();
-  }, [hasStarted]);
+  }, []);
 
   useEffect(() => {
     if (!hasStarted) return;

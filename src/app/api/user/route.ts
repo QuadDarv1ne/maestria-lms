@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { Prisma } from "@prisma/client";
-import { getAuthSession } from "@/lib/auth";
+import { getAuthSession, requireAuth } from "@/lib/auth";
 import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
@@ -24,14 +24,10 @@ export async function GET(request: NextRequest) {
   if (blocked) return blocked;
   try {
     const session = await getAuthSession();
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Необходимо авторизоваться" },
-        { status: 401 }
-      );
-    }
+    const authError = requireAuth(session);
+    if (authError) return authError;
 
-    const userId = session.user.id;
+    const userId = session!.user.id;
 
     const user = await db.user.findUnique({
       where: { id: userId },
@@ -127,14 +123,10 @@ export async function PUT(request: NextRequest) {
   if (blocked) return blocked;
   try {
     const session = await getAuthSession();
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Необходимо авторизоваться" },
-        { status: 401 }
-      );
-    }
+    const authError = requireAuth(session);
+    if (authError) return authError;
 
-    const userId = session.user.id;
+    const userId = session!.user.id;
     const body = await request.json();
     const validation = updateProfileSchema.safeParse(body);
 
