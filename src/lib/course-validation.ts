@@ -3,7 +3,7 @@ import { z } from "zod";
 export const lessonSchema = z.object({
   id: z.string().optional(),
   title: z.string().min(1).max(200).optional(),
-  type: z.string().optional(),
+  type: z.enum(["text", "video", "coding", "quiz", "assignment"]).optional().default("text"),
   content: z.string().optional(),
   videoUrl: z.string().optional().refine(
     (val) => {
@@ -37,7 +37,7 @@ export const createCourseSchema = z.object({
   shortDesc: z.string().max(500, "Краткое описание не должно превышать 500 символов").optional().nullable(),
   price: z.union([z.string(), z.number()]).optional().default(0),
   oldPrice: z.union([z.string(), z.number()]).optional().nullable(),
-  level: z.string().optional().default("beginner"),
+  level: z.enum(["beginner", "intermediate", "advanced"]).optional().default("beginner"),
   duration: z.string().optional().nullable(),
   isPublished: z.boolean().optional().default(false),
   isFeatured: z.boolean().optional().default(false),
@@ -49,10 +49,10 @@ export const createCourseSchema = z.object({
   modules: z.array(moduleSchema).optional().default([]),
   startDate: z.string().optional().nullable(),
   endDate: z.string().optional().nullable(),
-  visibility: z.string().optional().default("public"),
+  visibility: z.enum(["public", "private"]).optional().default("public"),
   maxStudents: z.union([z.string(), z.number()]).optional().nullable(),
   prerequisites: z.string().optional().nullable(),
-  language: z.string().optional().default("ru"),
+  language: z.enum(["ru", "en", "zh"]).optional().default("ru"),
 });
 
 export type ModuleInput = {

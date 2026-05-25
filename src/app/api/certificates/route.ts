@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
       courseSlug: certificate.course.slug,
       userName: session.user.name || session.user.email,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "certificates" });
   }
 }

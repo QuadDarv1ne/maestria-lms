@@ -133,7 +133,7 @@ export function ProfilePage() {
               const data = await res.json();
               titles[courseId] = data.course?.title || data.title || "";
             }
-          } catch (e) {
+          } catch (e: unknown) {
             log.error(`${t("profile.errorLoadingBookmarkCourse", locale)} ${courseId}`, { error: e instanceof Error ? e.message : String(e) });
           }
         })
@@ -192,7 +192,7 @@ export function ProfilePage() {
                     ) || [];
                     courseLessonsMap[enrollment.course.id] = lessonIds;
                   }
-                } catch (err) {
+                } catch (err: unknown) {
                   log.error("Failed to fetch course details for enrollment stats", { error: err instanceof Error ? err.message : String(err) });
                 }
               })
@@ -232,7 +232,7 @@ export function ProfilePage() {
         } else if (!cancelled) {
           setError(t("profile.failedToLoad", locale));
         }
-      } catch (e) {
+      } catch (e: unknown) {
         if (!cancelled) {
           log.error(t("profile.errorLoadingProfile", locale), { error: e instanceof Error ? e.message : String(e) });
           setError(t("profile.networkError", locale));
@@ -275,7 +275,7 @@ export function ProfilePage() {
         const data = await res.json();
         toast.error(data.error || t("profile.updateError", locale));
       }
-    } catch (error) {
+    } catch (error: unknown) {
       log.error("Failed to save profile", { error: String(error) });
       toast.error(t("profile.updateError", locale));
     } finally {
@@ -298,7 +298,7 @@ export function ProfilePage() {
   const handleLogout = async () => {
     try {
       await signOut({ redirect: false });
-    } catch (e) {
+    } catch (e: unknown) {
       log.error("Logout failed", { error: e instanceof Error ? e.message : String(e) });
     }
     logout();

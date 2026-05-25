@@ -156,7 +156,7 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(total / limit),
       },
     }, { status: 200 });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "courses" });
   }
 }

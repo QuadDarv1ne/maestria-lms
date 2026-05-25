@@ -279,7 +279,7 @@ export async function GET(request: NextRequest) {
           : 0,
       },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "admin/student-stats" });
   }
 }

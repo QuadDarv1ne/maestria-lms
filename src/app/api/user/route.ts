@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
       certificates,
       progress,
     }, { status: 200 });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "profile GET" });
   }
 }
@@ -168,7 +168,7 @@ export async function PUT(request: NextRequest) {
       { message: "Профиль обновлён", user: updatedUser },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "profile PUT" });
   }
 }

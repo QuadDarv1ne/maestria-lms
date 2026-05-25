@@ -18,7 +18,7 @@ function toObjectId(id: string): ObjectId {
   }
   try {
     return new ObjectId(id)
-  } catch (error) {
+  } catch (error: unknown) {
     throw new Error(`Invalid ObjectId format: ${id}. Error: ${error instanceof Error ? error.message : String(error)}`)
   }
 }

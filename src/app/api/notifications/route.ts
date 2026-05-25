@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
       total,
       unreadCount,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "notifications GET" });
   }
 }
@@ -74,7 +74,7 @@ export async function DELETE(request: NextRequest) {
     });
 
     return NextResponse.json({ deleted: result.count });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "notifications DELETE" });
   }
 }

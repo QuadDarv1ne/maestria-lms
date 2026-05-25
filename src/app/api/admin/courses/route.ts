@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(total / limit),
       },
     }, { status: 200 });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "admin/courses GET" });
   }
 }
@@ -230,7 +230,7 @@ export async function POST(request: NextRequest) {
       { message: isPublished ? "Курс опубликован" : "Курс сохранён как черновик", course },
       { status: 201 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "admin/courses POST" });
   }
 }
@@ -541,7 +541,7 @@ export async function PUT(request: NextRequest) {
       { message: isPublished ? "Курс обновлён и опубликован" : "Курс обновлён", course: updatedCourse },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "admin/courses PUT" });
   }
 }
@@ -604,7 +604,7 @@ export async function DELETE(request: NextRequest) {
       { message: "Курс удалён" },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "admin/courses DELETE" });
   }
 }

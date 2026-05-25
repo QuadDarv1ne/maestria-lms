@@ -85,7 +85,7 @@ export async function GET(
       },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "courses/[id]/reviews GET" });
   }
 }
@@ -254,7 +254,7 @@ export async function POST(
       },
       { status: result.wasUpdated ? 200 : 201 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "courses/[id]/reviews POST" });
   }
 }

@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(total / limit),
       },
     }, { status: 200 });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "admin/users GET" });
   }
 }
@@ -131,7 +131,7 @@ export async function PUT(request: NextRequest) {
       { message: "Пользователь обновлён", user: updatedUser },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "admin/users PUT" });
   }
 }

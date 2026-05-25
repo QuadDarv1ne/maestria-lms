@@ -114,7 +114,7 @@ export function CertificatePage({ courseId }: { courseId: string }) {
       link.download = `certificate-${certificateNumber}.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
-    } catch (err) {
+    } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       log.error("Certificate download failed, falling back to print", { error: message });
       window.print();

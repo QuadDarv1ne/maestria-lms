@@ -220,7 +220,7 @@ export async function GET(
         enrollmentProgress: userEnrollment?.progress || 0,
       },
     }, { status: 200 });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "courses/[id]" });
   }
 }

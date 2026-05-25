@@ -75,7 +75,7 @@ export async function GET(request: Request) {
       },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "achievements" });
   }
 }

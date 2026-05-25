@@ -241,7 +241,7 @@ export function StepViewerPage({
             navigate(`course/${courseId}`);
           }
         }
-      } catch (e) {
+      } catch (e: unknown) {
         if (!cancelled) {
           log.error(t("course.step.errorLoad", locale), { error: e instanceof Error ? e.message : String(e) });
           toast.error(t("course.step.errorLoad", locale));
@@ -311,7 +311,7 @@ export function StepViewerPage({
             });
           }
         }
-      } catch (e) {
+      } catch (e: unknown) {
         if (!cancelled) {
           log.error(t("course.step.errorLoad", locale), { error: e instanceof Error ? e.message : String(e) });
           toast.error(t("course.step.errorLoad", locale));

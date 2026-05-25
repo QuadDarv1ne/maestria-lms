@@ -63,7 +63,7 @@ export function Header() {
   const handleLogout = async () => {
     try {
       await signOut({ redirect: false });
-    } catch (e) {
+    } catch (e: unknown) {
       log.error("Logout failed", { error: e instanceof Error ? e.message : String(e) });
     }
     logout();

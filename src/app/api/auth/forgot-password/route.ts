@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
       },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "auth/forgot-password POST" });
   }
 }
@@ -183,7 +183,7 @@ export async function PUT(request: NextRequest) {
       { message: "Пароль успешно изменён" },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "auth/forgot-password PUT" });
   }
 }

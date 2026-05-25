@@ -109,7 +109,7 @@ export async function GET(
     }
 
     return NextResponse.json({ payment }, { status: 200 });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "payments/[id]/GET", metadata: { paymentId: id } });
   }
 }
@@ -276,7 +276,7 @@ export async function PUT(
       { message: "Статус платежа обновлён", payment: result.updated },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "payments/[id]/PUT", metadata: { paymentId: id?.toString() } });
   }
 }

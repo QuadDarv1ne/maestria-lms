@@ -815,7 +815,7 @@ export async function POST() {
       users: 4, // admin + 3 teachers
     },
   }, { status: 201 });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "seed" });
   }
 }

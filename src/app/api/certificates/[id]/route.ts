@@ -65,7 +65,7 @@ export async function GET(
       userName: certificate.user.name || certificate.user.email,
       userEmail: certificate.user.email,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "certificates/[id]" });
   }
 }

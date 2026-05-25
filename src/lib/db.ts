@@ -56,7 +56,7 @@ export function validateDatabaseConfig(): { valid: boolean; errors: string[] } {
   } else {
     try {
       formatDatabaseUrl(url, provider)
-    } catch (e) {
+    } catch (e: unknown) {
       if (e instanceof Error) {
         errors.push(e.message)
       }

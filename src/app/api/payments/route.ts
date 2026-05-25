@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof Error && error.message === "COURSE_ALREADY_PAID") {
       return NextResponse.json(
         { error: "Курс уже оплачен" },
@@ -234,7 +234,7 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(total / limit),
       },
     }, { status: 200 });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "payments GET" });
   }
 }

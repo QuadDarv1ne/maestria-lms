@@ -243,7 +243,7 @@ export async function POST(
       { message: "Ответ сохранён", submission },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "courses/[id]/assignments/[assignmentId]/submit POST" });
   }
 }
@@ -313,7 +313,7 @@ export async function GET(
       },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "courses/[id]/assignments/[assignmentId] GET" });
   }
 }

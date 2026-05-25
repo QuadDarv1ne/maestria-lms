@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     const notification = await createNotification(input);
 
     return NextResponse.json({ ok: true, notification });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "notifications/publish" });
   }
 }

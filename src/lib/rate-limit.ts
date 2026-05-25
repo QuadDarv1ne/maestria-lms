@@ -274,7 +274,7 @@ export async function rateLimitAsync(
   if (redis) {
     try {
       result = await checkRedisLimit(redis, key, windowMs, maxRequests);
-    } catch (error) {
+    } catch (error: unknown) {
       log.warn("Redis rate check failed, falling back to memory", {
         error: error instanceof Error ? error.message : String(error),
       });

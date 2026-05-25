@@ -76,7 +76,7 @@ export async function PATCH(
       },
       unreadCount,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "notifications/[id] PATCH" });
   }
 }
@@ -114,7 +114,7 @@ export async function DELETE(
     await db.notification.delete({ where: { id } });
 
     return NextResponse.json({ ok: true });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "notifications/[id] DELETE" });
   }
 }

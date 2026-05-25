@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
     };
 
     return NextResponse.json(stats);
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "admin/stats" });
   }
 }

@@ -151,7 +151,7 @@ export function LessonPage({
             navigate(`course/${courseId}`);
           }
         }
-      } catch (e) {
+      } catch (e: unknown) {
         log.error(t("profile.errorLoadingLesson", locale), { courseId, lessonId, error: e instanceof Error ? e.message : String(e) });
         if (!cancelled) toast.error(t("profile.errorLoadingLesson", locale));
       } finally {

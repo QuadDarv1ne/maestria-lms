@@ -176,7 +176,7 @@ export async function GET(
         nextStepId,
       },
     }, { status: 200 });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "courses/[id]/lessons/[lessonId] GET" });
   }
 }
@@ -347,7 +347,7 @@ export async function POST(
       },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "courses/[id]/lessons/[lessonId] POST" });
   }
 }

@@ -36,7 +36,7 @@ async function getLocaleFromCookie(): Promise<SupportedLocale> {
     if (locale && SUPPORTED_LOCALES.includes(locale as SupportedLocale)) {
       return locale as SupportedLocale;
     }
-  } catch (error) {
+  } catch (error: unknown) {
     log.debug("Locale cookie read failed during static generation", { error: error instanceof Error ? error.message : String(error) });
   }
   return "ru";

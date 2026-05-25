@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       { categories },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "admin/categories GET" });
   }
 }
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
       { message: "Категория создана", category },
       { status: 201 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "admin/categories POST" });
   }
 }
@@ -185,7 +185,7 @@ export async function PUT(request: NextRequest) {
       { message: "Категория обновлена", category },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "admin/categories PUT" });
   }
 }
@@ -247,7 +247,7 @@ export async function DELETE(request: NextRequest) {
       { message: "Категория удалена" },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "admin/categories DELETE" });
   }
 }

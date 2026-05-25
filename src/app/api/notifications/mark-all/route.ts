@@ -31,7 +31,7 @@ export async function PATCH(request: NextRequest) {
     pushUnreadCount(session.user.id, 0);
 
     return NextResponse.json({ ok: true });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "notifications/mark-all" });
   }
 }

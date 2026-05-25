@@ -137,7 +137,7 @@ export async function GET(
       },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "admin/courses/[id]/submissions GET" });
   }
 }
@@ -275,7 +275,7 @@ export async function PUT(
       { message: "Работа оценена", submission: updatedSubmission },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "admin/courses/[id]/submissions/[submissionId] PUT" });
   }
 }

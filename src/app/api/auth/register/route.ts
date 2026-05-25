@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       { message: "Регистрация успешна", user },
       { status: 201 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "auth/register" });
   }
 }

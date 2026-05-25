@@ -150,7 +150,7 @@ export async function GET(request: NextRequest) {
         publishedCourses: courses.filter((c) => c.isPublished).length,
       },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "teacher/stats" });
   }
 }

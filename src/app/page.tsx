@@ -40,7 +40,7 @@ export default function Page() {
             });
           }
         }
-      } catch (error) {
+      } catch (error: unknown) {
         log.debug("Session load skipped for unauthenticated user", { error: error instanceof Error ? error.message : String(error) });
       }
     };

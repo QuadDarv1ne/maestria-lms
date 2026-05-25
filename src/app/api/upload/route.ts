@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
       size: file.size,
       type: file.type,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "upload" });
   }
 }

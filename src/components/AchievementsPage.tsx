@@ -84,7 +84,7 @@ export function AchievementsPage() {
             setAchievementData(achData);
           }
         }
-      } catch (e) {
+      } catch (e: unknown) {
         log.error(t("achievements.errorLoad", locale), { error: e instanceof Error ? e.message : String(e) });
         if (!cancelled) {
           toast.error(t("achievements.errorLoad", locale));

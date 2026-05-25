@@ -58,7 +58,7 @@ export const createNotificationsSlice: StateCreator<NotificationsSlice, [], [], 
           status: res.status,
         });
       }
-    } catch (err) {
+    } catch (err: unknown) {
       log.warn("Failed to sync notification read status to server", {
         notificationId: id,
         error: err instanceof Error ? err.message : String(err),
@@ -81,7 +81,7 @@ export const createNotificationsSlice: StateCreator<NotificationsSlice, [], [], 
           status: res.status,
         });
       }
-    } catch (err) {
+    } catch (err: unknown) {
       log.warn("Failed to sync mark-all read status to server", {
         error: err instanceof Error ? err.message : String(err),
       });
@@ -104,7 +104,7 @@ export const createNotificationsSlice: StateCreator<NotificationsSlice, [], [], 
         save("maestria-notifications", data.notifications);
         set({ notifications: data.notifications });
       }
-    } catch (err) {
+    } catch (err: unknown) {
       log.warn("Failed to fetch notifications from server, keeping cached data", {
         error: err instanceof Error ? err.message : String(err),
       });

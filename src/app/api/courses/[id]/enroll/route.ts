@@ -133,7 +133,7 @@ export async function POST(
       if (parsed.success) {
         paymentMethod = parsed.data;
       }
-    } catch (err) {
+    } catch (err: unknown) {
       log.warn("Malformed request body for enroll, using default payment method", { error: err });
     }
 
@@ -253,7 +253,7 @@ export async function POST(
 
     const { status, ...responseData } = result;
     return NextResponse.json(responseData, { status });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "courses/[id]/enroll" });
   }
 }

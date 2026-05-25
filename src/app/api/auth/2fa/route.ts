@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
       message: "Отсканируйте QR-код в приложении-аутентификаторе и введите код для подтверждения",
       otpauthUrl,
     }, { status: 200 });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "auth/2fa POST" });
   }
 }
@@ -150,7 +150,7 @@ export async function PUT(request: NextRequest) {
     });
 
     return NextResponse.json({ message: "Двухфакторная аутентификация успешно включена" }, { status: 200 });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "auth/2fa PUT" });
   }
 }
@@ -214,7 +214,7 @@ export async function DELETE(request: NextRequest) {
     });
 
     return NextResponse.json({ message: "Двухфакторная аутентификация отключена" }, { status: 200 });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "auth/2fa DELETE" });
   }
 }

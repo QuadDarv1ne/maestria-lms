@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
 
       try {
         cleanup = addClient(userId, controller);
-      } catch (error) {
+      } catch (error: unknown) {
         log.error("Failed to add SSE client", { userId, error: error instanceof Error ? error.message : String(error) });
         controller.error(error);
         return;
