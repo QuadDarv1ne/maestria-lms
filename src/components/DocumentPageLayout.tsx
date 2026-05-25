@@ -110,7 +110,7 @@ export function DocumentPageLayout({
               <Icon className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold">{title}</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-left">{title}</h1>
               <p className="text-sm text-muted-foreground">
                 {t("legal.lastUpdate", locale)} {lastUpdated}
               </p>
@@ -143,7 +143,7 @@ export function DocumentPageLayout({
         )}
 
         {/* Основной контент */}
-        <div className="space-y-8">{children}</div>
+        <div className="space-y-8 text-left">{children}</div>
 
         {/* Футер документа */}
         {footer !== undefined ? (

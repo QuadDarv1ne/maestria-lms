@@ -80,10 +80,10 @@ export async function middleware(request: NextRequest) {
     "Content-Security-Policy",
     [
       "default-src 'self'",
-      `script-src 'self' ${isProduction ? "" : "'unsafe-eval'"}`,
+      `script-src 'self' 'unsafe-inline' ${isProduction ? "" : "'unsafe-eval'"}`,
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: https://api.dicebear.com https://freeimage.host https://ui3adtb308.a.trbcdn.net",
-      "font-src 'self'",
+      "font-src 'self' https://fonts.gstatic.com",
       `connect-src 'self' ${isProduction ? "" : "ws: wss:"}`,
       "frame-ancestors 'none'",
       "base-uri 'self'",
@@ -96,6 +96,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|api/sse).*)",
+    "/((?!_next/static|_next/image|_next/webpack-hmr|favicon.ico|api/sse).*)",
   ],
 };
