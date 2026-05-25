@@ -1,7 +1,8 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import { addClient } from "@/lib/sse";
 import { log } from "@/lib/logger";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,6 +14,12 @@ export async function GET(req: NextRequest) {
       status: 401,
       headers: { "Content-Type": "application/json" },
     });
+  }
+
+  // Rate limit SSE connections to prevent connection exhaustion
+  const limitResponse = rateLimit("sse", RATE_LIMITS.sse)(req, session.user.id);
+  if (limitResponse) {
+    return limitResponse;
   }
 
   const userId = session.user.id;
