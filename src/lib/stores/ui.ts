@@ -37,6 +37,7 @@ const ROUTE_MAP: Record<string, string> = {
   "age-rating": "/age-rating",
   cookies: "/cookies",
   help: "/help",
+  blog: "/blog",
 };
 
 export function hashToPath(hash: string): string {

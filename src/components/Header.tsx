@@ -23,6 +23,7 @@ import {
   Globe,
   Check,
   HelpCircle,
+  FileText,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -112,6 +113,15 @@ export function Header() {
           >
             <BookOpen className="w-4 h-4 mr-1" />
             {t("nav.catalog", locale)}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("blog")}
+            className="text-sm"
+          >
+            <FileText className="w-4 h-4 mr-1" />
+            {t("nav.blog", locale)}
           </Button>
           <Button
             variant="ghost"
@@ -373,6 +383,17 @@ export function Header() {
           >
             <BookOpen className="w-4 h-4 mr-2" />
             {t("nav.catalog", locale)}
+          </Button>
+          <Button
+            variant="ghost"
+            className="w-full justify-start"
+            onClick={() => {
+              navigate("blog");
+              setSidebarOpen(false);
+            }}
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            {t("nav.blog", locale)}
           </Button>
           <Button
             variant="ghost"

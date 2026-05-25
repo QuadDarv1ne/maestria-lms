@@ -25,6 +25,7 @@ import type { SortBy } from "@/lib/store";
 import { CourseCard } from "@/components/CourseCard";
 import { CATEGORIES } from "@/lib/constants";
 import { useCourses } from "@/hooks/useCourses";
+import { PromoBanner } from "@/components/PromoBanner";
 
 export function CatalogPage() {
   const navigate = useAppStore((s) => s.navigate);
@@ -148,6 +149,9 @@ export function CatalogPage() {
           {t("catalog.subtitle", locale)}
         </p>
       </div>
+
+      {/* Промо-баннер */}
+      <PromoBanner />
 
       {/* Панель поиска и фильтров */}
       <div className="mb-6 space-y-4">

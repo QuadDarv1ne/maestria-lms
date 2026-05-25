@@ -83,6 +83,16 @@ export const Footer = React.memo(function Footer() {
               <li>
                 <button
                   type="button"
+                  aria-label={t("nav.blog", locale)}
+                  onClick={() => navigate("blog")}
+                  className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded"
+                >
+                  {t("nav.blog", locale)}
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
                   aria-label={t("footer.myCourses", locale)}
                   onClick={() => navigate("profile")}
                   className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded"
