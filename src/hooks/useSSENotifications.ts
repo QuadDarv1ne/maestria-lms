@@ -46,7 +46,7 @@ export function useSSENotifications() {
           if (data.type === "notification") {
             addNotificationRef.current(data.notification);
           }
-        } catch (err) {
+        } catch (err: unknown) {
           log.warn("SSE message parse error", { error: err });
         }
       };

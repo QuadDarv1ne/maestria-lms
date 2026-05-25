@@ -48,7 +48,7 @@ export async function GET(
             type: true,
             points: true,
             options: true,
-            correctAnswer: true,
+
           },
         },
       },
@@ -143,12 +143,7 @@ export async function GET(
       completedLessonIds = completedProgress.map((p) => p.lessonId);
     }
 
-    // Скрываем correctAnswer для не записанных пользователей (даже для бесплатных уроков)
-    const assignments = lesson.assignments.map((a) =>
-      isEnrolled
-        ? a
-        : { ...a, correctAnswer: null }
-    );
+    const assignments = lesson.assignments;
 
     return NextResponse.json({
       lesson: {

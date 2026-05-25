@@ -1,7 +1,8 @@
 import { S3Client } from "@aws-sdk/client-s3";
+import { env } from "@/lib/env";
 
-const s3AccessKey = process.env.S3_ACCESS_KEY;
-const s3SecretKey = process.env.S3_SECRET_KEY;
+const s3AccessKey = env.s3AccessKeyId;
+const s3SecretKey = env.s3SecretAccessKey;
 
 const hasCredentials = !!(s3AccessKey && s3SecretKey);
 
@@ -16,7 +17,7 @@ const hasCredentials = !!(s3AccessKey && s3SecretKey);
 export const s3Client = hasCredentials
   ? new S3Client({
       region: process.env.S3_REGION || "auto",
-      endpoint: process.env.S3_ENDPOINT,
+      endpoint: env.s3Endpoint,
       credentials: {
         accessKeyId: s3AccessKey,
         secretAccessKey: s3SecretKey,

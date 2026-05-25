@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { log } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
@@ -16,7 +17,7 @@ export default function GlobalError({
   const locale = useAppStore((s) => s.locale);
 
   useEffect(() => {
-    console.error("Global error:", error);
+    log.error("Global error", { error: error.message, digest: error.digest });
   }, [error]);
 
   return (
