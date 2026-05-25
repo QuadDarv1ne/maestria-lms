@@ -54,7 +54,6 @@ export async function middleware(request: NextRequest) {
 
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("X-Content-Type-Options", "nosniff");
-  response.headers.set("X-XSS-Protection", "0");
 
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
 
@@ -77,9 +76,9 @@ export async function middleware(request: NextRequest) {
     "Content-Security-Policy",
     [
       "default-src 'self'",
-      "script-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: https://api.dicebear.com",
+      "img-src 'self' data: https://api.dicebear.com https://freeimage.host https://ui3adtb308.a.trbcdn.net",
       "font-src 'self'",
       "connect-src 'self'",
       "frame-ancestors 'none'",
