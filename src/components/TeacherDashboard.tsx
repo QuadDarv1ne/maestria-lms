@@ -63,11 +63,11 @@ export function TeacherDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchStats = useCallback(async () => {
+  const fetchStats = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/teacher/stats");
+      const res = await fetch("/api/teacher/stats", { signal });
       if (!res.ok) {
         if (res.status === 403) {
           navigate("home");
@@ -78,7 +78,8 @@ export function TeacherDashboard() {
       const data = await res.json();
       setCourses(data.courses);
       setStats(data.stats);
-    } catch {
+    } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
       setError(t("teacher.loadError", locale));
     } finally {
       setLoading(false);
@@ -90,34 +91,12 @@ export function TeacherDashboard() {
       navigate("home");
       return;
     }
-    let cancelled = false;
-    const wrappedFetch = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch("/api/teacher/stats");
-        if (cancelled) return;
-        if (!res.ok) {
-          if (res.status === 403) {
-            navigate("home");
-            return;
-          }
-          throw new Error("Failed to load stats");
-        }
-        const data = await res.json();
-        setCourses(data.courses);
-        setStats(data.stats);
-      } catch {
-        if (!cancelled) setError(t("teacher.loadError", locale));
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    wrappedFetch();
+    const controller = new AbortController();
+    fetchStats(controller.signal);
     return () => {
-      cancelled = true;
+      controller.abort();
     };
-  }, [user, navigate, locale]);
+  }, [user, fetchStats, navigate]);
 
   if (!user) return null;
 
@@ -139,7 +118,7 @@ export function TeacherDashboard() {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <p className="text-red-500 mb-4">{error}</p>
-        <Button onClick={fetchStats}>
+        <Button onClick={() => fetchStats()}>
           <RefreshCw className="w-4 h-4 mr-2" />
           {t("admin.refresh", locale)}
         </Button>
@@ -198,7 +177,7 @@ export function TeacherDashboard() {
           <Button
             variant="outline"
             size="sm"
-            onClick={fetchStats}
+            onClick={() => fetchStats()}
           >
             <RefreshCw className="w-4 h-4 mr-1.5" />
             {t("admin.refresh", locale)}

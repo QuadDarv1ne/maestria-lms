@@ -203,6 +203,9 @@ export function LessonPage({
         setLesson((prev) =>
           prev ? { ...prev, completed: true } : prev
         );
+      } else {
+        const error = await res.json().catch(() => null);
+        toast.error(error?.error || t("lesson.progressUpdateError", locale));
       }
     } catch {
       toast.error(t("lesson.progressUpdateError", locale));

@@ -240,9 +240,9 @@ export async function POST(
       create: {
         userId,
         lessonId,
-        completed: completed || false,
-        score: score || null,
-        timeSpent: timeSpent || 0,
+        completed: completed ?? false,
+        score: score ?? null,
+        timeSpent: timeSpent ?? 0,
       },
       update: {
         completed: completed ?? undefined,

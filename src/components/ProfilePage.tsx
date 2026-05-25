@@ -190,23 +190,26 @@ export function ProfilePage() {
           if (data.enrollments?.length > 0 && data.progress && !cancelled) {
             // Build a map of lessonId -> courseId by fetching course details
             const courseLessonsMap: Record<string, string[]> = {};
-            await Promise.all(
-              data.enrollments.map(async (enrollment: Enrollment) => {
-                try {
-                  const courseRes = await fetch(`/api/courses/${enrollment.course.id}`);
-                  if (courseRes.ok) {
-                    const courseData = await courseRes.json();
-                    const course = courseData.course || courseData;
-                    const lessonIds = course.modules?.flatMap((mod: CourseModuleData) =>
-                      mod.lessons?.map((l) => l.id) || []
-                    ) || [];
-                    courseLessonsMap[enrollment.course.id] = lessonIds;
-                  }
-                } catch (err: unknown) {
-                  log.error("Failed to fetch course details for enrollment stats", { error: err instanceof Error ? err.message : String(err) });
-                }
-              })
+            const courseFetches = data.enrollments.map((enrollment: Enrollment) =>
+              fetch(`/api/courses/${enrollment.course.id}`)
+                .then(async (res) => {
+                  if (!res.ok) return { id: enrollment.course.id, modules: [] };
+                  const courseData = await res.json();
+                  const course = courseData.course || courseData;
+                  return { id: enrollment.course.id, modules: course.modules || [] };
+                })
+                .catch(() => ({ id: enrollment.course.id, modules: [] }))
             );
+
+            const results = await Promise.allSettled(courseFetches);
+            for (const result of results) {
+              if (result.status === "fulfilled") {
+                const { id, modules } = result.value;
+                courseLessonsMap[id] = modules.flatMap((mod: CourseModuleData) =>
+                  mod.lessons?.map((l: { id: string }) => l.id) || []
+                );
+              }
+            }
 
             const details = data.enrollments.map((enrollment: Enrollment) => {
               const courseLessonIds = courseLessonsMap[enrollment.course.id] || [];

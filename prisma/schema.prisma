@@ -350,7 +350,7 @@ model Article {
   isPublished Boolean  @default(false)
   isFeatured  Boolean  @default(false)
   authorId    String
-  author      User     @relation(fields: [authorId], references: [id])
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

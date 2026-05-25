@@ -12,7 +12,7 @@ export interface CatalogSlice {
   };
   currentCourseId: string | null;
   currentLessonId: string | null;
-  setCourseFilters: (filters: Partial<CatalogSlice["courseFilters"]>) => void;
+  setCourseFilters: (filters: Partial<CatalogSlice["courseFilters"]> | ((prev: CatalogSlice["courseFilters"]) => Partial<CatalogSlice["courseFilters"]>)) => void;
   setCurrentCourseId: (id: string | null) => void;
   setCurrentLessonId: (id: string | null) => void;
 }
@@ -28,10 +28,13 @@ export const createCatalogSlice: StateCreator<CatalogSlice, [], [], CatalogSlice
   currentCourseId: null,
   currentLessonId: null,
 
-  setCourseFilters: (filters: Partial<CatalogSlice["courseFilters"]>) => {
-    set((state) => ({
-      courseFilters: { ...state.courseFilters, ...filters },
-    }));
+  setCourseFilters: (filters: Partial<CatalogSlice["courseFilters"]> | ((prev: CatalogSlice["courseFilters"]) => Partial<CatalogSlice["courseFilters"]>)) => {
+    set((state) => {
+      const updates = typeof filters === "function" ? filters(state.courseFilters) : filters;
+      return {
+        courseFilters: { ...state.courseFilters, ...updates },
+      };
+    });
   },
 
   setCurrentCourseId: (id: string | null) => {

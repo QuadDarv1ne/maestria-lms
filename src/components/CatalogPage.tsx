@@ -105,9 +105,9 @@ export function CatalogPage() {
   }, [setCourseFilters]);
 
   const handleFreeOnlyToggle = useCallback(() => {
-    setCourseFilters({ freeOnly: !courseFilters.freeOnly });
+    setCourseFilters((prev: { freeOnly: boolean }) => ({ freeOnly: !prev.freeOnly }));
     setPagination((prev) => ({ ...prev, page: 1 }));
-  }, [setCourseFilters, courseFilters.freeOnly]);
+  }, [setCourseFilters]);
 
   const clearFilters = useCallback(() => {
     setCourseFilters({ category: "", search: "", level: "", sortBy: "popular", freeOnly: false });

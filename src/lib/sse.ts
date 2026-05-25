@@ -2,6 +2,23 @@ import type { NotificationItem } from "./stores/notifications";
 
 const clients = new Map<string, Set<ReadableStreamDefaultController>>();
 
+// Periodic cleanup of empty client sets (every 5 minutes)
+let cleanupInterval: ReturnType<typeof setInterval> | null = null;
+
+function startCleanup() {
+  if (cleanupInterval) return;
+  cleanupInterval = setInterval(() => {
+    for (const [userId, userClients] of clients.entries()) {
+      if (userClients.size === 0) {
+        clients.delete(userId);
+      }
+    }
+  }, 5 * 60 * 1000);
+  cleanupInterval.unref?.(); // Don't keep Node.js alive
+}
+
+startCleanup();
+
 function broadcastToClients(userId: string, data: string) {
   const userClients = clients.get(userId);
   if (!userClients) return;
