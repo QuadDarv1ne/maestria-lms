@@ -1,6 +1,25 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { timingSafeEqual } from "node:crypto";
+/**
+ * Constant-time comparison to prevent timing attacks.
+ * Uses Web Crypto API for Edge Runtime compatibility.
+ */
+function constantTimeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+
+  const encoder = new TextEncoder();
+  const aBytes = encoder.encode(a);
+  const bBytes = encoder.encode(b);
+
+  let diff = 0;
+  for (let i = 0; i < aBytes.length; i++) {
+    diff |= aBytes[i] ^ bBytes[i];
+  }
+
+  return diff === 0;
+}
 
 const SAFE_METHODS = ["GET", "HEAD", "OPTIONS"];
 const CSRF_COOKIE_NAME = "csrf-token";
@@ -44,7 +63,7 @@ export function validateCsrf(request: NextRequest): boolean {
   const cookieBytes = encoder.encode(cookieToken);
   const headerBytes = encoder.encode(headerToken);
 
-  return timingSafeEqual(cookieBytes, headerBytes);
+  return constantTimeCompare(cookieToken, headerToken);
 }
 
 export function csrfProtection(request: NextRequest): NextResponse | null {

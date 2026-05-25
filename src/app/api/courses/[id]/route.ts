@@ -72,14 +72,6 @@ export async function GET(
             },
           },
         },
-        enrollments: {
-          select: {
-            id: true,
-            userId: true,
-            status: true,
-            progress: true,
-          },
-        },
         _count: {
           select: {
             enrollments: true,

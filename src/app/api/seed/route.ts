@@ -130,8 +130,8 @@ export async function POST() {
   ]);
 
   // ============ ДЕМО-ПОЛЬЗОВАТЕЛИ ============
-  const adminPasswordHash = await hashPassword("admin123");
-  const teacherPasswordHash = await hashPassword("teacher123");
+  const adminPasswordHash = await hashPassword(process.env.SEED_ADMIN_PASSWORD || crypto.randomUUID().slice(0, 12));
+  const teacherPasswordHash = await hashPassword(process.env.SEED_TEACHER_PASSWORD || crypto.randomUUID().slice(0, 12));
 
   await db.user.create({
     data: {

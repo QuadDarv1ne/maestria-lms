@@ -1,10 +1,9 @@
-import { NextResponse } from "next/server";
 import { env } from "@/lib/env";
 
 const SITE_URL = env.siteUrl;
 
-export function GET() {
-  const content = `User-agent: Googlebot
+export function generateRobotsTxt() {
+  return `User-agent: Googlebot
 Allow: /
 
 User-agent: Bingbot
@@ -21,8 +20,4 @@ Allow: /
 
 Sitemap: ${SITE_URL}/sitemap.xml
 `;
-
-  return new NextResponse(content, {
-    headers: { "Content-Type": "text/plain" },
-  });
 }

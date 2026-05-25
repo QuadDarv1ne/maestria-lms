@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
       orderBy: { enrolledAt: "desc" },
     });
 
-    // Получаем прогресс по всем урокам
+    // Получаем прогресс по урокам (лимит 1000 для предотвращения загрузки огромного объёма данных)
     const progress = await db.progress.findMany({
       where: { userId },
       select: {
@@ -91,6 +91,8 @@ export async function GET(request: NextRequest) {
         score: true,
         lastAccessed: true,
       },
+      take: 1000,
+      orderBy: { lastAccessed: "desc" },
     });
 
     // Получаем последние сертификаты

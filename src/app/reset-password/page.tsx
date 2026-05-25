@@ -148,6 +148,7 @@ function ResetPasswordContent() {
                 <Label htmlFor="password">{t("auth.newPassword", locale)}</Label>
                 <Input
                   id="password"
+                  autoComplete="new-password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -197,6 +198,7 @@ function ResetPasswordContent() {
                 <Label htmlFor="confirmPassword">{t("auth.confirmPassword", locale)}</Label>
                 <Input
                   id="confirmPassword"
+                  autoComplete="new-password"
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}

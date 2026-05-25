@@ -251,6 +251,7 @@ export function AuthDialogs() {
                   onChange={(e) =>
                     setLoginForm({ ...loginForm, password: e.target.value })
                   }
+                  autoComplete="current-password"
                   className="pl-10 pr-10"
                   required
                 />
@@ -430,6 +431,7 @@ export function AuthDialogs() {
                       password: e.target.value,
                     })
                   }
+                  autoComplete="new-password"
                   className="pl-10 pr-10"
                   required
                   minLength={8}
@@ -464,6 +466,7 @@ export function AuthDialogs() {
                       confirmPassword: e.target.value,
                     })
                   }
+                  autoComplete="new-password"
                   className="pl-10"
                   required
                 />
