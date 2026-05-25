@@ -5,6 +5,10 @@
   "packageManager": "bun@1.3.11",
   "scripts": {
     "dev": "node scripts/setup.js",
+    "dev:v2": "node scripts/setup-v2.js",
+    "dev:sqlite": "node scripts/setup-v2.js --db sqlite",
+    "dev:pg": "node scripts/setup-v2.js --db postgresql",
+    "dev:mongo": "node scripts/setup-v2.js --db mongodb",
     "build": "next build && node scripts/copy-build-assets.js",
     "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",
     "lint": "eslint .",
@@ -20,6 +24,10 @@
     "db:setup:mongodb": "node scripts/db-setup.js setup --provider mongodb --force --seed",
     "db:switch": "node scripts/db-setup.js switch",
     "db:info": "node scripts/db-setup.js info",
+    "db:auto": "node scripts/db-setup.js auto",
+    "docker:db": "docker compose -f docker-compose.db.yml up -d",
+    "docker:db:stop": "docker compose -f docker-compose.db.yml down",
+    "docker:db:logs": "docker compose -f docker-compose.db.yml logs -f",
     "prepare": "husky",
     "test": "vitest",
     "test:run": "vitest run"
