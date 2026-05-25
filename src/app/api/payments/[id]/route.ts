@@ -195,13 +195,10 @@ export async function PUT(
         if (!wasStatusUpdated) {
           const currentPayment = await tx.payment.findUnique({ where: { id } });
           if (!currentPayment) {
-            return NextResponse.json(
-              { error: "Платёж не найден" },
-              { status: 404 }
-            );
+            return { error: "Платёж не найден", status: 404 as const };
           }
           // Если платёж уже completed — возвращаем его без дублирования enrollment
-          return { updated: currentPayment, wasCompleted: false, alreadyCompleted: currentPayment.status === "completed" };
+          return { updated: currentPayment, wasCompleted: false, alreadyCompleted: currentPayment.status === "completed" as const, status: 200 as const };
         }
       } else {
         // Для failed/refunded обновляем без проверки текущего статуса
@@ -244,9 +241,12 @@ export async function PUT(
       return { updated: updatedPayment, wasCompleted: status === "completed" && wasStatusUpdated };
     });
 
-    // Если транзакция вернула ответ с ошибкой (редирект), возвращаем его
-    if (result instanceof NextResponse) {
-      return result;
+    // Handle error result from transaction
+    if ("error" in result) {
+      return NextResponse.json(
+        { error: result.error },
+        { status: result.status }
+      );
     }
 
     // Send notification for completed payment

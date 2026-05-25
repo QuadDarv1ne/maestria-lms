@@ -79,6 +79,3 @@ export const db =
 export { Prisma }
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
-
-// Export unified database abstraction for use across the app
-export { database as unifiedDb } from './database'

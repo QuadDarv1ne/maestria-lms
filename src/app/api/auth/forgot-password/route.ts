@@ -7,6 +7,7 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
 import { sendEmail } from "@/lib/email";
+import { passwordStrengthSchema } from "@/lib/password-strength";
 
 export const runtime = "nodejs";
 
@@ -16,12 +17,7 @@ const forgotPasswordSchema = z.object({
 
 const resetPasswordSchema = z.object({
   token: z.string().min(1, "Токен обязателен"),
-  password: z
-    .string()
-    .min(8, "Пароль должен быть не менее 8 символов")
-    .regex(/[A-ZА-ЯЁ]/, "Пароль должен содержать хотя бы одну заглавную букву")
-    .regex(/[a-zа-яё]/, "Пароль должен содержать хотя бы одну строчную букву")
-    .regex(/[0-9]/, "Пароль должен содержать хотя бы одну цифру"),
+  password: passwordStrengthSchema,
 });
 
 const checkRateLimit = rateLimit("forgotPassword", RATE_LIMITS.forgotPassword);

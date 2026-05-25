@@ -6,19 +6,14 @@ import { createNotification } from "@/lib/notifications";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
 
-// Схема валидации с использованием Zod
 import { z } from "zod";
+import { passwordStrengthSchema } from "@/lib/password-strength";
 
 export const runtime = "nodejs";
 
 const registerSchema = z.object({
   email: z.string().email("Введите корректный email"),
-  password: z
-    .string()
-    .min(8, "Пароль должен быть не менее 8 символов")
-    .regex(/[A-ZА-ЯЁ]/, "Пароль должен содержать хотя бы одну заглавную букву")
-    .regex(/[a-zа-яё]/, "Пароль должен содержать хотя бы одну строчную букву")
-    .regex(/[0-9]/, "Пароль должен содержать хотя бы одну цифру"),
+  password: passwordStrengthSchema,
   name: z.string().min(2, "Имя должно быть не менее 2 символов").max(50, "Имя слишком длинное"),
 });
 

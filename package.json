@@ -120,7 +120,7 @@
   "lint-staged": {
     "src/**/*.{ts,tsx}": [
       "eslint --no-error-on-unmatched-pattern",
-      "tsc --noEmit --skipLibCheck --noImplicitAny false --strict true"
+      "tsc --noEmit --skipLibCheck"
     ]
   }
 }

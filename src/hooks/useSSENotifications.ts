@@ -77,5 +77,5 @@ export function useSSENotifications() {
         reconnectTimerRef.current = null;
       }
     };
-  }, [user, locale]);
+  }, [user]);
 }

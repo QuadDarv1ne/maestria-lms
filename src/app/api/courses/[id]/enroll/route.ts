@@ -35,10 +35,9 @@ export async function POST(
     }
 
     const userId = session.user.id;
-    // Проверяем существование курса (по ID или slug)
-    const courseIdNum = parseInt(courseId, 10);
+    // Course ID may be a UUID or slug — try both
     const course = await db.course.findFirst({
-      where: !Number.isFinite(courseIdNum) ? { slug: courseId } : { id: courseId },
+      where: { OR: [{ id: courseId }, { slug: courseId }] },
     });
 
     if (!course) {
