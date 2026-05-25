@@ -38,6 +38,7 @@ model User {
   notifications  Notification[]
   gradedSubmissions AssignmentSubmission[] @relation("GradedSubmissions")
   assignmentSubmissions AssignmentSubmission[]
+  articles      Article[]
 }
 
 model Account {
@@ -331,4 +332,32 @@ model Certificate {
   @@unique([userId, courseId])
   @@index([userId])
   @@index([courseId])
+}
+
+// ============ BLOG / ARTICLES ============
+
+model Article {
+  id          String   @id @default(uuid())
+  title       String
+  slug        String   @unique
+  content     String   // HTML/Markdown content
+  excerpt     String?  // Short preview text
+  image       String?  // Cover image URL
+  category    String   // development, testing, databases, ai, 3d-modeling, security, devops, career
+  tags        String?  // comma-separated tags
+  readTime    Int      @default(5) // estimated reading time in minutes
+  views       Int      @default(0)
+  isPublished Boolean  @default(false)
+  isFeatured  Boolean  @default(false)
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isPublished])
+  @@index([category])
+  @@index([authorId])
+  @@index([isFeatured, createdAt])
+  @@index([slug])
 }
