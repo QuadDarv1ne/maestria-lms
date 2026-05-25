@@ -84,7 +84,7 @@ export async function middleware(request: NextRequest) {
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: https://api.dicebear.com https://freeimage.host https://ui3adtb308.a.trbcdn.net",
       "font-src 'self'",
-      "connect-src 'self'",
+      `connect-src 'self' ${isProduction ? "" : "ws: wss:"}`,
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
