@@ -13,7 +13,6 @@ import { Lock, CheckCircle2, AlertCircle } from "lucide-react";
 function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const token = searchParams.get("token") || "";
   const locale = useAppStore((s) => s.locale);
 
   const [password, setPassword] = useState("");
@@ -21,12 +20,46 @@ function ResetPasswordContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+
+  const passwordStrength = {
+    hasLength: password.length >= 8,
+    hasUpper: /[A-ZА-ЯЁ]/.test(password),
+    hasLower: /[a-zа-яё]/.test(password),
+    hasDigit: /[0-9]/.test(password),
+  };
+  const passwordScore = Object.values(passwordStrength).filter(Boolean).length;
+  const strengthLabel =
+    passwordScore === 0 ? "" :
+    passwordScore <= 1 ? "Слабый" :
+    passwordScore <= 2 ? "Средний" :
+    passwordScore <= 3 ? "Хороший" : "Надёжный";
+  const strengthColor =
+    passwordScore <= 1 ? "text-red-500" :
+    passwordScore <= 2 ? "text-yellow-500" :
+    passwordScore <= 3 ? "text-blue-500" : "text-green-500";
 
   useEffect(() => {
-    if (!token) {
+    // Try sessionStorage first (persists across refreshes)
+    let storedToken = sessionStorage.getItem("reset-token");
+
+    if (!storedToken) {
+      // Fall back to URL parameter (first visit from email link)
+      const rawToken = searchParams.get("code");
+      if (rawToken) {
+        storedToken = rawToken;
+        sessionStorage.setItem("reset-token", rawToken);
+        // Clear URL parameter immediately
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+    }
+
+    if (storedToken) {
+      setToken(storedToken);
+    } else {
       setError(t("auth.noResetToken", locale));
     }
-  }, [token, locale]);
+  }, [searchParams, locale]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,8 +69,20 @@ function ResetPasswordContent() {
       setError(t("auth.passwordMismatch", locale));
       return;
     }
-    if (password.length < 6) {
-      setError(t("auth.passwordMinLength", locale));
+    if (password.length < 8) {
+      setError("Пароль должен быть не менее 8 символов");
+      return;
+    }
+    if (!/[A-ZА-ЯЁ]/.test(password)) {
+      setError("Пароль должен содержать хотя бы одну заглавную букву");
+      return;
+    }
+    if (!/[a-zа-яё]/.test(password)) {
+      setError("Пароль должен содержать хотя бы одну строчную букву");
+      return;
+    }
+    if (!/[0-9]/.test(password)) {
+      setError("Пароль должен содержать хотя бы одну цифру");
       return;
     }
     if (!token) {
@@ -59,6 +104,8 @@ function ResetPasswordContent() {
         return;
       }
 
+      // Clear stored token after successful reset
+      sessionStorage.removeItem("reset-token");
       setSuccess(true);
     } catch {
       setError(t("auth.networkError", locale));
@@ -114,10 +161,47 @@ function ResetPasswordContent() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder={t("auth.min6Chars", locale)}
+                  placeholder="Минимум 8 символов"
                   required
-                  minLength={6}
+                  minLength={8}
                 />
+                {password.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Надёжность пароля:</span>
+                      <span className={strengthColor}>{strengthLabel}</span>
+                    </div>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4].map((level) => (
+                        <div
+                          key={level}
+                          className={`h-1 flex-1 rounded-full transition-colors ${
+                            passwordScore >= level
+                              ? passwordScore <= 1 ? "bg-red-500"
+                                : passwordScore <= 2 ? "bg-yellow-500"
+                                : passwordScore <= 3 ? "bg-blue-500"
+                                : "bg-green-500"
+                              : "bg-muted"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <ul className="text-xs text-muted-foreground space-y-0.5 mt-2">
+                      <li className={passwordStrength.hasLength ? "text-green-600" : ""}>
+                        {passwordStrength.hasLength ? "✓" : "○"} Минимум 8 символов
+                      </li>
+                      <li className={passwordStrength.hasUpper ? "text-green-600" : ""}>
+                        {passwordStrength.hasUpper ? "✓" : "○"} Заглавная буква
+                      </li>
+                      <li className={passwordStrength.hasLower ? "text-green-600" : ""}>
+                        {passwordStrength.hasLower ? "✓" : "○"} Строчная буква
+                      </li>
+                      <li className={passwordStrength.hasDigit ? "text-green-600" : ""}>
+                        {passwordStrength.hasDigit ? "✓" : "○"} Цифра
+                      </li>
+                    </ul>
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">{t("auth.confirmPassword", locale)}</Label>
@@ -131,7 +215,7 @@ function ResetPasswordContent() {
                   minLength={6}
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={loading || !token}>
+              <Button type="submit" className="w-full" disabled={loading || token === null}>
                 {loading ? t("common.saving", locale) : t("auth.changePassword", locale)}
               </Button>
             </form>
@@ -144,7 +228,7 @@ function ResetPasswordContent() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">{t("common.loading")}</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Загрузка...</div>}>
       <ResetPasswordContent />
     </Suspense>
   );

@@ -391,7 +391,7 @@ export function TeacherDashboard() {
                       variant="ghost"
                       size="sm"
                       className="h-7 w-7 p-0"
-                      onClick={() => window.location.href = `/admin/student/${activity.userId}`}
+                      onClick={() => navigate(`/admin/student/${activity.userId}`)}
                     >
                       <BarChart3 className="w-3.5 h-3.5" />
                     </Button>

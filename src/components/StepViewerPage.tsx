@@ -190,7 +190,7 @@ export function StepViewerPage({
       setOrderingItems([]);
     }
     setOrderingSubmitted(false);
-  }, [step?.id, step?.assignments?.[0]?.options]);
+  }, [step?.id, step?.assignments?.[0]?.options]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Essay state
   const [essayAnswer, setEssayAnswer] = useState("");

@@ -16,11 +16,16 @@ const forgotPasswordSchema = z.object({
 
 const resetPasswordSchema = z.object({
   token: z.string().min(1, "Токен обязателен"),
-  password: z.string().min(6, "Пароль должен быть не менее 6 символов"),
+  password: z
+    .string()
+    .min(8, "Пароль должен быть не менее 8 символов")
+    .regex(/[A-ZА-ЯЁ]/, "Пароль должен содержать хотя бы одну заглавную букву")
+    .regex(/[a-zа-яё]/, "Пароль должен содержать хотя бы одну строчную букву")
+    .regex(/[0-9]/, "Пароль должен содержать хотя бы одну цифру"),
 });
 
 const checkRateLimit = rateLimit("forgotPassword", RATE_LIMITS.forgotPassword);
-const checkResetRateLimit = rateLimit("resetPassword", RATE_LIMITS.forgotPassword);
+const checkResetRateLimit = rateLimit("resetPassword", RATE_LIMITS.resetPassword);
 
 // POST: Запрос на сброс пароля
 export async function POST(request: NextRequest) {
@@ -66,27 +71,30 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // В dev-режиме логируем ссылку в консоль для тестирования
-    const resetUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/reset-password?token=${token}`;
+    const resetUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/reset-password?code=${token}`;
     const isDev = process.env.NODE_ENV !== "production";
 
     if (isDev) {
-      log.info("Password reset URL (dev mode, check console)", { resetUrl });
-    } else {
-      await sendEmail({
-        to: email,
-        subject: "Сброс пароля — Maestria LMS",
-        html: `
-          <p>Здравствуйте!</p>
-          <p>Вы запросили сброс пароля для аккаунта Maestria LMS.</p>
-          <p>Перейдите по ссылке ниже для сброса пароля:</p>
-          <p><a href="${resetUrl}">Сбросить пароль</a></p>
-          <p>Ссылка действительна в течение 1 часа.</p>
-          <p>Если вы не запрашивали сброс пароля, проигнорируйте это письмо.</p>
-        `,
-        text: `Перейдите по ссылке для сброса пароля: ${resetUrl}`,
+      log.info("Password reset token generated (dev mode)", {
+        email,
+        tokenPrefix: token.slice(0, 8),
+        expires: expires.toISOString(),
       });
     }
+
+    await sendEmail({
+      to: email,
+      subject: "Сброс пароля — Maestria LMS",
+      html: `
+        <p>Здравствуйте!</p>
+        <p>Вы запросили сброс пароля для аккаунта Maestria LMS.</p>
+        <p>Перейдите по ссылке ниже для сброса пароля:</p>
+        <p><a href="${resetUrl}">Сбросить пароль</a></p>
+        <p>Ссылка действительна в течение 1 часа.</p>
+        <p>Если вы не запрашивали сброс пароля, проигнорируйте это письмо.</p>
+      `,
+      text: `Перейдите по ссылке для сброса пароля: ${resetUrl}`,
+    });
 
     return NextResponse.json(
       {
