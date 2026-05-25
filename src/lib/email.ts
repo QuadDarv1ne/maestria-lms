@@ -1,13 +1,14 @@
 import { Resend } from "resend";
 import { log } from "./logger";
+import { env } from "./env";
 
 function getResendClient(): Resend | null {
-  if (!process.env.RESEND_API_KEY) return null;
-  return new Resend(process.env.RESEND_API_KEY);
+  if (!env.resendApiKey) return null;
+  return new Resend(env.resendApiKey);
 }
 
 function getFromEmail(): string {
-  return process.env.EMAIL_FROM || "Maestria LMS <onboarding@resend.dev>";
+  return env.emailFrom;
 }
 
 export interface SendEmailOptions {

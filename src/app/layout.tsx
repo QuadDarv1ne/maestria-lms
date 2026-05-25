@@ -6,6 +6,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "@/components/Providers";
 import { log } from "@/lib/logger";
+import { env } from "@/lib/env";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,7 +18,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://maestria.edu";
+const siteUrl = env.siteUrl;
 
 const SUPPORTED_LOCALES = ["ru", "en", "zh"] as const;
 type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];

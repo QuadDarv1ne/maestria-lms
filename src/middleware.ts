@@ -3,10 +3,11 @@ import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { csrfProtection, getCsrfCookie } from "@/lib/csrf";
 
+type Role = "admin" | "teacher";
 const PROTECTED_ROUTES = {
-  "/admin": ["admin"],
-  "/teacher": ["admin", "teacher"],
-  "/course-editor": ["admin", "teacher"],
+  "/admin": ["admin" as const],
+  "/teacher": ["admin" as const, "teacher" as const],
+  "/course-editor": ["admin" as const, "teacher" as const],
 } as const;
 
 export async function middleware(request: NextRequest) {
@@ -17,7 +18,7 @@ export async function middleware(request: NextRequest) {
   );
 
   if (matchedRoute) {
-    const [_, allowedRoles] = matchedRoute;
+    const [_, allowedRoles] = matchedRoute as [string, readonly Role[]];
     const token = await getToken({
       req: request,
       secret: process.env.NEXTAUTH_SECRET,
@@ -28,8 +29,8 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    const role = (token as { role?: string }).role;
-    if (!role || !allowedRoles.includes(role as any)) {
+    const role = (token as { role?: Role }).role;
+    if (!role || !allowedRoles.includes(role)) {
       const homeUrl = new URL("/", request.url);
       return NextResponse.redirect(homeUrl);
     }
@@ -38,7 +39,7 @@ export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
 
   // CSRF protection for state-changing requests (exclude webhook/API routes)
-  const csrfExcludedPaths = ["/api/seed", "/api/webhook", "/api/auth/callback", "/api/auth/[...nextauth]"];
+  const csrfExcludedPaths = ["/api/webhook", "/api/auth/callback", "/api/auth/[...nextauth]"];
   const isCsrfExcluded = csrfExcludedPaths.some((path) => pathname.startsWith(path));
 
   if (!isCsrfExcluded) {
@@ -76,7 +77,7 @@ export async function middleware(request: NextRequest) {
     "Content-Security-Policy",
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline'",
+      "script-src 'self' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: https://api.dicebear.com https://freeimage.host https://ui3adtb308.a.trbcdn.net",
       "font-src 'self'",
