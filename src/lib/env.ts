@@ -19,13 +19,11 @@ function getOptionalEnv(key: string, fallback?: string): string {
 export const env = {
   // Site configuration
   get siteUrl(): string {
-    // Use production URL if available, otherwise fallback to localhost for development
-    const url = getOptionalEnv("NEXT_PUBLIC_SITE_URL", 
-      process.env.NODE_ENV === "production" 
-        ? "https://maestria.edu" 
-        : "http://localhost:3000"
-    );
-    return url;
+    // In production, NEXT_PUBLIC_SITE_URL must be explicitly set to avoid broken links
+    if (process.env.NODE_ENV === "production") {
+      return getRequiredEnv("NEXT_PUBLIC_SITE_URL");
+    }
+    return getOptionalEnv("NEXT_PUBLIC_SITE_URL", "http://localhost:3000");
   },
 
   // Database

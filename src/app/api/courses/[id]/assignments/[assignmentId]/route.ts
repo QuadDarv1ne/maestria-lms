@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
+import { requireCsrf } from "@/lib/csrf";
 import { z } from "zod";
 import { log } from "@/lib/logger";
 
@@ -37,6 +38,9 @@ export async function POST(
     }
 
     const { id: courseId, assignmentId } = await params;
+
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
 
     // Проверяем что assignment существует и принадлежит курсу
     const assignment = await db.assignment.findFirst({

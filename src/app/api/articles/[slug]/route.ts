@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, Prisma } from "@/lib/db";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
+import { requireCsrf } from "@/lib/csrf";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { z } from "zod";
@@ -140,6 +141,9 @@ export async function DELETE(
     }
 
     const { slug } = await params;
+
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
 
     await db.article.delete({ where: { slug } });
 

@@ -6,6 +6,7 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
 import { log } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-errors";
+import { requireCsrf } from "@/lib/csrf";
 
 export const runtime = "nodejs";
 
@@ -127,6 +128,9 @@ export async function PUT(
   const { id } = await params;
   
   try {
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
+
     const session = await getAuthSession();
     if (!session?.user) {
       return NextResponse.json(

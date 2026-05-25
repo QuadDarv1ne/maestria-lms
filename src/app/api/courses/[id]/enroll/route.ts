@@ -6,6 +6,7 @@ import { createNotification } from "@/lib/notifications";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
 import { z } from "zod";
+import { requireCsrf } from "@/lib/csrf";
 
 export const runtime = "nodejs";
 
@@ -25,6 +26,10 @@ export async function POST(
 
   try {
     const { id: courseId } = await params;
+
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
+
     const session = await getAuthSession();
 
     const authError = requireAuth(session);
@@ -136,13 +141,17 @@ export async function POST(
     // Wrap enrollment logic in a transaction to prevent race conditions
     // when a user sends multiple concurrent requests.
     const result = await db.$transaction(async (tx) => {
-      // Проверяем максимальное количество студентов (inside transaction for atomicity)
+      // Atomically check maxStudents and increment studentCount in one operation
+      // This prevents race conditions where concurrent requests both read the same count
       if (course.maxStudents && course.maxStudents > 0) {
-        const currentCourse = await tx.course.findUnique({
-          where: { id: resolvedCourseId },
-          select: { studentCount: true, maxStudents: true },
+        const incremented = await tx.course.updateMany({
+          where: {
+            id: resolvedCourseId,
+            studentCount: { lt: course.maxStudents },
+          },
+          data: { studentCount: { increment: 1 } },
         });
-        if (currentCourse && currentCourse.maxStudents != null && currentCourse.studentCount >= currentCourse.maxStudents) {
+        if (incremented.count === 0) {
           return { error: "Достигнут лимит студентов на курсе", status: 400 as const };
         }
       }
@@ -172,12 +181,7 @@ export async function POST(
             },
           });
 
-          // Обновляем счётчик студентов
-          await tx.course.update({
-            where: { id: resolvedCourseId },
-            data: { studentCount: { increment: 1 } },
-          });
-
+          // Re-subscription: studentCount already incremented in atomic check above
           return { message: "Вы успешно повторно записаны на курс", status: 200 as const };
         }
       }
@@ -193,12 +197,7 @@ export async function POST(
           },
         });
 
-        // Обновляем счётчик студентов
-        await tx.course.update({
-          where: { id: resolvedCourseId },
-          data: { studentCount: { increment: 1 } },
-        });
-
+        // studentCount already incremented in atomic check above
         return {
           message: "Вы успешно записаны на бесплатный курс",
           enrollment,

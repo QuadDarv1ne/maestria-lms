@@ -4,6 +4,7 @@ import { getAuthSession } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
 import { handleApiError } from "@/lib/api-errors";
+import { requireCsrf } from "@/lib/csrf";
 import { log } from "@/lib/logger";
 import { parsePagination } from "@/lib/utils";
 import { z } from "zod";
@@ -31,9 +32,8 @@ export async function GET(
     const { id: courseId } = await params;
 
     // Check if course exists (support both ID and slug)
-    const courseIdNum = parseInt(courseId, 10);
     const course = await db.course.findFirst({
-      where: !Number.isFinite(courseIdNum) ? { slug: courseId } : { id: courseId },
+      where: { OR: [{ id: courseId }, { slug: courseId }] },
       select: { id: true },
     });
 
@@ -111,6 +111,9 @@ export async function POST(
 
     const userId = session.user.id;
 
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
+
     // Parse and validate request body
     const body = await request.json();
     const validation = reviewSchema.safeParse(body);
@@ -125,9 +128,8 @@ export async function POST(
     const { rating, comment } = validation.data;
 
     // Check if course exists (support both ID and slug)
-    const courseIdNum = parseInt(courseId, 10);
     const course = await db.course.findFirst({
-      where: !Number.isFinite(courseIdNum) ? { slug: courseId } : { id: courseId },
+      where: { OR: [{ id: courseId }, { slug: courseId }] },
       select: { id: true, rating: true, reviewCount: true },
     });
 

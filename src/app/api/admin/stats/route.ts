@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getAuthSession();
     const adminError = requireAdmin(session);
-    if (adminError) return new NextResponse(adminError.body, { status: 403, headers: { "Content-Type": "application/json" } });
+    if (adminError) return adminError as NextResponse;
 
     const [userCounts, courseCounts, enrollmentAgg, paymentAgg, activeUsersCount, activeWeekCount, activeMonthCount] = await Promise.all([
       db.user.groupBy({
@@ -95,7 +95,10 @@ export async function GET(request: NextRequest) {
       serverUptime: process.uptime() < 3600
         ? `${Math.floor(process.uptime() / 60)} мин`
         : `${(process.uptime() / 3600).toFixed(1)} ч`,
-      dbSize: "SQLite",
+      dbSize: process.env.DATABASE_URL?.startsWith("postgresql") ? "PostgreSQL"
+        : process.env.DATABASE_URL?.startsWith("mysql") ? "MySQL"
+        : process.env.DATABASE_URL?.startsWith("mongodb") ? "MongoDB"
+        : "SQLite",
     };
 
     return NextResponse.json(stats);

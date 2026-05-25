@@ -6,6 +6,7 @@ import { authenticator } from "otplib";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import bcrypt from "bcryptjs";
 import { handleApiError } from "@/lib/api-errors";
+import { requireCsrf } from "@/lib/csrf";
 import { log } from "@/lib/logger";
 
 export const runtime = "nodejs";
@@ -53,6 +54,9 @@ export async function POST(request: NextRequest) {
     if (!session?.user) {
       return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
     }
+
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const validation = enable2FASchema.safeParse(body);
@@ -109,6 +113,9 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
     }
 
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
+
     const body = await request.json();
     const validation = verify2FASchema.safeParse(body);
 
@@ -164,6 +171,9 @@ export async function DELETE(request: NextRequest) {
     if (!session?.user) {
       return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
     }
+
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
 
     const body = await request.json();
     const validation = disable2FASchema.safeParse(body);

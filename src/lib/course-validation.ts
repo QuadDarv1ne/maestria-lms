@@ -49,7 +49,7 @@ export const createCourseSchema = z.object({
   modules: z.array(moduleSchema).optional().default([]),
   startDate: z.string().optional().nullable(),
   endDate: z.string().optional().nullable(),
-  visibility: z.enum(["public", "private"]).optional().default("public"),
+  visibility: z.enum(["public", "private", "unlisted"]).optional().default("public"),
   maxStudents: z.union([z.string(), z.number()]).optional().nullable(),
   prerequisites: z.string().optional().nullable(),
   language: z.enum(["ru", "en", "zh"]).optional().default("ru"),

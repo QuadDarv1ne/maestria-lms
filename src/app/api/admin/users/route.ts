@@ -5,6 +5,7 @@ import { getAuthSession, requireAdmin } from "@/lib/auth";
 import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
+import { requireCsrf } from "@/lib/csrf";
 import { parsePagination } from "@/lib/utils";
 
 export const runtime = "nodejs";
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getAuthSession();
     const adminError = requireAdmin(session);
-    if (adminError) return new NextResponse(adminError.body, { status: 403 });
+    if (adminError) return adminError as NextResponse;
 
     const { searchParams } = new URL(request.url);
     const { page, limit, skip } = parsePagination(searchParams, { defaultLimit: 20, maxLimit: 100 });
@@ -90,10 +91,14 @@ export async function PUT(request: NextRequest) {
   try {
     const session = await getAuthSession();
     const adminError = requireAdmin(session);
-    if (adminError) return new NextResponse(adminError.body, { status: 403 });
+    if (adminError) return adminError as NextResponse;
 
     // Session is guaranteed to be non-null after requireAdmin check
     const authenticatedSession = session!;
+
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
+
     const body = await request.json();
     const validation = updateUserSchema.safeParse(body);
 
