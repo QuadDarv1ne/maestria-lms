@@ -73,15 +73,15 @@ describe("s3 utilities", () => {
 
   describe("isS3Available", () => {
     it("should return false when credentials are not configured", async () => {
-      delete process.env.S3_ACCESS_KEY;
-      delete process.env.S3_SECRET_KEY;
+      delete process.env.S3_ACCESS_KEY_ID;
+      delete process.env.S3_SECRET_ACCESS_KEY;
       const { isS3Available } = await import("@/lib/s3");
       expect(isS3Available()).toBe(false);
     });
 
     it("should return true when credentials are configured", async () => {
-      process.env.S3_ACCESS_KEY = "test-key";
-      process.env.S3_SECRET_KEY = "test-secret";
+      process.env.S3_ACCESS_KEY_ID = "test-key";
+      process.env.S3_SECRET_ACCESS_KEY = "test-secret";
       const { isS3Available } = await import("@/lib/s3");
       expect(isS3Available()).toBe(true);
     });

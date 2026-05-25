@@ -175,22 +175,24 @@ export function StepViewerPage({
   // Initialize ordering items when step changes
   useEffect(() => {
     const assignment = step?.assignments?.[0];
-    if (!assignment?.options) {
+    const options = assignment?.options;
+    if (!options) {
       setOrderingItems([]);
       return;
     }
     try {
-      const items: string[] = JSON.parse(assignment.options);
+      const items: string[] = JSON.parse(options);
       if (Array.isArray(items) && items.length > 0) {
         setOrderingItems(shuffleArray(items));
       } else {
         setOrderingItems([]);
       }
-    } catch {
+    } catch (err) {
+      console.error("Failed to parse ordering options:", err);
       setOrderingItems([]);
     }
     setOrderingSubmitted(false);
-  }, [step?.id, step?.assignments?.[0]?.options]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [step?.id, step?.assignments?.[0]?.options]);
 
   // Essay state
   const [essayAnswer, setEssayAnswer] = useState("");

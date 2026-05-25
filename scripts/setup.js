@@ -180,10 +180,10 @@ NEXT_PUBLIC_CDN_URL=https://ui3adtb308.a.trbcdn.net
 NEXT_PUBLIC_SITE_URL=https://maestria.edu
 
 # S3 Storage (optional - leave empty if not using S3)
-S3_ACCESS_KEY=
-S3_SECRET_KEY=
+S3_ACCESS_KEY_ID=
+S3_SECRET_ACCESS_KEY=
 S3_ENDPOINT=
-S3_BUCKET=maestria-lms
+S3_BUCKET_NAME=maestria-lms
 S3_REGION=auto
 
 # Seed data (set to true to allow /api/seed endpoint in development)

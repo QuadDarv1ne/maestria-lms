@@ -15,7 +15,6 @@ const DEFAULT_ALLOWED_TAGS = [
   "details", "summary",
   "abbr", "cite", "q",
   "video", "audio", "source",
-  "iframe",
 ];
 
 const DEFAULT_ALLOWED_ATTRIBUTES: Record<string, string[]> = {
@@ -24,7 +23,6 @@ const DEFAULT_ALLOWED_ATTRIBUTES: Record<string, string[]> = {
   video: ["src", "controls", "autoplay", "loop", "muted", "poster", "width", "height"],
   audio: ["src", "controls", "autoplay", "loop", "muted"],
   source: ["src", "type"],
-  iframe: ["src", "width", "height", "frameborder", "allow", "allowfullscreen", "sandbox", "title"],
   code: ["class"],
   pre: ["class"],
   th: ["scope", "rowspan", "colspan"],
@@ -37,7 +35,6 @@ export function sanitizeContent(html: string, options?: { allowedTags?: string[]
     allowedTags: options?.allowedTags ?? DEFAULT_ALLOWED_TAGS,
     allowedAttributes: options?.allowedAttributes ?? DEFAULT_ALLOWED_ATTRIBUTES,
     allowedSchemes: ["http", "https", "mailto", "tel"],
-    allowedSchemesByTag: { iframe: ["http", "https"] },
     allowedSchemesAppliedToAttributes: ["href", "src", "srcset", "poster"],
     allowProtocolRelative: false,
     enforceHtmlBoundary: false,

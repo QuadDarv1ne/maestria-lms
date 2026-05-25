@@ -48,7 +48,10 @@ export function useCourses(filters?: {
     queryKey: ["courses", qs],
     queryFn: async () => {
       const res = await fetch(`/api/courses${qs ? `?${qs}` : ""}`);
-      if (!res.ok) throw new Error("Failed to fetch courses");
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: null }));
+        throw new Error(error?.error || `Failed to fetch courses (${res.status})`);
+      }
       return res.json();
     },
     staleTime: 30_000,
@@ -116,7 +119,10 @@ export function useCourse(id: string | undefined) {
     queryKey: ["course", id],
     queryFn: async () => {
       const res = await fetch(`/api/courses/${id}`);
-      if (!res.ok) throw new Error("Failed to fetch course");
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: null }));
+        throw new Error(error?.error || `Failed to fetch course (${res.status})`);
+      }
       return res.json();
     },
     enabled: !!id,
@@ -144,7 +150,10 @@ export function useCourseReviews(courseId: string | undefined, page = 1) {
     queryKey: ["course-reviews", courseId, page],
     queryFn: async () => {
       const res = await fetch(`/api/courses/${courseId}/reviews?page=${page}&limit=10`);
-      if (!res.ok) throw new Error("Failed to fetch reviews");
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: null }));
+        throw new Error(error?.error || `Failed to fetch reviews (${res.status})`);
+      }
       return res.json();
     },
     enabled: !!courseId,

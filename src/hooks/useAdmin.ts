@@ -47,7 +47,10 @@ export function useAdminCourses() {
     queryKey: ["admin", "courses"],
     queryFn: async () => {
       const res = await fetch("/api/admin/courses?limit=50");
-      if (!res.ok) throw new Error("Failed to fetch admin courses");
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: null }));
+        throw new Error(error?.error || `Failed to fetch admin courses (${res.status})`);
+      }
       return res.json();
     },
     staleTime: 30_000,
@@ -59,7 +62,10 @@ export function useAdminUsers() {
     queryKey: ["admin", "users"],
     queryFn: async () => {
       const res = await fetch("/api/admin/users?limit=50");
-      if (!res.ok) throw new Error("Failed to fetch admin users");
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: null }));
+        throw new Error(error?.error || `Failed to fetch admin users (${res.status})`);
+      }
       return res.json();
     },
     staleTime: 30_000,
@@ -71,7 +77,10 @@ export function useAdminStats() {
     queryKey: ["admin", "stats"],
     queryFn: async () => {
       const res = await fetch("/api/admin/stats");
-      if (!res.ok) throw new Error("Failed to fetch admin stats");
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: null }));
+        throw new Error(error?.error || `Failed to fetch admin stats (${res.status})`);
+      }
       return res.json();
     },
     staleTime: 15_000,
@@ -181,7 +190,10 @@ export function useStudentStats(userId: string) {
     queryKey: ["admin", "student-stats", userId],
     queryFn: async () => {
       const res = await fetch(`/api/admin/student-stats?userId=${userId}`);
-      if (!res.ok) throw new Error("Failed to fetch student stats");
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: null }));
+        throw new Error(error?.error || `Failed to fetch student stats (${res.status})`);
+      }
       return res.json();
     },
     enabled: !!userId,
