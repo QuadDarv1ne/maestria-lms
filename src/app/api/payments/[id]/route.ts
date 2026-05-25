@@ -178,51 +178,90 @@ export async function PUT(
     const { status } = validation.data;
 
     // Атомарное обновление: статус платежа + запись на курс
+    // Используем updateMany с where для предотвращения race condition:
+    // только первый запрос обновит pending -> completed, остальные получат 0 записей
     const result = await db.$transaction(async (tx) => {
-      const updated = await tx.payment.update({
-        where: { id },
-        data: { status },
-      });
+      let wasStatusUpdated = false;
+
+      if (status === "completed") {
+        // Атомарно обновляем только если статус всё ещё "pending"
+        const updateResult = await tx.payment.updateMany({
+          where: { id, status: "pending" },
+          data: { status },
+        });
+        wasStatusUpdated = updateResult.count > 0;
+
+        // Если статус не был обновлён (уже не pending), получаем актуальный платёж
+        if (!wasStatusUpdated) {
+          const currentPayment = await tx.payment.findUnique({ where: { id } });
+          if (!currentPayment) {
+            return NextResponse.json(
+              { error: "Платёж не найден" },
+              { status: 404 }
+            );
+          }
+          // Если платёж уже completed — возвращаем его без дублирования enrollment
+          return { updated: currentPayment, wasCompleted: false, alreadyCompleted: currentPayment.status === "completed" };
+        }
+      } else {
+        // Для failed/refunded обновляем без проверки текущего статуса
+        await tx.payment.update({
+          where: { id },
+          data: { status },
+        });
+      }
 
       // Если платёж завершён успешно — записываем на курс
-      if (status === "completed" && payment.status === "pending") {
-        await ensureEnrollment(tx, payment.userId, payment.courseId);
+      if (status === "completed" && wasStatusUpdated) {
+        const currentPayment = await tx.payment.findUnique({ where: { id } });
+        if (currentPayment) {
+          await ensureEnrollment(tx, currentPayment.userId, currentPayment.courseId);
+        }
       }
 
       // Если платёж возвращён — отменяем запись и декрементируем studentCount
       if (status === "refunded") {
-        const cancelled = await tx.enrollment.updateMany({
-          where: {
-            userId: payment.userId,
-            courseId: payment.courseId,
-            status: "active",
-          },
-          data: { status: "cancelled" },
-        });
-        if (cancelled.count > 0) {
-          await tx.course.update({
-            where: { id: payment.courseId },
-            data: { studentCount: { decrement: 1 } },
+        const currentPayment = await tx.payment.findUnique({ where: { id } });
+        if (currentPayment) {
+          const cancelled = await tx.enrollment.updateMany({
+            where: {
+              userId: currentPayment.userId,
+              courseId: currentPayment.courseId,
+              status: "active",
+            },
+            data: { status: "cancelled" },
           });
+          if (cancelled.count > 0) {
+            await tx.course.update({
+              where: { id: currentPayment.courseId },
+              data: { studentCount: { decrement: 1 } },
+            });
+          }
         }
       }
 
-      return { updated, wasCompleted: status === "completed" && payment.status === "pending" };
+      const updatedPayment = await tx.payment.findUnique({ where: { id } });
+      return { updated: updatedPayment, wasCompleted: status === "completed" && wasStatusUpdated };
     });
 
+    // Если транзакция вернула ответ с ошибкой (редирект), возвращаем его
+    if (result instanceof NextResponse) {
+      return result;
+    }
+
     // Send notification for completed payment
-    if (result.wasCompleted) {
+    if (result.wasCompleted && result.updated) {
       const courseData = await db.course.findUnique({
-        where: { id: payment.courseId },
+        where: { id: result.updated.courseId },
         select: { title: true },
       });
       if (courseData) {
         createNotification({
-          userId: payment.userId,
+          userId: result.updated.userId,
           type: "enrollment",
           title: "Оплата прошла",
           message: `Вы записаны на курс "${courseData.title}"`,
-          link: `/course/${payment.courseId}`,
+          link: `/course/${result.updated.courseId}`,
         }).catch((err) => log.error("Failed to send payment notification", { error: err }));
       }
     }
