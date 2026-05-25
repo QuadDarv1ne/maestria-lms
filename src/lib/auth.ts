@@ -5,6 +5,7 @@ import type { JWT } from "next-auth/jwt";
 import type { Session } from "next-auth";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
+import { NextResponse } from "next/server";
 
 interface ExtendedUser {
   id: string;
@@ -139,6 +140,17 @@ if (
  */
 export async function getAuthSession(): Promise<ExtendedSession | null> {
   return getServerSession(authOptions) as Promise<ExtendedSession | null>;
+}
+
+/**
+ * Helper to check if user is authenticated.
+ * Returns error response if not authorized.
+ */
+export function requireAuth(session: ExtendedSession | null) {
+  if (!session?.user) {
+    return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
+  }
+  return null;
 }
 
 /**

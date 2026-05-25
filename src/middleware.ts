@@ -74,11 +74,13 @@ export async function middleware(request: NextRequest) {
     );
   }
 
+  const isProduction = process.env.NODE_ENV === "production";
+
   response.headers.set(
     "Content-Security-Policy",
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-eval'",
+      `script-src 'self' ${isProduction ? "" : "'unsafe-eval'"}`,
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: https://api.dicebear.com https://freeimage.host https://ui3adtb308.a.trbcdn.net",
       "font-src 'self'",

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getAuthSession } from "@/lib/auth";
+import { getAuthSession, requireAuth } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
 import { handleApiError } from "@/lib/api-errors";
@@ -27,14 +27,10 @@ export async function POST(
     const { id: courseId } = await params;
     const session = await getAuthSession();
 
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Необходимо авторизоваться" },
-        { status: 401 }
-      );
-    }
+    const authError = requireAuth(session);
+    if (authError) return authError;
 
-    const userId = session.user.id;
+    const userId = session!.user.id;
     // Course ID may be a UUID or slug — try both
     const course = await db.course.findFirst({
       where: { OR: [{ id: courseId }, { slug: courseId }] },
@@ -108,7 +104,7 @@ export async function POST(
           }
         }
       } catch {
-        // Если не удалось распарсить пререквизиты, пропускаем проверку
+        log.warn("Malformed prerequisites JSON, skipping prerequisite check", { courseId: course.id });
       }
     }
 

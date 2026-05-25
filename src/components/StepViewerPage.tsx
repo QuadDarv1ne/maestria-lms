@@ -469,7 +469,7 @@ export function StepViewerPage({
   // Submit matching
   const handleMatchingSubmit = useCallback(() => {
     if (!step) return;
-    const assignment = step.assignments[0];
+    const assignment = step.assignments?.[0];
     if (!assignment) return;
 
     let pairs: Array<{ left: string; right: string }> = [];
@@ -1090,7 +1090,7 @@ export function StepViewerPage({
                     <span className="font-medium">{t("course.step.matchingExercise", locale) || "Сопоставление"}</span>
                   </div>
 
-                  {step.assignments[0] && (() => {
+                  {step.assignments?.[0] && (() => {
                     let pairs: Array<{ left: string; right: string }> = [];
                     if (step.assignments[0].options) {
                       try {
@@ -1187,7 +1187,7 @@ export function StepViewerPage({
                     <span className="font-medium">{t("course.step.orderingExercise", locale) || "Упорядочивание"}</span>
                   </div>
 
-                  {step.assignments[0] && (() => {
+                  {step.assignments?.[0] && (() => {
                     if (orderingItems.length === 0) {
                       return <p className="text-muted-foreground">{t("course.step.noItems", locale) || "Нет элементов для сортировки"}</p>;
                     }

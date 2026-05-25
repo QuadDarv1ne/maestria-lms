@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getAuthSession } from "@/lib/auth";
+import { getAuthSession, requireAdmin } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 
@@ -13,9 +13,8 @@ export async function GET(request: NextRequest) {
   if (blocked) return blocked;
   try {
     const session = await getAuthSession();
-    if (!session?.user || session.user.role !== "admin") {
-      return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
-    }
+    const adminError = requireAdmin(session);
+    if (adminError) return new NextResponse(adminError.body, { status: 403, headers: { "Content-Type": "application/json" } });
 
     const [userCounts, courseCounts, enrollmentAgg, paymentAgg, activeUsersCount, activeWeekCount, activeMonthCount] = await Promise.all([
       db.user.groupBy({
