@@ -5,7 +5,6 @@ import { getAuthSession, requireAuth } from "@/lib/auth";
 import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
-import { requireCsrf } from "@/lib/csrf";
 
 export const runtime = "nodejs";
 
@@ -128,9 +127,6 @@ export async function PUT(request: NextRequest) {
     if (authError) return authError;
 
     const userId = session!.user.id;
-
-    const csrfError = requireCsrf(request);
-    if (csrfError) return csrfError;
 
     const body = await request.json();
     const validation = updateProfileSchema.safeParse(body);

@@ -4,7 +4,6 @@ import { getAuthSession } from "@/lib/auth";
 import { s3Client, S3_BUCKET, toCdnUrl, makeFileKey, isS3Available } from "@/lib/s3";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
-import { requireCsrf } from "@/lib/csrf";
 
 const ALLOWED_TYPES = [
   "image/jpeg",
@@ -33,9 +32,6 @@ export async function POST(req: NextRequest) {
   if (!isAdmin && !isTeacher) {
     return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
   }
-
-  const csrfError = requireCsrf(req);
-  if (csrfError) return csrfError;
 
   if (!isS3Available()) {
     return NextResponse.json(

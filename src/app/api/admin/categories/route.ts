@@ -3,7 +3,6 @@ import { db } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
-import { requireCsrf } from "@/lib/csrf";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -58,9 +57,6 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       );
     }
-
-    const csrfError = requireCsrf(request);
-    if (csrfError) return csrfError;
 
     const body = await request.json();
     const validation = categorySchema.safeParse(body);
@@ -131,9 +127,6 @@ export async function PUT(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    const csrfError = requireCsrf(request);
-    if (csrfError) return csrfError;
 
     const body = await request.json();
     const validation = categorySchema.safeParse(body);
@@ -220,9 +213,6 @@ export async function DELETE(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    const csrfError = requireCsrf(request);
-    if (csrfError) return csrfError;
 
     const existing = await db.category.findUnique({
       where: { id: categoryId },

@@ -5,7 +5,6 @@ import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
 import { handleApiError } from "@/lib/api-errors";
-import { requireCsrf } from "@/lib/csrf";
 import { log } from "@/lib/logger";
 
 export const runtime = "nodejs";
@@ -196,9 +195,6 @@ export async function POST(
     }
 
     const userId = session.user.id;
-
-    const csrfError = requireCsrf(request);
-    if (csrfError) return csrfError;
 
     // Проверяем запись на курс или бесплатность урока
     const lesson = await db.lesson.findUnique({

@@ -3,7 +3,6 @@ import { db } from "@/lib/db";
 import { getAuthSession, requireAuth } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
-import { requireCsrf } from "@/lib/csrf";
 
 export const runtime = "nodejs";
 
@@ -62,9 +61,6 @@ export async function DELETE(request: NextRequest) {
   if (authError) return authError;
 
   try {
-    const csrfError = requireCsrf(request);
-    if (csrfError) return csrfError;
-
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
     const result = await db.notification.deleteMany({

@@ -116,6 +116,20 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/#login",
   },
+  // Explicit cookie configuration for security
+  // useSecureCookies ensures Secure flag in production; SameSite=Strict prevents CSRF
+  cookies: {
+    sessionToken: {
+      name: "__Secure-next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "strict",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
+  },
+  useSecureCookies: process.env.NODE_ENV === "production",
   secret: process.env.NEXTAUTH_SECRET,
 };
 

@@ -3,7 +3,6 @@ import { db } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { pushUnreadCount } from "@/lib/sse";
 import { handleApiError } from "@/lib/api-errors";
-import { requireCsrf } from "@/lib/csrf";
 import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
@@ -96,9 +95,6 @@ export async function DELETE(
 
   try {
     const { id } = await params;
-
-    const csrfError = requireCsrf(request);
-    if (csrfError) return csrfError;
 
     const notification = await db.notification.findUnique({
       where: { id },

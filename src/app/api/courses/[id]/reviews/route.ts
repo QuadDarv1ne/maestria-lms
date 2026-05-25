@@ -4,10 +4,10 @@ import { getAuthSession } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
 import { handleApiError } from "@/lib/api-errors";
-import { requireCsrf } from "@/lib/csrf";
 import { log } from "@/lib/logger";
 import { parsePagination } from "@/lib/utils";
 import { z } from "zod";
+import { sanitizeContent } from "@/lib/sanitize";
 
 export const runtime = "nodejs";
 
@@ -111,9 +111,6 @@ export async function POST(
 
     const userId = session.user.id;
 
-    const csrfError = requireCsrf(request);
-    if (csrfError) return csrfError;
-
     // Parse and validate request body
     const body = await request.json();
     const validation = reviewSchema.safeParse(body);
@@ -181,7 +178,7 @@ export async function POST(
           where: { id: existing.id },
           data: {
             rating,
-            comment: comment?.trim() || null,
+            comment: comment ? sanitizeContent(comment.trim()) : null,
           },
           include: {
             user: {
@@ -200,7 +197,7 @@ export async function POST(
             userId,
             courseId: resolvedCourseId,
             rating,
-            comment: comment?.trim() || null,
+            comment: comment ? sanitizeContent(comment.trim()) : null,
           },
           include: {
             user: {

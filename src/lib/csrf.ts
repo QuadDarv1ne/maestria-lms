@@ -80,12 +80,3 @@ export function csrfProtection(request: NextRequest): NextResponse | null {
 
   return null;
 }
-
-/**
- * Helper for API routes to require a valid CSRF token.
- * Returns null if the request is safe (GET/HEAD/OPTIONS) or the token is valid.
- * Returns an error response if CSRF validation fails.
- */
-export function requireCsrf(request: NextRequest): NextResponse | null {
-  return csrfProtection(request);
-}

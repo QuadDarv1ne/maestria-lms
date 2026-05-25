@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, Prisma } from "@/lib/db";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
-import { requireCsrf } from "@/lib/csrf";
 import { parsePagination } from "@/lib/utils";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { sanitizeContent } from "@/lib/sanitize";
 
 export const runtime = "nodejs";
 
@@ -110,9 +110,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const csrfError = requireCsrf(request);
-    if (csrfError) return csrfError;
-
     const body = await request.json();
     const { title, slug, content, excerpt, image, category, tags, readTime, isPublished, isFeatured } = body;
 
@@ -122,10 +119,10 @@ export async function POST(request: NextRequest) {
 
     const article = await db.article.create({
       data: {
-        title,
+        title: title.trim(),
         slug,
-        content,
-        excerpt,
+        content: sanitizeContent(content),
+        excerpt: excerpt ? sanitizeContent(excerpt) : null,
         image,
         category,
         tags,

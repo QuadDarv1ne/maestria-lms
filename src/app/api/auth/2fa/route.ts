@@ -6,7 +6,6 @@ import { authenticator } from "otplib";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import bcrypt from "bcryptjs";
 import { handleApiError } from "@/lib/api-errors";
-import { requireCsrf } from "@/lib/csrf";
 import { log } from "@/lib/logger";
 
 export const runtime = "nodejs";
@@ -19,6 +18,7 @@ const enable2FASchema = z.object({
 
 const verify2FASchema = z.object({
   code: z.string().length(6, "Код должен содержать 6 цифр"),
+  secret: z.string().min(1, "Секрет обязателен"),
 });
 
 const disable2FASchema = z.object({
@@ -55,9 +55,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
     }
 
-    const csrfError = requireCsrf(request);
-    if (csrfError) return csrfError;
-
     const body = await request.json();
     const validation = enable2FASchema.safeParse(body);
 
@@ -84,19 +81,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Неверный пароль" }, { status: 401 });
     }
 
-    // Генерируем секрет
+    // Генерируем секрет и возвращаем OTPAuth URL
+    // НЕ сохраняем в БД до верификации кода — предотвращает зависание секрета
     const secret = generateSecret();
     const otpauthUrl = generateOtpAuthUrl(secret, user.email || '');
-
-    // Временно сохраняем секрет (подтверждение после проверки кода)
-    await db.user.update({
-      where: { id: userId },
-      data: { twoFactorSecret: secret },
-    });
 
     return NextResponse.json({
       message: "Отсканируйте QR-код в приложении-аутентификаторе и введите код для подтверждения",
       otpauthUrl,
+      // Возвращаем секрет клиенту — он будет отправлен вместе с кодом для верификации
+      secret,
     }, { status: 200 });
   } catch (error: unknown) {
     return handleApiError(error, { route: "auth/2fa POST" });
@@ -113,9 +107,6 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
     }
 
-    const csrfError = requireCsrf(request);
-    if (csrfError) return csrfError;
-
     const body = await request.json();
     const validation = verify2FASchema.safeParse(body);
 
@@ -126,7 +117,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const { code } = validation.data;
+    const { code, secret } = validation.data;
     const userId = session.user.id;
 
     const user = await db.user.findUnique({ where: { id: userId } });
@@ -135,14 +126,14 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
     }
 
-    if (!user.twoFactorSecret) {
-      return NextResponse.json({ error: "Сначала включите 2FA" }, { status: 400 });
+    if (user.twoFactorEnabled) {
+      return NextResponse.json({ error: "2FA уже включена" }, { status: 400 });
     }
 
-    // Проверяем TOTP-код с помощью otplib, используя секрет из БД
+    // Проверяем TOTP-код против секрета из запроса
     let isValid = false;
     try {
-      isValid = authenticator.verify({ token: code, secret: user.twoFactorSecret });
+      isValid = authenticator.verify({ token: code, secret });
     } catch {
       log.warn("Invalid 2FA token format during verification", { userId });
     }
@@ -150,10 +141,10 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Неверный код подтверждения" }, { status: 400 });
     }
 
-    // Активируем 2FA
+    // Сохраняем секрет и активируем 2FA только после успешной верификации
     await db.user.update({
       where: { id: userId },
-      data: { twoFactorEnabled: true },
+      data: { twoFactorSecret: secret, twoFactorEnabled: true },
     });
 
     return NextResponse.json({ message: "Двухфакторная аутентификация успешно включена" }, { status: 200 });
@@ -171,9 +162,6 @@ export async function DELETE(request: NextRequest) {
     if (!session?.user) {
       return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
     }
-
-    const csrfError = requireCsrf(request);
-    if (csrfError) return csrfError;
 
     const body = await request.json();
     const validation = disable2FASchema.safeParse(body);

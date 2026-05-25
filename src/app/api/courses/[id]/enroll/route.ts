@@ -6,7 +6,6 @@ import { createNotification } from "@/lib/notifications";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
 import { z } from "zod";
-import { requireCsrf } from "@/lib/csrf";
 
 export const runtime = "nodejs";
 
@@ -26,9 +25,6 @@ export async function POST(
 
   try {
     const { id: courseId } = await params;
-
-    const csrfError = requireCsrf(request);
-    if (csrfError) return csrfError;
 
     const session = await getAuthSession();
 

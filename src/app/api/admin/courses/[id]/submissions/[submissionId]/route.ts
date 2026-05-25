@@ -3,7 +3,6 @@ import { db } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
-import { requireCsrf } from "@/lib/csrf";
 import { parsePagination } from "@/lib/utils";
 import { z } from "zod";
 
@@ -169,9 +168,6 @@ export async function PUT(
     }
 
     const { id: courseId, submissionId } = await params;
-
-    const csrfError = requireCsrf(request);
-    if (csrfError) return csrfError;
 
     // Проверяем что курс принадлежит преподавателю
     const course = await db.course.findUnique({

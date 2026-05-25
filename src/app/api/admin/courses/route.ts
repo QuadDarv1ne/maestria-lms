@@ -7,7 +7,6 @@ import { handleApiError } from "@/lib/api-errors";
 import { parsePagination } from "@/lib/utils";
 import { createCourseSchema, type ModuleInput, validatePrices } from "@/lib/course-validation";
 import { sanitizeContent } from "@/lib/sanitize";
-import { requireCsrf } from "@/lib/csrf";
 
 export const runtime = "nodejs";
 
@@ -101,9 +100,6 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       );
     }
-
-    const csrfError = requireCsrf(request);
-    if (csrfError) return csrfError;
 
     const body = await request.json();
     const validation = createCourseSchema.safeParse(body);
@@ -289,9 +285,6 @@ export async function PUT(request: NextRequest) {
         { status: 403 }
       );
     }
-
-    const csrfError = requireCsrf(request);
-    if (csrfError) return csrfError;
 
     const body = await request.json();
     const validation = createCourseSchema.safeParse(body);
@@ -602,9 +595,6 @@ export async function DELETE(request: NextRequest) {
         { status: 403 }
       );
     }
-
-    const csrfError = requireCsrf(request);
-    if (csrfError) return csrfError;
 
     await db.course.delete({
       where: { id: courseId },

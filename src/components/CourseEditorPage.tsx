@@ -361,7 +361,7 @@ export function CourseEditorPage() {
             </TabsTrigger>
             <TabsTrigger value="settings">
               <Calendar className="w-4 h-4 mr-1.5" />
-              Настройки
+              {t("courseEditor.tabSettings", locale)}
             </TabsTrigger>
             <TabsTrigger value="curriculum">
               <BookOpen className="w-4 h-4 mr-1.5" />
@@ -387,7 +387,7 @@ export function CourseEditorPage() {
                 className="bg-blue-700 hover:bg-blue-800 text-white"
                 onClick={() => setActiveTab("settings")}
               >
-                Далее: Настройки
+                {t("common.next", locale)}: {t("courseEditor.tabSettings", locale)}
                 <ChevronDown className="w-4 h-4 ml-1 rotate-[-90deg]" />
               </Button>
             </div>
@@ -402,13 +402,13 @@ export function CourseEditorPage() {
             <div className="flex justify-between mt-6">
               <Button variant="outline" onClick={() => setActiveTab("basic")}>
                 <ArrowLeft className="w-4 h-4 mr-1" />
-                Назад
+                {t("common.back", locale)}
               </Button>
               <Button
                 className="bg-blue-700 hover:bg-blue-800 text-white"
                 onClick={() => setActiveTab("curriculum")}
               >
-                Далее: Программа
+                {t("common.next", locale)}: {t("courseEditor.tabCurriculum", locale)}
                 <ChevronDown className="w-4 h-4 ml-1 rotate-[-90deg]" />
               </Button>
             </div>
