@@ -27,7 +27,7 @@ const DEFAULT_ALLOWED_ATTRIBUTES: Record<string, string[]> = {
   pre: ["class"],
   th: ["scope", "rowspan", "colspan"],
   td: ["rowspan", "colspan"],
-  "*": ["id", "class", "style", "title", "data-*", "aria-*", "role"],
+  "*": ["id", "class", "title", "data-*", "aria-*", "role"],
 };
 
 export function sanitizeContent(html: string, options?: { allowedTags?: string[]; allowedAttributes?: Record<string, string[]> }): string {
