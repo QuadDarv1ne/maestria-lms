@@ -5,6 +5,7 @@
  */
 
 import { execSync } from 'child_process'
+import net from 'net'
 import os from 'os'
 
 export type DatabaseProvider = 'sqlite' | 'postgresql' | 'mongodb'
@@ -55,7 +56,6 @@ function checkDocker(): boolean {
  */
 export function isPortAvailable(port: number, host: string = '127.0.0.1'): Promise<boolean> {
   return new Promise((resolve) => {
-    const net = require('net')
     const server = net.createServer()
     
     server.once('error', () => resolve(false))

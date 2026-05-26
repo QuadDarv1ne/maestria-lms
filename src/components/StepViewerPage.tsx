@@ -188,11 +188,11 @@ export function StepViewerPage({
         setOrderingItems([]);
       }
     } catch (err) {
-      console.error("Failed to parse ordering options:", err);
+      log.error("Failed to parse ordering options:", { error: err instanceof Error ? err.message : String(err) });
       setOrderingItems([]);
     }
     setOrderingSubmitted(false);
-  }, [step?.id, step?.assignments?.[0]?.options]);
+  }, [step?.id, step?.assignments]);
 
   // Essay state
   const [essayAnswer, setEssayAnswer] = useState("");
@@ -324,7 +324,7 @@ export function StepViewerPage({
     return () => {
       cancelled = true;
     };
-  }, [courseId, locale, step?.completed]);
+  }, [courseId, locale]);
 
   // Calculate quiz score (percentage of correct answers)
   const quizScore = useMemo(() => {

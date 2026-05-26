@@ -7,15 +7,15 @@ import { ArrowUp } from "lucide-react";
 import { useScrollProgress } from "@/hooks/useScrollProgress";
 
 export function GlobalScrollToTop() {
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(() =>
+    typeof window !== "undefined" ? window.scrollY > 300 : false
+  );
   const [hovered, setHovered] = useState(false);
   const progress = useScrollProgress();
   const locale = useAppStore((s) => s.locale);
   const theme = useAppStore((s) => s.theme);
 
-  // Track visibility separately from progress
   useEffect(() => {
-    setVisible(window.scrollY > 300);
     const handleScroll = () => setVisible(window.scrollY > 300);
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);

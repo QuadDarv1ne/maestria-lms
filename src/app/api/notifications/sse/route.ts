@@ -46,6 +46,11 @@ export async function GET(req: NextRequest) {
         }
       }, 30000);
 
+      // Prevent the heartbeat from keeping the process alive in serverless
+      if (typeof heartbeat === "object" && "unref" in heartbeat) {
+        (heartbeat as NodeJS.Timeout).unref();
+      }
+
       req.signal.addEventListener("abort", () => {
         clearInterval(heartbeat);
         cleanup?.();
