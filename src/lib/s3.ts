@@ -26,7 +26,7 @@ export const s3Client = hasCredentials
     })
   : null;
 
-export const S3_BUCKET = process.env.S3_BUCKET || "maestria-lms";
+export const S3_BUCKET = env.s3BucketName || "maestria-lms";
 
 /** Check whether S3 is configured and usable. */
 export function isS3Available(): boolean {

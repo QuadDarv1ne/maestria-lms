@@ -239,7 +239,7 @@ function detectProvider(databaseUrl) {
     return "postgresql";
   }
   if (url.startsWith("mysql://") || url.startsWith("mariadb://")) {
-    return "postgresql"; // map mysql → postgresql for Prisma
+    return "mysql";
   }
   if (url.startsWith("mongodb://") || url.startsWith("mongodb+srv://")) {
     return "mongodb";
