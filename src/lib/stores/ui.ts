@@ -15,6 +15,11 @@ function validateLocale(value: string): Locale {
   return VALID_LOCALES.includes(value as Locale) ? (value as Locale) : "ru";
 }
 
+function setLocaleCookie(locale: string): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `maestria-locale=${locale}; Path=/; SameSite=Lax; Max-Age=31536000`;
+}
+
 // Маппинг hash-роутов → Next.js paths (перенесено сюда для устранения circular dependency)
 const ROUTE_MAP: Record<string, string> = {
   home: "/",
@@ -94,6 +99,7 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
 
   setLocale: (locale: Locale) => {
     saveString("maestria-locale", locale);
+    setLocaleCookie(locale);
     set({ locale });
   },
 
