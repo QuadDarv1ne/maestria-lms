@@ -137,11 +137,9 @@ export const authOptions: NextAuthOptions = {
 // Skip during build phase (build may run without full env, production server must have it)
 if (
   process.env.NODE_ENV === "production" &&
-  process.env.NEXTAUTH_SECRET &&
   !process.env.INIT_CWD?.includes("node_modules")
 ) {
-  // Only validate when NEXTAUTH_SECRET is explicitly set but empty
-  if (process.env.NEXTAUTH_SECRET.trim() === "") {
+  if (!process.env.NEXTAUTH_SECRET || process.env.NEXTAUTH_SECRET.trim() === "") {
     throw new Error(
       "NEXTAUTH_SECRET must be set in production. Generate one with: openssl rand -base64 32"
     );
