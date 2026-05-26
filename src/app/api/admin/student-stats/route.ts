@@ -100,81 +100,86 @@ export async function GET(request: NextRequest) {
     // Get per-course lesson completion details — batched into a single query
     // instead of 5 separate queries per enrollment (N+1 problem)
     const courseIds = enrollments.map((e) => e.courseId);
-    const batchedStats = await db.$queryRaw<
-      Array<{
-        courseId: string;
-        totalLessons: bigint;
-        completedLessons: bigint;
-        totalTimeSpent: bigint;
-        lastAccessed: Date | null;
-        avgScore: number | null;
-      }>
-    >`
-      WITH course_lessons AS (
-        SELECT l.id AS lesson_id, m."courseId"
-        FROM "Lesson" l
-        JOIN "Module" m ON l."moduleId" = m.id
-        WHERE m."courseId" IN (${Prisma.join(courseIds)})
-      ),
-      lesson_counts AS (
-        SELECT "courseId", COUNT(*) AS "totalLessons"
-        FROM course_lessons
-        GROUP BY "courseId"
-      ),
-      completed_counts AS (
-        SELECT ml."courseId", COUNT(*) AS "completedLessons"
-        FROM "Progress" p
-        JOIN course_lessons ml ON p."lessonId" = ml.lesson_id
-        WHERE p."userId" = ${userId} AND p.completed = true
-        GROUP BY ml."courseId"
-      ),
-      time_sums AS (
-        SELECT ml."courseId", COALESCE(SUM(p."timeSpent"), 0) AS "totalTimeSpent"
-        FROM "Progress" p
-        JOIN course_lessons ml ON p."lessonId" = ml.lesson_id
-        WHERE p."userId" = ${userId}
-        GROUP BY ml."courseId"
-      ),
-      last_access AS (
-        SELECT ml."courseId", MAX(p."lastAccessed") AS "lastAccessed"
-        FROM "Progress" p
-        JOIN course_lessons ml ON p."lessonId" = ml.lesson_id
-        WHERE p."userId" = ${userId}
-        GROUP BY ml."courseId"
-      ),
-      score_avgs AS (
-        SELECT ml."courseId", AVG(p.score) AS "avgScore"
-        FROM "Progress" p
-        JOIN course_lessons ml ON p."lessonId" = ml.lesson_id
-        WHERE p."userId" = ${userId} AND p.score IS NOT NULL
-        GROUP BY ml."courseId"
-      )
-      SELECT
-        lc."courseId",
-        COALESCE(lc."totalLessons", 0) AS "totalLessons",
-        COALESCE(cc."completedLessons", 0) AS "completedLessons",
-        COALESCE(ts."totalTimeSpent", 0) AS "totalTimeSpent",
-        la."lastAccessed",
-        sa."avgScore"
-      FROM lesson_counts lc
-      LEFT JOIN completed_counts cc ON lc."courseId" = cc."courseId"
-      LEFT JOIN time_sums ts ON lc."courseId" = ts."courseId"
-      LEFT JOIN last_access la ON lc."courseId" = la."courseId"
-      LEFT JOIN score_avgs sa ON lc."courseId" = sa."courseId"
-    `;
 
-    const statsMap = new Map(
-      batchedStats.map((s) => [
-        s.courseId,
-        {
-          totalLessons: Number(s.totalLessons),
-          completedLessons: Number(s.completedLessons),
-          totalTimeSpent: Number(s.totalTimeSpent),
-          lastAccessed: s.lastAccessed ?? null,
-          avgScore: s.avgScore ? Math.round(s.avgScore) : null,
-        },
-      ])
-    );
+    // Guard: Prisma.join([]) produces invalid SQL (empty IN clause)
+    let statsMap: Map<string, { totalLessons: number; completedLessons: number; totalTimeSpent: number; lastAccessed: Date | null; avgScore: number | null }> = new Map();
+    if (courseIds.length > 0) {
+      const batchedStats = await db.$queryRaw<
+        Array<{
+          courseId: string;
+          totalLessons: bigint;
+          completedLessons: bigint;
+          totalTimeSpent: bigint;
+          lastAccessed: Date | null;
+          avgScore: number | null;
+        }>
+      >`
+        WITH course_lessons AS (
+          SELECT l.id AS lesson_id, m."courseId"
+          FROM "Lesson" l
+          JOIN "Module" m ON l."moduleId" = m.id
+          WHERE m."courseId" IN (${Prisma.join(courseIds)})
+        ),
+        lesson_counts AS (
+          SELECT "courseId", COUNT(*) AS "totalLessons"
+          FROM course_lessons
+          GROUP BY "courseId"
+        ),
+        completed_counts AS (
+          SELECT ml."courseId", COUNT(*) AS "completedLessons"
+          FROM "Progress" p
+          JOIN course_lessons ml ON p."lessonId" = ml.lesson_id
+          WHERE p."userId" = ${userId} AND p.completed = true
+          GROUP BY ml."courseId"
+        ),
+        time_sums AS (
+          SELECT ml."courseId", COALESCE(SUM(p."timeSpent"), 0) AS "totalTimeSpent"
+          FROM "Progress" p
+          JOIN course_lessons ml ON p."lessonId" = ml.lesson_id
+          WHERE p."userId" = ${userId}
+          GROUP BY ml."courseId"
+        ),
+        last_access AS (
+          SELECT ml."courseId", MAX(p."lastAccessed") AS "lastAccessed"
+          FROM "Progress" p
+          JOIN course_lessons ml ON p."lessonId" = ml.lesson_id
+          WHERE p."userId" = ${userId}
+          GROUP BY ml."courseId"
+        ),
+        score_avgs AS (
+          SELECT ml."courseId", AVG(p.score) AS "avgScore"
+          FROM "Progress" p
+          JOIN course_lessons ml ON p."lessonId" = ml.lesson_id
+          WHERE p."userId" = ${userId} AND p.score IS NOT NULL
+          GROUP BY ml."courseId"
+        )
+        SELECT
+          lc."courseId",
+          COALESCE(lc."totalLessons", 0) AS "totalLessons",
+          COALESCE(cc."completedLessons", 0) AS "completedLessons",
+          COALESCE(ts."totalTimeSpent", 0) AS "totalTimeSpent",
+          la."lastAccessed",
+          sa."avgScore"
+        FROM lesson_counts lc
+        LEFT JOIN completed_counts cc ON lc."courseId" = cc."courseId"
+        LEFT JOIN time_sums ts ON lc."courseId" = ts."courseId"
+        LEFT JOIN last_access la ON lc."courseId" = la."courseId"
+        LEFT JOIN score_avgs sa ON lc."courseId" = sa."courseId"
+      `;
+
+      statsMap = new Map(
+        batchedStats.map((s) => [
+          s.courseId,
+          {
+            totalLessons: Number(s.totalLessons),
+            completedLessons: Number(s.completedLessons),
+            totalTimeSpent: Number(s.totalTimeSpent),
+            lastAccessed: s.lastAccessed ?? null,
+            avgScore: s.avgScore ? Math.round(s.avgScore) : null,
+          },
+        ])
+      );
+    }
 
     const enrollmentDetails = enrollments.map((enrollment) => {
       const stats = statsMap.get(enrollment.courseId) ?? {
