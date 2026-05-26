@@ -208,34 +208,15 @@ export async function POST(
       }
     }
 
-    // Создаём или обновляем submission
-    const submission = await db.assignmentSubmission.upsert({
-      where: {
-        assignmentId_userId: {
-          assignmentId,
-          userId: session.user.id,
-        },
-      },
-      create: {
+    // Создаём новую запись (каждая попытка — отдельный row)
+    const submission = await db.assignmentSubmission.create({
+      data: {
         assignmentId,
         userId: session.user.id,
         answer: answerStr,
         status,
         score,
         maxScore: 100,
-      },
-      update: {
-        answer: answerStr,
-        status,
-        ...(score !== null && { score }),
-        // Сбрасываем оценку при повторной отправке если статус не graded
-        ...(status !== "graded" && {
-          score: null,
-          grade: null,
-          feedback: null,
-          gradedAt: null,
-          gradedBy: null,
-        }),
       },
     });
 
@@ -275,13 +256,12 @@ export async function GET(
       },
     });
 
-    const submission = await db.assignmentSubmission.findUnique({
+    const submission = await db.assignmentSubmission.findFirst({
       where: {
-        assignmentId_userId: {
-          assignmentId,
-          userId: session.user.id,
-        },
+        assignmentId,
+        userId: session.user.id,
       },
+      orderBy: { submittedAt: "desc" },
       include: {
         assignment: {
           select: {

@@ -217,9 +217,8 @@ model AssignmentSubmission {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([assignmentId, userId])
+  @@index([assignmentId, userId])
   @@index([userId, status])
-  @@index([assignmentId])
 }
 
 // ============ ENROLLMENT & PROGRESS ============
