@@ -320,10 +320,6 @@ async function setup(options = {}) {
           execSync(resetCmd, {
             stdio: 'inherit',
             cwd: path.join(__dirname, '..'),
-            env: {
-              ...process.env,
-              PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION: 'I understand this will delete all data'
-            }
           })
           log('Database reset successful', 'success')
         } catch (resetError) {
