@@ -1,4 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcryptjs');
 const db = new PrismaClient();
 
 async function main() {
@@ -23,19 +24,20 @@ async function main() {
   // Keep the demo user, don't delete
 
   // Demo user
+  const demoPassword = await bcrypt.hash('demo123', 10);
   const user = await db.user.upsert({
     where: { email: 'demo@maestria.lms' },
     update: {},
     create: {
       email: 'demo@maestria.lms',
       name: 'Demo Teacher',
-      passwordHash: '$2a$10$demo.hash.for.testing.purpose.only',
+      passwordHash: demoPassword,
       role: 'teacher',
       bio: 'Преподаватель Maestria LMS',
     },
   });
 
-  console.log(`Created user: ${user.email}`);
+  console.log(`Created user: ${user.email} (password: demo123)`);
 
   // Categories
   const categories = await Promise.all([
