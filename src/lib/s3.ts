@@ -58,6 +58,6 @@ export function makeFileKey(folder: string, originalName: string): string {
   const ext = rawExt.replace(/[^a-zA-Z0-9]/g, "").slice(0, 10) || "bin";
 
   const timestamp = Date.now();
-  const random = Math.random().toString(36).slice(2, 8);
+  const random = crypto.randomUUID().slice(0, 8);
   return `${folder}/${timestamp}-${random}.${ext}`;
 }

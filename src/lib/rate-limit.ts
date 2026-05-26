@@ -131,6 +131,10 @@ if (typeof globalThis !== "undefined" && !(globalThis as Record<string, unknown>
     cleanupMemoryExpiredEntries,
     MEMORY_CLEANUP_INTERVAL,
   );
+  // Prevent the interval from keeping the process alive in serverless environments
+  if (typeof intervalId === "object" && "unref" in intervalId) {
+    (intervalId as NodeJS.Timeout).unref();
+  }
   (globalThis as Record<string, unknown>)[GLOBAL_MARKER] = intervalId;
 
   // Clean up on process exit to prevent leaks in serverless/long-running processes

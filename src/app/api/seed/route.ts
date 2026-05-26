@@ -134,10 +134,10 @@ export async function POST() {
   const teacherPassword = process.env.SEED_TEACHER_PASSWORD || crypto.randomUUID().slice(0, 12);
 
   if (!process.env.SEED_ADMIN_PASSWORD) {
-    console.log(`\n[SEED] ⚠️  SEED_ADMIN_PASSWORD not set — generated random password for admin@maestro7it.ru: ${adminPassword}\n`);
+    log.info("SEED_ADMIN_PASSWORD not set — generated random password for admin@maestro7it.ru");
   }
   if (!process.env.SEED_TEACHER_PASSWORD) {
-    console.log(`\n[SEED] ⚠️  SEED_TEACHER_PASSWORD not set — generated random password for teacher@maestro7it.ru: ${teacherPassword}\n`);
+    log.info("SEED_TEACHER_PASSWORD not set — generated random password for teacher@maestro7it.ru");
   }
 
   const adminPasswordHash = await hashPassword(adminPassword);

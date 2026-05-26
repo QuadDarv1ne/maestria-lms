@@ -35,7 +35,7 @@ describe("s3 utilities", () => {
     it("should generate a key with timestamp and random string", async () => {
       const { makeFileKey } = await import("@/lib/s3");
       const result = makeFileKey("avatars", "photo.jpg");
-      expect(result).toMatch(/^avatars\/\d{13}-[a-z0-9]{6}\.jpg$/);
+      expect(result).toMatch(/^avatars\/\d{13}-[a-f0-9]{8}\.jpg$/);
     });
 
     it("should sanitize special characters from extension", async () => {
@@ -48,7 +48,7 @@ describe("s3 utilities", () => {
       const { makeFileKey } = await import("@/lib/s3");
       const result = makeFileKey("docs", "README");
       // No dot means the whole name becomes the "extension" — sanitized to alphanumeric
-      expect(result).toMatch(/^docs\/\d{13}-[a-z0-9]{6}\.README$/);
+      expect(result).toMatch(/^docs\/\d{13}-[a-f0-9]{8}\.README$/);
     });
 
     it("should truncate long extensions to 10 chars", async () => {
@@ -63,7 +63,7 @@ describe("s3 utilities", () => {
       const result = makeFileKey("uploads", "../../../etc/passwd");
       // The ".." parts become part of the "extension" and are stripped by sanitization
       // but "etcpasswd" remains as alphanumeric chars
-      expect(result).toMatch(/^uploads\/\d{13}-[a-z0-9]{6}\./);
+      expect(result).toMatch(/^uploads\/\d{13}-[a-f0-9]{8}\./);
       expect(result).not.toContain("..");
       // The key itself only has one slash after the folder name
       const parts = result.split("/");
