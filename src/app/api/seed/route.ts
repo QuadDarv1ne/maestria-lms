@@ -130,8 +130,18 @@ export async function POST() {
   ]);
 
   // ============ ДЕМО-ПОЛЬЗОВАТЕЛИ ============
-  const adminPasswordHash = await hashPassword(process.env.SEED_ADMIN_PASSWORD || crypto.randomUUID().slice(0, 12));
-  const teacherPasswordHash = await hashPassword(process.env.SEED_TEACHER_PASSWORD || crypto.randomUUID().slice(0, 12));
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD || crypto.randomUUID().slice(0, 12);
+  const teacherPassword = process.env.SEED_TEACHER_PASSWORD || crypto.randomUUID().slice(0, 12);
+
+  if (!process.env.SEED_ADMIN_PASSWORD) {
+    console.log(`\n[SEED] ⚠️  SEED_ADMIN_PASSWORD not set — generated random password for admin@maestro7it.ru: ${adminPassword}\n`);
+  }
+  if (!process.env.SEED_TEACHER_PASSWORD) {
+    console.log(`\n[SEED] ⚠️  SEED_TEACHER_PASSWORD not set — generated random password for teacher@maestro7it.ru: ${teacherPassword}\n`);
+  }
+
+  const adminPasswordHash = await hashPassword(adminPassword);
+  const teacherPasswordHash = await hashPassword(teacherPassword);
 
   await db.user.create({
     data: {
@@ -813,6 +823,8 @@ export async function POST() {
       categories: categories.length,
       courses: courses.length,
       users: 4, // admin + 3 teachers
+      ...(!process.env.SEED_ADMIN_PASSWORD && { adminPassword }),
+      ...(!process.env.SEED_TEACHER_PASSWORD && { teacherPassword }),
     },
   }, { status: 201 });
   } catch (error: unknown) {
