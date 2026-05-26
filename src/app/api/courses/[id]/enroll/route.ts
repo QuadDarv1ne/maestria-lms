@@ -134,25 +134,8 @@ export async function POST(
       log.warn("Malformed request body for enroll, using default payment method", { error: err });
     }
 
-    // Wrap enrollment logic in a transaction to prevent race conditions
-    // when a user sends multiple concurrent requests.
     const result = await db.$transaction(async (tx) => {
-      // Atomically check maxStudents and increment studentCount in one operation
-      // This prevents race conditions where concurrent requests both read the same count
-      if (course.maxStudents && course.maxStudents > 0) {
-        const incremented = await tx.course.updateMany({
-          where: {
-            id: resolvedCourseId,
-            studentCount: { lt: course.maxStudents },
-          },
-          data: { studentCount: { increment: 1 } },
-        });
-        if (incremented.count === 0) {
-          return { error: "Достигнут лимит студентов на курсе", status: 400 as const };
-        }
-      }
-
-      // Проверяем, не записан ли уже пользователь (inside transaction for atomicity)
+      // Сначала проверяем дубликат — ДО изменения studentCount
       const existingEnrollment = await tx.enrollment.findUnique({
         where: {
           userId_courseId: {
@@ -167,7 +150,7 @@ export async function POST(
           return { error: "Вы уже записаны на этот курс", status: 400 as const };
         }
         if (existingEnrollment.status === "cancelled") {
-          // Переподписка
+          // Переподписка — studentCount уже учтён, не инкрементим
           await tx.enrollment.update({
             where: { id: existingEnrollment.id },
             data: {
@@ -176,14 +159,25 @@ export async function POST(
               enrolledAt: new Date(),
             },
           });
-
-          // Re-subscription: studentCount already incremented in atomic check above
           return { message: "Вы успешно повторно записаны на курс", status: 200 as const };
         }
       }
 
-      // Для бесплатных курсов — автоматическая запись
+      // Для бесплатных курсов: проверяем лимит и создаём запись
       if (course.price === 0) {
+        if (course.maxStudents && course.maxStudents > 0) {
+          const incremented = await tx.course.updateMany({
+            where: {
+              id: resolvedCourseId,
+              studentCount: { lt: course.maxStudents },
+            },
+            data: { studentCount: { increment: 1 } },
+          });
+          if (incremented.count === 0) {
+            return { error: "Достигнут лимит студентов на курсе", status: 400 as const };
+          }
+        }
+
         const enrollment = await tx.enrollment.create({
           data: {
             userId,
@@ -192,8 +186,6 @@ export async function POST(
             progress: 0,
           },
         });
-
-        // studentCount already incremented in atomic check above
         return {
           message: "Вы успешно записаны на бесплатный курс",
           enrollment,
@@ -201,7 +193,7 @@ export async function POST(
         };
       }
 
-      // Для платных курсов — создаём платеж
+      // Для платных курсов — создаём платёж без увеличения studentCount
       const payment = await tx.payment.create({
         data: {
           userId,
@@ -209,7 +201,7 @@ export async function POST(
           amount: course.price,
           currency: course.currency,
           status: "pending",
-          paymentMethod, // from request body, defaults to 'sbp'
+          paymentMethod,
         },
       });
 
