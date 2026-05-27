@@ -209,10 +209,12 @@ function checkMemoryLimit(
     store.set(key, entry);
   }
 
-  entry.count++;
+  const limited = entry.count >= maxRequests;
+  if (!limited) {
+    entry.count++;
+  }
 
   const remaining = Math.max(0, maxRequests - entry.count);
-  const limited = entry.count > maxRequests;
 
   return {
     limited,

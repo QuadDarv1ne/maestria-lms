@@ -4,6 +4,7 @@ import { createNotification } from "@/lib/notifications";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
 import { z } from "zod";
+import { verifyWebhookSignature } from "@/lib/webhook-verify";
 
 export const runtime = "nodejs";
 
@@ -100,7 +101,34 @@ async function completePayment(paymentId: string, transactionId: string) {
 export async function POST(request: NextRequest) {
   try {
     const provider = request.headers.get("x-payment-provider")?.toLowerCase();
-    const body = await request.json();
+    const rawBody = await request.text();
+    const signature =
+      request.headers.get("x-webhook-signature") ||
+      request.headers.get("x-signature");
+
+    // Verify HMAC signature if secret is configured
+    const webhookSecret = process.env.PAYMENT_WEBHOOK_SECRET;
+    if (webhookSecret) {
+      const { valid, algorithm } = verifyWebhookSignature({
+        rawBody,
+        signature,
+        secret: webhookSecret,
+      });
+
+      if (!valid) {
+        log.warn("Webhook signature verification failed", { provider, algorithm });
+        return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+      }
+    }
+
+    // Parse JSON body after signature verification
+    let body: unknown;
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      log.warn("Invalid webhook JSON payload", { provider });
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    }
 
     // Validate webhook payload
     const validation = webhookBodySchema.safeParse(body);
@@ -156,7 +184,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Payment not found" }, { status: 404 });
     }
 
-    const _result = await completePayment(payment.id, transactionId || payment.transactionId);
+    await completePayment(payment.id, transactionId || payment.transactionId);
 
     log.info("Webhook: payment completed", {
       paymentId: payment.id,

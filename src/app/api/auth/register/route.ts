@@ -5,6 +5,7 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
+import { sendEmail } from "@/lib/email";
 
 import { z } from "zod";
 import { passwordStrengthSchema } from "@/lib/password-strength";
@@ -49,48 +50,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Хешируем пароль
+    // Hash password
     const passwordHash = await hashPassword(password);
 
-    // Создаём пользователя с ролью "student"
-    const user = await db.user.create({
-      data: {
-        email,
-        name,
-        passwordHash,
-        role: "student",
-        isActive: true,
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        createdAt: true,
-      },
-    });
-
-    // Send welcome notification
-    createNotification({
-      userId: user.id,
-      type: "system",
-      title: "Добро пожаловать!",
-      message: `Рады видеть вас, ${user.name}! Начните с каталога курсов.`,
-      link: "catalog",
-    }).catch((err) => log.error("Failed to send welcome notification", { error: err }));
-
-    // Send email verification
-    const { sendEmail } = await import("@/lib/email");
+    // Generate verification token
     const crypto = await import("crypto");
     const token = crypto.randomBytes(32).toString("hex");
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    await db.verificationToken.create({
-      data: {
-        identifier: `email-verify:${user.email}`,
-        token,
-        expires,
-      },
+    // Create user and verification token atomically
+    const user = await db.$transaction(async (tx) => {
+      const createdUser = await tx.user.create({
+        data: {
+          email,
+          name,
+          passwordHash,
+          role: "student",
+          isActive: true,
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          createdAt: true,
+        },
+      });
+
+      await tx.verificationToken.create({
+        data: {
+          identifier: `email-verify:${email}`,
+          token,
+          expires,
+        },
+      });
+
+      return createdUser;
     });
 
     const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
