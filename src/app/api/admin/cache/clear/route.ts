@@ -6,7 +6,8 @@ import { apiError, handleApiError } from "@/lib/api-errors";
 export async function POST() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || session.user.role !== "admin") {
+    const userRole = (session?.user as { role?: string })?.role;
+    if (!session?.user || userRole !== "admin") {
       return apiError("Unauthorized", 401);
     }
 
@@ -33,6 +34,6 @@ export async function POST() {
       cleared,
     });
   } catch (error) {
-    return handleApiError(error, "POST /api/admin/cache/clear");
+    return handleApiError(error, { route: "POST /api/admin/cache/clear" });
   }
 }

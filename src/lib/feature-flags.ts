@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { FEATURE_FLAGS, FeatureFlagKey } from "./feature-flags-config";
 
 /**
@@ -88,7 +89,7 @@ export function isFeatureEnabled(key: FeatureFlagKey): boolean {
   }
 
   // 4. Rollout percentage check
-  if (flagDef.rolloutPercentage !== null && flagDef.rolloutPercentage < 100) {
+  if (flagDef.rolloutPercentage != null && flagDef.rolloutPercentage < 100) {
     // Use deterministic hash based on user/session for consistent rollout
     const seed = isClient() ? (localStorage.getItem("user-id") || navigator.userAgent) : "server";
     const hash = simpleHash(seed + key);
@@ -147,9 +148,6 @@ export function clearFeatureFlags(): void {
  * React hook for feature flags (client-side only).
  */
 export function useFeatureFlag(key: FeatureFlagKey): boolean {
-  // Lazy import to avoid SSR issues
-  const { useMemo } = require("react");
-
   return useMemo(() => isFeatureEnabled(key), [key]);
 }
 

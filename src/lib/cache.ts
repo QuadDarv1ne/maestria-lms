@@ -4,6 +4,22 @@ import { log } from "@/lib/logger";
 // Redis client for caching (reuses connection from rate-limit if possible)
 let cacheClient: Redis | null = null;
 let cacheConnectionFailed = false;
+let reconnectTimeout: NodeJS.Timeout | null = null;
+const RECONNECT_DELAY_MS = 30_000; // 30 seconds between reconnect attempts
+
+function scheduleReconnect(): void {
+  if (reconnectTimeout) return;
+  reconnectTimeout = setTimeout(() => {
+    reconnectTimeout = null;
+    cacheConnectionFailed = false;
+    log.info("Attempting to reconnect Redis cache");
+    // Force recreation on next getCacheClient call
+    if (cacheClient) {
+      cacheClient.disconnect();
+      cacheClient = null;
+    }
+  }, RECONNECT_DELAY_MS);
+}
 
 function getCacheClient(): Redis | null {
   if (cacheConnectionFailed) return null;
@@ -21,17 +37,26 @@ function getCacheClient(): Redis | null {
     });
 
     cacheClient.on("error", (error) => {
-      log.warn("Redis cache connection error", {
+      log.warn("Redis cache connection error, scheduling reconnect", {
         error: error.message,
       });
       cacheConnectionFailed = true;
       cacheClient?.disconnect();
       cacheClient = null;
+      scheduleReconnect();
+    });
+
+    cacheClient.on("ready", () => {
+      if (cacheConnectionFailed) {
+        log.info("Redis cache connection restored");
+        cacheConnectionFailed = false;
+      }
     });
 
     return cacheClient;
   } catch {
     cacheConnectionFailed = true;
+    scheduleReconnect();
     return null;
   }
 }

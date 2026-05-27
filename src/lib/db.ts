@@ -73,12 +73,6 @@ const globalForPrisma = globalThis as unknown as {
 // Connection pool configuration for production performance
 const prismaOptions: ConstructorParameters<typeof PrismaClient>[0] = {
   log: process.env.NODE_ENV === 'development' ? ['query'] : ['error'],
-  datasources: process.env.DATABASE_PROVIDER === 'postgresql' ? [
-    {
-      url: process.env.DATABASE_URL,
-      // Connection pool settings for PostgreSQL
-    },
-  ] : undefined,
 }
 
 export const db =

@@ -14,6 +14,7 @@ interface SystemSettings {
   registrationDisabled: boolean;
   moderationEnabled: boolean;
   emailNotificationsEnabled: boolean;
+  twoFARequired: boolean;
 }
 
 export function AdminSettings(_props: AdminTabProps) {
@@ -23,6 +24,7 @@ export function AdminSettings(_props: AdminTabProps) {
     registrationDisabled: false,
     moderationEnabled: false,
     emailNotificationsEnabled: false,
+    twoFARequired: false,
   });
   const [loading, setLoading] = useState(false);
 
@@ -100,12 +102,12 @@ export function AdminSettings(_props: AdminTabProps) {
                   <Button
                     size="sm"
                     disabled={loading}
-                    className={settings[item.key]
+                    className={settings[item.key as keyof SystemSettings]
                       ? "bg-green-600 hover:bg-green-700 text-white"
                       : "bg-blue-700 hover:bg-blue-800 text-white"}
-                    onClick={() => toggleSetting(item.key)}
+                    onClick={() => toggleSetting(item.key as keyof SystemSettings)}
                   >
-                    {settings[item.key] ? "Disable" : "Enable"}
+                    {settings[item.key as keyof SystemSettings] ? "Disable" : "Enable"}
                   </Button>
                 )}
               </div>

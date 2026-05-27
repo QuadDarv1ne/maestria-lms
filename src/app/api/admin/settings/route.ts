@@ -38,14 +38,15 @@ function writeSettings(settings: Record<string, unknown>) {
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || session.user.role !== "admin") {
+    const userRole = (session?.user as { role?: string })?.role;
+    if (!session?.user || userRole !== "admin") {
       return apiError("Unauthorized", 401);
     }
 
     const settings = readSettings();
     return NextResponse.json(settings);
   } catch (error) {
-    return handleApiError(error, "GET /api/admin/settings");
+    return handleApiError(error, { route: "GET /api/admin/settings" });
   }
 }
 
@@ -59,7 +60,8 @@ const settingsSchema = z.object({
 export async function PATCH(request: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || session.user.role !== "admin") {
+    const userRole = (session?.user as { role?: string })?.role;
+    if (!session?.user || userRole !== "admin") {
       return apiError("Unauthorized", 401);
     }
 
@@ -75,6 +77,6 @@ export async function PATCH(request: Request) {
     if (error instanceof z.ZodError) {
       return apiError("Invalid settings data", 400);
     }
-    return handleApiError(error, "PATCH /api/admin/settings");
+    return handleApiError(error, { route: "PATCH /api/admin/settings" });
   }
 }

@@ -38,9 +38,14 @@ export async function middleware(request: NextRequest) {
 
   const response = NextResponse.next();
 
-  // CSRF protection for state-changing requests (exclude webhook/API routes)
-  // API routes use NextAuth session-based auth (bearer token) which is not vulnerable to CSRF
-  const csrfExcludedPaths = ["/api/", "/api/webhook", "/api/auth/callback", "/api/auth/[...nextauth]"];
+  // CSRF protection for state-changing requests.
+  // Only exclude external webhook endpoints (payment providers, etc.) and NextAuth auth callbacks.
+  // All internal API routes use cookie-based JWT sessions and MUST be CSRF-protected.
+  const csrfExcludedPaths = [
+    "/api/payments/webhook",       // External payment provider webhooks (HMAC verified)
+    "/api/auth/callback",          // NextAuth OAuth callbacks
+    "/api/auth/[...nextauth]",     // NextAuth core endpoints
+  ];
   const isCsrfExcluded = csrfExcludedPaths.some((path) => pathname.startsWith(path));
 
   if (!isCsrfExcluded) {

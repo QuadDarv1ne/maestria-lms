@@ -199,7 +199,7 @@ export function ProfilePage() {
                   return { id: enrollment.course.id, modules: course.modules || [] };
                 })
                 .catch((err) => {
-                  console.error(`Failed to fetch course ${enrollment.course.id}:`, err);
+                  log.error("Failed to fetch course for profile", { courseId: enrollment.course.id, error: err });
                   return { id: enrollment.course.id, modules: [] };
                 })
             );

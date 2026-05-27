@@ -99,7 +99,7 @@ export function AdminFeatureFlags({ locale }: { locale: string }) {
                 {flag.enabled !== flag.defaultValue && (
                   <Badge variant="secondary" className="text-xs">overridden</Badge>
                 )}
-                {flag.rolloutPercentage !== null && flag.rolloutPercentage < 100 && (
+                {flag.rolloutPercentage != null && flag.rolloutPercentage < 100 && (
                   <Badge variant="outline" className="text-xs">{flag.rolloutPercentage}% rollout</Badge>
                 )}
               </div>

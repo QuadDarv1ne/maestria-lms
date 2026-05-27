@@ -37,8 +37,14 @@ export async function GET(request: NextRequest) {
       sortBy: searchParams.get("sortBy"),
     });
 
+    // Define response type for cache
+    type CoursesResponse = {
+      courses: unknown[];
+      pagination: { page: number; limit: number; total: number; totalPages: number };
+    };
+
     // Try to get from cache
-    const cached = await cacheGet<typeof cachedResponse>(cacheKey);
+    const cached = await cacheGet<CoursesResponse>(cacheKey);
     if (cached) {
       return NextResponse.json(cached, {
         status: 200,

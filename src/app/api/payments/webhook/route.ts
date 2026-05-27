@@ -184,7 +184,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Payment not found" }, { status: 404 });
     }
 
-    await completePayment(payment.id, transactionId || payment.transactionId);
+    const finalTransactionId = transactionId ?? payment.transactionId;
+    if (!finalTransactionId) {
+      log.error("Webhook: no transaction ID available", { paymentId: payment.id });
+      return NextResponse.json({ error: "Missing transaction ID" }, { status: 400 });
+    }
+    await completePayment(payment.id, finalTransactionId);
 
     log.info("Webhook: payment completed", {
       paymentId: payment.id,

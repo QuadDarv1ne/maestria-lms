@@ -21,7 +21,8 @@ function shouldSkip(pathname: string): boolean {
  */
 export function requestLoggerMiddleware(request: NextRequest) {
   const start = Date.now();
-  const { pathname, method } = request.nextUrl;
+  const { pathname } = request.nextUrl;
+  const { method } = request;
 
   if (shouldSkip(pathname)) {
     return NextResponse.next();

@@ -22,6 +22,22 @@ const defaultConfig: RateLimitConfig = {
 // Redis client with lazy initialization
 let redisClient: Redis | null = null;
 let redisConnectionFailed = false;
+let reconnectTimeout: NodeJS.Timeout | null = null;
+const RECONNECT_DELAY_MS = 30_000; // 30 seconds between reconnect attempts
+
+function scheduleReconnect(): void {
+  if (reconnectTimeout) return;
+  reconnectTimeout = setTimeout(() => {
+    reconnectTimeout = null;
+    redisConnectionFailed = false;
+    log.info("Attempting to reconnect Redis rate limiter");
+    // Force recreation on next getRedisClient call
+    if (redisClient) {
+      redisClient.disconnect();
+      redisClient = null;
+    }
+  }, RECONNECT_DELAY_MS);
+}
 
 function getRedisClient(): Redis | null {
   if (redisConnectionFailed) return null;
@@ -38,17 +54,26 @@ function getRedisClient(): Redis | null {
     });
 
     redisClient.on("error", (error) => {
-      log.warn("Redis rate limiter connection error, falling back to in-memory", {
+      log.warn("Redis rate limiter connection error, scheduling reconnect", {
         error: error.message,
       });
       redisConnectionFailed = true;
       redisClient?.disconnect();
       redisClient = null;
+      scheduleReconnect();
+    });
+
+    redisClient.on("ready", () => {
+      if (redisConnectionFailed) {
+        log.info("Redis rate limiter connection restored");
+        redisConnectionFailed = false;
+      }
     });
 
     return redisClient;
   } catch {
     redisConnectionFailed = true;
+    scheduleReconnect();
     return null;
   }
 }
