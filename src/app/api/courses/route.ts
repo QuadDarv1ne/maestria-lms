@@ -3,14 +3,13 @@ import { db, Prisma } from "@/lib/db";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { parsePagination } from "@/lib/utils";
+import { cacheGet, cacheSet, generateCacheKey, createCacheHeaders } from "@/lib/cache";
 
 export const runtime = "nodejs";
 
 const checkRateLimit = rateLimit("courses", RATE_LIMITS.default);
 
 // GET: Список всех опубликованных курсов с фильтрами
-export const revalidate = 60; // Cache for 60 seconds
-
 export async function GET(request: NextRequest) {
   const blocked = checkRateLimit(request);
   if (blocked) return blocked;
@@ -26,6 +25,28 @@ export async function GET(request: NextRequest) {
         select: { id: true, title: true, slug: true },
       });
       return NextResponse.json({ courses }, { status: 200 });
+    }
+
+    // Generate cache key from query params
+    const cacheKey = generateCacheKey("courses:list", {
+      category: searchParams.get("category"),
+      search: searchParams.get("search"),
+      level: searchParams.get("level"),
+      page: searchParams.get("page"),
+      limit: searchParams.get("limit"),
+      sortBy: searchParams.get("sortBy"),
+    });
+
+    // Try to get from cache
+    const cached = await cacheGet<typeof cachedResponse>(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached, {
+        status: 200,
+        headers: {
+          ...createCacheHeaders(300, true, 600),
+          "X-Cache": "HIT",
+        },
+      });
     }
 
     const category = searchParams.get("category");
@@ -159,7 +180,7 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    return NextResponse.json({
+    const responseData = {
       courses: coursesWithStats,
       pagination: {
         page,
@@ -167,7 +188,21 @@ export async function GET(request: NextRequest) {
         total,
         totalPages: Math.ceil(total / limit),
       },
-    }, { status: 200 });
+    };
+
+    // Cache the response for 5 minutes
+    await cacheSet(cacheKey, responseData, {
+      ttl: 5 * 60 * 1000,
+      tags: ["courses", "catalog"],
+    });
+
+    return NextResponse.json(responseData, {
+      status: 200,
+      headers: {
+        ...createCacheHeaders(300, true, 600),
+        "X-Cache": "MISS",
+      },
+    });
   } catch (error: unknown) {
     return handleApiError(error, { route: "courses" });
   }

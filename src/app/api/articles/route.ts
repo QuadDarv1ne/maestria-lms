@@ -6,6 +6,7 @@ import { parsePagination } from "@/lib/utils";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { sanitizeContent } from "@/lib/sanitize";
+import { cacheGet, cacheSet, cacheInvalidateByTag, generateCacheKey, createCacheHeaders } from "@/lib/cache";
 
 export const runtime = "nodejs";
 
@@ -22,6 +23,29 @@ export async function GET(request: NextRequest) {
     const featured = searchParams.get("featured");
     const { page, limit, skip } = parsePagination(searchParams, { defaultLimit: 12, maxLimit: 100 });
     const sortBy = searchParams.get("sortBy") || "new";
+
+    // Generate cache key
+    const cacheKey = generateCacheKey("articles:list", {
+      category,
+      search,
+      tag,
+      featured,
+      page,
+      limit,
+      sortBy,
+    });
+
+    // Try cache
+    const cached = await cacheGet<typeof cachedResponse>(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached, {
+        status: 200,
+        headers: {
+          ...createCacheHeaders(300, true, 600),
+          "X-Cache": "HIT",
+        },
+      });
+    }
 
     const where: Prisma.ArticleWhereInput = {
       isPublished: true,
@@ -78,7 +102,7 @@ export async function GET(request: NextRequest) {
       db.article.count({ where }),
     ]);
 
-    return NextResponse.json({
+    const responseData = {
       articles,
       pagination: {
         page,
@@ -86,7 +110,21 @@ export async function GET(request: NextRequest) {
         total,
         totalPages: Math.ceil(total / limit),
       },
-    }, { status: 200 });
+    };
+
+    // Cache for 5 minutes
+    await cacheSet(cacheKey, responseData, {
+      ttl: 5 * 60 * 1000,
+      tags: ["articles", "blog"],
+    });
+
+    return NextResponse.json(responseData, {
+      status: 200,
+      headers: {
+        ...createCacheHeaders(300, true, 600),
+        "X-Cache": "MISS",
+      },
+    });
   } catch (error: unknown) {
     return handleApiError(error, { route: "articles" });
   }
@@ -132,6 +170,10 @@ export async function POST(request: NextRequest) {
         authorId: user.id,
       },
     });
+
+    // Invalidate article caches
+    await cacheInvalidateByTag("articles");
+    await cacheInvalidateByTag("blog");
 
     return NextResponse.json(article, { status: 201 });
   } catch (error: unknown) {
