@@ -70,12 +70,79 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
+// Connection pool configuration for production performance
+const prismaOptions: ConstructorParameters<typeof PrismaClient>[0] = {
+  log: process.env.NODE_ENV === 'development' ? ['query'] : ['error'],
+  datasources: process.env.DATABASE_PROVIDER === 'postgresql' ? [
+    {
+      url: process.env.DATABASE_URL,
+      // Connection pool settings for PostgreSQL
+    },
+  ] : undefined,
+}
+
 export const db =
   globalForPrisma.prisma ??
-  new PrismaClient({
-    log: process.env.NODE_ENV === 'development' ? ['query'] : ['error'],
-  })
+  new PrismaClient(prismaOptions)
 
 export { Prisma }
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
+
+/**
+ * Execute a database query with automatic retry logic.
+ * Retries transient failures (connection timeouts, deadlocks).
+ */
+export async function queryWithRetry<T>(
+  queryFn: () => Promise<T>,
+  options: { maxRetries?: number; delayMs?: number } = {},
+): Promise<T> {
+  const { maxRetries = 3, delayMs = 100 } = options;
+
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await queryFn();
+    } catch (error: unknown) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+
+      // Only retry on transient errors
+      const isTransient =
+        lastError.message.includes('timeout') ||
+        lastError.message.includes('deadlock') ||
+        lastError.message.includes('connection') ||
+        lastError.message.includes('ECONNRESET');
+
+      if (!isTransient || attempt === maxRetries - 1) {
+        throw lastError;
+      }
+
+      // Exponential backoff
+      const backoff = delayMs * Math.pow(2, attempt);
+      await new Promise((resolve) => setTimeout(resolve, backoff));
+    }
+  }
+
+  throw lastError ?? new Error('Query failed after retries');
+}
+
+/**
+ * Batch operation helper: processes items in chunks to avoid memory issues.
+ */
+export async function batchOperation<T, R>(
+  items: T[],
+  operation: (batch: T[]) => Promise<R[]>,
+  options: { batchSize?: number } = {},
+): Promise<R[]> {
+  const { batchSize = 100 } = options;
+  const results: R[] = [];
+
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+    const batchResults = await operation(batch);
+    results.push(...batchResults);
+  }
+
+  return results;
+}

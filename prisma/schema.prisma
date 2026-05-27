@@ -140,6 +140,11 @@ model Course {
   @@index([isFeatured, createdAt])
   @@index([categoryId])
   @@index([teacherId])
+  // Composite indexes for common query patterns
+  @@index([isPublished, level, createdAt])
+  @@index([isPublished, categoryId, createdAt])
+  @@index([isPublished, isFeatured, rating])
+  @@index([isPublished, price])
 }
 
 model Module {
@@ -239,6 +244,7 @@ model Enrollment {
 
   @@index([courseId])
   @@index([status])
+  @@index([userId, status])
 }
 
 model Progress {
@@ -359,4 +365,7 @@ model Article {
   @@index([authorId])
   @@index([isFeatured, createdAt])
   @@index([slug])
+  // Composite indexes for common query patterns
+  @@index([isPublished, category, createdAt])
+  @@index([isPublished, isFeatured, views])
 }
