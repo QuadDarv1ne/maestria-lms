@@ -79,6 +79,36 @@ export async function POST(request: NextRequest) {
       link: "catalog",
     }).catch((err) => log.error("Failed to send welcome notification", { error: err }));
 
+    // Send email verification
+    const { sendEmail } = await import("@/lib/email");
+    const crypto = await import("crypto");
+    const token = crypto.randomBytes(32).toString("hex");
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await db.verificationToken.create({
+      data: {
+        identifier: `email-verify:${user.email}`,
+        token,
+        expires,
+      },
+    });
+
+    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${token}`;
+
+    sendEmail({
+      to: user.email,
+      subject: "Подтверждение email — Maestria LMS",
+      html: `
+        <h2>Подтвердите ваш email</h2>
+        <p>Здравствуйте, ${user.name || "пользователь"}!</p>
+        <p>Для подтверждения email перейдите по ссылке:</p>
+        <p><a href="${verifyUrl}">Подтвердить email</a></p>
+        <p>Ссылка действительна 24 часа.</p>
+      `,
+      text: `Здравствуйте! Для подтверждения email перейдите по ссылке: ${verifyUrl}`,
+    }).catch((err) => log.error("Failed to send verification email", { error: err }));
+
     return NextResponse.json(
       { message: "Регистрация успешна", user },
       { status: 201 }

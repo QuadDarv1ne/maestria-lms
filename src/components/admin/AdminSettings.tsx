@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { t } from "@/lib/i18n";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,8 +8,64 @@ import {
 import { toast } from "sonner";
 import type { AdminTabProps } from "./types";
 
+interface SystemSettings {
+  maintenanceMode: boolean;
+  registrationDisabled: boolean;
+  moderationEnabled: boolean;
+  emailNotificationsEnabled: boolean;
+}
+
 export function AdminSettings(_props: AdminTabProps) {
   const locale = _props.locale;
+  const [settings, setSettings] = useState<SystemSettings>({
+    maintenanceMode: false,
+    registrationDisabled: false,
+    moderationEnabled: false,
+    emailNotificationsEnabled: false,
+  });
+  const [loading, setLoading] = useState(false);
+
+  async function toggleSetting(key: keyof SystemSettings) {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const newValue = !settings[key];
+      const res = await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [key]: newValue }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Unknown error" }));
+        toast.error(err.error || "Failed to update setting");
+        return;
+      }
+      const updated = await res.json();
+      setSettings(updated);
+      toast.success(`${key} set to ${updated[key] ? "enabled" : "disabled"}`);
+    } catch {
+      toast.error("Network error while updating settings");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function clearCache() {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/cache/clear", { method: "POST" });
+      if (!res.ok) {
+        toast.error("Failed to clear cache");
+        return;
+      }
+      toast.success("Cache cleared successfully");
+    } catch {
+      toast.error("Network error while clearing cache");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -19,25 +76,37 @@ export function AdminSettings(_props: AdminTabProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             {[
-              { title: t("adminPage.settingMaintenance", locale), desc: t("adminPage.settingMaintenanceDesc", locale), action: t("adminPage.settingMaintenanceAction", locale), color: "default" },
-              { title: t("adminPage.settingRegistration", locale), desc: t("adminPage.settingRegistrationDesc", locale), action: t("adminPage.settingRegistrationAction", locale), color: "green" },
-              { title: t("adminPage.settingModeration", locale), desc: t("adminPage.settingModerationDesc", locale), action: t("adminPage.settingModerationAction", locale), color: "blue" },
-              { title: t("adminPage.settingEmailNotify", locale), desc: t("adminPage.settingEmailNotifyDesc", locale), action: t("adminPage.settingEmailNotifyAction", locale), color: "blue" },
-              { title: t("adminPage.setting2FA", locale), desc: t("adminPage.setting2FADesc", locale), action: t("adminPage.setting2FAAction", locale), color: "green" },
+              { key: "maintenanceMode" as const, title: t("adminPage.settingMaintenance", locale), desc: t("adminPage.settingMaintenanceDesc", locale) },
+              { key: "registrationDisabled" as const, title: t("adminPage.settingRegistration", locale), desc: t("adminPage.settingRegistrationDesc", locale) },
+              { key: "moderationEnabled" as const, title: t("adminPage.settingModeration", locale), desc: t("adminPage.settingModerationDesc", locale) },
+              { key: "emailNotificationsEnabled" as const, title: t("adminPage.settingEmailNotify", locale), desc: t("adminPage.settingEmailNotifyDesc", locale) },
+              { key: "twoFARequired" as const, title: t("adminPage.setting2FA", locale), desc: t("adminPage.setting2FADesc", locale), noSetting: true },
             ].map((item, i) => (
               <div key={i} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                 <div>
                   <p className="text-sm font-medium">{item.title}</p>
                   <p className="text-xs text-muted-foreground">{item.desc}</p>
                 </div>
-                <Button
-                  size="sm"
-                  variant={item.color === "default" ? "outline" : undefined}
-                  className={item.color === "green" ? "bg-green-600 hover:bg-green-700 text-white" : item.color === "blue" ? "bg-blue-700 hover:bg-blue-800 text-white" : undefined}
-                  onClick={() => toast.success(`${item.title}: ${item.action}`)}
-                >
-                  {item.action}
-                </Button>
+                {"noSetting" in item && item.noSetting ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => toast.info("2FA is available per-user in the Users tab")}
+                  >
+                    {t("adminPage.setting2FAAction", locale)}
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    disabled={loading}
+                    className={settings[item.key]
+                      ? "bg-green-600 hover:bg-green-700 text-white"
+                      : "bg-blue-700 hover:bg-blue-800 text-white"}
+                    onClick={() => toggleSetting(item.key)}
+                  >
+                    {settings[item.key] ? "Disable" : "Enable"}
+                  </Button>
+                )}
               </div>
             ))}
           </CardContent>
@@ -85,7 +154,7 @@ export function AdminSettings(_props: AdminTabProps) {
               <p className="text-sm font-medium">{t("adminPage.settingClearCache", locale)}</p>
               <p className="text-xs text-muted-foreground">{t("adminPage.settingClearCacheDesc", locale)}</p>
             </div>
-            <Button size="sm" variant="outline" className="border-red-300 text-red-600 hover:bg-red-50" onClick={() => toast.info(t("adminPage.cacheCleared", locale))}>
+            <Button size="sm" variant="outline" className="border-red-300 text-red-600 hover:bg-red-50" disabled={loading} onClick={clearCache}>
               {t("adminPage.settingClearCacheBtn", locale)}
             </Button>
           </div>
@@ -94,7 +163,7 @@ export function AdminSettings(_props: AdminTabProps) {
               <p className="text-sm font-medium">{t("adminPage.settingResetData", locale)}</p>
               <p className="text-xs text-muted-foreground">{t("adminPage.settingResetDataDesc", locale)}</p>
             </div>
-            <Button size="sm" variant="outline" className="border-red-300 text-red-600 hover:bg-red-50" onClick={() => toast.info(t("adminPage.testDataReset", locale))}>
+            <Button size="sm" variant="outline" className="border-red-300 text-red-600 hover:bg-red-50" disabled onClick={undefined}>
               {t("adminPage.settingResetDataBtn", locale)}
             </Button>
           </div>
