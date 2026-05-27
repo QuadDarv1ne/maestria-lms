@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
+import { cacheGet, cacheSet, cacheInvalidateByTag, generateCacheKey, createCacheHeaders } from "@/lib/cache";
 
 export const runtime = "nodejs";
 
@@ -19,6 +20,25 @@ export async function GET(
   if (blocked) return blocked;
   try {
     const { id } = await params;
+
+    // Check if user is authenticated - cache only for anonymous users
+    const session = await getAuthSession();
+
+    // For anonymous users, try to get from cache
+    if (!session?.user?.id) {
+      const cacheKey = generateCacheKey("course:detail", { id });
+      const cached = await cacheGet<CourseDetailResponse>(cacheKey);
+
+      if (cached) {
+        return NextResponse.json(cached, {
+          status: 200,
+          headers: {
+            ...createCacheHeaders(300, true, 600),
+            "X-Cache": "HIT",
+          },
+        });
+      }
+    }
 
     // Try to find by id first, then by slug
     const course = await db.course.findFirst({
@@ -89,7 +109,6 @@ export async function GET(
     }
 
     // Проверяем доступ к неопубликованным курсам
-    const session = await getAuthSession();
     if (!course.isPublished) {
       if (!session?.user?.id) {
         return NextResponse.json(
@@ -177,7 +196,7 @@ export async function GET(
       })),
     }));
 
-    return NextResponse.json({
+    const responseData = {
       course: {
         id: course.id,
         title: course.title,
@@ -211,8 +230,103 @@ export async function GET(
         enrollmentStatus: userEnrollment?.status || null,
         enrollmentProgress: userEnrollment?.progress || 0,
       },
-    }, { status: 200 });
+    };
+
+    // Cache for anonymous users
+    if (!session?.user?.id) {
+      const cacheKey = generateCacheKey("course:detail", { id });
+      await cacheSet(cacheKey, responseData, {
+        ttl: 5 * 60 * 1000, // 5 minutes
+        tags: ["course", `course:${course.id}`, `course:${course.slug}`],
+      });
+
+      return NextResponse.json(responseData, {
+        status: 200,
+        headers: {
+          ...createCacheHeaders(300, true, 600),
+          "X-Cache": "MISS",
+        },
+      });
+    }
+
+    // For authenticated users, return without long-term caching
+    return NextResponse.json(responseData, {
+      status: 200,
+      headers: createCacheHeaders(60, false),
+    });
   } catch (error: unknown) {
     return handleApiError(error, { route: "courses/[id]" });
   }
 }
+
+// Define the cached response type
+type CourseDetailResponse = {
+  course: {
+    id: string;
+    title: string;
+    slug: string;
+    description: string | null;
+    shortDesc: string | null;
+    image: string | null;
+    price: number;
+    oldPrice: number | null;
+    currency: string;
+    level: string;
+    duration: string | null;
+    language: string;
+    isPublished: boolean;
+    isFeatured: boolean;
+    hasCertificate: boolean;
+    rating: number;
+    reviewCount: number;
+    studentCount: number;
+    tags: string[];
+    requirements: string[] | null;
+    whatYouLearn: string[] | null;
+    teacher: {
+      id: string;
+      name: string | null;
+      image: string | null;
+      bio: string | null;
+    };
+    category: {
+      id: string;
+      name: string;
+      slug: string;
+      icon: string | null;
+      color: string | null;
+    };
+    modules: Array<{
+      id: string;
+      title: string;
+      description: string | null;
+      sortOrder: number;
+      lessons: Array<{
+        id: string;
+        title: string;
+        type: string;
+        duration: number | null;
+        sortOrder: number;
+        isFree: boolean;
+        completed: boolean;
+      }>;
+    }>;
+    reviews: Array<{
+      id: string;
+      rating: number;
+      comment: string | null;
+      createdAt: Date;
+      user: {
+        id: string;
+        name: string | null;
+        image: string | null;
+      };
+    }>;
+    totalLessons: number;
+    totalDuration: number;
+    freeLessons: number;
+    isEnrolled: boolean;
+    enrollmentStatus: string | null;
+    enrollmentProgress: number;
+  };
+};

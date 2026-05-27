@@ -7,6 +7,7 @@ import { handleApiError } from "@/lib/api-errors";
 import { parsePagination } from "@/lib/utils";
 import { createCourseSchema, type ModuleInput, validatePrices } from "@/lib/course-validation";
 import { sanitizeContent } from "@/lib/sanitize";
+import { cacheInvalidateByTag } from "@/lib/cache";
 
 export const runtime = "nodejs";
 
@@ -240,6 +241,8 @@ export async function PUT(request: NextRequest) {
   const blocked = checkRateLimit(request);
   if (blocked) return blocked;
 
+  let courseId: string | null = null;
+
   try {
     const session = await getAuthSession();
     if (!session?.user) {
@@ -258,7 +261,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const courseId = searchParams.get("id");
+    courseId = searchParams.get("id");
     if (!courseId) {
       return NextResponse.json(
         { error: "ID курса обязателен" },
@@ -543,6 +546,13 @@ export async function PUT(request: NextRequest) {
     );
   } catch (error: unknown) {
     return handleApiError(error, { route: "admin/courses PUT" });
+  } finally {
+    // Invalidate course cache after update
+    if (courseId) {
+      await cacheInvalidateByTag(`course:${courseId}`);
+      await cacheInvalidateByTag("courses");
+      await cacheInvalidateByTag("catalog");
+    }
   }
 }
 
@@ -599,6 +609,11 @@ export async function DELETE(request: NextRequest) {
     await db.course.delete({
       where: { id: courseId },
     });
+
+    // Invalidate course cache after deletion
+    await cacheInvalidateByTag(`course:${courseId}`);
+    await cacheInvalidateByTag("courses");
+    await cacheInvalidateByTag("catalog");
 
     return NextResponse.json(
       { message: "Курс удалён" },
