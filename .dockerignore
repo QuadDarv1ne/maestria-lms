@@ -38,6 +38,7 @@ Thumbs.db
 # Logs
 *.log
 server.log
+dev-server.log
 
 # Database
 *.db
@@ -52,6 +53,18 @@ docker-compose*.yml
 Dockerfile
 .dockerignore
 
-# Documentation
+# Documentation (keep .env.example)
 *.md
+!.env.example
 LICENSE
+
+# Scripts (keep generate-secret.js)
+/scripts
+!/scripts/generate-secret.js
+
+# Data
+/data
+/prisma-data
+
+# TS build
+tsconfig.tsbuildinfo

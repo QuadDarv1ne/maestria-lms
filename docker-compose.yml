@@ -11,21 +11,33 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
+      - DATABASE_PROVIDER=postgresql
       - DATABASE_URL=postgresql://maestria:${POSTGRES_PASSWORD:-maestria_secret}@db:5432/maestria_lms?schema=public
-      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:?NEXTAUTH_SECRET is required}
-      - EMAIL_SERVER=${EMAIL_SERVER:-}
-      - EMAIL_FROM=${EMAIL_FROM:-}
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
-      - AWS_REGION=${AWS_REGION:-}
-      - AWS_BUCKET=${AWS_BUCKET:-}
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - EMAIL_FROM=${EMAIL_FROM:-onboarding@resend.dev}
+      - PAYMENT_WEBHOOK_SECRET=${PAYMENT_WEBHOOK_SECRET:-}
+      - S3_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID:-}
+      - S3_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY:-}
+      - S3_ENDPOINT=${S3_ENDPOINT:-}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-}
+      - S3_REGION=${S3_REGION:-auto}
+      - REDIS_URL=${REDIS_URL:-}
     volumes:
       - uploads-data:/app/public/uploads
+      - db-data:/app/data
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - maestria-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   db:
     image: postgres:16-alpine
@@ -33,7 +45,7 @@ services:
     restart: unless-stopped
     environment:
       - POSTGRES_USER=maestria
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-maestria_secret}
       - POSTGRES_DB=maestria_lms
     volumes:
       - postgres-data:/var/lib/postgresql/data
@@ -47,9 +59,27 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: maestria-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - maestria-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
 volumes:
   postgres-data:
+  redis-data:
   uploads-data:
+  db-data:
 
 networks:
   maestria-network:
