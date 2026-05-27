@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { FEATURE_FLAGS, FeatureFlagKey } from "./feature-flags-config";
+import { log } from "./logger";
 
 /**
  * Feature Flags utility with layered evaluation:
@@ -60,7 +61,7 @@ export function isFeatureEnabled(key: FeatureFlagKey): boolean {
 
   const flagDef = FEATURE_FLAGS[key];
   if (!flagDef) {
-    console.warn(`Feature flag "${key}" not found in configuration`);
+    log.warn(`Feature flag "${key}" not found in configuration`);
     return false;
   }
 
@@ -119,7 +120,7 @@ export function getAllFeatureFlags(): Record<string, boolean> {
  */
 export function setFeatureFlag(key: FeatureFlagKey, value: boolean): void {
   if (!isClient()) {
-    console.warn("setFeatureFlag is client-side only");
+    log.warn("setFeatureFlag is client-side only");
     return;
   }
   localStorage.setItem(`feature-flag:${key}`, String(value));
