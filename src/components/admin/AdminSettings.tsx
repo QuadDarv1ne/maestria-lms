@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import type { AdminTabProps } from "./types";
+import { AdminFeatureFlags } from "./AdminFeatureFlags";
 
 interface SystemSettings {
   maintenanceMode: boolean;
@@ -169,6 +170,9 @@ export function AdminSettings(_props: AdminTabProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Feature Flags */}
+      <AdminFeatureFlags locale={locale} />
     </div>
   );
 }
