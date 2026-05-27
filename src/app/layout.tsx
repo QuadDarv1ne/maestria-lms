@@ -5,6 +5,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "@/components/Providers";
+import { SkipLink } from "@/components/SkipLink";
 import { log } from "@/lib/logger";
 import { env } from "@/lib/env";
 
@@ -210,8 +211,11 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
+        <SkipLink />
         <Providers>
-          {children}
+          <main id="main-content" role="main" tabIndex={-1}>
+            {children}
+          </main>
           <Toaster position="top-right" richColors />
         </Providers>
       </body>
