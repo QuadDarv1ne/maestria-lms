@@ -93,7 +93,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    await sendEmail({
+    // Send email in fire-and-forget mode so that delivery failures do not
+    // cause a 500 response (which would enable user enumeration).
+    sendEmail({
       to: email,
       subject: "Сброс пароля — Maestria LMS",
       html: `
@@ -105,6 +107,8 @@ export async function POST(request: NextRequest) {
         <p>Если вы не запрашивали сброс пароля, проигнорируйте это письмо.</p>
       `,
       text: `Перейдите по ссылке для сброса пароля: ${resetUrl}`,
+    }).catch((err: unknown) => {
+      log.error("Failed to send password reset email", { email, error: err });
     });
 
     return NextResponse.json(
