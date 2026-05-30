@@ -35,6 +35,11 @@ export function verifyWebhookSignature(opts: {
   const computedDigest = hmac.update(rawBody).digest("hex");
 
   // Constant-time comparison to prevent timing attacks
+  // Length check prevents timingSafeEqual from throwing RangeError
+  // on mismatched buffer sizes (which would leak server state via 500).
+  if (signatureValue.length !== computedDigest.length) {
+    return { valid: false, algorithm };
+  }
   const isValid = crypto.timingSafeEqual(
     Buffer.from(signatureValue),
     Buffer.from(computedDigest),
