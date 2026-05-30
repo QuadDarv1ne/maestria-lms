@@ -14,6 +14,9 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const adminError = requireAdmin(session);
+    if (adminError) return adminError;
+
     const flags = getAllFeatureFlags();
     const definitions = Object.entries(FEATURE_FLAGS).map(([key, def]) => ({
       key,
