@@ -24,7 +24,7 @@ export async function GET() {
     }));
 
     return NextResponse.json({ flags: definitions });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "admin/feature-flags" });
   }
 }
@@ -57,7 +57,7 @@ export async function PATCH(request: NextRequest) {
       enabled,
       note: "Server-side change requires restart. Client will use localStorage override.",
     });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "admin/feature-flags" });
   }
 }

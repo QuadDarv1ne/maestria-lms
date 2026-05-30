@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.redirect(new URL("/?email-verified=true", request.url));
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "auth/verify-email" });
   }
 }

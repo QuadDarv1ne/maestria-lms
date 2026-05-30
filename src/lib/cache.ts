@@ -83,7 +83,7 @@ export async function cacheGet<T>(key: string): Promise<T | null> {
         return JSON.parse(data) as T;
       }
       return null;
-    } catch (error) {
+    } catch (error: unknown) {
       log.warn("Redis cache get failed", {
         key,
         error: error instanceof Error ? error.message : String(error),
@@ -128,7 +128,7 @@ export async function cacheSet(
       }
 
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       log.warn("Redis cache set failed", {
         key,
         error: error instanceof Error ? error.message : String(error),
@@ -178,7 +178,7 @@ export async function cacheInvalidateByTag(tag: string): Promise<boolean> {
         await pipeline.exec();
       }
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       log.warn("Redis cache invalidate by tag failed", {
         tag,
         error: error instanceof Error ? error.message : String(error),

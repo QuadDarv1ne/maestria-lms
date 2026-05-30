@@ -45,7 +45,7 @@ export async function GET() {
 
     const settings = readSettings();
     return NextResponse.json(settings);
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "GET /api/admin/settings" });
   }
 }
@@ -73,7 +73,7 @@ export async function PATCH(request: Request) {
     writeSettings(updated);
 
     return NextResponse.json(updated);
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return apiError("Invalid settings data", 400);
     }

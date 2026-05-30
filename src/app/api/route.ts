@@ -36,7 +36,7 @@ async function checkDatabase(): Promise<{ status: string; latencyMs: number }> {
   try {
     await db.$queryRaw`SELECT 1`;
     return { status: "connected", latencyMs: Date.now() - start };
-  } catch (error) {
+  } catch (error: unknown) {
     log.warn("Health check: database unreachable", { error: error instanceof Error ? error.message : String(error) });
     return { status: "unreachable", latencyMs: Date.now() - start };
   }

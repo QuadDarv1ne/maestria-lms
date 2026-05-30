@@ -57,7 +57,7 @@ export async function POST(_request: NextRequest) {
     });
 
     return NextResponse.json({ message: "Verification email sent" });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "auth/send-verification" });
   }
 }

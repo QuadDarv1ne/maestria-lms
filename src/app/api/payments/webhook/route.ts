@@ -77,8 +77,6 @@ async function completePayment(paymentId: string, transactionId: string) {
       },
       update: {
         status: "active",
-        progress: 0,
-        enrolledAt: new Date(),
       },
     });
 

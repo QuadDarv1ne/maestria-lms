@@ -33,7 +33,7 @@ export async function POST() {
       message: "Cache cleared successfully",
       cleared,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "POST /api/admin/cache/clear" });
   }
 }
