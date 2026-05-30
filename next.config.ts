@@ -13,6 +13,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "**.trbcdn.net",
       },
+      {
+        protocol: "https",
+        hostname: "freeimage.host",
+      },
     ],
   },
 };
