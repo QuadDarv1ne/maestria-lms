@@ -2,6 +2,7 @@
 
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import Image from "next/image";
 import { Phone, Mail, Globe, ExternalLink } from "lucide-react";
 
 export function PromoBanner() {
@@ -19,10 +20,12 @@ export function PromoBanner() {
         {/* Left side - Image and title */}
         <div className="flex flex-col justify-center">
           <div className="relative aspect-video rounded-xl overflow-hidden mb-4 md:mb-0 bg-blue-800/30">
-            <img
+            <Image
               src="/banners/vst-plugins.jpg"
               alt={t("banner.vstTitle", locale)}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 50vw"
             />
           </div>
           <h2 className="text-xl md:text-2xl font-bold mb-2">

@@ -180,6 +180,7 @@ export function ArticlePage({ slug }: ArticlePageProps) {
         {/* Cover Image */}
         {article.image && (
           <div className="mb-8 rounded-xl overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={article.image}
               alt={article.title}
@@ -208,6 +209,7 @@ export function ArticlePage({ slug }: ArticlePageProps) {
         <div className="mt-8 p-6 rounded-lg bg-muted">
           <div className="flex items-start gap-4">
             {article.author.image && (
+              /* eslint-disable-next-line @next/next/no-img-element */
               <img
                 src={article.author.image}
                 alt={article.author.name || ""}
