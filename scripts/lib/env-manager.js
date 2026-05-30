@@ -381,7 +381,7 @@ function detectPackageManager(root) {
         process.platform === "win32" ? `where ${cmd}` : `command -v ${cmd}`;
       execSync(shellCmd, { stdio: ["ignore", "pipe", "ignore"] });
       available.push(cmd);
-    } catch {}
+    } catch { /* package manager not found */ }
   }
 
   if (available.length === 0) {

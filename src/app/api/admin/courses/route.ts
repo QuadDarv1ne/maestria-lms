@@ -488,7 +488,7 @@ export async function PUT(request: NextRequest) {
           } else {
             const newModule = await tx.module.create({
               data: {
-                courseId: courseId!,
+                courseId: courseId as string,
                 title: mod.title || `Модуль ${mIdx + 1}`,
                 description: mod.description || null,
                 sortOrder: mod.sortOrder ?? mIdx + 1,

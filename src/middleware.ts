@@ -22,7 +22,7 @@ export async function middleware(request: NextRequest) {
     const [_, allowedRoles] = matchedRoute as [string, readonly Role[]];
     const token = await getToken({
       req: request,
-      secret: process.env.NEXTAUTH_SECRET,
+      secret: env.nextAuthSecret,
     });
 
     if (!token) {

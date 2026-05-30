@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { Prisma } from "@prisma/client";
-import { getAuthSession, requireAdmin } from "@/lib/auth";
+import { getAuthSession, requireAdmin, type ExtendedSession } from "@/lib/auth";
 import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
@@ -92,8 +92,7 @@ export async function PUT(request: NextRequest) {
     const adminError = requireAdmin(session);
     if (adminError) return adminError as NextResponse;
 
-    // Session is guaranteed to be non-null after requireAdmin check
-    const authenticatedSession = session!;
+    const authenticatedSession = session as ExtendedSession;
 
     const body = await request.json();
     const validation = updateUserSchema.safeParse(body);

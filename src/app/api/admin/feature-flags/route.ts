@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession, requireAdmin } from "@/lib/auth";
-import { FEATURE_FLAGS, FeatureFlagKey } from "@/lib/feature-flags-config";
-import { getAllFeatureFlags, setFeatureFlag } from "@/lib/feature-flags";
+import { FEATURE_FLAGS } from "@/lib/feature-flags-config";
+import { getAllFeatureFlags } from "@/lib/feature-flags";
 import { handleApiError } from "@/lib/api-errors";
 
 export const runtime = "nodejs";
