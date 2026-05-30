@@ -51,7 +51,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         const user = await db.user.findUnique({
-          where: { email: credentials.email },
+          where: { email: credentials.email.toLowerCase() },
         });
 
         // Check isActive BEFORE password verification to prevent user enumeration
@@ -121,7 +121,9 @@ export const authOptions: NextAuthOptions = {
   // useSecureCookies ensures Secure flag in production; SameSite=Strict prevents CSRF
   cookies: {
     sessionToken: {
-      name: "__Secure-next-auth.session-token",
+      name: env.isProduction
+        ? "__Secure-next-auth.session-token"
+        : "next-auth.session-token",
       options: {
         httpOnly: true,
         sameSite: "strict",
@@ -173,9 +175,9 @@ export function requireAuth(session: ExtendedSession | null) {
  */
 export function requireAdmin(session: ExtendedSession | null) {
   if (!session?.user || session.user.role !== "admin") {
-    return new Response(
-      JSON.stringify({ error: "Доступ запрещён. Требуются права администратора" }),
-      { status: 403, headers: { "Content-Type": "application/json" } }
+    return NextResponse.json(
+      { error: "Доступ запрещён. Требуются права администратора" },
+      { status: 403 }
     );
   }
   return null;

@@ -37,10 +37,11 @@ export async function POST(request: NextRequest) {
     }
 
     const { email, password, name } = validation.data;
+    const normalizedEmail = email.toLowerCase();
 
-    // Проверяем, существует ли пользователь
+    // Проверяем, существует ли пользователь (case-insensitive email check)
     const existingUser = await db.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (existingUser) {
@@ -54,15 +55,14 @@ export async function POST(request: NextRequest) {
     const passwordHash = await hashPassword(password);
 
     // Generate verification token
-    const crypto = await import("crypto");
-    const token = crypto.randomBytes(32).toString("hex");
+    const token = crypto.getRandomValues(new Uint8Array(32)).reduce((s, b) => s + b.toString(16).padStart(2, "0"), "");
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     // Create user and verification token atomically
     const user = await db.$transaction(async (tx) => {
       const createdUser = await tx.user.create({
         data: {
-          email,
+          email: normalizedEmail,
           name,
           passwordHash,
           role: "student",

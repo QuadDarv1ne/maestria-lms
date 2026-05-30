@@ -44,10 +44,12 @@ export async function middleware(request: NextRequest) {
   // All internal API routes use cookie-based JWT sessions and MUST be CSRF-protected.
   const csrfExcludedPaths = [
     "/api/payments/webhook",       // External payment provider webhooks (HMAC verified)
-    "/api/auth/callback",          // NextAuth OAuth callbacks
-    "/api/auth/[...nextauth]",     // NextAuth core endpoints
+    "/api/auth/callback/",         // NextAuth OAuth callbacks (trailing slash for prefix match)
+    "/api/auth/session",           // NextAuth session endpoint (CSRF handled internally)
+    "/api/auth/csrf",              // NextAuth CSRF token endpoint
+    "/api/auth/signout",           // NextAuth signout endpoint (CSRF handled internally)
   ];
-  const isCsrfExcluded = csrfExcludedPaths.some((path) => pathname.startsWith(path));
+  const isCsrfExcluded = csrfExcludedPaths.some((path) => pathname === path || pathname.startsWith(path + "/"));
 
   if (!isCsrfExcluded) {
     const csrfResponse = csrfProtection(request);
@@ -92,6 +94,7 @@ export async function middleware(request: NextRequest) {
       "font-src 'self' https://fonts.gstatic.com",
       `connect-src 'self' ${isProduction ? "" : "ws: wss:"}`,
       "frame-ancestors 'none'",
+      "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
     ].join("; "),
