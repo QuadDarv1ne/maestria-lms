@@ -8,7 +8,6 @@ export function useSSENotifications() {
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const user = useAppStore((s) => s.user);
-  const locale = useAppStore((s) => s.locale);
   const addNotification = useAppStore((s) => s.addNotification);
   const fetchNotifications = useAppStore((s) => s.fetchNotifications);
   const hasFetchedRef = useRef(false);

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getAuthSession, requireAuth } from "@/lib/auth";
+import { getAuthSession, requireAuth, type ExtendedSession } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
 import { handleApiError } from "@/lib/api-errors";
@@ -31,7 +31,8 @@ export async function POST(
     const authError = requireAuth(session);
     if (authError) return authError;
 
-    const userId = session!.user.id;
+    const authSession = session as ExtendedSession;
+    const userId = authSession.user.id;
     // Course ID may be a UUID or slug — try both
     const course = await db.course.findFirst({
       where: { OR: [{ id: courseId }, { slug: courseId }] },

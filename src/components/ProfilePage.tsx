@@ -23,15 +23,6 @@ import {
 import { ProfileSkeleton } from "@/components/skeletons/ProfileSkeleton";
 import { AchievementsPage } from "@/components/AchievementsPage";
 
-function formatTime(seconds: number, locale?: string): string {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const h = locale === "en" ? "h" : locale === "zh" ? "小时" : "ч";
-  const m = locale === "en" ? "m" : locale === "zh" ? "分钟" : "м";
-  if (hours > 0) return `${hours}${h} ${minutes}${m}`;
-  return `${minutes}${m}`;
-}
-
 // Use translation keys version:
 function formatTimeLocalized(seconds: number, tFn: typeof t, locale?: Locale): string {
   const hours = Math.floor(seconds / 3600);

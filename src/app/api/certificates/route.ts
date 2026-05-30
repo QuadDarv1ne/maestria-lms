@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getAuthSession, requireAuth } from "@/lib/auth";
+import { getAuthSession, requireAuth, type ExtendedSession } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-errors";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
@@ -26,10 +26,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const authSession = session as ExtendedSession;
     const certificate = await db.certificate.findUnique({
       where: {
         userId_courseId: {
-          userId: session!.user.id,
+          userId: authSession.user.id,
           courseId,
         },
       },
@@ -58,7 +59,7 @@ export async function GET(request: NextRequest) {
       issuedAt: certificate.issuedAt,
       courseTitle: certificate.course.title,
       courseSlug: certificate.course.slug,
-      userName: session!.user.name || session!.user.email,
+      userName: authSession.user.name || authSession.user.email,
     });
   } catch (error: unknown) {
     return handleApiError(error, { route: "certificates" });

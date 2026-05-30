@@ -10,7 +10,7 @@ export function verifyWebhookSignature(opts: {
   headerName?: string;
   secret: string;
 }): { valid: boolean; algorithm?: string } {
-  const { rawBody, signature, secret, headerName = "x-webhook-signature" } = opts;
+  const { rawBody, signature, secret } = opts;
 
   if (!signature) {
     return { valid: false };

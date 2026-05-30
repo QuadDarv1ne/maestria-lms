@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import { addClient } from "@/lib/sse";
 import { log } from "@/lib/logger";

@@ -219,7 +219,7 @@ function checkMemoryLimit(
   if (!memoryStores.has(routeId)) {
     memoryStores.set(routeId, new Map());
   }
-  const store = memoryStores.get(routeId)!;
+  const store = memoryStores.get(routeId) as Map<string, MemoryEntry>;
 
   // LRU eviction if store is too large
   if (store.size >= MAX_MEMORY_ENTRIES) {

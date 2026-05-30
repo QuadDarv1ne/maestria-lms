@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getAuthSession, requireAuth } from "@/lib/auth";
+import { getAuthSession, requireAuth, type ExtendedSession } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 
@@ -17,20 +17,21 @@ export async function GET(request: NextRequest) {
   if (authError) return authError;
 
   try {
+    const authSession = session as ExtendedSession;
     const url = new URL(request.url);
     const limit = Math.min(Number(url.searchParams.get("limit")) || 50, 100);
     const offset = Number(url.searchParams.get("offset")) || 0;
 
     const [notifications, total, unreadCount] = await Promise.all([
       db.notification.findMany({
-        where: { userId: session!.user.id },
+        where: { userId: authSession.user.id },
         orderBy: { createdAt: "desc" },
         take: limit,
         skip: offset,
       }),
-      db.notification.count({ where: { userId: session!.user.id } }),
+      db.notification.count({ where: { userId: authSession.user.id } }),
       db.notification.count({
-        where: { userId: session!.user.id, read: false },
+        where: { userId: authSession.user.id, read: false },
       }),
     ]);
 
@@ -63,9 +64,10 @@ export async function DELETE(request: NextRequest) {
   try {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
+    const authSession = session as ExtendedSession;
     const result = await db.notification.deleteMany({
       where: {
-        userId: session!.user.id,
+        userId: authSession.user.id,
         read: true,
         createdAt: { lt: thirtyDaysAgo },
       },

@@ -8,7 +8,6 @@ import { Switch } from "@/components/ui/switch";
 import { Flag, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { setFeatureFlag, clearFeatureFlags } from "@/lib/feature-flags";
-import { t } from "@/lib/i18n";
 
 interface FlagDefinition {
   key: string;
@@ -18,7 +17,7 @@ interface FlagDefinition {
   rolloutPercentage?: number | null;
 }
 
-export function AdminFeatureFlags({ locale }: { locale: string }) {
+export function AdminFeatureFlags({ locale: _locale }: { locale: string }) {
   const [flags, setFlags] = useState<FlagDefinition[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -50,7 +49,7 @@ export function AdminFeatureFlags({ locale }: { locale: string }) {
       });
 
       // Update client immediately via localStorage
-      setFeatureFlag(key as any, enabled);
+      setFeatureFlag(key as Parameters<typeof setFeatureFlag>[0], enabled);
 
       // Update local state
       setFlags((prev) =>

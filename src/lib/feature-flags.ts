@@ -56,7 +56,7 @@ function getFromEnvVar(key: string): boolean | null {
 export function isFeatureEnabled(key: FeatureFlagKey): boolean {
   // Check cache first (client-side)
   if (isClient() && flagCache.has(key)) {
-    return flagCache.get(key)!;
+    return flagCache.get(key) as boolean;
   }
 
   const flagDef = FEATURE_FLAGS[key];

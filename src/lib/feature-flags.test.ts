@@ -60,8 +60,7 @@ describe("Feature Flags", () => {
       const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
       const { isFeatureEnabled } = await import("@/lib/feature-flags");
 
-      // @ts-ignore - testing invalid input
-      isFeatureEnabled("nonexistentFlag");
+      isFeatureEnabled("nonexistentFlag" as any);
 
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining("not found in configuration")

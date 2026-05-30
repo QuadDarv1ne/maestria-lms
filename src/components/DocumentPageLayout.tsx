@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { Card, CardContent } from "@/components/ui/card";

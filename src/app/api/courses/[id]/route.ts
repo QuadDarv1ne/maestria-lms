@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
-import { cacheGet, cacheSet, cacheInvalidateByTag, generateCacheKey, createCacheHeaders } from "@/lib/cache";
+import { cacheGet, cacheSet, generateCacheKey, createCacheHeaders } from "@/lib/cache";
 
 export const runtime = "nodejs";
 
