@@ -53,7 +53,7 @@ describe("Database optimization", () => {
     it("should process items in batches", async () => {
       const { batchOperation } = await import("@/lib/db");
       const items = Array.from({ length: 250 }, (_, i) => i);
-      const mockOp = vi.fn((batch) => Promise.resolve(batch.map((x) => x * 2)));
+      const mockOp = vi.fn((batch: number[]) => Promise.resolve(batch.map((x: number) => x * 2)));
 
       const results = await batchOperation(items, mockOp, { batchSize: 100 });
 
