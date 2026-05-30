@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { createNotification } from "@/lib/notifications";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
+import { env } from "@/lib/env";
 import { z } from "zod";
 import { verifyWebhookSignature } from "@/lib/webhook-verify";
 
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
       request.headers.get("x-signature");
 
     // Verify HMAC signature if secret is configured
-    const webhookSecret = process.env.PAYMENT_WEBHOOK_SECRET;
+    const webhookSecret = env.paymentWebhookSecret;
     if (webhookSecret) {
       const { valid, algorithm } = verifyWebhookSignature({
         rawBody,
@@ -203,7 +204,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Payment not found" }, { status: 404 });
     }
     if (error instanceof Error && error.message === "PAYMENT_INVALID_STATUS") {
-      return NextResponse.json({ error: "Payment cannot be completed", status: 400 });
+      return NextResponse.json({ error: "Payment cannot be completed" }, { status: 400 });
     }
     return handleApiError(error, { route: "payments/webhook" });
   }

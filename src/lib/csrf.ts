@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { env } from "@/lib/env";
 /**
  * Constant-time comparison to prevent timing attacks.
  * Uses Web Crypto API for Edge Runtime compatibility.
@@ -35,7 +36,7 @@ function generateToken(): string {
 
 export function getCsrfCookie(): { name: string; value: string; serialize: string } {
   const token = generateToken();
-  const isProd = process.env.NODE_ENV === "production";
+  const isProd = env.isProduction;
   return {
     name: CSRF_COOKIE_NAME,
     value: token,
@@ -58,10 +59,6 @@ export function validateCsrf(request: NextRequest): boolean {
   if (cookieToken.length !== headerToken.length) {
     return false;
   }
-
-  const encoder = new TextEncoder();
-  const cookieBytes = encoder.encode(cookieToken);
-  const headerBytes = encoder.encode(headerToken);
 
   return constantTimeCompare(cookieToken, headerToken);
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "node:crypto";
 import { db } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
+import { env } from "@/lib/env";
 import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
@@ -67,18 +68,22 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const baseUrl = process.env.NEXTAUTH_URL;
+    const baseUrl = env.nextAuthUrl;
     if (!baseUrl) {
       log.error("NEXTAUTH_URL is not set, cannot generate password reset link", { email });
-      if (process.env.NODE_ENV === "production") {
+      if (env.isProduction) {
         return NextResponse.json(
           { error: "Ошибка конфигурации. Обратитесь в поддержку." },
           { status: 500 }
         );
       }
+      return NextResponse.json(
+        { error: "Ошибка конфигурации сервера. NEXTAUTH_URL не установлен." },
+        { status: 500 }
+      );
     }
-    const resetUrl = `${baseUrl || "http://localhost:3000"}/reset-password?code=${token}`;
-    const isDev = process.env.NODE_ENV !== "production";
+    const resetUrl = `${baseUrl}/reset-password?code=${token}`;
+    const isDev = !env.isProduction;
 
     if (isDev) {
       log.info("Password reset token generated (dev mode)", {

@@ -16,7 +16,7 @@ const hasCredentials = !!(s3AccessKey && s3SecretKey);
  */
 export const s3Client = hasCredentials
   ? new S3Client({
-      region: process.env.S3_REGION || "auto",
+      region: env.s3Region,
       endpoint: env.s3Endpoint,
       credentials: {
         accessKeyId: s3AccessKey,
@@ -38,7 +38,7 @@ export function isS3Available(): boolean {
  * Falls back to the raw S3 key if CDN_URL is not configured.
  */
 export function toCdnUrl(key: string): string {
-  const cdnBase = process.env.NEXT_PUBLIC_CDN_URL;
+  const cdnBase = env.cdnUrl;
   if (!cdnBase) return key;
   const cleanBase = cdnBase.replace(/\/$/, "");
   const cleanKey = key.replace(/^\//, "");

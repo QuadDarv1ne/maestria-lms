@@ -20,7 +20,7 @@ export const env = {
   // Site configuration
   get siteUrl(): string {
     // In production, NEXT_PUBLIC_SITE_URL must be explicitly set to avoid broken links
-    if (process.env.NODE_ENV === "production") {
+    if (this.isProduction) {
       return getRequiredEnv("NEXT_PUBLIC_SITE_URL");
     }
     return getOptionalEnv("NEXT_PUBLIC_SITE_URL", "http://localhost:3000");
@@ -70,6 +70,29 @@ export const env = {
 
   get s3BucketName(): string | undefined {
     return getOptionalEnv("S3_BUCKET_NAME");
+  },
+
+  get s3Region(): string {
+    return getOptionalEnv("S3_REGION", "auto");
+  },
+
+  get cdnUrl(): string | undefined {
+    return getOptionalEnv("NEXT_PUBLIC_CDN_URL");
+  },
+
+  // Logging
+  get logLevel(): string {
+    return getOptionalEnv("LOG_LEVEL", "info");
+  },
+
+  // Payment webhook
+  get paymentWebhookSecret(): string | undefined {
+    return getOptionalEnv("PAYMENT_WEBHOOK_SECRET");
+  },
+
+  // Seed
+  get allowSeedData(): boolean {
+    return process.env.ALLOW_SEED_DATA === "true";
   },
 
   // Node environment

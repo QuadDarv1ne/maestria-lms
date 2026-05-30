@@ -5,6 +5,7 @@ import type { JWT } from "next-auth/jwt";
 import type { Session } from "next-auth";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
+import { env } from "@/lib/env";
 import { NextResponse } from "next/server";
 
 interface ExtendedUser {
@@ -125,21 +126,22 @@ export const authOptions: NextAuthOptions = {
         httpOnly: true,
         sameSite: "strict",
         path: "/",
-        secure: process.env.NODE_ENV === "production",
+        secure: env.isProduction,
       },
     },
   },
-  useSecureCookies: process.env.NODE_ENV === "production",
-  secret: process.env.NEXTAUTH_SECRET,
+  useSecureCookies: env.isProduction,
+  secret: env.nextAuthSecret,
 };
 
 // Validate NEXTAUTH_SECRET at runtime — insecure default is dangerous in production
 // Skip during build phase (build may run without full env, production server must have it)
 if (
-  process.env.NODE_ENV === "production" &&
+  env.isProduction &&
   !process.env.INIT_CWD?.includes("node_modules")
 ) {
-  if (!process.env.NEXTAUTH_SECRET || process.env.NEXTAUTH_SECRET.trim() === "") {
+  const secret = env.nextAuthSecret;
+  if (!secret || secret.trim() === "") {
     throw new Error(
       "NEXTAUTH_SECRET must be set in production. Generate one with: openssl rand -base64 32"
     );

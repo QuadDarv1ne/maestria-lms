@@ -1,3 +1,5 @@
+import { env } from "@/lib/env";
+
 type LogLevel = "error" | "warn" | "info" | "debug";
 
 interface LogEntry {
@@ -15,7 +17,7 @@ const LOG_LEVEL_ORDER: Record<LogLevel, number> = {
 };
 
 function getLogLevel(): LogLevel {
-  return (process.env.LOG_LEVEL as LogLevel) || "info";
+  return (env.logLevel as LogLevel) || "info";
 }
 
 function shouldLog(level: LogLevel): boolean {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { csrfProtection, getCsrfCookie } from "@/lib/csrf";
+import { env } from "@/lib/env";
 
 type Role = "admin" | "teacher";
 const PROTECTED_ROUTES = {
@@ -72,14 +73,14 @@ export async function middleware(request: NextRequest) {
   response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
   response.headers.set("Cross-Origin-Resource-Policy", "same-origin");
 
-  if (process.env.NODE_ENV === "production") {
+  if (env.isProduction) {
     response.headers.set(
       "Strict-Transport-Security",
       "max-age=63072000; includeSubDomains; preload",
     );
   }
 
-  const isProduction = process.env.NODE_ENV === "production";
+  const isProduction = env.isProduction;
 
   response.headers.set(
     "Content-Security-Policy",

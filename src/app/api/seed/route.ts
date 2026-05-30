@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { hashPassword, getAuthSession } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-errors";
+import { env } from "@/lib/env";
 import { log } from "@/lib/logger";
 
 export const runtime = "nodejs";
@@ -9,12 +10,12 @@ export const runtime = "nodejs";
 // POST: Заполнить базу данных демо-данными (только для разработки)
 export async function POST() {
   // Полностью блокируем в production
-  if (process.env.NODE_ENV === "production") {
+  if (env.isProduction) {
     return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
   }
 
   // Дополнительная защита: требуем заголовок X-Seed-Data для предотвращения случайных вызовов
-  const allowSeed = process.env.ALLOW_SEED_DATA === "true";
+  const allowSeed = env.allowSeedData;
   if (!allowSeed) {
     return NextResponse.json(
       { error: "Seed-данные отключены. Установите ALLOW_SEED_DATA=true для активации." },
@@ -31,7 +32,7 @@ export async function POST() {
   try {
   // Очистка базы данных перед заполнением
   try {
-    const dbUrl = process.env.DATABASE_URL || "";
+    const dbUrl = env.databaseUrl;
     const isPostgres = dbUrl.startsWith("postgresql://") || dbUrl.startsWith("postgres://");
     const isMySQL = dbUrl.startsWith("mysql://");
 
@@ -130,13 +131,15 @@ export async function POST() {
   ]);
 
   // ============ ДЕМО-ПОЛЬЗОВАТЕЛИ ============
-  const adminPassword = process.env.SEED_ADMIN_PASSWORD || crypto.randomUUID().slice(0, 12);
-  const teacherPassword = process.env.SEED_TEACHER_PASSWORD || crypto.randomUUID().slice(0, 12);
+  const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD;
+  const seedTeacherPassword = process.env.SEED_TEACHER_PASSWORD;
+  const adminPassword = seedAdminPassword || crypto.randomUUID().slice(0, 12);
+  const teacherPassword = seedTeacherPassword || crypto.randomUUID().slice(0, 12);
 
-  if (!process.env.SEED_ADMIN_PASSWORD) {
+  if (!seedAdminPassword) {
     log.info("SEED_ADMIN_PASSWORD not set — generated random password for admin@maestro7it.ru");
   }
-  if (!process.env.SEED_TEACHER_PASSWORD) {
+  if (!seedTeacherPassword) {
     log.info("SEED_TEACHER_PASSWORD not set — generated random password for teacher@maestro7it.ru");
   }
 
@@ -823,8 +826,8 @@ export async function POST() {
       categories: categories.length,
       courses: courses.length,
       users: 4, // admin + 3 teachers
-      ...(!process.env.SEED_ADMIN_PASSWORD && { adminPassword }),
-      ...(!process.env.SEED_TEACHER_PASSWORD && { teacherPassword }),
+      ...(!seedAdminPassword && { adminPassword }),
+      ...(!seedTeacherPassword && { teacherPassword }),
     },
   }, { status: 201 });
   } catch (error: unknown) {
