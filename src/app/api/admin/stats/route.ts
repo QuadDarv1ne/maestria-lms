@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, getDatabaseProvider } from "@/lib/db";
 import { getAuthSession, requireAdmin } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
@@ -95,9 +95,9 @@ export async function GET(request: NextRequest) {
       serverUptime: process.uptime() < 3600
         ? `${Math.floor(process.uptime() / 60)} мин`
         : `${(process.uptime() / 3600).toFixed(1)} ч`,
-      dbSize: process.env.DATABASE_URL?.startsWith("postgresql") ? "PostgreSQL"
-        : process.env.DATABASE_URL?.startsWith("mysql") ? "MySQL"
-        : process.env.DATABASE_URL?.startsWith("mongodb") ? "MongoDB"
+      dbSize: getDatabaseProvider() === "postgresql" ? "PostgreSQL"
+        : getDatabaseProvider() === "mysql" ? "MySQL"
+        : getDatabaseProvider() === "mongodb" ? "MongoDB"
         : "SQLite",
     };
 

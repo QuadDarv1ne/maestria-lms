@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
 import { handleApiError } from "@/lib/api-errors";
+import { env } from "@/lib/env";
 import crypto from "crypto";
 
 export const runtime = "nodejs";
@@ -39,7 +40,7 @@ export async function POST(_request: NextRequest) {
       },
     });
 
-    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    const baseUrl = env.nextAuthUrl || "http://localhost:3000";
     const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${token}`;
 
     await sendEmail({

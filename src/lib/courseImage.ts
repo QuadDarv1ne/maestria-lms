@@ -1,3 +1,5 @@
+import { env } from "@/lib/env";
+
 /**
  * Resolves a course image URL with CDN-first strategy and local fallback.
  *
@@ -16,7 +18,7 @@ export function resolveCourseImageUrl(url: string | null | undefined): string | 
   }
 
   // Relative path — use CDN
-  const cdnBase = process.env.NEXT_PUBLIC_CDN_URL;
+  const cdnBase = env.cdnUrl;
   if (cdnBase) {
     const cleanBase = cdnBase.replace(/\/$/, "");
     // Strip /courses/ prefix since CDN serves files from root

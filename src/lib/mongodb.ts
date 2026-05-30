@@ -1,7 +1,8 @@
 import { MongoClient, type MongoClientOptions } from "mongodb"
 import { logger } from "./logger"
+import { env } from "@/lib/env"
 
-const MONGODB_URI = process.env.DATABASE_URL || "mongodb://localhost:27017/maestria_lms"
+const MONGODB_URI = env.databaseUrl || "mongodb://localhost:27017/maestria_lms"
 const DB_NAME = "maestria_lms"
 
 if (!MONGODB_URI) {
@@ -29,7 +30,7 @@ async function connectMongo() {
   await client.connect()
   const db = client.db(DB_NAME)
 
-  if (process.env.NODE_ENV !== "production") {
+  if (!env.isProduction) {
     globalForMongo._mongoClient = client
     globalForMongo._mongoDb = db
   }

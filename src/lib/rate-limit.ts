@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Redis from "ioredis";
 import { log } from "@/lib/logger";
+import { env } from "@/lib/env";
 
 interface RateLimitConfig {
   windowMs: number;
@@ -43,7 +44,7 @@ function getRedisClient(): Redis | null {
   if (redisConnectionFailed) return null;
   if (redisClient) return redisClient;
 
-  const redisUrl = process.env.REDIS_URL;
+  const redisUrl = env.redisUrl;
   if (!redisUrl) return null;
 
   try {

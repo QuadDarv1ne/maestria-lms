@@ -4,6 +4,7 @@ import { hashPassword } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
+import { env } from "@/lib/env";
 import { sendEmail } from "@/lib/email";
 
 import { z } from "zod";
@@ -87,7 +88,7 @@ export async function POST(request: NextRequest) {
       return createdUser;
     });
 
-    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    const baseUrl = env.nextAuthUrl || "http://localhost:3000";
     const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${token}`;
 
     sendEmail({

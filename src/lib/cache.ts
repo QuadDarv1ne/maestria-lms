@@ -1,5 +1,6 @@
 import Redis from "ioredis";
 import { log } from "@/lib/logger";
+import { env } from "@/lib/env";
 
 // Redis client for caching (reuses connection from rate-limit if possible)
 let cacheClient: Redis | null = null;
@@ -25,7 +26,7 @@ function getCacheClient(): Redis | null {
   if (cacheConnectionFailed) return null;
   if (cacheClient) return cacheClient;
 
-  const redisUrl = process.env.REDIS_URL;
+  const redisUrl = env.redisUrl;
   if (!redisUrl) return null;
 
   try {

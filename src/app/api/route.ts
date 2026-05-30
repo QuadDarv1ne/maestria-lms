@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
 import { db } from "@/lib/db";
 import { log } from "@/lib/logger";
+import { env } from "@/lib/env";
 
 const checkRateLimit = rateLimit("health", { windowMs: 60000, maxRequests: 30 });
 
@@ -43,7 +44,7 @@ async function checkDatabase(): Promise<{ status: string; latencyMs: number }> {
 
 async function checkRedis(): Promise<{ status: string; latencyMs: number }> {
   const start = Date.now();
-  const redisUrl = process.env.REDIS_URL;
+  const redisUrl = env.redisUrl;
   if (!redisUrl) {
     return { status: "not configured", latencyMs: 0 };
   }

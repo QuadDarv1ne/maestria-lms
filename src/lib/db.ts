@@ -1,4 +1,5 @@
 import { PrismaClient, Prisma } from '@prisma/client'
+import { env } from "@/lib/env";
 
 export type DatabaseProvider = 'postgresql' | 'mysql' | 'sqlite' | 'mongodb'
 
@@ -49,7 +50,7 @@ export function formatDatabaseUrl(url: string, provider: DatabaseProvider): stri
 export function validateDatabaseConfig(): { valid: boolean; errors: string[] } {
   const errors: string[] = []
   const provider = getDatabaseProvider()
-  const url = process.env.DATABASE_URL
+  const url = env.databaseUrl
 
   if (!url) {
     errors.push('DATABASE_URL environment variable is not set')
@@ -72,7 +73,7 @@ const globalForPrisma = globalThis as unknown as {
 
 // Connection pool configuration for production performance
 const prismaOptions: ConstructorParameters<typeof PrismaClient>[0] = {
-  log: process.env.NODE_ENV === 'development' ? ['query'] : ['error'],
+  log: env.isDevelopment ? ['query'] : ['error'],
 }
 
 export const db =
@@ -81,7 +82,7 @@ export const db =
 
 export { Prisma }
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
+if (!env.isProduction) globalForPrisma.prisma = db
 
 /**
  * Execute a database query with automatic retry logic.
