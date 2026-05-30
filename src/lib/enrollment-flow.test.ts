@@ -140,12 +140,12 @@ describe("Enrollment API Flow", () => {
 
     it("should reject enrollment if course not started yet", () => {
       const futureCourse = { ...mockCourse, startDate: new Date("2099-01-01") };
-      expect(new Date().getTime()).toBeLessThan(new Date(futureCourse.startDate!).getTime());
+      expect(new Date().getTime()).toBeLessThan(new Date(futureCourse.startDate as Date).getTime());
     });
 
     it("should reject enrollment if course ended", () => {
       const pastCourse = { ...mockCourse, endDate: new Date("2000-01-01") };
-      expect(new Date().getTime()).toBeGreaterThan(new Date(pastCourse.endDate!).getTime());
+      expect(new Date().getTime()).toBeGreaterThan(new Date(pastCourse.endDate as Date).getTime());
     });
   });
 });

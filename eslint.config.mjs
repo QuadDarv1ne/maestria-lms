@@ -52,6 +52,12 @@ const eslintConfig = [...nextCoreWebVitals, ...nextTypescript, {
     "@typescript-eslint/no-require-imports": "off",
   },
 }, {
+  files: ["src/**/*.ts", "src/**/*.tsx"],
+  ignores: ["**/*.test.ts", "**/*.spec.ts", "**/*.test.tsx", "**/*.spec.tsx"],
+  rules: {
+    "@typescript-eslint/no-non-null-assertion": "error",
+  },
+}, {
   ignores: ["node_modules/**", ".next/**", "out/**", "build/**", "next-env.d.ts", "examples/**", "skills", "eslint.config.mjs"]
 }];
 
