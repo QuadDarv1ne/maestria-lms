@@ -91,7 +91,9 @@ export async function POST(request: NextRequest) {
     const baseUrl = env.nextAuthUrl || "http://localhost:3000";
     const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${token}`;
 
-    sendEmail({
+    // Await email send with built-in retry — failures are logged but don't
+    // block the registration response
+    const emailSent = await sendEmail({
       to: user.email,
       subject: "Подтверждение email — Maestria LMS",
       html: `
@@ -102,7 +104,11 @@ export async function POST(request: NextRequest) {
         <p>Ссылка действительна 24 часа.</p>
       `,
       text: `Здравствуйте! Для подтверждения email перейдите по ссылке: ${verifyUrl}`,
-    }).catch((err) => log.error("Failed to send verification email", { error: err }));
+    });
+
+    if (!emailSent) {
+      log.error("Verification email could not be sent after retries", { email: user.email });
+    }
 
     return NextResponse.json(
       { message: "Регистрация успешна", user },

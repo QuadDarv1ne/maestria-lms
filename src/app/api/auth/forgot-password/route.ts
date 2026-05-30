@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { db } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
 import { env } from "@/lib/env";
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Создаём токен верификации
-    const token = crypto.randomUUID();
+    const token = randomUUID();
     const tokenHash = createHash("sha256").update(token).digest("hex");
     const expires = new Date(Date.now() + 3600000); // 1 час
 
@@ -93,9 +93,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Send email in fire-and-forget mode so that delivery failures do not
-    // cause a 500 response (which would enable user enumeration).
-    sendEmail({
+    // Await email send with built-in retry — delivery failures are logged but
+    // do not cause a 500 response (which would enable user enumeration).
+    const emailSent = await sendEmail({
       to: email,
       subject: "Сброс пароля — Maestria LMS",
       html: `
@@ -107,9 +107,11 @@ export async function POST(request: NextRequest) {
         <p>Если вы не запрашивали сброс пароля, проигнорируйте это письмо.</p>
       `,
       text: `Перейдите по ссылке для сброса пароля: ${resetUrl}`,
-    }).catch((err: unknown) => {
-      log.error("Failed to send password reset email", { email, error: err });
     });
+
+    if (!emailSent) {
+      log.error("Password reset email could not be sent after retries", { email });
+    }
 
     return NextResponse.json(
       {
