@@ -62,50 +62,48 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Получаем записи на курсы
-    const enrollments = await db.enrollment.findMany({
-      where: { userId },
-      include: {
-        course: {
-          select: {
-            id: true,
-            title: true,
-            image: true,
-            level: true,
+    // Параллельные запросы: записи на курсы, прогресс, сертификаты
+    const [enrollments, progress, certificates] = await Promise.all([
+      db.enrollment.findMany({
+        where: { userId },
+        include: {
+          course: {
+            select: {
+              id: true,
+              title: true,
+              image: true,
+              level: true,
+            },
           },
         },
-      },
-      orderBy: { enrolledAt: "desc" },
-    });
-
-    // Получаем прогресс по урокам (лимит 1000 для предотвращения загрузки огромного объёма данных)
-    const progress = await db.progress.findMany({
-      where: { userId },
-      select: {
-        lessonId: true,
-        completed: true,
-        timeSpent: true,
-        score: true,
-        lastAccessed: true,
-      },
-      take: 1000,
-      orderBy: { lastAccessed: "desc" },
-    });
-
-    // Получаем последние сертификаты
-    const certificates = await db.certificate.findMany({
-      where: { userId },
-      include: {
-        course: {
-          select: {
-            id: true,
-            title: true,
+        orderBy: { enrolledAt: "desc" },
+      }),
+      db.progress.findMany({
+        where: { userId },
+        select: {
+          lessonId: true,
+          completed: true,
+          timeSpent: true,
+          score: true,
+          lastAccessed: true,
+        },
+        take: 1000,
+        orderBy: { lastAccessed: "desc" },
+      }),
+      db.certificate.findMany({
+        where: { userId },
+        include: {
+          course: {
+            select: {
+              id: true,
+              title: true,
+            },
           },
         },
-      },
-      orderBy: { issuedAt: "desc" },
-      take: 50,
-    });
+        orderBy: { issuedAt: "desc" },
+        take: 50,
+      }),
+    ]);
 
     return NextResponse.json({
       user,
