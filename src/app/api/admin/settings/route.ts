@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession, requireAdmin } from "@/lib/auth";
-import { apiError, handleApiError } from "@/lib/api-errors";
+import { handleApiError } from "@/lib/api-errors";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { z } from "zod";
 import fs from "fs";
@@ -68,17 +68,20 @@ export async function PATCH(request: NextRequest) {
     if (adminError) return adminError;
 
     const body = await request.json();
-    const parsed = settingsSchema.parse(body);
+    const validation = settingsSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: validation.error.issues[0]?.message || "Invalid input" },
+        { status: 400 }
+      );
+    }
 
     const current = readSettings();
-    const updated = { ...current, ...parsed };
+    const updated = { ...current, ...validation.data };
     writeSettings(updated);
 
     return NextResponse.json(updated);
   } catch (error: unknown) {
-    if (error instanceof z.ZodError) {
-      return apiError("Invalid settings data", 400);
-    }
     return handleApiError(error, { route: "PATCH /api/admin/settings" });
   }
 }
