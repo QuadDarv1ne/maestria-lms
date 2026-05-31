@@ -13,9 +13,7 @@ function ThemeAndLocaleSync() {
   useEffect(() => {
     const html = document.documentElement;
     html.classList.remove("light", "dark", "amber");
-    if (theme !== "light") {
-      html.classList.add(theme);
-    }
+    html.classList.add(theme);
     html.setAttribute("lang", locale);
   }, [theme, locale]);
 

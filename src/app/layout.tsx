@@ -205,6 +205,10 @@ export default async function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        {/* Блокирующий скрипт: применение темы ДО первого рендера (предотвращение SSR FOUC) */}
+        <script dangerouslySetInnerHTML={{
+          __html: `(function(){try{var t=localStorage.getItem('maestria-theme');if(t==='dark'||t==='amber')document.documentElement.classList.add(t)}catch(e){}})();`
+        }} />
         {/* Theme color для мобильных браузеров */}
         <meta name="theme-color" content="#1e40af" />
       </head>
