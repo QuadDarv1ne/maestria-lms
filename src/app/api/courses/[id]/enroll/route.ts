@@ -12,7 +12,7 @@ export const runtime = "nodejs";
 const checkRateLimit = rateLimit("enrollment", RATE_LIMITS.enrollment);
 
 const paymentMethodSchema = z
-  .enum(["card", "sbp", "crypto"])
+  .enum(["card", "sbp", "yookassa", "tinkoff"])
   .default("sbp");
 
 // POST: Записаться на курс

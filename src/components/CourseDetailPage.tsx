@@ -163,12 +163,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
 
       if (res.ok) {
         if (data.requiresPayment && data.paymentId) {
-          // Payment created — user needs to complete it through the payment gateway.
-          // Do NOT auto-confirm; that would make paid courses effectively free.
-          toast.info(
-            data.message || t("course.paymentRequired", locale)
-          );
-          router.push(`/profile`);
+          router.push(`/payment/${data.paymentId}`);
         } else {
           toast.success(data.message);
           showEnrollmentNotification();

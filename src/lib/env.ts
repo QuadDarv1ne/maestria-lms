@@ -90,6 +90,15 @@ export const env = {
     return getOptionalEnv("PAYMENT_WEBHOOK_SECRET");
   },
 
+  // YooKassa
+  get yooKassaShopId(): string | undefined {
+    return getOptionalEnv("YOOKASSA_SHOP_ID");
+  },
+
+  get yooKassaSecretKey(): string | undefined {
+    return getOptionalEnv("YOOKASSA_SECRET_KEY");
+  },
+
   // Seed
   get allowSeedData(): boolean {
     return process.env.ALLOW_SEED_DATA === "true";
