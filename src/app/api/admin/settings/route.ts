@@ -1,11 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession, requireAdmin } from "@/lib/auth";
 import { apiError, handleApiError } from "@/lib/api-errors";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { z } from "zod";
 import fs from "fs";
 import path from "path";
 
 const SETTINGS_PATH = path.join(process.cwd(), "data", "settings.json");
+
+const checkAdminRateLimit = rateLimit("admin", RATE_LIMITS.admin);
 
 const DEFAULT_SETTINGS = {
   maintenanceMode: false,
@@ -34,7 +37,9 @@ function writeSettings(settings: Record<string, unknown>) {
   fs.writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2));
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const blocked = checkAdminRateLimit(request);
+  if (blocked) return blocked;
   try {
     const session = await getAuthSession();
     const adminError = requireAdmin(session);
@@ -54,7 +59,9 @@ const settingsSchema = z.object({
   emailNotificationsEnabled: z.boolean().optional(),
 });
 
-export async function PATCH(request: Request) {
+export async function PATCH(request: NextRequest) {
+  const blocked = checkAdminRateLimit(request);
+  if (blocked) return blocked;
   try {
     const session = await getAuthSession();
     const adminError = requireAdmin(session);
