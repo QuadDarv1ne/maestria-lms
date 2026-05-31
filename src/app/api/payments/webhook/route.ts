@@ -45,15 +45,20 @@ async function completePayment(paymentId: string, transactionId: string) {
       throw new Error("PAYMENT_INVALID_STATUS");
     }
 
-    // Update payment status
-    await tx.payment.update({
-      where: { id: paymentId },
+    // Атомарное обновление: updateMany с where status="pending" гарантирует,
+    // что только первый concurrent запрос обработает платёж (race condition fix)
+    const updateResult = await tx.payment.updateMany({
+      where: { id: paymentId, status: "pending" },
       data: {
         status: "completed",
         transactionId,
         updatedAt: new Date(),
       },
     });
+
+    if (updateResult.count === 0) {
+      return { alreadyCompleted: true, payment };
+    }
 
     // Increment course studentCount atomically
     await tx.course.updateMany({
