@@ -139,7 +139,9 @@ export async function POST(
             score = 100;
           } else {
             // Частичный score за частичные ответы
-            const correctCount = userAnswer.filter((a: number) => correctAnswerParsed.includes(a)).length;
+            // Используем Set для дедупликации и предотвращения накрутки
+            const uniqueUserAnswers = [...new Set(userAnswer as number[])];
+            const correctCount = uniqueUserAnswers.filter((a: number) => correctAnswerParsed.includes(a)).length;
             score = Math.round((correctCount / correctAnswerParsed.length) * 100);
             status = "graded";
           }

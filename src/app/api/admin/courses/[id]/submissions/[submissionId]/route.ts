@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
-import { parsePagination } from "@/lib/utils";
+
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -17,10 +17,10 @@ const gradeSubmissionSchema = z.object({
   status: z.enum(["graded", "failed"]).optional(),
 });
 
-// GET: Get all submissions for a course (teacher only)
+// GET: Get a single submission for a course (teacher only)
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string; submissionId: string }> }
 ) {
   const blocked = checkRateLimit(request);
   if (blocked) return blocked;
@@ -42,7 +42,7 @@ export async function GET(
       );
     }
 
-    const { id: courseId } = await params;
+    const { id: courseId, submissionId } = await params;
 
     // Проверяем что курс принадлежит преподавателю или пользователь админ
     const course = await db.course.findUnique({
@@ -63,82 +63,67 @@ export async function GET(
       );
     }
 
-    const { searchParams } = new URL(request.url);
-    const { page, limit, skip } = parsePagination(searchParams, { defaultLimit: 20, maxLimit: 100 });
-    const status = searchParams.get("status");
-    const assignmentId = searchParams.get("assignmentId");
-
-    const where = {
-      assignment: {
-        lesson: {
-          module: {
-            courseId,
+    const submission = await db.assignmentSubmission.findFirst({
+      where: {
+        id: submissionId,
+        assignment: {
+          lesson: {
+            module: {
+              courseId,
+            },
           },
         },
       },
-      ...(status && { status }),
-      ...(assignmentId && { assignmentId }),
-    };
-
-    const [submissions, total] = await Promise.all([
-      db.assignmentSubmission.findMany({
-        where,
-        include: {
-          assignment: {
-            select: {
-              id: true,
-              title: true,
-              type: true,
-              points: true,
-              lesson: {
-                select: {
-                  id: true,
-                  title: true,
-                  module: {
-                    select: {
-                      title: true,
-                    },
+      include: {
+        assignment: {
+          select: {
+            id: true,
+            title: true,
+            type: true,
+            points: true,
+            lesson: {
+              select: {
+                id: true,
+                title: true,
+                module: {
+                  select: {
+                    title: true,
                   },
                 },
               },
             },
           },
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              image: true,
-            },
-          },
-          grader: {
-            select: {
-              id: true,
-              name: true,
-            },
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
           },
         },
-        orderBy: { submittedAt: "desc" },
-        skip,
-        take: limit,
-      }),
-      db.assignmentSubmission.count({ where }),
-    ]);
-
-    return NextResponse.json(
-      {
-        submissions,
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages: Math.ceil(total / limit),
+        grader: {
+          select: {
+            id: true,
+            name: true,
+          },
         },
       },
+    });
+
+    if (!submission) {
+      return NextResponse.json(
+        { error: "Работа не найдена" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(
+      { submission },
       { status: 200 }
     );
   } catch (error: unknown) {
-    return handleApiError(error, { route: "admin/courses/[id]/submissions GET" });
+    return handleApiError(error, { route: "admin/courses/[id]/submissions/[submissionId] GET" });
   }
 }
 

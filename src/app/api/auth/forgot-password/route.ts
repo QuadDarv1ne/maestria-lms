@@ -40,7 +40,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { email } = validation.data;
+    const { email: rawEmail } = validation.data;
+    const email = rawEmail.toLowerCase();
 
     // Проверяем, существует ли пользователь
     const user = await db.user.findUnique({

@@ -56,10 +56,10 @@ export async function GET(
       }
     }
 
-    // Increment views
+    // Increment views (atomic to prevent race conditions)
     await db.article.update({
       where: { id: article.id },
-      data: { views: article.views + 1 },
+      data: { views: { increment: 1 } },
     });
 
     return NextResponse.json(article, { status: 200 });

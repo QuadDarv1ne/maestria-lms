@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
 
       await tx.verificationToken.create({
         data: {
-          identifier: `email-verify:${email}`,
+          identifier: `email-verify:${normalizedEmail}`,
           token,
           expires,
         },
