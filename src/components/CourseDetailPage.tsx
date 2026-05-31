@@ -275,7 +275,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label={favored ? "Удалить из избранного" : "Добавить в избранное"}
+                aria-label={favored ? t("profile.removeFromFavorites", locale) : t("profile.addToFavorites", locale)}
                 type="button"
                 className="text-white hover:bg-white/10"
                 onClick={handleToggleFavorite}
@@ -285,7 +285,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label="Поделиться"
+                aria-label={t("profile.share", locale)}
                 type="button"
                 className="text-white hover:bg-white/10"
                 onClick={handleShare}

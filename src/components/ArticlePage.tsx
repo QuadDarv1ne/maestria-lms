@@ -161,7 +161,7 @@ export function ArticlePage({ slug }: ArticlePageProps) {
           <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground pb-6 border-b">
             <div className="flex items-center gap-2">
               <User className="w-4 h-4" />
-              <span>{article.author.name || "Автор"}</span>
+              <span>{article.author.name || t("article.author", locale)}</span>
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
@@ -218,7 +218,7 @@ export function ArticlePage({ slug }: ArticlePageProps) {
               />
             )}
             <div>
-              <h4 className="font-semibold">{article.author.name || "Автор"}</h4>
+              <h4 className="font-semibold">{article.author.name || t("article.author", locale)}</h4>
               {article.author.bio && (
                 <p className="text-sm text-muted-foreground mt-1">
                   {article.author.bio}

@@ -642,6 +642,7 @@
     "profile.errorLoadingBookmarkCourse": "Failed to load bookmark course",
     "profile.profileUpdated": "Profile updated",
     "profile.updateError": "Update error",
+    "profile.share": "Share",
     "admin.chart.revenueByMonth": "Revenue by month",
     "home.heroTitle": "Next-Generation Learning Platform",
     "home.heroSubtitle": "Learn to Program",
@@ -1613,5 +1614,7 @@
     "blog.category.career": "Career",
     "article.notFound": "Article not found",
     "article.backToBlog": "Back to blog",
-    "article.views": "views"
+    "article.views": "views",
+    "article.author": "Author",
+    "admin.uncategorized": "Uncategorized"
 }

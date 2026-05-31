@@ -641,6 +641,7 @@
     "profile.errorLoadingBookmarkCourse": "Не удалось загрузить курс закладки",
     "profile.profileUpdated": "Профиль обновлён",
     "profile.updateError": "Ошибка обновления",
+    "profile.share": "Поделиться",
     "admin.chart.revenueByMonth": "Доход по месяцам",
     "home.heroTitle": "Обучающая платформа нового поколения",
     "home.heroSubtitle": "Научись программировать",
@@ -1637,5 +1638,7 @@
     "blog.category.career": "Карьера",
     "article.notFound": "Статья не найдена",
     "article.backToBlog": "Назад к блогу",
-    "article.views": "просмотров"
+    "article.views": "просмотров",
+    "article.author": "Автор",
+    "admin.uncategorized": "Без категории"
 }

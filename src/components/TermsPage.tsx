@@ -9,26 +9,26 @@ export function TermsPage() {
   const locale = useAppStore((s) => s.locale);
 
   const tocItems = [
-    { id: "section-1", label: t("terms.toc1", locale) || "Общие положения" },
-    { id: "section-2", label: t("terms.toc2", locale) || "Регистрация пользователя" },
-    { id: "section-3", label: t("terms.toc3", locale) || "Использование платформы" },
-    { id: "section-4", label: t("terms.toc4", locale) || "Интеллектуальная собственность" },
-    { id: "section-5", label: t("terms.toc5", locale) || "Пользовательский контент (CC BY-SA 4.0)" },
-    { id: "section-6", label: t("terms.toc6", locale) || "Ответственность сторон" },
-    { id: "section-7", label: t("terms.toc7", locale) || "Разрешение споров" },
-    { id: "section-8", label: t("terms.toc8", locale) || "Контактная информация" },
+    { id: "section-1", label: t("terms.toc1", locale)  },
+    { id: "section-2", label: t("terms.toc2", locale)  },
+    { id: "section-3", label: t("terms.toc3", locale)  },
+    { id: "section-4", label: t("terms.toc4", locale)  },
+    { id: "section-5", label: t("terms.toc5", locale)  },
+    { id: "section-6", label: t("terms.toc6", locale)  },
+    { id: "section-7", label: t("terms.toc7", locale)  },
+    { id: "section-8", label: t("terms.toc8", locale)  },
   ];
 
   return (
     <DocumentPageLayout
       icon={FileText}
-      title={t("legal.terms", locale) || "Пользовательское соглашение"}
+      title={t("legal.terms", locale) }
       tocItems={tocItems}
       footer={
         <div className="mt-12 pt-6 border-t text-center text-sm text-muted-foreground">
           <p>&copy; 2024-2026 Maestria by Maestro7IT. {t("footer.rights", locale)}</p>
           <p className="mt-1">
-            {t("terms.userContentLicense", locale) || "Пользовательский контент доступен по лицензии"}{" "}
+            {t("terms.userContentLicense", locale) }{" "}
             <a
               href="https://creativecommons.org/licenses/by-sa/4.0/"
               target="_blank"

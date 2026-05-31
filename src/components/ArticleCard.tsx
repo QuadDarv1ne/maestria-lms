@@ -59,7 +59,8 @@ export const ArticleCard = React.memo(function ArticleCard({ article, onClick }:
   const categoryIcon = categoryIcons[article.category] || "📄";
 
   const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString(locale === "ru" ? "ru-RU" : locale === "zh" ? "zh-CN" : "en-US", {
+    const d = typeof date === "string" ? new Date(date) : date;
+    return d.toLocaleDateString(locale === "ru" ? "ru-RU" : locale === "zh" ? "zh-CN" : "en-US", {
       day: "numeric",
       month: "long",
       year: "numeric",
@@ -128,7 +129,7 @@ export const ArticleCard = React.memo(function ArticleCard({ article, onClick }:
             </div>
             <div className="flex items-center gap-1">
               <User className="w-3.5 h-3.5" />
-              <span>{article.author.name || "Автор"}</span>
+              <span>{article.author.name || t("article.author", locale)}</span>
             </div>
           </div>
 

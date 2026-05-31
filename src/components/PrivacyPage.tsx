@@ -9,21 +9,21 @@ export function PrivacyPage() {
   const locale = useAppStore((s) => s.locale);
 
   const tocItems = [
-    { id: "privacy-1", label: t("privacy.toc1", locale) || "Общие сведения" },
-    { id: "privacy-2", label: t("privacy.toc2", locale) || "Сбор данных" },
-    { id: "privacy-3", label: t("privacy.toc3", locale) || "Использование данных" },
-    { id: "privacy-4", label: t("privacy.toc4", locale) || "Хранение данных" },
-    { id: "privacy-5", label: t("privacy.toc5", locale) || "Права пользователя" },
-    { id: "privacy-6", label: t("privacy.toc6", locale) || "Файлы cookie" },
-    { id: "privacy-7", label: t("privacy.toc7", locale) || "Сторонние сервисы" },
-    { id: "privacy-8", label: t("privacy.toc8", locale) || "Конфиденциальность детей" },
-    { id: "privacy-9", label: t("privacy.toc9", locale) || "Контактная информация" },
+    { id: "privacy-1", label: t("privacy.toc1", locale)  },
+    { id: "privacy-2", label: t("privacy.toc2", locale)  },
+    { id: "privacy-3", label: t("privacy.toc3", locale)  },
+    { id: "privacy-4", label: t("privacy.toc4", locale)  },
+    { id: "privacy-5", label: t("privacy.toc5", locale)  },
+    { id: "privacy-6", label: t("privacy.toc6", locale)  },
+    { id: "privacy-7", label: t("privacy.toc7", locale)  },
+    { id: "privacy-8", label: t("privacy.toc8", locale)  },
+    { id: "privacy-9", label: t("privacy.toc9", locale)  },
   ];
 
   return (
     <DocumentPageLayout
       icon={Shield}
-      title={t("legal.privacy", locale) || "Политика конфиденциальности"}
+      title={t("legal.privacy", locale) }
       tocItems={tocItems}
     >
       {/* 1. Общие сведения */}

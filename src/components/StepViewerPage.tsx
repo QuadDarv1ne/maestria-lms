@@ -486,7 +486,7 @@ export function StepViewerPage({
 
     const allAnswered = pairs.every((p) => matchingAnswers[p.left]);
     if (!allAnswered) {
-      toast.error(t("course.step.matchAllPairs", locale) || "Соедините все пары");
+      toast.error(t("course.step.matchAllPairs", locale) );
       return;
     }
 
@@ -508,7 +508,7 @@ export function StepViewerPage({
   // Submit ordering
   const handleOrderingSubmit = useCallback(() => {
     if (!orderingItems.length) {
-      toast.error(t("course.step.orderAllItems", locale) || "Расставьте все элементы");
+      toast.error(t("course.step.orderAllItems", locale) );
       return;
     }
     setOrderingSubmitted(true);
@@ -518,11 +518,11 @@ export function StepViewerPage({
   // Submit essay
   const handleEssaySubmit = useCallback(() => {
     if (!essayAnswer.trim()) {
-      toast.error(t("course.step.writeEssayFirst", locale) || "Напишите эссе");
+      toast.error(t("course.step.writeEssayFirst", locale) );
       return;
     }
     if (essayAnswer.trim().length < 100) {
-      toast.error(t("course.step.essayTooShort", locale) || "Эссе слишком короткое (минимум 100 символов)");
+      toast.error(t("course.step.essayTooShort", locale) );
       return;
     }
     setEssaySubmitted(true);
@@ -534,7 +534,7 @@ export function StepViewerPage({
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 10 * 1024 * 1024) {
-        toast.error(t("course.step.fileTooLarge", locale) || "Файл слишком большой (макс. 10MB)");
+        toast.error(t("course.step.fileTooLarge", locale) );
         return;
       }
       setSelectedFile(file);
@@ -544,11 +544,11 @@ export function StepViewerPage({
   // Submit file upload
   const handleFileSubmit = useCallback(() => {
     if (!selectedFile) {
-      toast.error(t("course.step.selectFileFirst", locale) || "Выберите файл");
+      toast.error(t("course.step.selectFileFirst", locale) );
       return;
     }
     setFileUploaded(true);
-    toast.success(t("course.step.fileSent", locale) || "Файл отправлен");
+    toast.success(t("course.step.fileSent", locale) );
   }, [selectedFile, locale]);
 
   // Build flat step list for navigation
@@ -642,7 +642,7 @@ export function StepViewerPage({
                   {t("course.step.stepXofY", locale).replace("{{current}}", String(currentStepIndex + 1)).replace("{{total}}", String(flatSteps.length))}
                 </span>
               )}
-              <Badge className={stepTypeColors[step.type] || "bg-gray-100 text-gray-700"}>
+              <Badge className={stepTypeColors[step.type] }>
                 {t(`course.step.type.${step.type}`, locale)}
               </Badge>
               {step.completed && (
@@ -1089,7 +1089,7 @@ export function StepViewerPage({
                 <CardContent className="p-6">
                   <div className="flex items-center gap-2 mb-4 text-sm text-teal-600">
                     <ArrowUpDown className="w-4 h-4" />
-                    <span className="font-medium">{t("course.step.matchingExercise", locale) || "Сопоставление"}</span>
+                    <span className="font-medium">{t("course.step.matchingExercise", locale) }</span>
                   </div>
 
                   {step.assignments?.[0] && (() => {
@@ -1103,7 +1103,7 @@ export function StepViewerPage({
                     }
 
                     if (pairs.length === 0) {
-                      return <p className="text-muted-foreground">{t("course.step.noPairs", locale) || "Нет пар для сопоставления"}</p>;
+                      return <p className="text-muted-foreground">{t("course.step.noPairs", locale) }</p>;
                     }
 
                     // Get all right options and shuffle them
@@ -1121,13 +1121,13 @@ export function StepViewerPage({
                               <span className="text-muted-foreground">→</span>
                               <select
                                 className="flex-1 p-2 border rounded-lg text-sm"
-                                value={matchingAnswers[pair.left] || ""}
+                                value={matchingAnswers[pair.left] }
                                 onChange={(e) =>
                                   setMatchingAnswers((prev) => ({ ...prev, [pair.left]: e.target.value }))
                                 }
                                 disabled={matchingSubmitted}
                               >
-                                <option value="">{t("course.step.selectMatch", locale) || "Выберите..."}</option>
+                                <option value="">{t("course.step.selectMatch", locale) }</option>
                                 {rightOptions.map((opt) => (
                                   <option key={opt} value={opt}>{opt}</option>
                                 ))}
@@ -1186,12 +1186,12 @@ export function StepViewerPage({
                 <CardContent className="p-6">
                   <div className="flex items-center gap-2 mb-4 text-sm text-cyan-600">
                     <Move className="w-4 h-4" />
-                    <span className="font-medium">{t("course.step.orderingExercise", locale) || "Упорядочивание"}</span>
+                    <span className="font-medium">{t("course.step.orderingExercise", locale) }</span>
                   </div>
 
                   {step.assignments?.[0] && (() => {
                     if (orderingItems.length === 0) {
-                      return <p className="text-muted-foreground">{t("course.step.noItems", locale) || "Нет элементов для сортировки"}</p>;
+                      return <p className="text-muted-foreground">{t("course.step.noItems", locale) }</p>;
                     }
 
                     return (
@@ -1268,10 +1268,10 @@ export function StepViewerPage({
                 <CardContent className="p-6">
                   <div className="flex items-center gap-2 mb-3 text-sm text-pink-600">
                     <Pencil className="w-4 h-4" />
-                    <span className="font-medium">{t("course.step.essay", locale) || "Эссе"}</span>
+                    <span className="font-medium">{t("course.step.essay", locale) }</span>
                   </div>
                   <Textarea
-                    placeholder={t("course.step.essayPlaceholder", locale) || "Напишите развёрнутый ответ на вопрос..."}
+                    placeholder={t("course.step.essayPlaceholder", locale) }
                     className="min-h-[300px] resize-y text-sm leading-relaxed"
                     value={essayAnswer}
                     onChange={(e) => setEssayAnswer(e.target.value)}
@@ -1279,10 +1279,10 @@ export function StepViewerPage({
                   />
                   <div className="flex items-center justify-between mt-3">
                     <span className="text-xs text-muted-foreground">
-                      {essayAnswer.length} {t("course.step.characters", locale) || "символов"}
+                      {essayAnswer.length} {t("course.step.characters", locale) }
                       {essayAnswer.length < 100 && essayAnswer.length > 0 && (
                         <span className="text-amber-600 ml-2">
-                          ({t("course.step.minimum", locale) || "мин."} 100)
+                          ({t("course.step.minimum", locale) } 100)
                         </span>
                       )}
                     </span>
@@ -1294,7 +1294,7 @@ export function StepViewerPage({
                           disabled={essayAnswer.length < 100}
                         >
                           <Send className="w-4 h-4 mr-2" />
-                          {t("course.step.submitEssay", locale) || "Отправить эссе"}
+                          {t("course.step.submitEssay", locale) }
                         </Button>
                       ) : (
                         <Badge className="bg-blue-100 text-blue-700 border-0">
@@ -1327,7 +1327,7 @@ export function StepViewerPage({
                 <CardContent className="p-6">
                   <div className="flex items-center gap-2 mb-4 text-sm text-slate-600">
                     <Upload className="w-4 h-4" />
-                    <span className="font-medium">{t("course.step.fileUpload", locale) || "Загрузка файла"}</span>
+                    <span className="font-medium">{t("course.step.fileUpload", locale) }</span>
                   </div>
 
                   {!fileUploaded ? (
@@ -1336,11 +1336,11 @@ export function StepViewerPage({
                       <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
                         <Upload className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
                         <p className="text-sm text-muted-foreground mb-2">
-                          {t("course.step.dragDropFile", locale) || "Перетащите файл сюда или"}
+                          {t("course.step.dragDropFile", locale) }
                         </p>
                         <label className="inline-block cursor-pointer">
                           <span className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                            {t("course.step.browseFiles", locale) || "выберите файл"}
+                            {t("course.step.browseFiles", locale) }
                           </span>
                           <input
                             type="file"
@@ -1350,7 +1350,7 @@ export function StepViewerPage({
                           />
                         </label>
                         <p className="text-xs text-muted-foreground mt-2">
-                          {t("course.step.maxFileSize", locale) || "Макс. размер: 10MB"}
+                          {t("course.step.maxFileSize", locale) }
                         </p>
                       </div>
 
@@ -1382,13 +1382,13 @@ export function StepViewerPage({
                         disabled={!selectedFile}
                       >
                         <Send className="w-4 h-4 mr-2" />
-                        {t("course.step.submitFile", locale) || "Отправить файл"}
+                        {t("course.step.submitFile", locale) }
                       </Button>
                     </div>
                   ) : (
                     <div className="text-center py-8">
                       <CheckCircle2 className="w-12 h-12 text-green-600 mx-auto mb-3" />
-                      <p className="text-sm font-medium mb-1">{t("course.step.fileUploaded", locale) || "Файл загружен"}</p>
+                      <p className="text-sm font-medium mb-1">{t("course.step.fileUploaded", locale) }</p>
                       {selectedFile && (
                         <p className="text-xs text-muted-foreground">{selectedFile.name}</p>
                       )}
@@ -1428,7 +1428,7 @@ export function StepViewerPage({
                   className="bg-blue-700 hover:bg-blue-800 text-white"
                   onClick={handleComplete}
                   disabled={completing || (step.type === "quiz" && !allQuizAnswered)}
-                  title={step.type === "quiz" && !allQuizAnswered ? (t("course.step.answerAllFirst", locale) || "Ответьте на все вопросы") : ""}
+                  title={step.type === "quiz" && !allQuizAnswered ? (t("course.step.answerAllFirst", locale) ) : ""}
                 >
                   <CheckCircle2 className="w-4 h-4 mr-2" />
                   {completing ? t("course.step.saving", locale) : t("course.step.saveAndComplete", locale)}

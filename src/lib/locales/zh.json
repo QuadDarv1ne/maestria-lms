@@ -642,6 +642,7 @@
     "profile.errorLoadingBookmarkCourse": "无法加载书签课程",
     "profile.profileUpdated": "个人资料已更新",
     "profile.updateError": "更新错误",
+    "profile.share": "分享",
     "admin.chart.revenueByMonth": "月收入",
     "home.heroTitle": "新一代学习平台",
     "home.heroSubtitle": "学习编程",
@@ -1613,5 +1614,7 @@
     "blog.category.career": "职业",
     "article.notFound": "文章未找到",
     "article.backToBlog": "返回博客",
-    "article.views": "次浏览"
+    "article.views": "次浏览",
+    "article.author": "作者",
+    "admin.uncategorized": "未分类"
 }

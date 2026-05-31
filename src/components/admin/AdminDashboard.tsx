@@ -1,4 +1,5 @@
 import { t } from "@/lib/i18n";
+import type { Locale } from "@/lib/store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -17,11 +18,11 @@ function distributeMonthly(total: number, months: number): number[] {
 }
 
 /** Build category segments from actual course data. */
-function buildCategorySegments(courses: AdminTabProps["courses"]): Array<{ label: string; value: number; color: string }> {
+function buildCategorySegments(courses: AdminTabProps["courses"], locale: Locale): Array<{ label: string; value: number; color: string }> {
   const colors = ["#4f46e5", "#7c3aed", "#f59e0b", "#10b981", "#ef4444", "#06b6d4", "#8b5cf6", "#ec4899"];
   const byCategory: Record<string, number> = {};
   courses.forEach((c) => {
-    const cat = c.category?.name || "Без категории";
+    const cat = c.category?.name || t("admin.uncategorized", locale);
     byCategory[cat] = (byCategory[cat] || 0) + 1;
   });
   return Object.entries(byCategory).map(([label, value], i) => ({
@@ -38,7 +39,7 @@ export function AdminDashboard(props: AdminTabProps) {
   const monthsCount = monthLabels.length || 12;
   const monthlyRegistrations = distributeMonthly(users.length, monthsCount);
   const monthlyEnrollments = distributeMonthly(totalEnrollments, monthsCount);
-  const categorySegments = buildCategorySegments(courses);
+  const categorySegments = buildCategorySegments(courses, locale);
 
   return (
     <div className="space-y-6">
