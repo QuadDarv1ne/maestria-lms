@@ -3,7 +3,6 @@
 import { useEffect, Suspense } from "react";
 import { useAppStore } from "@/lib/store";
 import { HomePage } from "@/components/HomePage";
-import { RouterSync } from "@/components/RouterSync";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { AuthDialogs } from "@/components/AuthDialogs";
@@ -53,7 +52,6 @@ export default function Page() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
-      <RouterSync />
       <CustomCursor />
       <GlobalScrollToTop />
       <Header />

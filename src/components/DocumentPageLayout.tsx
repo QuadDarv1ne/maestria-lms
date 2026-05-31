@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 
 import { type ReactNode } from "react";
 import { useAppStore } from "@/lib/store";
@@ -78,7 +79,7 @@ export function DocumentPageLayout({
   headerExtra,
   footer,
 }: DocumentPageLayoutProps) {
-  const navigate = useAppStore((s) => s.navigate);
+  const router = useRouter();
   const locale = useAppStore((s) => s.locale);
 
   return (
@@ -93,7 +94,7 @@ export function DocumentPageLayout({
         {/* Хлебные крошки */}
         <nav className="flex items-center gap-1 text-sm text-muted-foreground mb-6">
           <button
-            onClick={() => navigate("home")}
+            onClick={() => router.push("/")}
             className="hover:text-foreground transition-colors flex items-center gap-1"
           >
             <Home className="w-4 h-4" />

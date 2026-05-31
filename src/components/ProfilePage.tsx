@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 
 import { useEffect, useMemo, useState } from "react";
 import { useAppStore } from "@/lib/store";
@@ -93,8 +94,8 @@ interface ProgressData {
 }
 
 export function ProfilePage() {
+  const router = useRouter();
   const user = useAppStore((s) => s.user);
-  const navigate = useAppStore((s) => s.navigate);
   const setUser = useAppStore((s) => s.setUser);
   const logout = useAppStore((s) => s.logout);
   const favorites = useAppStore((s) => s.favorites);
@@ -156,7 +157,7 @@ export function ProfilePage() {
 
   useEffect(() => {
     if (!user) {
-      navigate("login");
+      router.push("?dialog=login");
       return;
     }
     let cancelled = false;
@@ -254,7 +255,7 @@ export function ProfilePage() {
     return () => {
       cancelled = true;
     };
-  }, [user, locale, navigate]);
+  }, [user, locale,, router]);
 
   const handleSaveProfile = async () => {
     setSaving(true);
@@ -309,7 +310,7 @@ export function ProfilePage() {
       log.error("Logout failed", { error: e instanceof Error ? e.message : String(e) });
     }
     logout();
-    navigate("home");
+    router.push("/");
   };
 
   // Derived stats from real enrollment data - must be before early returns
@@ -327,7 +328,7 @@ export function ProfilePage() {
         </h2>
         <Button
           className="bg-blue-700 hover:bg-blue-800 text-white mt-4"
-          onClick={() => navigate("login")}
+          onClick={() => router.push("?dialog=login")}
         >
           {t("nav.login", locale)}
         </Button>
@@ -633,7 +634,7 @@ export function ProfilePage() {
               </p>
               <Button
                 className="bg-blue-700 hover:bg-blue-800 text-white"
-                onClick={() => navigate("catalog")}
+                onClick={() => router.push("/catalog")}
               >
                 {t("nav.catalog", locale)}
               </Button>
@@ -656,11 +657,11 @@ export function ProfilePage() {
                     role="button"
                     tabIndex={0}
                     className="cursor-pointer hover:shadow-md transition-shadow border-0 shadow-sm"
-                    onClick={() => navigate(`course/${enrollment.course.id}`)}
+                    onClick={() => router.push(`/course/${enrollment.course.id}`)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
-                        navigate(`course/${enrollment.course.id}`);
+                        router.push(`/course/${enrollment.course.id}`);
                       }
                     }}
                   >
@@ -737,7 +738,7 @@ export function ProfilePage() {
               </p>
               <Button
                 className="bg-blue-700 hover:bg-blue-800 text-white"
-                onClick={() => navigate("catalog")}
+                onClick={() => router.push("/catalog")}
               >
                 {t("nav.catalog", locale)}
               </Button>
@@ -767,7 +768,7 @@ export function ProfilePage() {
                   <Card
                     key={courseId}
                     className="cursor-pointer hover:shadow-md transition-shadow border-0 shadow-sm"
-                    onClick={() => !isLoading && navigate(`course/${courseId}`)}
+                    onClick={() => !isLoading && router.push(`/course/${courseId}`)}
                   >
                     <CardContent className="p-4 flex items-center gap-3">
                       <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-violet-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">
@@ -811,7 +812,7 @@ export function ProfilePage() {
               </p>
               <Button
                 className="bg-blue-700 hover:bg-blue-800 text-white"
-                onClick={() => navigate("catalog")}
+                onClick={() => router.push("/catalog")}
               >
                 {t("nav.catalog", locale)}
               </Button>

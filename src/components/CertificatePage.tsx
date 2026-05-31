@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useAppStore } from "@/lib/store";
@@ -38,8 +39,8 @@ interface CourseData {
 /* ── component ───────────────────────────────────────────────────────── */
 
 export function CertificatePage({ courseId }: { courseId: string }) {
+  const router = useRouter();
   const user = useAppStore((s) => s.user);
-  const navigate = useAppStore((s) => s.navigate);
   const locale = useAppStore((s) => s.locale);
   const [course, setCourse] = useState<CourseData | null>(null);
   const [certificate, setCertificate] = useState<CertificateData | null>(null);
@@ -148,7 +149,7 @@ export function CertificatePage({ courseId }: { courseId: string }) {
         <h2 className="text-xl font-semibold mb-2">
           {error || t("cert.courseNotFound", locale)}
         </h2>
-        <Button variant="outline" onClick={() => navigate("catalog")}>
+        <Button variant="outline" onClick={() => router.push("/catalog")}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           {t("common.back", locale)}
         </Button>
@@ -165,7 +166,7 @@ export function CertificatePage({ courseId }: { courseId: string }) {
         </h2>
         <Button
           className="bg-blue-700 hover:bg-blue-800 text-white mt-2"
-          onClick={() => navigate("login")}
+          onClick={() => router.push("?dialog=login")}
         >
           {t("cert.loginBtn", locale)}
         </Button>
@@ -185,7 +186,7 @@ export function CertificatePage({ courseId }: { courseId: string }) {
         </p>
         <Button
           className="bg-blue-700 hover:bg-blue-800 text-white"
-          onClick={() => navigate(`course/${courseId}`)}
+          onClick={() => router.push(`/course/${courseId}`)}
         >
           {t("cert.toCourse", locale)}
         </Button>
@@ -209,7 +210,7 @@ export function CertificatePage({ courseId }: { courseId: string }) {
         </p>
         <Button
           className="bg-blue-700 hover:bg-blue-800 text-white"
-          onClick={() => navigate(`course/${courseId}`)}
+          onClick={() => router.push(`/course/${courseId}`)}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           {t("cert.continueLearning", locale)}
@@ -225,7 +226,7 @@ export function CertificatePage({ courseId }: { courseId: string }) {
         <h2 className="text-xl font-semibold mb-2">
           {t("cert.noCertificate", locale)}
         </h2>
-        <Button variant="outline" onClick={() => navigate(`course/${courseId}`)}>
+        <Button variant="outline" onClick={() => router.push(`/course/${courseId}`)}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           {t("cert.backToCourse", locale)}
         </Button>
@@ -239,7 +240,7 @@ export function CertificatePage({ courseId }: { courseId: string }) {
     <div className="container mx-auto px-4 py-8">
       {/* action bar – hidden on print */}
       <div className="print:hidden flex items-center justify-between mb-6 max-w-5xl mx-auto">
-        <Button variant="ghost" onClick={() => navigate(`course/${courseId}`)}>
+        <Button variant="ghost" onClick={() => router.push(`/course/${courseId}`)}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           {t("cert.toCourse", locale)}
         </Button>

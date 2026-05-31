@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 
 import { useState } from "react";
 import { useAppStore } from "@/lib/store";
@@ -111,7 +112,7 @@ interface CourseDetail {
 }
 
 export function CourseDetailPage({ courseId }: { courseId: string }) {
-  const navigate = useAppStore((s) => s.navigate);
+  const router = useRouter();
   const user = useAppStore((s) => s.user);
   const toggleFavorite = useAppStore((s) => s.toggleFavorite);
   const isFavorite = useAppStore((s) => s.isFavorite);
@@ -148,7 +149,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
 
   const handleEnroll = async () => {
     if (!user) {
-      navigate("login");
+      router.push("?dialog=login");
       return;
     }
     setEnrolling(true);
@@ -167,7 +168,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
           toast.info(
             data.message || t("course.paymentRequired", locale)
           );
-          navigate(`profile`);
+          router.push(`/profile`);
         } else {
           toast.success(data.message);
           showEnrollmentNotification();
@@ -185,7 +186,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
 
   const handleToggleFavorite = () => {
     if (!user) {
-      navigate("login");
+      router.push("?dialog=login");
       return;
     }
     toggleFavorite(courseId);
@@ -217,7 +218,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
         <h2 className="text-xl font-semibold mb-2">{t("course.notFound", locale)}</h2>
-        <Button variant="outline" onClick={() => navigate("catalog")}>
+        <Button variant="outline" onClick={() => router.push("/catalog")}>
           {t("course.backToCatalog", locale)}
         </Button>
       </div>
@@ -265,7 +266,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
             <Button
               variant="ghost"
               className="text-white hover:bg-white/10 -ml-4"
-              onClick={() => navigate("catalog")}
+              onClick={() => router.push("/catalog")}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               {t("nav.catalog", locale)}
@@ -373,7 +374,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                               targetLessonId = course.modules[0].lessons[0].id;
                             }
                             if (targetLessonId) {
-                              navigate(`course/${courseId}/lesson/${targetLessonId}`);
+                              router.push(`/course/${courseId}/lesson/${targetLessonId}`);
                             }
                           }}
                         >
@@ -384,7 +385,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                           <Button
                             variant="outline"
                             className="w-full border-amber-500 text-amber-700 hover:bg-amber-50"
-                            onClick={() => navigate(`certificate/${courseId}`)}
+                            onClick={() => router.push(`/certificate/${courseId}`)}
                           >
                             <FileCheck className="w-4 h-4 mr-2" />
                             {t("course.getCertificate", locale)}
@@ -565,7 +566,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                               }`}
                               onClick={() => {
                                 if (canAccess) {
-                                  navigate(
+                                  router.push(
                                     `course/${courseId}/lesson/${lesson.id}`
                                   );
                                 } else {

@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 
 import { useEffect, useState, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
@@ -50,8 +51,8 @@ interface Enrollment {
 // ============ COMPONENT ============
 
 export function AchievementsPage() {
+  const router = useRouter();
   const user = useAppStore((s) => s.user);
-  const navigate = useAppStore((s) => s.navigate);
   const locale = useAppStore((s) => s.locale);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
@@ -187,7 +188,7 @@ export function AchievementsPage() {
           </p>
           <Button
             className="bg-blue-700 hover:bg-blue-800 text-white"
-            onClick={() => navigate("login")}
+            onClick={() => router.push("?dialog=login")}
           >
             {t("achievements.loginBtn", locale)}
           </Button>
@@ -535,7 +536,7 @@ export function AchievementsPage() {
           {earnedCount < totalAchievements && (
             <Button
               className="bg-blue-700 hover:bg-blue-800 text-white"
-              onClick={() => navigate("catalog")}
+              onClick={() => router.push("/catalog")}
             >
               {t("achievements.goToCourses", locale)}
               <ChevronRight className="w-4 h-4 ml-1" />

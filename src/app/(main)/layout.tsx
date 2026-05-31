@@ -9,7 +9,6 @@ import { CustomCursor } from "@/components/CustomCursor";
 import { GlobalScrollToTop } from "@/components/GlobalScrollToTop";
 import { PageTransition } from "@/components/PageTransition";
 import { PageWrapper } from "@/components/PageWrapper";
-import { RouterSync } from "@/components/RouterSync";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function MainLayout({
@@ -22,7 +21,6 @@ export default function MainLayout({
   return (
     <ErrorBoundary>
       <div className="min-h-screen flex flex-col bg-background text-foreground">
-        <RouterSync />
         <CustomCursor />
         <GlobalScrollToTop />
         <Header />

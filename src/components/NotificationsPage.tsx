@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
 import type { Locale } from "@/lib/store";
 import { t } from "@/lib/i18n";
@@ -114,7 +115,7 @@ export function NotificationsPage() {
   const markNotificationRead = useAppStore((s) => s.markNotificationRead);
   const markAllNotificationsRead = useAppStore((s) => s.markAllNotificationsRead);
   const unreadNotificationsCount = useAppStore((s) => s.unreadNotificationsCount);
-  const navigate = useAppStore((s) => s.navigate);
+  const router = useRouter();
   const locale = useAppStore((s) => s.locale);
 
   const unreadCount = unreadNotificationsCount();
@@ -129,7 +130,7 @@ export function NotificationsPage() {
   const handleNotificationClick = (id: string, link?: string) => {
     markNotificationRead(id);
     if (link) {
-      navigate(link);
+      router.push(link);
     }
   };
 

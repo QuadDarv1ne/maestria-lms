@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,7 @@ import { useCourses } from "@/hooks/useCourses";
 import { t } from "@/lib/i18n";
 
 export function HomePage() {
-  const navigate = useAppStore((s) => s.navigate);
+  const router = useRouter();
   const locale = useAppStore((s) => s.locale);
   const { data: coursesData, isLoading } = useCourses({ limit: 6 });
   const featuredCourses = coursesData?.courses ?? [];
@@ -57,7 +58,7 @@ export function HomePage() {
               <Button
                 size="lg"
                 className="bg-white text-blue-800 hover:bg-blue-50 font-semibold"
-                onClick={() => navigate("catalog")}
+                onClick={() => router.push("/catalog")}
               >
                 {t("home.viewCourses", locale)}
                 <ArrowRight className="w-4 h-4 ml-2" />
@@ -66,7 +67,7 @@ export function HomePage() {
                 size="lg"
                 variant="outline"
                 className="border-white/30 text-white bg-blue-600 hover:bg-blue-700 hover:border-blue-600"
-                onClick={() => navigate("login")}
+                onClick={() => router.push("?dialog=login")}
               >
                 {t("home.startFree", locale)}
               </Button>
@@ -120,13 +121,13 @@ export function HomePage() {
               tabIndex={0}
               className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 border-0 shadow-sm"
               onClick={() => {
-                navigate("catalog");
+                router.push("/catalog");
                 useAppStore.getState().setCourseFilters({ category: cat.slug, search: "", level: "", sortBy: "popular", freeOnly: false });
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
-                  navigate("catalog");
+                  router.push("/catalog");
                   useAppStore.getState().setCourseFilters({ category: cat.slug, search: "", level: "", sortBy: "popular", freeOnly: false });
                 }
               }}
@@ -168,7 +169,7 @@ export function HomePage() {
             </div>
             <Button
               variant="outline"
-              onClick={() => navigate("catalog")}
+              onClick={() => router.push("/catalog")}
               className="hidden sm:flex"
             >
               {t("home.allCourses", locale)}
@@ -197,14 +198,14 @@ export function HomePage() {
                 <CourseCard
                   key={course.id}
                   course={course}
-                  onClick={() => navigate(`course/${course.id}`)}
+                  onClick={() => router.push(`/course/${course.id}`)}
                 />
               ))}
             </div>
           )}
 
           <div className="text-center mt-8 sm:hidden">
-            <Button variant="outline" onClick={() => navigate("catalog")}>
+            <Button variant="outline" onClick={() => router.push("/catalog")}>
               {t("home.allCourses", locale)}
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
@@ -265,7 +266,7 @@ export function HomePage() {
           <Button
             size="lg"
             className="bg-white text-blue-800 hover:bg-blue-50 font-semibold"
-            onClick={() => navigate("login")}
+            onClick={() => router.push("?dialog=login")}
           >
             {t("home.registerFree", locale)}
             <ArrowRight className="w-4 h-4 ml-2" />

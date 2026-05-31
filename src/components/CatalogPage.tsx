@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
@@ -28,7 +29,7 @@ import { useCourses } from "@/hooks/useCourses";
 import { PromoBanner } from "@/components/PromoBanner";
 
 export function CatalogPage() {
-  const navigate = useAppStore((s) => s.navigate);
+  const router = useRouter();
   const courseFilters = useAppStore((s) => s.courseFilters);
   const setCourseFilters = useAppStore((s) => s.setCourseFilters);
   const locale = useAppStore((s) => s.locale);
@@ -286,7 +287,7 @@ export function CatalogPage() {
             <CourseCard
               key={course.id}
               course={course}
-              onClick={() => navigate(`course/${course.id}`)}
+              onClick={() => router.push(`/course/${course.id}`)}
             />
           ))}
         </div>

@@ -1,7 +1,6 @@
 "use client";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { RouterSync } from "@/components/RouterSync";
 
 export default function CourseEditorLayout({
   children,
@@ -10,7 +9,6 @@ export default function CourseEditorLayout({
 }) {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <RouterSync />
       <ErrorBoundary>{children}</ErrorBoundary>
     </div>
   );

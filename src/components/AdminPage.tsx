@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -34,7 +35,7 @@ type AdminTab = "dashboard" | "users" | "tests" | "materials" | "finance" | "cou
 
 export function AdminPage() {
   const user = useAppStore((s) => s.user);
-  const navigate = useAppStore((s) => s.navigate);
+  const router = useRouter();
   const locale = useAppStore((s) => s.locale);
   const monthLabels = [
     t("common.monthJan", locale), t("common.monthFeb", locale), t("common.monthMar", locale),
@@ -222,7 +223,7 @@ export function AdminPage() {
           </div>
         )}
         <button
-          onClick={() => navigate("home")}
+          onClick={() => router.push("/")}
           aria-label={t("adminPage.exitPanel", locale)}
           className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors ${sidebarCollapsed ? "justify-center" : ""}`}
         >
@@ -301,7 +302,7 @@ export function AdminPage() {
               <Button
                 className="bg-blue-700 hover:bg-blue-800 text-white"
                 size="sm"
-                onClick={() => navigate("course-editor")}
+                onClick={() => router.push("/course-editor")}
               >
                 <Plus className="w-4 h-4 mr-1.5" />{t("admin.createCourse", locale)}
               </Button>

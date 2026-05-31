@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 
 import { useEffect, useState } from "react";
 import { useAppStore } from "@/lib/store";
@@ -109,7 +110,7 @@ export function LessonPage({
   courseId: string;
   lessonId: string;
 }) {
-  const navigate = useAppStore((s) => s.navigate);
+  const router = useRouter();
   const user = useAppStore((s) => s.user);
   const locale = useAppStore((s) => s.locale);
   const [lesson, setLesson] = useState<LessonData | null>(null);
@@ -148,7 +149,7 @@ export function LessonPage({
           }
           if (!cancelled) {
             toast.error(errorMessage);
-            navigate(`course/${courseId}`);
+            router.push(`/course/${courseId}`);
           }
         }
       } catch (e: unknown) {
@@ -162,7 +163,7 @@ export function LessonPage({
     };
     fetchLesson();
     return () => { cancelled = true; };
-  }, [courseId, lessonId, navigate, locale]);
+  }, [courseId, lessonId, locale, router]);
 
   const handleQuizSubmit = () => {
     const scores: Record<string, boolean> = {};
@@ -222,7 +223,7 @@ export function LessonPage({
     return (
       <div className="container mx-auto px-4 py-16 text-center">
         <h2 className="text-xl font-semibold mb-2">{t("lesson.notFound", locale)}</h2>
-        <Button variant="outline" onClick={() => navigate(`course/${courseId}`)}>
+        <Button variant="outline" onClick={() => router.push(`/course/${courseId}`)}>
           {t("lesson.backToCourse", locale)}
         </Button>
       </div>
@@ -237,7 +238,7 @@ export function LessonPage({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate(`course/${courseId}`)}
+            onClick={() => router.push(`/course/${courseId}`)}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             {t("lesson.toCourse", locale)}
@@ -440,7 +441,7 @@ export function LessonPage({
             disabled={!lesson.prevStepId}
             onClick={() =>
               lesson.prevStepId &&
-              navigate(`course/${courseId}/lesson/${lesson.prevStepId}`)
+              router.push(`/course/${courseId}/lesson/${lesson.prevStepId}`)
             }
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -465,7 +466,7 @@ export function LessonPage({
             disabled={!lesson.nextStepId}
             onClick={() =>
               lesson.nextStepId &&
-              navigate(`course/${courseId}/lesson/${lesson.nextStepId}`)
+              router.push(`/course/${courseId}/lesson/${lesson.nextStepId}`)
             }
           >
             {t("lesson.nextStep", locale)}

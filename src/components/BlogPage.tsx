@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
@@ -48,8 +49,8 @@ interface Article {
 }
 
 export function BlogPage() {
+  const router = useRouter();
   const locale = useAppStore((s) => s.locale);
-  const navigate = useAppStore((s) => s.navigate);
   const [articles, setArticles] = useState<Article[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -275,7 +276,7 @@ export function BlogPage() {
             <ArticleCard
               key={article.id}
               article={article}
-              onClick={() => navigate(`blog/${article.slug}`)}
+              onClick={() => router.push(`/blog/${article.slug}`)}
             />
           ))}
         </div>

@@ -1,5 +1,5 @@
+import { useRouter } from "next/navigation";
 import { t } from "@/lib/i18n";
-import { useAppStore } from "@/lib/store";
 import { formatNumber } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +12,7 @@ import type { AdminTabProps } from "./types";
 
 export function AdminCourses(props: AdminTabProps) {
   const { locale, courses, avgRating } = props;
-  const navigate = useAppStore((s) => s.navigate);
+  const router = useRouter();
 
   return (
     <div className="space-y-6">
@@ -66,7 +66,7 @@ export function AdminCourses(props: AdminTabProps) {
                       }
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm" onClick={() => navigate(`course/${course.id}`)}>
+                      <Button variant="ghost" size="sm" onClick={() => router.push(`/course/${course.id}`)}>
                         <Eye className="w-4 h-4" />
                       </Button>
                     </TableCell>

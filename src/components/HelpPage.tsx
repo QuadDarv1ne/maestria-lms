@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import type { Locale } from "@/lib/store";
@@ -61,7 +62,7 @@ function getCategories(locale: Locale) {
 }
 
 export function HelpPage() {
-  const navigate = useAppStore((s) => s.navigate);
+  const router = useRouter();
   const locale = useAppStore((s) => s.locale);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -99,7 +100,7 @@ export function HelpPage() {
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-1 text-sm text-muted-foreground mb-6">
-        <button onClick={() => navigate("home")} className="hover:text-foreground transition-colors flex items-center gap-1" aria-label={t("nav.home", locale)} type="button">
+        <button onClick={() => router.push("/")} className="hover:text-foreground transition-colors flex items-center gap-1" aria-label={t("nav.home", locale)} type="button">
           <Home className="w-4 h-4" />
           {t("nav.home", locale)}
         </button>
@@ -222,7 +223,7 @@ export function HelpPage() {
           { label: t("footer.privacyPolicy", locale), route: "privacy", icon: Shield, color: "text-violet-600" },
           { label: t("legal.platformRules", locale), route: "rules", icon: Users, color: "text-amber-600" },
         ].map((link, i) => (
-          <Card key={i} className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(link.route)}>
+          <Card key={i} className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push("/" + link.route)}>
             <CardContent className="p-4 flex items-center gap-3">
               <link.icon className={`w-5 h-5 ${link.color}`} />
               <span className="text-sm font-medium">{link.label}</span>

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowLeft, X, CheckCircle2, Lock, Trophy } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { Locale } from "@/lib/store";
 
@@ -44,13 +45,13 @@ interface StepSidebarProps {
   locale: Locale;
   sidebarOpen: boolean;
   onCloseSidebar: () => void;
-  onNavigate: (path: string) => void;
 }
 
 export function StepSidebar({
   courseStructure, courseId, lessonId, isEnrolled, locale,
-  sidebarOpen, onCloseSidebar, onNavigate,
+  sidebarOpen, onCloseSidebar,
 }: StepSidebarProps) {
+  const router = useRouter();
   return (
     <>
       <aside
@@ -64,7 +65,7 @@ export function StepSidebar({
               <Button
                 variant="ghost" size="sm"
                 className="text-white hover:bg-white/10 -ml-2"
-                onClick={() => onNavigate(`course/${courseId}`)}
+                onClick={() => router.push(`/course/${courseId}`)}
               >
                 <ArrowLeft className="w-4 h-4 mr-1" />
                 {t("course.step.backToCourse", locale)}
@@ -137,7 +138,7 @@ export function StepSidebar({
                             toast.error(t("course.step.enrollFirst", locale));
                             return;
                           }
-                          onNavigate(`course/${courseId}/lesson/${lesson.id}`);
+                          router.push(`/course/${courseId}/lesson/${lesson.id}`);
                           if (window.innerWidth < 1024) onCloseSidebar();
                         }}
                         disabled={isLocked && !isActive}

@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { getInitials } from "@/lib/utils";
@@ -42,10 +43,10 @@ const themeOptions: { value: Theme; icon: string; labelKey: string }[] = [
 ];
 
 export function Header() {
+  const router = useRouter();
   const user = useAppStore((s) => s.user);
   const sidebarOpen = useAppStore((s) => s.sidebarOpen);
   const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
-  const navigate = useAppStore((s) => s.navigate);
   const logout = useAppStore((s) => s.logout);
   const unreadNotificationsCount = useAppStore((s) => s.unreadNotificationsCount);
   const theme = useAppStore((s) => s.theme);
@@ -80,9 +81,9 @@ export function Header() {
           type="button"
           aria-label={t("nav.home", locale)}
           className="flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded-lg"
-          onClick={() => navigate("home")}
+          onClick={() => router.push("/")}
         >
-          <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-violet-600 rounded-lg flex items-center justify-center">
+           <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-violet-600 rounded-lg flex items-center justify-center">
             <GraduationCap className="w-5 h-5 text-white" />
           </div>
           <div className="hidden sm:block">
@@ -100,7 +101,7 @@ export function Header() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("home")}
+            onClick={() => router.push("/")}
             className="text-sm"
           >
             {t("nav.home", locale)}
@@ -108,7 +109,7 @@ export function Header() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("catalog")}
+            onClick={() => router.push("/catalog")}
             className="text-sm"
           >
             <BookOpen className="w-4 h-4 mr-1" />
@@ -117,7 +118,7 @@ export function Header() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("blog")}
+            onClick={() => router.push("/blog")}
             className="text-sm"
           >
             <FileText className="w-4 h-4 mr-1" />
@@ -126,7 +127,7 @@ export function Header() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("about")}
+            onClick={() => router.push("/about")}
             className="text-sm"
           >
             {t("nav.about", locale)}
@@ -134,7 +135,7 @@ export function Header() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("help")}
+            onClick={() => router.push("/help")}
             className="text-sm"
           >
             <HelpCircle className="w-4 h-4 mr-1" />
@@ -144,7 +145,7 @@ export function Header() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate("profile")}
+              onClick={() => router.push("/profile")}
               className="text-sm"
             >
               {t("nav.myCourses", locale)}
@@ -154,7 +155,7 @@ export function Header() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate("achievements")}
+              onClick={() => router.push("/achievements")}
               className="text-sm"
             >
               <Trophy className="w-4 h-4 mr-1" />
@@ -165,7 +166,7 @@ export function Header() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate("teacher")}
+              onClick={() => router.push("/teacher")}
               className="text-sm"
             >
               <GraduationCap className="w-4 h-4 mr-1" />
@@ -176,7 +177,7 @@ export function Header() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate("admin")}
+              onClick={() => router.push("/admin")}
               className="text-sm"
             >
               <Shield className="w-4 h-4 mr-1" />
@@ -242,7 +243,7 @@ export function Header() {
               size="icon"
               className="relative"
               aria-label={t("nav.notifications", locale)}
-              onClick={() => navigate("notifications")}
+              onClick={() => router.push("/notifications")}
             >
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
@@ -260,7 +261,7 @@ export function Header() {
               size="icon"
               className="relative hidden sm:flex"
               aria-label={t("nav.favorites", locale)}
-              onClick={() => navigate("profile")}
+              onClick={() => router.push("/profile")}
             >
               <Heart className="h-5 w-5" />
             </Button>
@@ -295,15 +296,15 @@ export function Header() {
                   </p>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate("profile")}>
+                <DropdownMenuItem onClick={() => router.push("/profile")}>
                   <User className="mr-2 h-4 w-4" />
                   {t("nav.profile", locale)}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("catalog")}>
+                <DropdownMenuItem onClick={() => router.push("/catalog")}>
                   <BookOpen className="mr-2 h-4 w-4" />
                   {t("nav.catalog", locale)}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("notifications")}>
+                <DropdownMenuItem onClick={() => router.push("/notifications")}>
                   <Bell className="mr-2 h-4 w-4" />
                   {t("nav.notifications", locale)}
                   {unreadCount > 0 && (
@@ -313,13 +314,13 @@ export function Header() {
                   )}
                 </DropdownMenuItem>
                 {user.role === "teacher" && (
-                  <DropdownMenuItem onClick={() => navigate("teacher")}>
+                  <DropdownMenuItem onClick={() => router.push("/teacher")}>
                     <GraduationCap className="mr-2 h-4 w-4" />
                     {t("nav.teacher", locale)}
                   </DropdownMenuItem>
                 )}
                 {user.role === "admin" && (
-                  <DropdownMenuItem onClick={() => navigate("admin")}>
+                  <DropdownMenuItem onClick={() => router.push("/admin")}>
                     <LayoutDashboard className="mr-2 h-4 w-4" />
                     {t("admin.panel", locale)}
                   </DropdownMenuItem>
@@ -336,7 +337,7 @@ export function Header() {
               size="sm"
               className="bg-blue-700 hover:bg-blue-800 text-white"
               aria-label={t("nav.login", locale)}
-              onClick={() => navigate("login")}
+              onClick={() => router.push("?dialog=login")}
             >
               {t("nav.login", locale)}
             </Button>
@@ -367,7 +368,7 @@ export function Header() {
             variant="ghost"
             className="w-full justify-start"
             onClick={() => {
-              navigate("home");
+              router.push("/");
               setSidebarOpen(false);
             }}
           >
@@ -377,7 +378,7 @@ export function Header() {
             variant="ghost"
             className="w-full justify-start"
             onClick={() => {
-              navigate("catalog");
+              router.push("/catalog");
               setSidebarOpen(false);
             }}
           >
@@ -388,7 +389,7 @@ export function Header() {
             variant="ghost"
             className="w-full justify-start"
             onClick={() => {
-              navigate("blog");
+              router.push("/blog");
               setSidebarOpen(false);
             }}
           >
@@ -399,7 +400,7 @@ export function Header() {
             variant="ghost"
             className="w-full justify-start"
             onClick={() => {
-              navigate("about");
+              router.push("/about");
               setSidebarOpen(false);
             }}
           >
@@ -411,7 +412,7 @@ export function Header() {
                 variant="ghost"
                 className="w-full justify-start"
                 onClick={() => {
-                  navigate("profile");
+                  router.push("/profile");
                   setSidebarOpen(false);
                 }}
               >
@@ -421,7 +422,7 @@ export function Header() {
                 variant="ghost"
                 className="w-full justify-start"
                 onClick={() => {
-                  navigate("achievements");
+                  router.push("/achievements");
                   setSidebarOpen(false);
                 }}
               >
@@ -432,7 +433,7 @@ export function Header() {
                 variant="ghost"
                 className="w-full justify-start"
                 onClick={() => {
-                  navigate("notifications");
+                  router.push("/notifications");
                   setSidebarOpen(false);
                 }}
               >
@@ -449,7 +450,7 @@ export function Header() {
                   variant="ghost"
                   className="w-full justify-start"
                   onClick={() => {
-                    navigate("teacher");
+                    router.push("/teacher");
                     setSidebarOpen(false);
                   }}
                 >
@@ -462,7 +463,7 @@ export function Header() {
                   variant="ghost"
                   className="w-full justify-start"
                   onClick={() => {
-                    navigate("admin");
+                    router.push("/admin");
                     setSidebarOpen(false);
                   }}
                 >
@@ -526,7 +527,7 @@ export function Header() {
               className="w-full bg-blue-700 hover:bg-blue-800 text-white"
               aria-label={t("nav.login", locale)}
               onClick={() => {
-                navigate("login");
+                router.push("?dialog=login");
                 setSidebarOpen(false);
               }}
             >

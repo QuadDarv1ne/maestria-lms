@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useAppStore } from "@/lib/store";
@@ -140,7 +141,7 @@ export function StepViewerPage({
   courseId: string;
   lessonId: string;
 }) {
-  const navigate = useAppStore((s) => s.navigate);
+  const router = useRouter();
   const user = useAppStore((s) => s.user);
   const { locale } = useLocale();
   const [step, setStep] = useState<StepData | null>(null);
@@ -240,7 +241,7 @@ export function StepViewerPage({
           }
           if (!cancelled) {
             toast.error(errorMessage);
-            navigate(`course/${courseId}`);
+            router.push(`/course/${courseId}`);
           }
         }
       } catch (e: unknown) {
@@ -258,7 +259,7 @@ export function StepViewerPage({
     return () => {
       cancelled = true;
     };
-  }, [courseId, lessonId, navigate, locale]);
+  }, [courseId, lessonId, locale, router]);
 
   // Cleanup navigation timer on unmount
   useEffect(() => {
@@ -377,10 +378,10 @@ export function StepViewerPage({
             progress: Math.round((completedLessons / prev.totalLessons) * 100),
           };
         });
-        // Auto-navigate to next step after short delay
+        // Auto- to next step after short delay
         if (step.nextStepId) {
           navigationTimerRef.current = setTimeout(() => {
-            navigate(`course/${courseId}/lesson/${step.nextStepId}`);
+            router.push(`/course/${courseId}/lesson/${step.nextStepId}`);
           }, 1200);
         }
       }
@@ -389,7 +390,7 @@ export function StepViewerPage({
     } finally {
       setCompleting(false);
     }
-  }, [user, step, courseId, lessonId, navigate, locale, quizScore, allQuizAnswered]);
+  }, [user, step, courseId, lessonId, locale, quizScore, allQuizAnswered, router]);
 
   // Submit quiz answer
   const handleQuizSubmit = useCallback((assignmentId: string) => {
@@ -586,7 +587,7 @@ export function StepViewerPage({
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-xl font-semibold mb-2">{t("course.step.notFound", locale)}</h2>
-          <Button variant="outline" onClick={() => navigate(`course/${courseId}`)}>
+          <Button variant="outline" onClick={() => router.push(`/course/${courseId}`)}>
             {t("course.step.backToCourse", locale)}
           </Button>
         </div>
@@ -606,7 +607,6 @@ export function StepViewerPage({
         locale={locale}
         sidebarOpen={sidebarOpen}
         onCloseSidebar={() => setSidebarOpen(false)}
-        onNavigate={navigate}
       />
 
       {/* ==================== MAIN CONTENT ==================== */}
@@ -628,7 +628,7 @@ export function StepViewerPage({
                 variant="ghost"
                 size="sm"
                 className="hidden sm:flex"
-                onClick={() => navigate(`course/${courseId}`)}
+                onClick={() => router.push(`/course/${courseId}`)}
               >
                 <ArrowLeft className="w-4 h-4 mr-1" />
                 {t("course.step.toCourse", locale)}
@@ -676,7 +676,7 @@ export function StepViewerPage({
         <div className="max-w-4xl mx-auto px-4 py-8">
           {/* Breadcrumb */}
           <div className="flex items-center gap-1 text-sm text-muted-foreground mb-4">
-            <span className="hover:text-foreground cursor-pointer" onClick={() => navigate(`course/${courseId}`)}>
+            <span className="hover:text-foreground cursor-pointer" onClick={() => router.push(`/course/${courseId}`)}>
               {courseStructure?.title || t("course.step.module", locale)}
             </span>
             <ChevronRight className="w-3 h-3" />
@@ -1412,7 +1412,7 @@ export function StepViewerPage({
               disabled={!step.prevStepId}
               onClick={() =>
                 step.prevStepId &&
-                navigate(`course/${courseId}/lesson/${step.prevStepId}`)
+                router.push(`/course/${courseId}/lesson/${step.prevStepId}`)
               }
               className="flex-shrink-0"
             >
@@ -1448,7 +1448,7 @@ export function StepViewerPage({
               disabled={!step.nextStepId}
               onClick={() =>
                 step.nextStepId &&
-                navigate(`course/${courseId}/lesson/${step.nextStepId}`)
+                router.push(`/course/${courseId}/lesson/${step.nextStepId}`)
               }
               className="flex-shrink-0"
             >
@@ -1472,7 +1472,7 @@ export function StepViewerPage({
                         ? "bg-green-400"
                         : "bg-gray-200"
                     }`}
-                    onClick={() => navigate(`course/${courseId}/lesson/${s.id}`)}
+                    onClick={() => router.push(`/course/${courseId}/lesson/${s.id}`)}
                     title={s.title}
                   />
                 ))}

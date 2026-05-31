@@ -1,6 +1,7 @@
 "use client";
 
 import React, { Fragment, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import {
@@ -14,7 +15,7 @@ import {
 import type { Locale } from "@/lib/store";
 
 export const Footer = React.memo(function Footer() {
-  const navigate = useAppStore((s) => s.navigate);
+  const router = useRouter();
   const locale = useAppStore((s) => s.locale);
   const setLocale = useAppStore((s) => s.setLocale);
 
@@ -74,7 +75,7 @@ export const Footer = React.memo(function Footer() {
                 <button
                   type="button"
                   aria-label={t("footer.catalogCourses", locale)}
-                  onClick={() => navigate("catalog")}
+                  onClick={() => router.push("/catalog")}
                   className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded"
                 >
                   {t("footer.catalogCourses", locale)}
@@ -84,7 +85,7 @@ export const Footer = React.memo(function Footer() {
                 <button
                   type="button"
                   aria-label={t("nav.blog", locale)}
-                  onClick={() => navigate("blog")}
+                  onClick={() => router.push("/blog")}
                   className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded"
                 >
                   {t("nav.blog", locale)}
@@ -94,7 +95,7 @@ export const Footer = React.memo(function Footer() {
                 <button
                   type="button"
                   aria-label={t("footer.myCourses", locale)}
-                  onClick={() => navigate("profile")}
+                  onClick={() => router.push("/profile")}
                   className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded"
                 >
                   {t("footer.myCourses", locale)}
@@ -104,7 +105,7 @@ export const Footer = React.memo(function Footer() {
                 <button
                   type="button"
                   aria-label={t("footer.achievements", locale)}
-                  onClick={() => navigate("achievements")}
+                  onClick={() => router.push("/achievements")}
                   className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded"
                 >
                   {t("footer.achievements", locale)}
@@ -114,7 +115,7 @@ export const Footer = React.memo(function Footer() {
                 <button
                   type="button"
                   aria-label={t("footer.certificates", locale)}
-                  onClick={() => navigate("certificate/demo")}
+                  onClick={() => router.push("/certificate/demo")}
                   className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded"
                 >
                   {t("footer.certificates", locale)}
@@ -128,52 +129,52 @@ export const Footer = React.memo(function Footer() {
             <h3 className="font-semibold text-sm mb-3">{t("footer.legal", locale)}</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <button type="button" aria-label={t("footer.userAgreement", locale)} onClick={() => navigate("terms")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
+                <button type="button" aria-label={t("footer.userAgreement", locale)} onClick={() => router.push("/terms")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
                   {t("footer.userAgreement", locale)}
                 </button>
               </li>
               <li>
-                <button type="button" aria-label={t("footer.privacyPolicy", locale)} onClick={() => navigate("privacy")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
+                <button type="button" aria-label={t("footer.privacyPolicy", locale)} onClick={() => router.push("/privacy")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
                   {t("footer.privacyPolicy", locale)}
                 </button>
               </li>
               <li>
-                <button type="button" aria-label={t("legal.personalDataConsent", locale)} onClick={() => navigate("personal-data")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
+                <button type="button" aria-label={t("legal.personalDataConsent", locale)} onClick={() => router.push("/personal-data")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
                   {t("legal.personalDataConsent", locale)}
                 </button>
               </li>
               <li>
-                <button type="button" aria-label={t("legal.publicOffer", locale)} onClick={() => navigate("offer")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
+                <button type="button" aria-label={t("legal.publicOffer", locale)} onClick={() => router.push("/offer")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
                   {t("legal.publicOffer", locale)}
                 </button>
               </li>
               <li>
-                <button type="button" aria-label={t("legal.refundPolicy", locale)} onClick={() => navigate("refund")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
+                <button type="button" aria-label={t("legal.refundPolicy", locale)} onClick={() => router.push("/refund")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
                   {t("legal.refundPolicy", locale)}
                 </button>
               </li>
               <li>
-                <button type="button" aria-label={t("legal.licenseAgreement", locale)} onClick={() => navigate("license")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
+                <button type="button" aria-label={t("legal.licenseAgreement", locale)} onClick={() => router.push("/license")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
                   {t("legal.licenseAgreement", locale)}
                 </button>
               </li>
               <li>
-                <button type="button" aria-label={t("legal.platformRules", locale)} onClick={() => navigate("rules")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
+                <button type="button" aria-label={t("legal.platformRules", locale)} onClick={() => router.push("/rules")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
                   {t("legal.platformRules", locale)}
                 </button>
               </li>
               <li>
-                <button type="button" aria-label={t("legal.cookiePolicy", locale)} onClick={() => navigate("cookies")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
+                <button type="button" aria-label={t("legal.cookiePolicy", locale)} onClick={() => router.push("/cookies")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
                   {t("legal.cookiePolicy", locale)}
                 </button>
               </li>
               <li>
-                <button type="button" aria-label={t("legal.ageRating", locale)} onClick={() => navigate("age-rating")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
+                <button type="button" aria-label={t("legal.ageRating", locale)} onClick={() => router.push("/age-rating")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
                   {t("legal.ageRating", locale)}
                 </button>
               </li>
               <li>
-                <button type="button" aria-label={t("legal.educationInfo", locale)} onClick={() => navigate("edu-info")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
+                <button type="button" aria-label={t("legal.educationInfo", locale)} onClick={() => router.push("/edu-info")} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded">
                   {t("legal.educationInfo", locale)}
                 </button>
               </li>

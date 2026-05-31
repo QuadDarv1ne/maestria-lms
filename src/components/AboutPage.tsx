@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -30,7 +31,7 @@ import {
 } from "lucide-react";
 
 export function AboutPage() {
-  const navigate = useAppStore((s) => s.navigate);
+  const router = useRouter();
   const locale = useAppStore((s) => s.locale);
   const tr = (key: string) => t(key, locale);
 
@@ -61,7 +62,7 @@ export function AboutPage() {
               <Button
                 size="lg"
                 className="bg-white text-blue-800 hover:bg-blue-50 font-semibold"
-                onClick={() => navigate("catalog")}
+                onClick={() => router.push("/catalog")}
               >
                 {tr("about.viewCourses")}
                 <ArrowRight className="w-4 h-4 ml-2" />
@@ -70,7 +71,7 @@ export function AboutPage() {
                 size="lg"
                 variant="outline"
                 className="border-white/30 text-white bg-blue-600 hover:bg-blue-700 hover:border-blue-600"
-                onClick={() => navigate("login")}
+onClick={() => router.push("?dialog=login")}
               >
                 {tr("about.startFree")}
               </Button>
@@ -435,7 +436,7 @@ export function AboutPage() {
           <Button
             size="lg"
             className="bg-white text-blue-800 hover:bg-blue-50 font-semibold text-lg px-8 py-6"
-            onClick={() => navigate("login")}
+            onClick={() => router.push("?dialog=login")}
           >
             {tr("about.startLearning")}
             <ArrowRight className="w-5 h-5 ml-2" />

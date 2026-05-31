@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 
 import { useState, useCallback } from "react";
 import { useAppStore } from "@/lib/store";
@@ -21,7 +22,7 @@ import {
 } from "@/components/course-editor/types";
 
 export function CourseEditorPage() {
-  const navigate = useAppStore((s) => s.navigate);
+  const router = useRouter();
   const user = useAppStore((s) => s.user);
   const locale = useAppStore((s) => s.locale);
   const [activeTab, setActiveTab] = useState("basic");
@@ -289,7 +290,7 @@ export function CourseEditorPage() {
               ? t("courseEditor.coursePublished", locale)
               : t("courseEditor.draftSaved", locale)
           );
-          navigate("admin");
+          router.push("/admin");
         } else {
           toast.error(data.error || t("courseEditor.saveError", locale));
         }
@@ -299,7 +300,7 @@ export function CourseEditorPage() {
         setSaving(false);
       }
     },
-    [form, navigate, locale]
+    [form, locale, router]
   );
 
   // ─── Render ──────────────────────────────────────────────────────────────
@@ -314,7 +315,7 @@ export function CourseEditorPage() {
               <Button
                 variant="ghost"
                 className="text-white hover:bg-white/10 -ml-2"
-                onClick={() => navigate("admin")}
+                onClick={() => router.push("/admin")}
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 {t("common.back", locale)}
@@ -442,7 +443,7 @@ export function CourseEditorPage() {
               saving={saving}
               onSave={handleSave}
               onBackToEdit={() => setActiveTab("curriculum")}
-              onNavigate={navigate}
+              onNavigate={(p) => router.push("/" + p)}
             />
           </TabsContent>
         </Tabs>

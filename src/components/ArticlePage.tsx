@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 
 import { useEffect, useState } from "react";
 import { useAppStore } from "@/lib/store";
@@ -58,8 +59,8 @@ interface ArticlePageProps {
 }
 
 export function ArticlePage({ slug }: ArticlePageProps) {
+  const router = useRouter();
   const locale = useAppStore((s) => s.locale);
-  const navigate = useAppStore((s) => s.navigate);
   const [article, setArticle] = useState<Article | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -106,7 +107,7 @@ export function ArticlePage({ slug }: ArticlePageProps) {
           <h3 className="text-lg font-semibold mb-2">
             {error || t("article.notFound", locale)}
           </h3>
-          <Button onClick={() => navigate("blog")}>
+          <Button onClick={() => router.push("/blog")}>
             {t("article.backToBlog", locale)}
           </Button>
         </div>
@@ -134,7 +135,7 @@ export function ArticlePage({ slug }: ArticlePageProps) {
       <Button
         variant="ghost"
         className="mb-6"
-        onClick={() => navigate("blog")}
+        onClick={() => router.push("/blog")}
       >
         <ArrowLeft className="w-4 h-4 mr-2" />
         {t("article.backToBlog", locale)}

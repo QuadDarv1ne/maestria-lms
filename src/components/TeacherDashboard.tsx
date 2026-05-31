@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 
 import { useEffect, useState, useCallback } from "react";
 import { useAppStore } from "@/lib/store";
@@ -55,8 +56,8 @@ interface TeacherStats {
 }
 
 export function TeacherDashboard() {
+  const router = useRouter();
   const user = useAppStore((s) => s.user);
-  const navigate = useAppStore((s) => s.navigate);
   const locale = useAppStore((s) => s.locale);
   const [courses, setCourses] = useState<TeacherCourse[]>([]);
   const [stats, setStats] = useState<TeacherStats | null>(null);
@@ -70,7 +71,7 @@ export function TeacherDashboard() {
       const res = await fetch("/api/teacher/stats", { signal });
       if (!res.ok) {
         if (res.status === 403) {
-          navigate("home");
+          router.push("/");
           return;
         }
         throw new Error("Failed to load stats");
@@ -84,11 +85,11 @@ export function TeacherDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [navigate, locale]);
+  }, [locale, router]);
 
   useEffect(() => {
     if (!user || (user.role !== "teacher" && user.role !== "admin")) {
-      navigate("home");
+      router.push("/");
       return;
     }
     const controller = new AbortController();
@@ -96,7 +97,7 @@ export function TeacherDashboard() {
     return () => {
       controller.abort();
     };
-  }, [user, fetchStats, navigate]);
+  }, [user, fetchStats,, router]);
 
   if (!user) return null;
 
@@ -184,7 +185,7 @@ export function TeacherDashboard() {
           </Button>
           <Button
             size="sm"
-            onClick={() => navigate("course-editor")}
+            onClick={() => router.push("/course-editor")}
             className="bg-green-700 hover:bg-green-800 text-white"
           >
             <Plus className="w-4 h-4 mr-1.5" />
@@ -231,7 +232,7 @@ export function TeacherDashboard() {
                 {t("teacher.noCourses", locale)}
               </p>
               <Button
-                onClick={() => navigate("course-editor")}
+                onClick={() => router.push("/course-editor")}
                 className="bg-green-700 hover:bg-green-800 text-white"
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -308,7 +309,7 @@ export function TeacherDashboard() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => navigate(`course/${course.slug || course.id}`)}
+                          onClick={() => router.push(`/course/${course.slug || course.id}`)}
                         >
                           <ExternalLink className="w-4 h-4" />
                         </Button>
@@ -370,7 +371,7 @@ export function TeacherDashboard() {
                       variant="ghost"
                       size="sm"
                       className="h-7 w-7 p-0"
-                      onClick={() => navigate(`/admin/student/${activity.userId}`)}
+                      onClick={() => router.push(`/admin/student/${activity.userId}`)}
                     >
                       <BarChart3 className="w-3.5 h-3.5" />
                     </Button>

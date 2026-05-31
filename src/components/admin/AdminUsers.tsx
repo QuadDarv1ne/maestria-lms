@@ -1,3 +1,5 @@
+"use client";
+import { useRouter } from "next/navigation";
 import { t } from "@/lib/i18n";
 import type { UserRole } from "@/hooks/useAdmin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,7 +41,7 @@ export function AdminUsers(props: AdminTabProps) {
     handleUserStatusChange, setUserPage,
   } = props;
   const user = useAppStore((s) => s.user);
-  const navigate = useAppStore((s) => s.navigate);
+  const router = useRouter();
 
   return (
     <div className="space-y-6">
@@ -209,10 +211,10 @@ export function AdminUsers(props: AdminTabProps) {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="sm" aria-label={t("admin.userStats", locale)} onClick={() => navigate(`/admin/student/${u.id}`)}>
+                        <Button variant="ghost" size="sm" aria-label={t("admin.userStats", locale)} onClick={() => router.push(`/admin/student/${u.id}`)}>
                           <BarChart3 className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" aria-label={t("admin.viewProfile", locale)} onClick={() => navigate("profile")}>
+                        <Button variant="ghost" size="sm" aria-label={t("admin.viewProfile", locale)} onClick={() => router.push("/profile")}>
                           <Eye className="w-4 h-4" />
                         </Button>
                       </div>
