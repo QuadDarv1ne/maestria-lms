@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getAuthSession();
     const adminError = requireAdmin(session);
-    if (adminError) return adminError as NextResponse;
+    if (adminError) return adminError;
 
     const { searchParams } = new URL(request.url);
     const { page, limit, skip } = parsePagination(searchParams, { defaultLimit: 20, maxLimit: 100 });
@@ -90,7 +90,7 @@ export async function PUT(request: NextRequest) {
   try {
     const session = await getAuthSession();
     const adminError = requireAdmin(session);
-    if (adminError) return adminError as NextResponse;
+    if (adminError) return adminError;
 
     const authenticatedSession = session as ExtendedSession;
 

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getAuthSession, requireAdmin } from "@/lib/auth";
 import { apiError, handleApiError } from "@/lib/api-errors";
 import { z } from "zod";
 import fs from "fs";
@@ -37,11 +36,9 @@ function writeSettings(settings: Record<string, unknown>) {
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    const userRole = (session?.user as { role?: string })?.role;
-    if (!session?.user || userRole !== "admin") {
-      return apiError("Unauthorized", 401);
-    }
+    const session = await getAuthSession();
+    const adminError = requireAdmin(session);
+    if (adminError) return adminError;
 
     const settings = readSettings();
     return NextResponse.json(settings);
@@ -59,11 +56,9 @@ const settingsSchema = z.object({
 
 export async function PATCH(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    const userRole = (session?.user as { role?: string })?.role;
-    if (!session?.user || userRole !== "admin") {
-      return apiError("Unauthorized", 401);
-    }
+    const session = await getAuthSession();
+    const adminError = requireAdmin(session);
+    if (adminError) return adminError;
 
     const body = await request.json();
     const parsed = settingsSchema.parse(body);

@@ -3,6 +3,7 @@ import { getAuthSession, requireAdmin } from "@/lib/auth";
 import { FEATURE_FLAGS } from "@/lib/feature-flags-config";
 import { getAllFeatureFlags } from "@/lib/feature-flags";
 import { handleApiError } from "@/lib/api-errors";
+import { z } from "zod";
 
 export const runtime = "nodejs";
 
@@ -32,6 +33,11 @@ export async function GET() {
   }
 }
 
+const updateFlagSchema = z.object({
+  key: z.string().min(1, "key is required"),
+  enabled: z.boolean(),
+});
+
 // PATCH: Update a feature flag (admin only, persists to localStorage for client)
 export async function PATCH(request: NextRequest) {
   try {
@@ -40,11 +46,15 @@ export async function PATCH(request: NextRequest) {
     if (authError) return authError;
 
     const body = await request.json();
-    const { key, enabled } = body as { key: string; enabled: boolean };
-
-    if (!key || typeof enabled !== "boolean") {
-      return NextResponse.json({ error: "key and enabled are required" }, { status: 400 });
+    const validation = updateFlagSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: validation.error.issues[0]?.message || "Invalid input" },
+        { status: 400 }
+      );
     }
+
+    const { key, enabled } = validation.data;
 
     if (!(key in FEATURE_FLAGS)) {
       return NextResponse.json({ error: `Unknown feature flag: ${key}` }, { status: 404 });

@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getAuthSession();
     const adminError = requireAdmin(session);
-    if (adminError) return adminError as NextResponse;
+    if (adminError) return adminError;
 
     const [userCounts, courseCounts, enrollmentAgg, paymentAgg, activeUsersCount, activeWeekCount, activeMonthCount] = await Promise.all([
       db.user.groupBy({
