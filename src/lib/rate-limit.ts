@@ -356,6 +356,7 @@ export const RATE_LIMITS = {
   review: { windowMs: 60_000, maxRequests: 10 },
   profile: { windowMs: 60_000, maxRequests: 20 },
   twoFactor: { windowMs: 60_000, maxRequests: 10 },
+  sendVerification: { windowMs: 60_000, maxRequests: 3 },
   sse: { windowMs: 60_000, maxRequests: 5 },
   default: { windowMs: 60_000, maxRequests: 30 },
 } as const;

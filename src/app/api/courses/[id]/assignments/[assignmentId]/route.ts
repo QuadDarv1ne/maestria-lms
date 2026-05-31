@@ -127,23 +127,25 @@ export async function POST(
           const userAnswer = typeof answer === "string" ? JSON.parse(answer) : answer;
           const correctAnswerParsed = JSON.parse(correctAnswer);
           
-          // Если все ответы совпадают - сразу ставим graded
-          const isCorrect =
-            Array.isArray(userAnswer) &&
-            Array.isArray(correctAnswerParsed) &&
-            userAnswer.length === correctAnswerParsed.length &&
-            userAnswer.every((a: number, i: number) => a === correctAnswerParsed[i]);
+          if (typeof correctAnswerParsed === "number") {
+            const userSingleAnswer = Array.isArray(userAnswer) ? userAnswer[0] : userAnswer;
+            status = "graded";
+            score = userSingleAnswer === correctAnswerParsed ? 100 : 0;
+          } else if (Array.isArray(correctAnswerParsed) && Array.isArray(userAnswer)) {
+            const correctSet = new Set(correctAnswerParsed);
+            const userSet = new Set(userAnswer);
 
-          if (isCorrect) {
-            status = "graded";
-            score = 100;
-          } else {
-            // Частичный score за частичные ответы
-            // Используем Set для дедупликации и предотвращения накрутки
-            const uniqueUserAnswers = [...new Set(userAnswer as number[])];
-            const correctCount = uniqueUserAnswers.filter((a: number) => correctAnswerParsed.includes(a)).length;
-            score = Math.round((correctCount / correctAnswerParsed.length) * 100);
-            status = "graded";
+            const exactMatch = userSet.size === correctSet.size && [...userSet].every(a => correctSet.has(a));
+
+            if (exactMatch) {
+              status = "graded";
+              score = 100;
+            } else if (correctSet.size > 0) {
+              const correctCount = [...userSet].filter(a => correctSet.has(a)).length;
+              const wrongCount = userSet.size - correctCount;
+              score = Math.max(0, Math.round(((correctCount - wrongCount) / correctSet.size) * 100));
+              status = "graded";
+            }
           }
         }
       } catch {

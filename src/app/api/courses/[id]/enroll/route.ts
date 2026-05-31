@@ -151,7 +151,6 @@ export async function POST(
           return { error: "Вы уже записаны на этот курс", status: 400 as const };
         }
         if (existingEnrollment.status === "cancelled") {
-          // Переподписка — studentCount уже учтён, не инкрементим
           await tx.enrollment.update({
             where: { id: existingEnrollment.id },
             data: {
@@ -160,7 +159,16 @@ export async function POST(
               enrolledAt: new Date(),
             },
           });
+          if (course.price === 0) {
+            await tx.course.update({
+              where: { id: resolvedCourseId },
+              data: { studentCount: { increment: 1 } },
+            });
+          }
           return { message: "Вы успешно повторно записаны на курс", status: 200 as const };
+        }
+        if (existingEnrollment.status === "completed") {
+          return { error: "Вы уже завершили этот курс", status: 400 as const };
         }
       }
 

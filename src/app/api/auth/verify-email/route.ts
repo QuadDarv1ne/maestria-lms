@@ -21,17 +21,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL("/?error=expired-token", request.url));
     }
 
+    // Validate token identifier prefix
+    const expectedPrefix = "email-verify:";
+    if (!verificationToken.identifier.startsWith(expectedPrefix)) {
+      return NextResponse.redirect(new URL("/?error=invalid-token", request.url));
+    }
+
     // Extract email from identifier (format: "email-verify:email@example.com")
-    const email = verificationToken.identifier.replace("email-verify:", "");
+    const email = verificationToken.identifier.slice(expectedPrefix.length);
 
     await db.user.update({
       where: { email },
       data: { emailVerified: new Date() },
     });
 
-    // Delete the used token
-    await db.verificationToken.delete({
-      where: { token },
+    // Delete all tokens for this email (clean up stale tokens)
+    await db.verificationToken.deleteMany({
+      where: { identifier: `email-verify:${email}` },
     });
 
     return NextResponse.redirect(new URL("/?email-verified=true", request.url));
