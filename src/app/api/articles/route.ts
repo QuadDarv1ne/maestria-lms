@@ -3,8 +3,7 @@ import { db, Prisma } from "@/lib/db";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { parsePagination } from "@/lib/utils";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getAuthSession, requireAuth, type ExtendedSession } from "@/lib/auth";
 import { sanitizeContent } from "@/lib/sanitize";
 import { cacheGet, cacheSet, cacheInvalidateByTag, generateCacheKey, createCacheHeaders } from "@/lib/cache";
 
@@ -141,16 +140,12 @@ export async function POST(request: NextRequest) {
   if (blocked) return blocked;
 
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const session = await getAuthSession();
+    const authError = requireAuth(session);
+    if (authError) return authError;
+    const authSession = session as ExtendedSession;
 
-    const user = await db.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user || !["teacher", "admin"].includes(user.role)) {
+    if (!["teacher", "admin"].includes(authSession.user.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -173,7 +168,7 @@ export async function POST(request: NextRequest) {
         readTime: readTime || 5,
         isPublished: isPublished || false,
         isFeatured: isFeatured || false,
-        authorId: user.id,
+        authorId: authSession.user.id,
       },
     });
 

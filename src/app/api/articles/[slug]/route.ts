@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getAuthSession, requireAuth, type ExtendedSession } from "@/lib/auth";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -50,7 +49,7 @@ export async function GET(
     }
 
     if (!article.isPublished) {
-      const session = await getServerSession(authOptions);
+      const session = await getAuthSession();
       if (!session?.user) {
         return NextResponse.json({ error: "Article not found" }, { status: 404 });
       }
@@ -76,16 +75,12 @@ export async function PATCH(
   if (blocked) return blocked;
 
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const session = await getAuthSession();
+    const authError = requireAuth(session);
+    if (authError) return authError;
+    const authSession = session as ExtendedSession;
 
-    const user = await db.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user || !["teacher", "admin"].includes(user.role)) {
+    if (!["teacher", "admin"].includes(authSession.user.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -96,7 +91,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Article not found" }, { status: 404 });
     }
 
-    if (article.authorId !== user.id && user.role !== "admin") {
+    if (article.authorId !== authSession.user.id && authSession.user.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -126,16 +121,12 @@ export async function DELETE(
   if (blocked) return blocked;
 
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const session = await getAuthSession();
+    const authError = requireAuth(session);
+    if (authError) return authError;
+    const authSession = session as ExtendedSession;
 
-    const user = await db.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user || user.role !== "admin") {
+    if (authSession.user.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
