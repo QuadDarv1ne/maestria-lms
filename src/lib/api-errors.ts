@@ -5,7 +5,7 @@ import { log } from "./logger";
  * Standardized API error response.
  * Logs the error with context and returns a JSON response.
  */
-export function apiError(
+function apiError(
   message: string,
   status: number,
   context?: Record<string, unknown>,
@@ -63,30 +63,32 @@ export function handleApiError(error: unknown, context?: Record<string, unknown>
   if (isPrismaError(error)) {
     const mapping = PRISMA_ERROR_MAP[error.code];
     if (mapping) {
-      log.warn(`Prisma error ${error.code}: ${error.message}`, { ...context, code: error.code });
-      return NextResponse.json({ error: mapping.message }, { status: mapping.status });
+      return apiError(mapping.message, mapping.status, {
+        ...context,
+        prismaCode: error.code,
+        prismaMessage: error.message,
+      });
     }
     // Unknown Prisma code
-    log.error("Unknown Prisma error", { ...context, code: error.code, message: error.message });
-    return NextResponse.json(
-      { error: "Внутренняя ошибка сервера" },
-      { status: 500 },
-    );
+    return apiError("Внутренняя ошибка сервера", 500, {
+      ...context,
+      prismaCode: error.code,
+      prismaMessage: error.message,
+    });
   }
 
   // Zod validation errors
   if (isZodError(error)) {
     const firstIssue = error.issues[0];
-    log.warn("Zod validation error", { ...context, issues: error.issues });
-    return NextResponse.json({ error: firstIssue.message }, { status: 400 });
+    return apiError(firstIssue.message, 400, { ...context, zodIssues: error.issues });
   }
 
   // Generic errors
   const errorMessage = error instanceof Error ? error.message : String(error);
   const errorName = error instanceof Error ? error.name : "UnknownError";
-  log.error("Unhandled API error", { ...context, name: errorName, message: errorMessage });
-  return NextResponse.json(
-    { error: "Внутренняя ошибка сервера" },
-    { status: 500 },
-  );
+  return apiError("Внутренняя ошибка сервера", 500, {
+    ...context,
+    name: errorName,
+    message: errorMessage,
+  });
 }

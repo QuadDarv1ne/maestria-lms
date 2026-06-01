@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { apiError, handleApiError } from "./api-errors";
+import { handleApiError } from "./api-errors";
 import { log } from "./logger";
 
 vi.mock("./logger", () => ({
@@ -11,39 +11,15 @@ vi.mock("./logger", () => ({
   },
 }));
 
-describe("apiError", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("returns JSON response with correct status and message", () => {
-    const response = apiError("Not found", 404);
-    expect(response.status).toBe(404);
-    expect(response.headers.get("content-type")).toContain("application/json");
-  });
-
-  it("logs at error level for 5xx status", async () => {
-    apiError("Server error", 500, { route: "test" });
-    expect(log.error).toHaveBeenCalledWith("Server error", { route: "test" });
-    expect(log.warn).not.toHaveBeenCalled();
-  });
-
-  it("logs at warn level for 4xx status", async () => {
-    apiError("Bad request", 400);
-    expect(log.warn).toHaveBeenCalledWith("Bad request", undefined);
-    expect(log.error).not.toHaveBeenCalled();
-  });
-});
-
 describe("handleApiError", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("returns 500 for a plain Error", () => {
+  it("returns JSON response with correct status for a plain Error", () => {
     const response = handleApiError(new Error("Something broke"));
     expect(response.status).toBe(500);
-    expect(log.error).toHaveBeenCalled();
+    expect(response.headers.get("content-type")).toContain("application/json");
   });
 
   it("returns 409 for Prisma P2002 (unique constraint)", () => {
@@ -88,18 +64,31 @@ describe("handleApiError", () => {
     expect(log.warn).toHaveBeenCalled();
   });
 
-  it("includes context in log output", () => {
-    const context = { route: "auth/register", userId: "123" };
-    handleApiError(new Error("Test error"), context);
+  it("logs at error level for 500 errors", () => {
+    handleApiError(new Error("Server error"), { route: "test" });
     expect(log.error).toHaveBeenCalledWith(
-      "Unhandled API error",
-      expect.objectContaining({ ...context, name: "Error", message: "Test error" }),
+      "Внутренняя ошибка сервера",
+      expect.objectContaining({ route: "test", name: "Error", message: "Server error" }),
     );
+    expect(log.warn).not.toHaveBeenCalled();
+  });
+
+  it("logs at warn level for 4xx errors", () => {
+    const prismaError = { code: "P2002", message: "Unique constraint" };
+    handleApiError(prismaError);
+    expect(log.warn).toHaveBeenCalledWith(
+      "Такая запись уже существует",
+      expect.objectContaining({ prismaCode: "P2002" }),
+    );
+    expect(log.error).not.toHaveBeenCalled();
   });
 
   it("handles non-Error objects gracefully", () => {
     const response = handleApiError("string error");
     expect(response.status).toBe(500);
-    expect(log.error).toHaveBeenCalled();
+    expect(log.error).toHaveBeenCalledWith(
+      "Внутренняя ошибка сервера",
+      expect.objectContaining({ name: "UnknownError", message: "string error" }),
+    );
   });
 });
