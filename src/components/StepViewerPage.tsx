@@ -259,7 +259,8 @@ export function StepViewerPage({
     return () => {
       cancelled = true;
     };
-  }, [courseId, lessonId, locale, router]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseId, lessonId, router]);
 
   // Cleanup navigation timer on unmount
   useEffect(() => {
@@ -325,7 +326,8 @@ export function StepViewerPage({
     return () => {
       cancelled = true;
     };
-  }, [courseId, locale]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseId]);
 
   // Calculate quiz score (percentage of correct answers)
   const quizScore = useMemo(() => {
@@ -340,6 +342,32 @@ export function StepViewerPage({
     if (step?.type !== "quiz" || !step.assignments?.length) return true;
     return step.assignments.every((a) => quizSubmitted[a.id]);
   }, [step, quizSubmitted]);
+
+  // Submit assignment to server
+  const [submittingAssignment, setSubmittingAssignment] = useState(false);
+
+  const submitAssignment = useCallback(async (assignmentId: string, answer: unknown) => {
+    if (!step) return null;
+    setSubmittingAssignment(true);
+    try {
+      const res = await fetch(`/api/courses/${courseId}/assignments/${assignmentId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answer }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || t("course.step.errorLoad", locale));
+        return null;
+      }
+      return data;
+    } catch {
+      toast.error(t("course.step.errorLoad", locale));
+      return null;
+    } finally {
+      setSubmittingAssignment(false);
+    }
+  }, [courseId, step, locale]);
 
   // Complete step handler
   const handleComplete = useCallback(async () => {
@@ -449,28 +477,38 @@ export function StepViewerPage({
   }, []);
 
   // Submit code
-  const handleCodeSubmit = useCallback(() => {
+  const handleCodeSubmit = useCallback(async () => {
     if (!codeValue.trim()) {
       toast.error(t("course.step.writeCodeFirst", locale));
       return;
     }
-    setCodeSubmitted(true);
-    setCodeOutput("// Выполнение кода...\n> Hello, World!\n> Программа завершена успешно");
-    toast.success(t("course.step.codeSent", locale));
-  }, [codeValue, locale]);
+    const assignment = step?.assignments?.[0];
+    if (!assignment) return;
+    const result = await submitAssignment(assignment.id, codeValue);
+    if (result) {
+      setCodeSubmitted(true);
+      setCodeOutput("// Выполнение кода...\n> Hello, World!\n> Программа завершена успешно");
+      toast.success(t("course.step.codeSent", locale));
+    }
+  }, [codeValue, step, submitAssignment, locale]);
 
   // Submit assignment
-  const handleAssignmentSubmit = useCallback(() => {
+  const handleAssignmentSubmit = useCallback(async () => {
     if (!assignmentAnswer.trim()) {
       toast.error(t("course.step.writeAnswerFirst", locale));
       return;
     }
-    setAssignmentSubmitted(true);
-    toast.success(t("course.step.answerSent", locale));
-  }, [assignmentAnswer, locale]);
+    const assignment = step?.assignments?.[0];
+    if (!assignment) return;
+    const result = await submitAssignment(assignment.id, assignmentAnswer);
+    if (result) {
+      setAssignmentSubmitted(true);
+      toast.success(t("course.step.answerSent", locale));
+    }
+  }, [assignmentAnswer, step, submitAssignment, locale]);
 
   // Submit matching
-  const handleMatchingSubmit = useCallback(() => {
+  const handleMatchingSubmit = useCallback(async () => {
     if (!step) return;
     const assignment = step.assignments?.[0];
     if (!assignment) return;
@@ -490,9 +528,16 @@ export function StepViewerPage({
       return;
     }
 
-    setMatchingSubmitted(true);
-    toast.success(t("course.step.answerSent", locale));
-  }, [step, matchingAnswers, locale]);
+    const answerPairs = pairs.map((p) => ({
+      left: p.left,
+      right: matchingAnswers[p.left],
+    }));
+    const result = await submitAssignment(assignment.id, answerPairs);
+    if (result) {
+      setMatchingSubmitted(true);
+      toast.success(t("course.step.answerSent", locale));
+    }
+  }, [step, matchingAnswers, submitAssignment, locale]);
 
   // Move ordering item up or down
   const moveOrderingItem = useCallback((index: number, direction: "up" | "down") => {
@@ -506,17 +551,22 @@ export function StepViewerPage({
   }, []);
 
   // Submit ordering
-  const handleOrderingSubmit = useCallback(() => {
+  const handleOrderingSubmit = useCallback(async () => {
     if (!orderingItems.length) {
       toast.error(t("course.step.orderAllItems", locale) );
       return;
     }
-    setOrderingSubmitted(true);
-    toast.success(t("course.step.answerSent", locale));
-  }, [orderingItems, locale]);
+    const assignment = step?.assignments?.[0];
+    if (!assignment) return;
+    const result = await submitAssignment(assignment.id, orderingItems);
+    if (result) {
+      setOrderingSubmitted(true);
+      toast.success(t("course.step.answerSent", locale));
+    }
+  }, [orderingItems, step, submitAssignment, locale]);
 
   // Submit essay
-  const handleEssaySubmit = useCallback(() => {
+  const handleEssaySubmit = useCallback(async () => {
     if (!essayAnswer.trim()) {
       toast.error(t("course.step.writeEssayFirst", locale) );
       return;
@@ -525,9 +575,14 @@ export function StepViewerPage({
       toast.error(t("course.step.essayTooShort", locale) );
       return;
     }
-    setEssaySubmitted(true);
-    toast.success(t("course.step.answerSent", locale));
-  }, [essayAnswer, locale]);
+    const assignment = step?.assignments?.[0];
+    if (!assignment) return;
+    const result = await submitAssignment(assignment.id, essayAnswer);
+    if (result) {
+      setEssaySubmitted(true);
+      toast.success(t("course.step.answerSent", locale));
+    }
+  }, [essayAnswer, step, submitAssignment, locale]);
 
   // Handle file selection
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -542,13 +597,31 @@ export function StepViewerPage({
   }, [locale]);
 
   // Submit file upload
-  const handleFileSubmit = useCallback(() => {
+  const handleFileSubmit = useCallback(async () => {
     if (!selectedFile) {
       toast.error(t("course.step.selectFileFirst", locale) );
       return;
     }
-    setFileUploaded(true);
-    toast.success(t("course.step.fileSent", locale) );
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+    setSubmittingAssignment(true);
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (res.ok) {
+        setFileUploaded(true);
+        toast.success(t("course.step.fileSent", locale) );
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || t("course.step.errorLoad", locale));
+      }
+    } catch {
+      toast.error(t("course.step.errorLoad", locale));
+    } finally {
+      setSubmittingAssignment(false);
+    }
   }, [selectedFile, locale]);
 
   // Build flat step list for navigation
@@ -811,7 +884,7 @@ export function StepViewerPage({
                 <Button
                   className="bg-amber-600 hover:bg-amber-700 text-white"
                   onClick={handleCodeSubmit}
-                  disabled={codeSubmitted}
+                  disabled={codeSubmitted || submittingAssignment}
                 >
                   <Send className="w-4 h-4 mr-2" />
                   {codeSubmitted ? t("course.step.sent", locale) : t("course.step.submitCode", locale)}
@@ -1054,7 +1127,7 @@ export function StepViewerPage({
                     <Button
                       className="bg-indigo-600 hover:bg-indigo-700 text-white"
                       onClick={handleAssignmentSubmit}
-                      disabled={assignmentSubmitted}
+                      disabled={assignmentSubmitted || submittingAssignment}
                     >
                       <Send className="w-4 h-4 mr-2" />
                       {assignmentSubmitted ? t("course.step.sent", locale) : t("course.step.submitAnswer", locale)}
@@ -1149,6 +1222,7 @@ export function StepViewerPage({
                             <Button
                               className="bg-teal-600 hover:bg-teal-700 text-white"
                               onClick={handleMatchingSubmit}
+                              disabled={matchingSubmitted || submittingAssignment}
                             >
                               <Send className="w-4 h-4 mr-2" />
                               {t("course.step.submitAnswer", locale)}
@@ -1231,6 +1305,7 @@ export function StepViewerPage({
                             <Button
                               className="bg-cyan-600 hover:bg-cyan-700 text-white"
                               onClick={handleOrderingSubmit}
+                              disabled={orderingSubmitted || submittingAssignment}
                             >
                               <Send className="w-4 h-4 mr-2" />
                               {t("course.step.submitAnswer", locale)}
@@ -1291,7 +1366,7 @@ export function StepViewerPage({
                         <Button
                           className="bg-pink-600 hover:bg-pink-700 text-white"
                           onClick={handleEssaySubmit}
-                          disabled={essayAnswer.length < 100}
+                          disabled={essayAnswer.length < 100 || submittingAssignment}
                         >
                           <Send className="w-4 h-4 mr-2" />
                           {t("course.step.submitEssay", locale) }
@@ -1379,7 +1454,7 @@ export function StepViewerPage({
                       <Button
                         className="bg-slate-600 hover:bg-slate-700 text-white"
                         onClick={handleFileSubmit}
-                        disabled={!selectedFile}
+                        disabled={!selectedFile || submittingAssignment}
                       >
                         <Send className="w-4 h-4 mr-2" />
                         {t("course.step.submitFile", locale) }
