@@ -3,7 +3,7 @@ import { getAuthSession, requireAdmin } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-errors";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { z } from "zod";
-import fs from "fs";
+import fs from "fs/promises";
 import path from "path";
 
 const SETTINGS_PATH = path.join(process.cwd(), "data", "settings.json");
@@ -17,24 +17,26 @@ const DEFAULT_SETTINGS = {
   emailNotificationsEnabled: false,
 };
 
-function readSettings() {
+async function ensureSettingsDir() {
+  const dir = path.dirname(SETTINGS_PATH);
+  await fs.mkdir(dir, { recursive: true });
+}
+
+async function readSettings() {
   try {
-    if (!fs.existsSync(SETTINGS_PATH)) {
-      const dir = path.dirname(SETTINGS_PATH);
-      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(SETTINGS_PATH, JSON.stringify(DEFAULT_SETTINGS, null, 2));
-      return DEFAULT_SETTINGS;
-    }
-    return JSON.parse(fs.readFileSync(SETTINGS_PATH, "utf-8"));
+    await fs.access(SETTINGS_PATH);
+    const content = await fs.readFile(SETTINGS_PATH, "utf-8");
+    return JSON.parse(content);
   } catch {
+    await ensureSettingsDir();
+    await fs.writeFile(SETTINGS_PATH, JSON.stringify(DEFAULT_SETTINGS, null, 2));
     return DEFAULT_SETTINGS;
   }
 }
 
-function writeSettings(settings: Record<string, unknown>) {
-  const dir = path.dirname(SETTINGS_PATH);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2));
+async function writeSettings(settings: Record<string, unknown>) {
+  await ensureSettingsDir();
+  await fs.writeFile(SETTINGS_PATH, JSON.stringify(settings, null, 2));
 }
 
 export async function GET(request: NextRequest) {
@@ -45,7 +47,7 @@ export async function GET(request: NextRequest) {
     const adminError = requireAdmin(session);
     if (adminError) return adminError;
 
-    const settings = readSettings();
+    const settings = await readSettings();
     return NextResponse.json(settings);
   } catch (error: unknown) {
     return handleApiError(error, { route: "GET /api/admin/settings" });
@@ -76,9 +78,9 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const current = readSettings();
+    const current = await readSettings();
     const updated = { ...current, ...validation.data };
-    writeSettings(updated);
+    await writeSettings(updated);
 
     return NextResponse.json(updated);
   } catch (error: unknown) {

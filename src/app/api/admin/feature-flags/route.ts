@@ -3,12 +3,17 @@ import { getAuthSession, requireAdmin } from "@/lib/auth";
 import { FEATURE_FLAGS } from "@/lib/feature-flags-config";
 import { getAllFeatureFlags } from "@/lib/feature-flags";
 import { handleApiError } from "@/lib/api-errors";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { z } from "zod";
+
+const checkAdminRateLimit = rateLimit("admin", RATE_LIMITS.admin);
 
 export const runtime = "nodejs";
 
 // GET: List all feature flags and their current status
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const blocked = checkAdminRateLimit(request);
+  if (blocked) return blocked;
   try {
     const session = await getAuthSession();
     if (!session?.user) {
@@ -40,6 +45,8 @@ const updateFlagSchema = z.object({
 
 // PATCH: Update a feature flag (admin only, persists to localStorage for client)
 export async function PATCH(request: NextRequest) {
+  const blocked = checkAdminRateLimit(request);
+  if (blocked) return blocked;
   try {
     const session = await getAuthSession();
     const authError = requireAdmin(session);

@@ -59,7 +59,7 @@ export async function middleware(request: NextRequest) {
   // Set CSRF cookie on responses for new sessions
   if (!request.cookies.has("csrf-token")) {
     const { serialize } = getCsrfCookie();
-    response.headers.set("Set-Cookie", serialize);
+    response.headers.append("Set-Cookie", serialize);
   }
 
   response.headers.set("X-Frame-Options", "DENY");
