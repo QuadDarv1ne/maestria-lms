@@ -11,6 +11,16 @@ export function useSSENotifications() {
   const addNotification = useAppStore((s) => s.addNotification);
   const fetchNotifications = useAppStore((s) => s.fetchNotifications);
   const hasFetchedRef = useRef(false);
+  const prevUserIdRef = useRef<string | undefined>(undefined);
+
+  // Reset fetch flag when user changes (login/logout)
+  useEffect(() => {
+    const currentId = user?.id;
+    if (currentId !== prevUserIdRef.current) {
+      hasFetchedRef.current = false;
+      prevUserIdRef.current = currentId;
+    }
+  }, [user?.id]);
 
   // Keep refs always up-to-date so the SSE handler uses latest callbacks
   const addNotificationRef = useRef(addNotification);

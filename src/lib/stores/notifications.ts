@@ -101,8 +101,12 @@ export const createNotificationsSlice: StateCreator<NotificationsSlice, [], [], 
       }
       const data = await res.json();
       if (data.notifications) {
-        save("maestria-notifications", data.notifications);
-        set({ notifications: data.notifications });
+        const normalized = data.notifications.map((n: NotificationItem) => ({
+          ...n,
+          createdAt: typeof n.createdAt === "string" ? new Date(n.createdAt).getTime() : n.createdAt,
+        }));
+        save("maestria-notifications", normalized);
+        set({ notifications: normalized });
       }
     } catch (err: unknown) {
       log.warn("Failed to fetch notifications from server, keeping cached data", {

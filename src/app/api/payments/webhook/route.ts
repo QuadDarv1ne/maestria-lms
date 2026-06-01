@@ -110,19 +110,21 @@ export async function POST(request: NextRequest) {
       request.headers.get("x-webhook-signature") ||
       request.headers.get("x-signature");
 
-    // Verify HMAC signature if secret is configured
+    // Verify HMAC signature — reject unauthenticated requests when secret is missing
     const webhookSecret = env.paymentWebhookSecret;
-    if (webhookSecret) {
-      const { valid, algorithm } = verifyWebhookSignature({
-        rawBody,
-        signature,
-        secret: webhookSecret,
-      });
+    if (!webhookSecret) {
+      log.error("Webhook secret is not configured — rejecting request", { provider });
+      return NextResponse.json({ error: "Webhook not configured" }, { status: 501 });
+    }
+    const { valid, algorithm } = verifyWebhookSignature({
+      rawBody,
+      signature,
+      secret: webhookSecret,
+    });
 
-      if (!valid) {
-        log.warn("Webhook signature verification failed", { provider, algorithm });
-        return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
-      }
+    if (!valid) {
+      log.warn("Webhook signature verification failed", { provider, algorithm });
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
     // Parse JSON body after signature verification
@@ -153,42 +155,46 @@ export async function POST(request: NextRequest) {
       refunded: "refunded",
     };
 
-    const normalizedStatus = statusMap[data.status.toLowerCase()] || data.status.toLowerCase();
+    const normalizedStatus = statusMap[data.status.toLowerCase()] ?? data.status.toLowerCase();
 
     if (normalizedStatus !== "completed") {
       // Update payment to failed/refunded status
-      const paymentId = data.object?.id || data.object?.paymentId;
-      if (paymentId) {
-        await db.payment.updateMany({
-          where: { id: paymentId, status: "pending" },
-          data: { status: normalizedStatus === "failed" ? "failed" : "refunded" },
-        });
+      const paymentId = data.object?.id ?? data.object?.paymentId;
+      if (!paymentId) {
+        log.warn("Webhook: cannot identify payment for non-completed status", { status: normalizedStatus });
+        return NextResponse.json({ error: "Payment not identified" }, { status: 400 });
       }
+      await db.payment.updateMany({
+        where: { id: paymentId, status: "pending" },
+        data: { status: normalizedStatus === "failed" ? "failed" : "refunded" },
+      });
       return NextResponse.json({ received: true, status: normalizedStatus });
     }
 
-    // Find payment by transaction ID or object ID
-    const transactionId = data.object?.transactionId || data.object?.id;
+    // Find payment by provider's transaction ID or internal payment ID
+    const providerTransactionId = data.object?.transactionId;
+    const providerObjectId = data.object?.id;
     let payment = null;
 
-    if (transactionId?.startsWith("txn_")) {
+    if (providerTransactionId) {
       payment = await db.payment.findFirst({
-        where: { transactionId, status: "pending" },
+        where: { transactionId: providerTransactionId, status: "pending" },
       });
     }
 
-    if (!payment && data.object?.id) {
+    if (!payment && providerObjectId) {
       payment = await db.payment.findUnique({
-        where: { id: data.object.id },
+        where: { id: providerObjectId },
       });
     }
 
     if (!payment) {
-      log.warn("Webhook: payment not found", { transactionId, objectId: data.object?.id });
+      log.warn("Webhook: payment not found", { transactionId: providerTransactionId, objectId: providerObjectId });
       return NextResponse.json({ error: "Payment not found" }, { status: 404 });
     }
 
-    const finalTransactionId = transactionId ?? payment.transactionId;
+    // Use the provider's transaction ID, or fall back to the one stored in our DB
+    const finalTransactionId = providerTransactionId ?? payment.transactionId;
     if (!finalTransactionId) {
       log.error("Webhook: no transaction ID available", { paymentId: payment.id });
       return NextResponse.json({ error: "Missing transaction ID" }, { status: 400 });
@@ -198,7 +204,7 @@ export async function POST(request: NextRequest) {
     log.info("Webhook: payment completed", {
       paymentId: payment.id,
       provider,
-      transactionId,
+      transactionId: finalTransactionId,
     });
 
     return NextResponse.json({ received: true, status: "completed" });

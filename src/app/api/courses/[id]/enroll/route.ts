@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getAuthSession, requireAuth, type ExtendedSession } from "@/lib/auth";
+import { getAuthSession, requireAuth } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
 import { handleApiError } from "@/lib/api-errors";
@@ -30,9 +30,11 @@ export async function POST(
 
     const authError = requireAuth(session);
     if (authError) return authError;
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Невалидная сессия" }, { status: 401 });
+    }
 
-    const authSession = session as ExtendedSession;
-    const userId = authSession.user.id;
+    const userId = session.user.id;
     // Course ID may be a UUID or slug — try both
     const course = await db.course.findFirst({
       where: { OR: [{ id: courseId }, { slug: courseId }] },
@@ -151,6 +153,23 @@ export async function POST(
           return { error: "Вы уже записаны на этот курс", status: 400 as const };
         }
         if (existingEnrollment.status === "cancelled") {
+          if (course.price === 0 && course.maxStudents && course.maxStudents > 0) {
+            const canReenroll = await tx.course.updateMany({
+              where: {
+                id: resolvedCourseId,
+                studentCount: { lt: course.maxStudents },
+              },
+              data: { studentCount: { increment: 1 } },
+            });
+            if (canReenroll.count === 0) {
+              return { error: "Достигнут лимит студентов на курсе", status: 400 as const };
+            }
+          } else if (course.price === 0) {
+            await tx.course.update({
+              where: { id: resolvedCourseId },
+              data: { studentCount: { increment: 1 } },
+            });
+          }
           await tx.enrollment.update({
             where: { id: existingEnrollment.id },
             data: {
@@ -159,12 +178,6 @@ export async function POST(
               enrolledAt: new Date(),
             },
           });
-          if (course.price === 0) {
-            await tx.course.update({
-              where: { id: resolvedCourseId },
-              data: { studentCount: { increment: 1 } },
-            });
-          }
           return { message: "Вы успешно повторно записаны на курс", status: 200 as const };
         }
         if (existingEnrollment.status === "completed") {
@@ -185,6 +198,12 @@ export async function POST(
           if (incremented.count === 0) {
             return { error: "Достигнут лимит студентов на курсе", status: 400 as const };
           }
+        } else {
+          // Курс без лимита — всегда увеличиваем счётчик
+          await tx.course.update({
+            where: { id: resolvedCourseId },
+            data: { studentCount: { increment: 1 } },
+          });
         }
 
         const enrollment = await tx.enrollment.create({
