@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import Redis from "ioredis";
 import { rateLimit } from "@/lib/rate-limit";
 import { db } from "@/lib/db";
 import { log } from "@/lib/logger";
@@ -7,6 +8,7 @@ import { env } from "@/lib/env";
 const checkRateLimit = rateLimit("health", { windowMs: 60000, maxRequests: 30 });
 
 const startTime = Date.now();
+let healthRedisClient: Redis | null = null;
 
 function getUptime(): string {
   const elapsed = Date.now() - startTime;
@@ -50,12 +52,16 @@ async function checkRedis(): Promise<{ status: string; latencyMs: number }> {
   }
 
   try {
-    const Redis = (await import("ioredis")).default;
-    const redis = new Redis(redisUrl, { connectTimeout: 2000, maxRetriesPerRequest: 1 });
-    await redis.ping();
-    await redis.quit();
+    if (!healthRedisClient) {
+      healthRedisClient = new Redis(redisUrl, { connectTimeout: 2000, maxRetriesPerRequest: 1, lazyConnect: true });
+    }
+    await healthRedisClient.ping();
     return { status: "connected", latencyMs: Date.now() - start };
   } catch {
+    if (healthRedisClient) {
+      try { healthRedisClient.quit(); } catch { /* ignore */ }
+      healthRedisClient = null;
+    }
     return { status: "unreachable", latencyMs: Date.now() - start };
   }
 }

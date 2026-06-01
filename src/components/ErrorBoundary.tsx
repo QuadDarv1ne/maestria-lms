@@ -4,6 +4,7 @@ import { Component, type ErrorInfo, type ReactNode } from "react";
 import { t } from "@/lib/i18n";
 import { log } from "@/lib/logger";
 import { useAppStore } from "@/lib/store";
+import type { Locale } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Home, RefreshCw, RotateCcw } from "lucide-react";
 
@@ -16,16 +17,32 @@ interface ErrorBoundaryProps {
 interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
+  locale: Locale;
 }
 
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  private unsubscribe: (() => void) | null = null;
+
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, locale: "ru" };
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, error };
+    return { hasError: true, error, locale: "ru" };
+  }
+
+  componentDidMount() {
+    this.setState({ locale: useAppStore.getState().locale });
+    this.unsubscribe = useAppStore.subscribe((state, prevState) => {
+      if (state.locale !== prevState.locale) {
+        this.setState({ locale: state.locale });
+      }
+    });
+  }
+
+  componentWillUnmount() {
+    this.unsubscribe?.();
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -36,17 +53,17 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   handleRetry = () => {
-    this.setState({ hasError: false, error: null });
+    this.setState({ hasError: false, error: null, locale: this.state.locale });
     this.props.onRetry?.();
   };
 
   handleReload = () => {
-    this.setState({ hasError: false, error: null });
+    this.setState({ hasError: false, error: null, locale: this.state.locale });
     window.location.reload();
   };
 
   handleGoHome = () => {
-    this.setState({ hasError: false, error: null });
+    this.setState({ hasError: false, error: null, locale: this.state.locale });
     window.location.hash = "home";
     window.location.reload();
   };
@@ -57,7 +74,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         return this.props.fallback;
       }
 
-      const locale = useAppStore.getState().locale;
+      const locale = this.state.locale;
 
       return (
         <div className="min-h-[60vh] flex items-center justify-center px-4">

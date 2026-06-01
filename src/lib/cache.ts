@@ -190,6 +190,15 @@ export async function cacheInvalidateByTag(tag: string): Promise<boolean> {
   return false;
 }
 
+function toBase64Url(str: string): string {
+  if (typeof Buffer !== "undefined" && typeof Buffer.from === "function") {
+    return Buffer.from(str).toString("base64url");
+  }
+  const bytes = new TextEncoder().encode(str);
+  const binary = Array.from(bytes).map((b) => String.fromCharCode(b)).join("");
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
 export function generateCacheKey(prefix: string, params: Record<string, unknown>): string {
   const sortedParams = Object.keys(params)
     .sort()
@@ -199,7 +208,7 @@ export function generateCacheKey(prefix: string, params: Record<string, unknown>
     }, {} as Record<string, unknown>);
 
   const paramString = JSON.stringify(sortedParams);
-  return `${prefix}:${Buffer.from(paramString).toString("base64url").substring(0, 32)}`;
+  return `${prefix}:${toBase64Url(paramString).substring(0, 32)}`;
 }
 
 export function createCacheHeaders(
