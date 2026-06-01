@@ -183,8 +183,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (!payment && providerObjectId) {
-      payment = await db.payment.findUnique({
-        where: { id: providerObjectId },
+      payment = await db.payment.findFirst({
+        where: { id: providerObjectId, status: "pending" },
       });
     }
 

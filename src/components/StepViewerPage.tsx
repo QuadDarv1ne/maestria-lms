@@ -118,6 +118,32 @@ function shuffleArray<T>(arr: T[]): T[] {
   return result;
 }
 
+/**
+ * Check if a selected answer matches the correct answer.
+ * Supports both index-based (correctAnswer is a number) and value-based (direct string comparison) formats.
+ */
+function checkQuizAnswer(
+  correctAnswer: string,
+  selected: string,
+  options?: string,
+  optionIndex?: number,
+): boolean {
+  const parsedIndex = parseInt(correctAnswer, 10);
+  if (!Number.isNaN(parsedIndex)) {
+    if (optionIndex !== undefined) return optionIndex === parsedIndex;
+    if (options) {
+      try {
+        const parsedOptions: string[] = JSON.parse(options);
+        return parsedOptions.indexOf(selected) === parsedIndex;
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  }
+  return correctAnswer === selected;
+}
+
 // ==================== MAIN COMPONENT ====================
 
 const stepTypeColors: Record<string, string> = {
@@ -432,28 +458,9 @@ export function StepViewerPage({
       return;
     }
 
-    // Parse correctAnswer consistently - support both index and value formats
-    let isCorrect = false;
-    if (assignment.correctAnswer) {
-      // Try parsing as index first (integer)
-      const parsedIndex = parseInt(assignment.correctAnswer, 10);
-      if (!Number.isNaN(parsedIndex)) {
-        // correctAnswer is an index, compare with option index
-        let options: string[] = [];
-        if (assignment.options) {
-          try {
-            options = JSON.parse(assignment.options);
-          } catch {
-            options = [];
-          }
-        }
-        const selectedIndex = options.indexOf(selected);
-        isCorrect = selectedIndex === parsedIndex;
-      } else {
-        // correctAnswer is a value, direct comparison
-        isCorrect = assignment.correctAnswer === selected;
-      }
-    }
+    const isCorrect = assignment.correctAnswer
+      ? checkQuizAnswer(assignment.correctAnswer, selected, assignment.options ?? undefined)
+      : false;
 
     setQuizSubmitted((prev) => ({ ...prev, [assignmentId]: true }));
     setQuizResults((prev) => ({ ...prev, [assignmentId]: isCorrect }));
@@ -997,18 +1004,9 @@ export function StepViewerPage({
                       <div className="space-y-2">
                         {options.map((opt, optIdx) => {
                           const isSelected = selectedAnswers[assignment.id] === opt;
-                          // Parse correctAnswer consistently - support both index and value formats
-                          let isCorrectOption = false;
-                          if (assignment.correctAnswer) {
-                            const parsedIndex = parseInt(assignment.correctAnswer, 10);
-                            if (!Number.isNaN(parsedIndex)) {
-                              // correctAnswer is an index
-                              isCorrectOption = optIdx === parsedIndex;
-                            } else {
-                              // correctAnswer is a value
-                              isCorrectOption = assignment.correctAnswer === opt;
-                            }
-                          }
+                          const isCorrectOption = assignment.correctAnswer
+                            ? checkQuizAnswer(assignment.correctAnswer, opt, assignment.options ?? undefined, optIdx)
+                            : false;
 
                           let optionClass = "border-gray-200 hover:bg-gray-50 cursor-pointer";
                           if (isSubmitted) {
