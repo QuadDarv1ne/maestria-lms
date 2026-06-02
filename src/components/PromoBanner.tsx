@@ -64,12 +64,12 @@ export function PromoBanner() {
               </span>
             </a>
             <a
-              href="tel:+78001234567"
+              href="tel:+79150480249"
               className="flex items-center gap-3 p-3 rounded-lg bg-white/10 hover:bg-white/20 transition-colors group"
             >
               <Phone className="w-5 h-5 flex-shrink-0" />
               <span className="text-sm font-medium group-hover:underline">
-                +7 (800) 123-45-67
+                +7 (915) 048-02-49
               </span>
             </a>
           </div>

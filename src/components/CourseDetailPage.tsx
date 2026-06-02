@@ -189,7 +189,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
   };
 
   const handleShare = async () => {
-    const url = `${window.location.origin}${window.location.pathname}#course/${courseId}`;
+    const url = `${window.location.origin}/course/${courseId}`;
     if (navigator.share) {
       try {
         await navigator.share({ title: course?.title, url });

@@ -255,7 +255,7 @@ export function ProfilePage() {
     return () => {
       cancelled = true;
     };
-  }, [user, locale,, router]);
+  }, [user, locale, router]);
 
   const handleSaveProfile = async () => {
     setSaving(true);

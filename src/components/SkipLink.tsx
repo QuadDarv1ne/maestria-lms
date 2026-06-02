@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useAppStore } from "@/lib/store";
+import { t } from "@/lib/i18n";
 
 /**
  * Skip-to-content link for keyboard and screen reader users.
@@ -8,6 +10,7 @@ import { useEffect, useRef } from "react";
  */
 export function SkipLink() {
   const linkRef = useRef<HTMLAnchorElement>(null);
+  const locale = useAppStore((s) => s.locale);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -36,7 +39,7 @@ export function SkipLink() {
       href="#main-content"
       className="fixed left-4 top-4 z-[100] -translate-y-full rounded bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow-lg transition-transform duration-200 focus:translate-y-0 focus:outline-none focus:ring-2 focus:ring-white"
     >
-      Skip to main content
+      {t("a11y.skipToContent", locale)}
     </a>
   );
 }

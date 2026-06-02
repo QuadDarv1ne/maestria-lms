@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useEffect, useState, useCallback } from "react";
-import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,40 +16,7 @@ import {
 import { t } from "@/lib/i18n";
 import { useAppStore, type Locale } from "@/lib/store";
 import { promoCourseIds, type PromoCourseData } from "@/lib/promo-courses";
-
-/* Компонент изображения: Next.js Image для локальных, обычный img для внешних */
-function CourseImage({ src, alt }: { src: string; alt: string }) {
-  const [loaded, setLoaded] = useState(false);
-  const isExternal = src.startsWith("http");
-
-  return (
-    <div className="relative w-full h-full">
-      {!loaded && (
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 animate-pulse" />
-      )}
-      {isExternal ? (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img
-          src={src}
-          alt={alt}
-          className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-110 ${loaded ? "opacity-100" : "opacity-0"}`}
-          loading="lazy"
-          onLoad={() => setLoaded(true)}
-          crossOrigin="anonymous"
-        />
-      ) : (
-        <Image
-          src={src}
-          alt={alt}
-          fill
-          className={`object-cover transition-all duration-500 group-hover:scale-110 ${loaded ? "opacity-100" : "opacity-0"}`}
-          sizes="(max-width: 768px) 100vw, 400px"
-          onLoad={() => setLoaded(true)}
-        />
-      )}
-    </div>
-  );
-}
+import { CourseImage } from "@/components/CourseImage";
 
 function PromoCard({ course, locale }: { course: PromoCourseData; locale: Locale }) {
   const title = t(course.titleKey, locale);
@@ -69,7 +35,7 @@ function PromoCard({ course, locale }: { course: PromoCourseData; locale: Locale
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 overflow-hidden border border-slate-100 dark:border-slate-700 group h-full" data-cursor="card">
         {/* Image */}
         <div className="relative h-44 overflow-hidden">
-          <CourseImage src={course.image} alt={title} />
+          <CourseImage src={course.image} alt={title} className="object-cover transition-all duration-500 group-hover:scale-110" loading="lazy" />
           {/* Image overlay gradient */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
 

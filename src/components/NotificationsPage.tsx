@@ -149,9 +149,9 @@ export function NotificationsPage() {
               <BellRing className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold">{t("notifications.title")}</h1>
+              <h1 className="text-2xl md:text-3xl font-bold">{t("notifications.title", locale)}</h1>
               <p className="text-muted-foreground text-sm">
-                {t("notifications.subtitle")}
+                {t("notifications.subtitle", locale)}
               </p>
             </div>
           </div>
@@ -162,9 +162,9 @@ export function NotificationsPage() {
             <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <Bell className="w-10 h-10 text-gray-400" />
             </div>
-            <h2 className="text-xl font-semibold mb-2">{t("notifications.noNotifications")}</h2>
+            <h2 className="text-xl font-semibold mb-2">{t("notifications.noNotifications", locale)}</h2>
             <p className="text-muted-foreground max-w-md mx-auto">
-              {t("notifications.emptyDesc")}
+              {t("notifications.emptyDesc", locale)}
             </p>
           </CardContent>
         </Card>
@@ -181,11 +181,11 @@ export function NotificationsPage() {
             <BellRing className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold">{t("notifications.title")}</h1>
+            <h1 className="text-2xl md:text-3xl font-bold">{t("notifications.title", locale)}</h1>
             <p className="text-muted-foreground text-sm">
               {unreadCount > 0
-                ? `${unreadCount} ${t("notifications.unread")}`
-                : t("notifications.allRead")}
+                ? `${unreadCount} ${t("notifications.unread", locale)}`
+                : t("notifications.allRead", locale)}
             </p>
           </div>
         </div>
@@ -198,7 +198,7 @@ export function NotificationsPage() {
             className="self-start sm:self-auto"
           >
             <CheckCheck className="w-4 h-4 mr-2" />
-            {t("notifications.readAll")}
+            {t("notifications.readAll", locale)}
           </Button>
         )}
       </div>

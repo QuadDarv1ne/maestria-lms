@@ -31,7 +31,7 @@ export function useSSENotifications() {
   }, [addNotification, fetchNotifications]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
 
     let retryDelay = 1000;
 
@@ -86,5 +86,5 @@ export function useSSENotifications() {
         reconnectTimerRef.current = null;
       }
     };
-  }, [user]);
+  }, [user?.id]);
 }

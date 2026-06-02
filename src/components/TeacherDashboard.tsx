@@ -97,7 +97,7 @@ export function TeacherDashboard() {
     return () => {
       controller.abort();
     };
-  }, [user, fetchStats,, router]);
+  }, [user, fetchStats, router]);
 
   if (!user) return null;
 

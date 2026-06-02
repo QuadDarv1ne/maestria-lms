@@ -1648,5 +1648,6 @@
     "payment.loadError": "无法加载支付信息",
     "payment.alreadyProcessed": "支付已处理",
     "payment.needRetry": "无法处理支付。请重试或选择其他支付方式。",
-    "payment.refundInfo": "资金将在10个工作日内退还。"
+    "payment.refundInfo": "资金将在10个工作日内退还。",
+    "a11y.skipToContent": "跳到主要内容"
 }

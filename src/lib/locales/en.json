@@ -1648,5 +1648,6 @@
     "payment.loadError": "Could not load payment info",
     "payment.alreadyProcessed": "Payment already processed",
     "payment.needRetry": "Payment could not be processed. Please try again or choose another method.",
-    "payment.refundInfo": "Funds will be returned within 10 business days."
+    "payment.refundInfo": "Funds will be returned within 10 business days.",
+    "a11y.skipToContent": "Skip to main content"
 }

@@ -140,7 +140,7 @@ export const createNotificationsSlice: StateCreator<NotificationsSlice, [], [], 
       // fallback: create locally
       const fallback: NotificationItem = {
         ...notification,
-        id: crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        id: crypto.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}-${Math.random().toString(36).slice(2, 9)}`,
         createdAt: Date.now(),
       };
       const updated = [fallback, ...get().notifications];
