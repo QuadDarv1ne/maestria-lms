@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth/next";
 import type { JWT } from "next-auth/jwt";
 import type { Session } from "next-auth";
 import bcrypt from "bcryptjs";
+import { authenticator } from "otplib";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { NextResponse } from "next/server";
@@ -74,7 +75,6 @@ export const authOptions: NextAuthOptions = {
         }
 
         if (user.twoFactorEnabled && credentials.twoFactorCode) {
-          const { authenticator } = await import("otplib");
           if (!user.twoFactorSecret || !authenticator.verify({ token: credentials.twoFactorCode, secret: user.twoFactorSecret })) {
             throw new Error("Неверный код 2FA");
           }

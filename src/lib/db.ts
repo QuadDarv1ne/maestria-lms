@@ -52,15 +52,11 @@ export function validateDatabaseConfig(): { valid: boolean; errors: string[] } {
   const provider = getDatabaseProvider()
   const url = env.databaseUrl
 
-  if (!url) {
-    errors.push('DATABASE_URL environment variable is not set')
-  } else {
-    try {
-      formatDatabaseUrl(url, provider)
-    } catch (e: unknown) {
-      if (e instanceof Error) {
-        errors.push(e.message)
-      }
+  try {
+    formatDatabaseUrl(url, provider)
+  } catch (e: unknown) {
+    if (e instanceof Error) {
+      errors.push(e.message)
     }
   }
 

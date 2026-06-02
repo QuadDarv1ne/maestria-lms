@@ -17,17 +17,16 @@ export function verifyWebhookSignature(opts: {
   }
 
   // Support "alg=signature" format (e.g., Stripe-style)
+  // Use lastIndexOf("=") to correctly handle base64 signatures with padding
   let algorithm = "sha256";
   let signatureValue = signature;
 
-  if (signature.includes("=")) {
-    const parts = signature.split("=");
-    if (parts.length === 2) {
-      const [maybeAlg, sig] = parts;
-      if (maybeAlg === "sha256" || maybeAlg === "sha512") {
-        algorithm = maybeAlg;
-        signatureValue = sig;
-      }
+  const eqIdx = signature.lastIndexOf("=");
+  if (eqIdx > 0) {
+    const maybeAlg = signature.slice(0, eqIdx);
+    if (maybeAlg === "sha256" || maybeAlg === "sha512") {
+      algorithm = maybeAlg;
+      signatureValue = signature.slice(eqIdx + 1);
     }
   }
 

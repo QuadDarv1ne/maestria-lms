@@ -1,5 +1,6 @@
 import { env } from "@/lib/env";
 import { log } from "@/lib/logger";
+import crypto from "crypto";
 
 interface YooKassaPaymentResponse {
   id: string;
@@ -34,6 +35,11 @@ function getAuthHeader(): string | null {
   return `Basic ${credentials}`;
 }
 
+function createIdempotencyKey(payload: unknown): string {
+  const stable = JSON.stringify(payload);
+  return crypto.createHash("sha256").update(stable).digest("hex");
+}
+
 async function yooKassaRequest<T>(
   method: string,
   path: string,
@@ -49,7 +55,7 @@ async function yooKassaRequest<T>(
     headers: {
       "Authorization": auth,
       "Content-Type": "application/json",
-      "Idempotence-Key": crypto.randomUUID(),
+      "Idempotence-Key": createIdempotencyKey(body),
     },
     body: body ? JSON.stringify(body) : undefined,
   });

@@ -95,7 +95,8 @@ function getClientIp(request: Request): string {
 function isValidPublicIp(ip: string): boolean {
   const ipv4Match = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(ip);
   if (ipv4Match) {
-    const [, a, b] = ipv4Match.map(Number);
+    const a = Number(ipv4Match[1]);
+    const b = Number(ipv4Match[2]);
 
     if (a === 10) return false;
     if (a === 172 && b >= 16 && b <= 31) return false;
@@ -116,7 +117,8 @@ function isValidPublicIp(ip: string): boolean {
 
   const ipv4MappedMatch = /^::ffff:(\d{1,3})\.(\d{1,3})/.exec(normalizedIp);
   if (ipv4MappedMatch) {
-    const [, a, b] = ipv4MappedMatch.map(Number);
+    const a = Number(ipv4MappedMatch[1]);
+    const b = Number(ipv4MappedMatch[2]);
     if (a === 172 && b >= 16 && b <= 31) return false;
   }
 

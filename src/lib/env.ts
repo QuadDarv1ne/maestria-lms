@@ -12,8 +12,8 @@ function getRequiredEnv(key: string, fallback?: string): string {
   return value;
 }
 
-function getOptionalEnv(key: string, fallback?: string): string {
-  return process.env[key] ?? fallback ?? "";
+function getOptionalEnv(key: string, fallback?: string): string | undefined {
+  return process.env[key] ?? fallback;
 }
 
 export const env = {
@@ -23,7 +23,7 @@ export const env = {
     if (this.isProduction) {
       return getRequiredEnv("NEXT_PUBLIC_SITE_URL");
     }
-    return getOptionalEnv("NEXT_PUBLIC_SITE_URL", "http://localhost:3000");
+    return getOptionalEnv("NEXT_PUBLIC_SITE_URL") ?? "http://localhost:3000";
   },
 
   // Database
@@ -46,8 +46,7 @@ export const env = {
   },
 
   get emailFrom(): string {
-    const email = getOptionalEnv("EMAIL_FROM", "Maestria LMS <noreply@maestria.edu>");
-    return email;
+    return getOptionalEnv("EMAIL_FROM") ?? "Maestria LMS <noreply@maestria.edu>";
   },
 
   // Redis
@@ -73,7 +72,7 @@ export const env = {
   },
 
   get s3Region(): string {
-    return getOptionalEnv("S3_REGION", "auto");
+    return getOptionalEnv("S3_REGION") ?? "auto";
   },
 
   get cdnUrl(): string | undefined {
@@ -82,7 +81,7 @@ export const env = {
 
   // Logging
   get logLevel(): string {
-    return getOptionalEnv("LOG_LEVEL", "info");
+    return getOptionalEnv("LOG_LEVEL") ?? "info";
   },
 
   // Payment webhook

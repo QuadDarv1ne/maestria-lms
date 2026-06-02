@@ -2,9 +2,14 @@ import { Resend } from "resend";
 import { log } from "./logger";
 import { env } from "./env";
 
+let resendClient: Resend | null = null;
+
 function getResendClient(): Resend | null {
   if (!env.resendApiKey) return null;
-  return new Resend(env.resendApiKey);
+  if (!resendClient) {
+    resendClient = new Resend(env.resendApiKey);
+  }
+  return resendClient;
 }
 
 function getFromEmail(): string {

@@ -92,7 +92,7 @@ export function isFeatureEnabled(key: FeatureFlagKey): boolean {
   // 4. Rollout percentage check
   if (flagDef.rolloutPercentage != null && flagDef.rolloutPercentage < 100) {
     // Use deterministic hash based on user/session for consistent rollout
-    const seed = isClient() ? (localStorage.getItem("user-id") || navigator.userAgent) : "server";
+    const seed = isClient() ? (localStorage.getItem("user-id") || navigator.userAgent + window.location.hostname) : "server";
     const hash = simpleHash(seed + key);
     const isEnabled = (hash % 100) < flagDef.rolloutPercentage;
     if (isClient()) flagCache.set(key, isEnabled);

@@ -24,11 +24,12 @@ function broadcastToClients(userId: string, data: string) {
   if (!userClients) return;
 
   const encoder = new TextEncoder();
+  const encoded = encoder.encode(`data: ${data}\n\n`);
   const failed: ReadableStreamDefaultController[] = [];
 
   for (const controller of userClients) {
     try {
-      controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+      controller.enqueue(encoded);
     } catch {
       failed.push(controller);
     }
