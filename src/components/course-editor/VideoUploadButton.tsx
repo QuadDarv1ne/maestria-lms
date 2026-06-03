@@ -22,7 +22,7 @@ export function VideoUploadButton({ onUpload, locale }: { onUpload: (url: string
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Upload failed");
+        throw new Error(data.error || t("courseEditor.uploadError", locale));
       }
       const data = await res.json();
       onUpload(data.url);

@@ -31,6 +31,7 @@ import {
   Upload,
   Pencil,
   X,
+  Grip,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -41,7 +42,7 @@ import { StepSidebar } from "@/components/step-viewer/StepSidebar";
 interface StepData {
   id: string;
   title: string;
-  type: "video" | "text" | "coding" | "quiz" | "assignment" | "matching" | "ordering" | "essay" | "file_upload";
+  type: "video" | "text" | "coding" | "quiz" | "assignment" | "matching" | "ordering" | "essay" | "file_upload" | "drag_drop";
   content: string | null;
   videoUrl: string | null;
   duration: number;
@@ -198,6 +199,40 @@ export function StepViewerPage({
   // Ordering state
   const [orderingItems, setOrderingItems] = useState<string[]>([]);
   const [orderingSubmitted, setOrderingSubmitted] = useState(false);
+
+  // Drag & Drop state
+  const [dragDropItems, setDragDropItems] = useState<Array<{ id: string; text: string; group: string }>>([]);
+  const [dragDropGroups, setDragDropGroups] = useState<string[]>([]);
+  const [dragDropAnswers, setDragDropAnswers] = useState<Record<string, string>>({});
+  const [dragDropSubmitted, setDragDropSubmitted] = useState(false);
+
+  // Initialize drag & drop items when step changes
+  useEffect(() => {
+    setDragDropSubmitted(false);
+    setDragDropAnswers({});
+    const assignment = step?.assignments?.[0];
+    const options = assignment?.options;
+    if (!options) {
+      setDragDropItems([]);
+      setDragDropGroups([]);
+      return;
+    }
+    try {
+      const parsed: Array<{ id: string; text: string; group: string }> = JSON.parse(options);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const shuffled = shuffleArray([...parsed]);
+        setDragDropItems(shuffled);
+        const groups = [...new Set(parsed.map((i) => i.group))];
+        setDragDropGroups(shuffleArray(groups));
+      } else {
+        setDragDropItems([]);
+        setDragDropGroups([]);
+      }
+    } catch {
+      setDragDropItems([]);
+      setDragDropGroups([]);
+    }
+  }, [step?.id, step?.assignments]);
 
   // Initialize ordering items when step changes
   useEffect(() => {
@@ -571,6 +606,25 @@ export function StepViewerPage({
       toast.success(t("course.step.answerSent", locale));
     }
   }, [orderingItems, step, submitAssignment, locale]);
+
+  const handleDragDropSubmit = useCallback(async () => {
+    if (!dragDropItems.length) {
+      toast.error(t("course.step.dragDropHint", locale));
+      return;
+    }
+    const unplaced = dragDropItems.filter((item) => !dragDropAnswers[item.id]);
+    if (unplaced.length > 0) {
+      toast.error(t("course.step.placeAllItems", locale));
+      return;
+    }
+    const assignment = step?.assignments?.[0];
+    if (!assignment) return;
+    const result = await submitAssignment(assignment.id, dragDropAnswers);
+    if (result) {
+      setDragDropSubmitted(true);
+      toast.success(t("course.step.answerSent", locale));
+    }
+  }, [dragDropItems, dragDropAnswers, step, submitAssignment, locale]);
 
   // Submit essay
   const handleEssaySubmit = useCallback(async () => {
@@ -1317,6 +1371,134 @@ export function StepViewerPage({
                       </div>
                     );
                   })()}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* ==================== STEP TYPE: DRAG & DROP ==================== */}
+          {step.type === "drag_drop" && (
+            <div className="space-y-4 mb-6">
+              {step.content && (
+                <Card className="border-0 shadow-sm">
+                  <CardContent className="p-6">
+                    <div className="prose prose-sm max-w-none whitespace-pre-wrap">
+                      {step.content}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              <Card className="border-0 shadow-sm">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-2 mb-4 text-sm text-purple-600">
+                    <Grip className="w-4 h-4" />
+                    <span className="font-medium">{t("course.step.dragDropExercise", locale)}</span>
+                  </div>
+
+                  {dragDropItems.length === 0 ? (
+                    <p className="text-muted-foreground">{t("course.step.noItems", locale)}</p>
+                  ) : (
+                    <div className="space-y-6">
+                      {/* Unplaced items */}
+                      {dragDropItems.filter((item) => !dragDropAnswers[item.id]).length > 0 && (
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-2">{t("course.step.dragDropHint", locale)}</p>
+                          <div className="flex flex-wrap gap-2">
+                            {dragDropItems
+                              .filter((item) => !dragDropAnswers[item.id])
+                              .map((item) => (
+                                <Badge
+                                  key={item.id}
+                                  className="px-3 py-2 cursor-grab text-sm bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 select-none"
+                                  onClick={() => {
+                                    if (dragDropSubmitted) return;
+                                    const target = dragDropGroups.find(
+                                      (g) => !Object.values(dragDropAnswers).includes(g)
+                                    );
+                                    if (target) {
+                                      setDragDropAnswers((prev) => ({ ...prev, [item.id]: target }));
+                                    }
+                                  }}
+                                >
+                                  {item.text}
+                                </Badge>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Groups */}
+                      {dragDropGroups.map((group) => {
+                        const itemsInGroup = dragDropItems.filter(
+                          (item) => dragDropAnswers[item.id] === group
+                        );
+                        const correctItemsInGroup = dragDropItems.filter(
+                          (item) => item.group === group && dragDropAnswers[item.id] === group
+                        );
+                        return (
+                          <div key={group} className="border-2 border-dashed rounded-lg p-4 min-h-[60px]">
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="text-sm font-semibold text-purple-700">{group}</p>
+                              {dragDropSubmitted && (
+                                <Badge className={correctItemsInGroup.length === itemsInGroup.length && itemsInGroup.length > 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}>
+                                  {itemsInGroup.length > 0 ? `${correctItemsInGroup.length}/${itemsInGroup.length}` : "-"}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap gap-2 min-h-[28px]">
+                              {itemsInGroup.map((item) => (
+                                <Badge
+                                  key={item.id}
+                                  className={`px-3 py-1.5 text-sm cursor-pointer select-none ${
+                                    dragDropSubmitted
+                                      ? item.group === group
+                                        ? "bg-green-100 text-green-700 border-green-200"
+                                        : "bg-red-100 text-red-700 border-red-200"
+                                      : "bg-purple-100 text-purple-700 border-purple-200"
+                                  }`}
+                                  onClick={() => {
+                                    if (dragDropSubmitted) return;
+                                    setDragDropAnswers((prev) => {
+                                      const next = { ...prev };
+                                      delete next[item.id];
+                                      return next;
+                                    });
+                                  }}
+                                >
+                                  {item.text}
+                                  {!dragDropSubmitted && <X className="w-3 h-3 ml-1 text-muted-foreground" />}
+                                </Badge>
+                              ))}
+                              {itemsInGroup.length === 0 && (
+                                <span className="text-xs text-muted-foreground italic">
+                                  {t("course.step.dropHere", locale)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-2">
+                        {!dragDropSubmitted ? (
+                          <Button
+                            className="bg-purple-600 hover:bg-purple-700 text-white"
+                            onClick={handleDragDropSubmit}
+                            disabled={dragDropSubmitted || submittingAssignment}
+                          >
+                            <Send className="w-4 h-4 mr-2" />
+                            {t("course.step.submitDragDrop", locale)}
+                          </Button>
+                        ) : (
+                          <Badge className="bg-green-100 text-green-700 border-0">
+                            {t("course.step.sent", locale)}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

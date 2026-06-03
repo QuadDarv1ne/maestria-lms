@@ -17,9 +17,9 @@ import {
 import { Calendar, Globe, Users, BookOpen, X } from "lucide-react";
 
 const LANGUAGE_OPTIONS = [
-  { value: "ru", label: "Русский" },
-  { value: "en", label: "English" },
-  { value: "zh", label: "中文" },
+  { value: "ru", labelKey: "editor.settings.language_ru" },
+  { value: "en", labelKey: "editor.settings.language_en" },
+  { value: "zh", labelKey: "editor.settings.language_zh" },
 ];
 
 interface SettingsTabProps {
@@ -166,7 +166,7 @@ export function SettingsTab({ form, locale, onUpdateField, coursesList = [] }: S
               <SelectContent>
                 {LANGUAGE_OPTIONS.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
+                    {t(opt.labelKey, locale)}
                   </SelectItem>
                 ))}
               </SelectContent>

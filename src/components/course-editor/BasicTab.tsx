@@ -58,7 +58,7 @@ export function BasicTab({
               <Label htmlFor="slug">{t("courseEditor.slugLabel", locale)}</Label>
               <Input
                 id="slug"
-                placeholder="python-beginners"
+                placeholder={t("editor.basic.slug_placeholder", locale)}
                 value={form.slug}
                 onChange={(e) => onUpdateField("slug", e.target.value)}
               />

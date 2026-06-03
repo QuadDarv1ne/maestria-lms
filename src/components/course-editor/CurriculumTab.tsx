@@ -385,7 +385,7 @@ function SortableLesson({
           <div className="flex gap-2">
             <Input
               className="h-8 text-xs flex-1"
-              placeholder="https://..."
+              placeholder={t("editor.curriculum.video_url_placeholder", locale)}
               value={lesson.videoUrl}
               onChange={(e) => onUpdateLesson(moduleIdx, lessonIdx, { videoUrl: e.target.value })}
             />

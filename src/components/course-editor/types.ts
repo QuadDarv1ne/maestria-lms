@@ -22,6 +22,12 @@ export interface OrderingItem {
   correctPosition: number;
 }
 
+export interface DragDropItem {
+  id: string;
+  text: string;
+  group: string;
+}
+
 export interface LessonForm {
   id: string;
   title: string;
@@ -46,6 +52,8 @@ export interface AssignmentForm {
   matchingPairs?: MatchingPair[];
   // Ordering-specific
   orderingItems?: OrderingItem[];
+  // Drag-drop-specific
+  dragDropItems?: DragDropItem[];
   // General
   correctAnswer?: string;
   maxAttempts?: number;
@@ -131,6 +139,14 @@ export function createEmptyOrderingItem(): OrderingItem {
   };
 }
 
+export function createEmptyDragDropItem(): DragDropItem {
+  return {
+    id: uid(),
+    text: "",
+    group: "",
+  };
+}
+
 export function createEmptyAssignment(): AssignmentForm {
   return {
     id: uid(),
@@ -141,6 +157,7 @@ export function createEmptyAssignment(): AssignmentForm {
     quizOptions: [createEmptyQuizOption(), createEmptyQuizOption(), createEmptyQuizOption(), createEmptyQuizOption()],
     matchingPairs: [createEmptyMatchingPair(), createEmptyMatchingPair(), createEmptyMatchingPair()],
     orderingItems: [createEmptyOrderingItem(), createEmptyOrderingItem(), createEmptyOrderingItem()],
+    dragDropItems: [createEmptyDragDropItem(), createEmptyDragDropItem(), createEmptyDragDropItem()],
     maxAttempts: 3,
     timeLimit: 0,
   };

@@ -1,8 +1,9 @@
 "use client";
 
 import type { Locale } from "@/lib/stores/ui";
-import type { AssignmentForm, QuizOption, MatchingPair, OrderingItem } from "./types";
-import { createEmptyQuizOption, createEmptyMatchingPair, createEmptyOrderingItem } from "./types";
+import type { AssignmentForm, QuizOption, MatchingPair, OrderingItem, DragDropItem } from "./types";
+import { createEmptyQuizOption, createEmptyMatchingPair, createEmptyOrderingItem, createEmptyDragDropItem } from "./types";
+import { t } from "@/lib/i18n";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,17 +30,24 @@ import {
   Move,
   Upload,
   Pencil,
+  Grip,
 } from "lucide-react";
 
 const ASSIGNMENT_TYPE_OPTIONS = [
-  { value: "quiz", label: "Тест", icon: HelpCircle, description: "Выбор правильного ответа" },
-  { value: "text", label: "Текстовый ответ", icon: FileText, description: "Развёрнутый ответ студента" },
-  { value: "coding", label: "Программирование", icon: Code2, description: "Написание и выполнение кода" },
-  { value: "matching", label: "Сопоставление", icon: ArrowUpDown, description: "Соединение пар элементов" },
-  { value: "ordering", label: "Упорядочивание", icon: Move, description: "Расстановка в правильном порядке" },
-  { value: "essay", label: "Эссе", icon: Pencil, description: "Развёрнутый письменный ответ" },
-  { value: "file_upload", label: "Загрузка файла", icon: Upload, description: "Прикрепление файла с работой" },
+  { value: "quiz", icon: HelpCircle, labelKey: "editor.assignment.quiz", descKey: "editor.assignment.quiz_desc" },
+  { value: "text", icon: FileText, labelKey: "editor.assignment.text", descKey: "editor.assignment.text_desc" },
+  { value: "coding", icon: Code2, labelKey: "editor.assignment.coding", descKey: "editor.assignment.coding_desc" },
+  { value: "matching", icon: ArrowUpDown, labelKey: "editor.assignment.matching", descKey: "editor.assignment.matching_desc" },
+  { value: "ordering", icon: Move, labelKey: "editor.assignment.ordering", descKey: "editor.assignment.ordering_desc" },
+  { value: "essay", icon: Pencil, labelKey: "editor.assignment.essay", descKey: "editor.assignment.essay_desc" },
+  { value: "file_upload", icon: Upload, labelKey: "editor.assignment.file_upload", descKey: "editor.assignment.file_upload_desc" },
+  { value: "drag_drop", icon: Grip, labelKey: "editor.assignment.drag_drop", descKey: "editor.assignment.drag_drop_desc" },
 ];
+
+function getTypeLabel(type: string, locale: Locale): string {
+  const opt = ASSIGNMENT_TYPE_OPTIONS.find((o) => o.value === type);
+  return t(opt?.labelKey || type, locale);
+}
 
 function SortableQuizOption({
   option,
@@ -47,19 +55,21 @@ function SortableQuizOption({
   onUpdate,
   onRemove,
   totalOptions,
+  locale,
 }: {
   option: QuizOption;
   idx: number;
   onUpdate: (patch: Partial<QuizOption>) => void;
   onRemove: () => void;
   totalOptions: number;
+  locale: Locale;
 }) {
   return (
     <div className="flex items-center gap-2 p-2 border rounded-lg bg-white">
       <span className="text-xs font-mono text-muted-foreground w-5">{idx + 1}.</span>
       <Input
         className="flex-1 h-8 text-sm"
-        placeholder="Вариант ответа"
+        placeholder={t("editor.assignment.quiz_option_placeholder", locale)}
         value={option.text}
         onChange={(e) => onUpdate({ text: e.target.value })}
       />
@@ -90,26 +100,28 @@ function SortableMatchingPair({
   onUpdate,
   onRemove,
   totalPairs,
+  locale,
 }: {
   pair: MatchingPair;
   idx: number;
   onUpdate: (patch: Partial<MatchingPair>) => void;
   onRemove: () => void;
   totalPairs: number;
+  locale: Locale;
 }) {
   return (
     <div className="flex items-center gap-2 p-2 border rounded-lg bg-white">
       <span className="text-xs font-mono text-muted-foreground w-5">{idx + 1}.</span>
       <Input
         className="flex-1 h-8 text-sm"
-        placeholder="Левый элемент"
+        placeholder={t("editor.assignment.matching_left_placeholder", locale)}
         value={pair.left}
         onChange={(e) => onUpdate({ left: e.target.value })}
       />
       <span className="text-muted-foreground">↔</span>
       <Input
         className="flex-1 h-8 text-sm"
-        placeholder="Правый элемент"
+        placeholder={t("editor.assignment.matching_right_placeholder", locale)}
         value={pair.right}
         onChange={(e) => onUpdate({ right: e.target.value })}
       />
@@ -132,12 +144,14 @@ function SortableOrderingItem({
   onUpdate,
   onRemove,
   totalItems,
+  locale,
 }: {
   item: OrderingItem;
   idx: number;
   onUpdate: (patch: Partial<OrderingItem>) => void;
   onRemove: () => void;
   totalItems: number;
+  locale: Locale;
 }) {
   return (
     <div className="flex items-center gap-2 p-2 border rounded-lg bg-white">
@@ -147,9 +161,55 @@ function SortableOrderingItem({
       </Badge>
       <Input
         className="flex-1 h-8 text-sm"
-        placeholder="Элемент для сортировки"
+        placeholder={t("editor.assignment.ordering_item_placeholder", locale)}
         value={item.text}
         onChange={(e) => onUpdate({ text: e.target.value })}
+      />
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+        disabled={totalItems <= 2}
+        onClick={onRemove}
+      >
+        <X className="w-4 h-4" />
+      </Button>
+    </div>
+  );
+}
+
+function SortableDragDropItem({
+  item,
+  idx,
+  onUpdate,
+  onRemove,
+  totalItems,
+  locale,
+}: {
+  item: DragDropItem;
+  idx: number;
+  onUpdate: (patch: Partial<DragDropItem>) => void;
+  onRemove: () => void;
+  totalItems: number;
+  locale: Locale;
+}) {
+  return (
+    <div className="flex items-center gap-2 p-2 border rounded-lg bg-white">
+      <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab" />
+      <Badge variant="secondary" className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold">
+        {idx + 1}
+      </Badge>
+      <Input
+        className="flex-1 h-8 text-sm"
+        placeholder={t("editor.assignment.drag_item_placeholder", locale)}
+        value={item.text}
+        onChange={(e) => onUpdate({ text: e.target.value })}
+      />
+      <Input
+        className="w-28 h-8 text-sm"
+        placeholder={t("editor.assignment.drag_group_placeholder", locale)}
+        value={item.group}
+        onChange={(e) => onUpdate({ group: e.target.value })}
       />
       <Button
         variant="ghost"
@@ -171,7 +231,7 @@ interface AssignmentEditorProps {
   onRemove: () => void;
 }
 
-export function AssignmentEditor({ assignment, locale: _locale, onUpdate, onRemove }: AssignmentEditorProps) {
+export function AssignmentEditor({ assignment, locale, onUpdate, onRemove }: AssignmentEditorProps) {
   const assignmentType = assignment.type;
 
   return (
@@ -185,13 +245,13 @@ export function AssignmentEditor({ assignment, locale: _locale, onUpdate, onRemo
             })()}
             <Input
               className="flex-1 max-w-md h-8 text-sm font-normal"
-              placeholder="Название задания"
+              placeholder={t("editor.assignment.title_placeholder", locale)}
               value={assignment.title}
               onChange={(e) => onUpdate({ title: e.target.value })}
             />
           </CardTitle>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary">{ASSIGNMENT_TYPE_OPTIONS.find((o) => o.value === assignmentType)?.label}</Badge>
+            <Badge variant="secondary">{getTypeLabel(assignmentType, locale)}</Badge>
             <Button
               variant="ghost"
               size="sm"
@@ -204,22 +264,20 @@ export function AssignmentEditor({ assignment, locale: _locale, onUpdate, onRemo
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Description */}
         <div className="space-y-1">
-          <Label>Описание задания</Label>
+          <Label>{t("editor.assignment.description_label", locale)}</Label>
           <Textarea
             className="min-h-[80px] text-sm"
-            placeholder="Опишите что нужно сделать в задании"
+            placeholder={t("editor.assignment.description_placeholder", locale)}
             value={assignment.description}
             onChange={(e) => onUpdate({ description: e.target.value })}
             rows={3}
           />
         </div>
 
-        {/* Settings row */}
         <div className="grid grid-cols-3 gap-4">
           <div className="space-y-1">
-            <Label>Тип задания</Label>
+            <Label>{t("editor.assignment.type_label", locale)}</Label>
             <Select
               value={assignment.type}
               onValueChange={(v) => onUpdate({ type: v as AssignmentForm["type"] })}
@@ -230,14 +288,14 @@ export function AssignmentEditor({ assignment, locale: _locale, onUpdate, onRemo
               <SelectContent>
                 {ASSIGNMENT_TYPE_OPTIONS.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
+                    {t(opt.labelKey, locale)}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1">
-            <Label>Баллы</Label>
+            <Label>{t("editor.assignment.points_label", locale)}</Label>
             <Input
               type="number"
               min={1}
@@ -247,7 +305,7 @@ export function AssignmentEditor({ assignment, locale: _locale, onUpdate, onRemo
             />
           </div>
           <div className="space-y-1">
-            <Label>Макс. попыток</Label>
+            <Label>{t("editor.assignment.max_attempts_label", locale)}</Label>
             <Input
               type="number"
               min={1}
@@ -261,8 +319,8 @@ export function AssignmentEditor({ assignment, locale: _locale, onUpdate, onRemo
         <div className="grid grid-cols-2 gap-4">
           <div className="flex items-center justify-between">
             <div>
-              <Label>Ограничение по времени</Label>
-              <p className="text-xs text-muted-foreground">0 = без ограничения</p>
+              <Label>{t("editor.assignment.time_limit_label", locale)}</Label>
+              <p className="text-xs text-muted-foreground">{t("editor.assignment.time_limit_hint", locale)}</p>
             </div>
             <Input
               type="number"
@@ -274,11 +332,10 @@ export function AssignmentEditor({ assignment, locale: _locale, onUpdate, onRemo
           </div>
         </div>
 
-        {/* Quiz Options */}
         {assignmentType === "quiz" && (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Варианты ответов</Label>
+              <Label>{t("editor.assignment.quiz_options_label", locale)}</Label>
               <Button
                 variant="outline"
                 size="sm"
@@ -290,7 +347,7 @@ export function AssignmentEditor({ assignment, locale: _locale, onUpdate, onRemo
                 }
               >
                 <Plus className="w-3 h-3 mr-1" />
-                Добавить вариант
+                {t("editor.assignment.add_option", locale)}
               </Button>
             </div>
             <div className="space-y-1">
@@ -299,6 +356,7 @@ export function AssignmentEditor({ assignment, locale: _locale, onUpdate, onRemo
                   key={option.id}
                   option={option}
                   idx={idx}
+                  locale={locale}
                   totalOptions={assignment.quizOptions?.length || 0}
                   onUpdate={(patch) => {
                     const updated = [...(assignment.quizOptions || [])];
@@ -314,16 +372,15 @@ export function AssignmentEditor({ assignment, locale: _locale, onUpdate, onRemo
               ))}
             </div>
             <p className="text-xs text-muted-foreground">
-              Отметьте правильные варианты ответа зелёным цветом
+              {t("editor.assignment.quiz_options_hint", locale)}
             </p>
           </div>
         )}
 
-        {/* Matching Pairs */}
         {assignmentType === "matching" && (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Пары для сопоставления</Label>
+              <Label>{t("editor.assignment.matching_label", locale)}</Label>
               <Button
                 variant="outline"
                 size="sm"
@@ -335,7 +392,7 @@ export function AssignmentEditor({ assignment, locale: _locale, onUpdate, onRemo
                 }
               >
                 <Plus className="w-3 h-3 mr-1" />
-                Добавить пару
+                {t("editor.assignment.add_pair", locale)}
               </Button>
             </div>
             <div className="space-y-1">
@@ -344,6 +401,7 @@ export function AssignmentEditor({ assignment, locale: _locale, onUpdate, onRemo
                   key={pair.id}
                   pair={pair}
                   idx={idx}
+                  locale={locale}
                   totalPairs={assignment.matchingPairs?.length || 0}
                   onUpdate={(patch) => {
                     const updated = [...(assignment.matchingPairs || [])];
@@ -359,16 +417,15 @@ export function AssignmentEditor({ assignment, locale: _locale, onUpdate, onRemo
               ))}
             </div>
             <p className="text-xs text-muted-foreground">
-              Студент должен соединить элементы из левой колонки с элементами из правой
+              {t("editor.assignment.matching_hint", locale)}
             </p>
           </div>
         )}
 
-        {/* Ordering Items */}
         {assignmentType === "ordering" && (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Элементы для сортировки</Label>
+              <Label>{t("editor.assignment.ordering_label", locale)}</Label>
               <Button
                 variant="outline"
                 size="sm"
@@ -380,7 +437,7 @@ export function AssignmentEditor({ assignment, locale: _locale, onUpdate, onRemo
                 }
               >
                 <Plus className="w-3 h-3 mr-1" />
-                Добавить элемент
+                {t("editor.assignment.add_item", locale)}
               </Button>
             </div>
             <div className="space-y-1">
@@ -389,6 +446,7 @@ export function AssignmentEditor({ assignment, locale: _locale, onUpdate, onRemo
                   key={item.id}
                   item={item}
                   idx={idx}
+                  locale={locale}
                   totalItems={assignment.orderingItems?.length || 0}
                   onUpdate={(patch) => {
                     const updated = [...(assignment.orderingItems || [])];
@@ -404,24 +462,69 @@ export function AssignmentEditor({ assignment, locale: _locale, onUpdate, onRemo
               ))}
             </div>
             <p className="text-xs text-muted-foreground">
-              Расположите элементы в правильном порядке (сверху вниз)
+              {t("editor.assignment.ordering_hint", locale)}
             </p>
           </div>
         )}
 
-        {/* Correct Answer for text/coding/essay */}
+        {/* Drag & Drop Items */}
+        {assignmentType === "drag_drop" && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>{t("editor.assignment.drag_drop_label", locale)}</Label>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() =>
+                  onUpdate({
+                    dragDropItems: [...(assignment.dragDropItems || []), createEmptyDragDropItem()],
+                  })
+                }
+              >
+                <Plus className="w-3 h-3 mr-1" />
+                {t("editor.assignment.add_drag_item", locale)}
+              </Button>
+            </div>
+            <div className="space-y-1">
+              {assignment.dragDropItems?.map((item, idx) => (
+                <SortableDragDropItem
+                  key={item.id}
+                  item={item}
+                  idx={idx}
+                  locale={locale}
+                  totalItems={assignment.dragDropItems?.length || 0}
+                  onUpdate={(patch) => {
+                    const updated = [...(assignment.dragDropItems || [])];
+                    updated[idx] = { ...updated[idx], ...patch };
+                    onUpdate({ dragDropItems: updated });
+                  }}
+                  onRemove={() => {
+                    const updated = [...(assignment.dragDropItems || [])];
+                    updated.splice(idx, 1);
+                    onUpdate({ dragDropItems: updated });
+                  }}
+                />
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {t("editor.assignment.drag_drop_hint", locale)}
+            </p>
+          </div>
+        )}
+
         {(assignmentType === "text" || assignmentType === "coding" || assignmentType === "essay") && (
           <div className="space-y-1">
-            <Label>Правильный ответ / Пример решения</Label>
+            <Label>{t("editor.assignment.correct_answer_label", locale)}</Label>
             <Textarea
               className="min-h-[100px] text-sm font-mono"
-              placeholder="Введите правильный ответ или пример решения"
+              placeholder={t("editor.assignment.correct_answer_placeholder", locale)}
               value={assignment.correctAnswer || ""}
               onChange={(e) => onUpdate({ correctAnswer: e.target.value })}
               rows={5}
             />
             <p className="text-xs text-muted-foreground">
-              Этот ответ будет использоваться для автоматической проверки (если применимо)
+              {t("editor.assignment.correct_answer_hint", locale)}
             </p>
           </div>
         )}

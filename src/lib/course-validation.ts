@@ -1,5 +1,16 @@
 import { z } from "zod";
 
+export const assignmentSchema = z.object({
+  id: z.string().optional(),
+  title: z.string().min(1).max(500).optional(),
+  description: z.string().optional(),
+  type: z.enum(["quiz", "coding", "text", "matching", "ordering", "file_upload", "essay", "drag_drop"]).optional().default("quiz"),
+  points: z.union([z.string(), z.number()]).optional().default(10),
+  options: z.string().optional(),
+  correctAnswer: z.string().optional(),
+  maxAttempts: z.union([z.string(), z.number()]).optional(),
+});
+
 export const lessonSchema = z.object({
   id: z.string().optional(),
   title: z.string().min(1).max(200).optional(),
@@ -20,6 +31,7 @@ export const lessonSchema = z.object({
   duration: z.union([z.string(), z.number()]).optional(),
   sortOrder: z.number().optional(),
   isFree: z.boolean().optional(),
+  assignments: z.array(assignmentSchema).optional(),
 });
 
 export const moduleSchema = z.object({
@@ -63,6 +75,17 @@ export type ModuleInput = {
   lessons?: LessonInput[];
 };
 
+export type AssignmentInput = {
+  id?: string;
+  title?: string;
+  description?: string;
+  type?: string;
+  points?: string | number;
+  options?: string;
+  correctAnswer?: string;
+  maxAttempts?: string | number;
+};
+
 export type LessonInput = {
   id?: string;
   title?: string;
@@ -72,6 +95,7 @@ export type LessonInput = {
   duration?: string | number;
   sortOrder?: number;
   isFree?: boolean;
+  assignments?: AssignmentInput[];
 };
 
 export function validatePrices(price: unknown, oldPrice: unknown): { error: string } | null {

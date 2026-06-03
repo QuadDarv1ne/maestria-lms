@@ -8,6 +8,8 @@ import { Switch } from "@/components/ui/switch";
 import { Flag, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { setFeatureFlag, clearFeatureFlags } from "@/lib/feature-flags";
+import { t } from "@/lib/i18n";
+import type { Locale } from "@/lib/stores/ui";
 
 interface FlagDefinition {
   key: string;
@@ -17,7 +19,7 @@ interface FlagDefinition {
   rolloutPercentage?: number | null;
 }
 
-export function AdminFeatureFlags({ locale: _locale }: { locale: string }) {
+export function AdminFeatureFlags({ locale }: { locale: Locale }) {
   const [flags, setFlags] = useState<FlagDefinition[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -25,11 +27,11 @@ export function AdminFeatureFlags({ locale: _locale }: { locale: string }) {
     setLoading(true);
     try {
       const res = await fetch("/api/admin/feature-flags");
-      if (!res.ok) throw new Error("Failed to fetch flags");
+      if (!res.ok) throw new Error(t("admin.feature_flags.fetch_failed", locale));
       const data = await res.json();
       setFlags(data.flags);
     } catch {
-      toast.error("Failed to load feature flags");
+      toast.error(t("admin.feature_flags.load_failed", locale));
     } finally {
       setLoading(false);
     }
@@ -37,6 +39,7 @@ export function AdminFeatureFlags({ locale: _locale }: { locale: string }) {
 
   useEffect(() => {
     fetchFlags();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function toggleFlag(key: string, enabled: boolean) {
@@ -56,15 +59,15 @@ export function AdminFeatureFlags({ locale: _locale }: { locale: string }) {
         prev.map((f) => (f.key === key ? { ...f, enabled } : f))
       );
 
-      toast.success(`${key} ${enabled ? "enabled" : "disabled"}`);
+      toast.success(`${key} ${enabled ? t("admin.settings.enabled", locale) : t("admin.settings.disabled", locale)}`);
     } catch {
-      toast.error("Failed to update flag");
+      toast.error(t("admin.feature_flags.update_failed", locale));
     }
   }
 
   function handleClearOverrides() {
     clearFeatureFlags();
-    toast.success("All flag overrides cleared");
+    toast.success(t("admin.feature_flags.cleared", locale));
     fetchFlags();
   }
 
@@ -80,9 +83,9 @@ export function AdminFeatureFlags({ locale: _locale }: { locale: string }) {
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center justify-between">
-          <span className="flex items-center gap-2"><Flag className="w-5 h-5" />Feature Flags</span>
+          <span className="flex items-center gap-2"><Flag className="w-5 h-5" />{t("admin.feature_flags.title", locale)}</span>
           <Button onClick={handleClearOverrides} variant="outline" size="sm">
-            Clear Overrides
+            {t("admin.feature_flags.clear_overrides", locale)}
           </Button>
         </CardTitle>
       </CardHeader>
@@ -96,10 +99,10 @@ export function AdminFeatureFlags({ locale: _locale }: { locale: string }) {
               <div className="flex items-center gap-2">
                 <p className="text-sm font-medium font-mono">{flag.key}</p>
                 {flag.enabled !== flag.defaultValue && (
-                  <Badge variant="secondary" className="text-xs">overridden</Badge>
+                  <Badge variant="secondary" className="text-xs">{t("admin.feature_flags.overridden", locale)}</Badge>
                 )}
                 {flag.rolloutPercentage != null && flag.rolloutPercentage < 100 && (
-                  <Badge variant="outline" className="text-xs">{flag.rolloutPercentage}% rollout</Badge>
+                  <Badge variant="outline" className="text-xs">{flag.rolloutPercentage}% {t("admin.feature_flags.rollout", locale)}</Badge>
                 )}
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">{flag.description}</p>

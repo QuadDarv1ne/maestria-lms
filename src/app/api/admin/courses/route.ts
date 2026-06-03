@@ -13,6 +13,33 @@ export const runtime = "nodejs";
 
 const checkRateLimit = rateLimit("admin", RATE_LIMITS.admin);
 
+type AssignmentInput = {
+  title?: string;
+  description?: string;
+  type?: string;
+  points?: string | number;
+  options?: string | null;
+  correctAnswer?: string | null;
+  maxAttempts?: string | number | null;
+};
+
+const assignmentDataShape = (a: AssignmentInput) => ({
+  title: a.title || "Задание",
+  description: a.description || "",
+  type: a.type || "quiz",
+  points: Number(a.points) || 10,
+  options: a.options || null,
+  correctAnswer: a.correctAnswer || null,
+  maxAttempts: a.maxAttempts ? Number(a.maxAttempts) : undefined,
+});
+
+const assignmentCreateData = (a: AssignmentInput, lessonId: string) => ({
+  lessonId,
+  ...assignmentDataShape(a),
+});
+
+const assignmentUpdateData = (a: AssignmentInput) => assignmentDataShape(a);
+
 // GET: Все курсы (включая неопубликованные) — для админов
 export async function GET(request: NextRequest) {
   const blocked = checkRateLimit(request);
@@ -207,6 +234,9 @@ export async function POST(request: NextRequest) {
                 duration: Number(lesson.duration) || 0,
                 sortOrder: lesson.sortOrder || lIdx + 1,
                 isFree: lesson.isFree || false,
+                assignments: lesson.assignments && lesson.assignments.length > 0 ? {
+                  create: lesson.assignments.map((a) => assignmentDataShape(a)),
+                } : undefined,
               })),
             },
           })),
@@ -464,8 +494,39 @@ export async function PUT(request: NextRequest) {
                     isFree: lesson.isFree || false,
                   },
                 });
+
+                if (lesson.assignments !== undefined) {
+                  const existingAssignments = await tx.assignment.findMany({
+                    where: { lessonId: existingLessonId },
+                  });
+                  const existingAssignmentMap = new Map(existingAssignments.map((a) => [a.id, a]));
+                  const incomingAssignmentIds = new Set<string>();
+                  for (const a of lesson.assignments || []) {
+                    if (a.id && existingAssignmentMap.has(a.id)) incomingAssignmentIds.add(a.id);
+                  }
+
+                  for (const a of lesson.assignments || []) {
+                    const existingAId = a.id && existingAssignmentMap.has(a.id) ? a.id : null;
+                    if (existingAId) {
+                      await tx.assignment.update({
+                        where: { id: existingAId },
+                        data: assignmentUpdateData(a),
+                      });
+                    } else {
+                      await tx.assignment.create({
+                        data: assignmentCreateData(a, existingLessonId),
+                      });
+                    }
+                  }
+
+                  for (const [aId] of existingAssignmentMap) {
+                    if (!incomingAssignmentIds.has(aId)) {
+                      await tx.assignment.delete({ where: { id: aId } });
+                    }
+                  }
+                }
               } else {
-                await tx.lesson.create({
+                const newLesson = await tx.lesson.create({
                   data: {
                     moduleId: existingId,
                     title: lesson.title || `Урок ${lIdx + 1}`,
@@ -477,6 +538,14 @@ export async function PUT(request: NextRequest) {
                     isFree: lesson.isFree || false,
                   },
                 });
+
+                if (lesson.assignments && lesson.assignments.length > 0) {
+                  for (const a of lesson.assignments) {
+                    await tx.assignment.create({
+                      data: assignmentCreateData(a, newLesson.id),
+                    });
+                  }
+                }
               }
             }
 
@@ -497,7 +566,7 @@ export async function PUT(request: NextRequest) {
 
             for (let lIdx = 0; lIdx < (mod.lessons || []).length; lIdx++) {
               const lesson = (mod.lessons || [])[lIdx];
-              await tx.lesson.create({
+              const newLesson = await tx.lesson.create({
                 data: {
                   moduleId: newModule.id,
                   title: lesson.title || `Урок ${lIdx + 1}`,
@@ -509,6 +578,14 @@ export async function PUT(request: NextRequest) {
                   isFree: lesson.isFree || false,
                 },
               });
+
+              if (lesson.assignments && lesson.assignments.length > 0) {
+                for (const a of lesson.assignments) {
+                  await tx.assignment.create({
+                    data: assignmentCreateData(a, newLesson.id),
+                  });
+                }
+              }
             }
           }
         }

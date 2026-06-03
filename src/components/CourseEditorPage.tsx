@@ -272,6 +272,34 @@ export function CourseEditorPage() {
               content: l.content.trim() || undefined,
               videoUrl: l.videoUrl.trim() || undefined,
               sortOrder: lIdx + 1,
+              assignments: l.assignments.length > 0 ? l.assignments.map((a) => {
+                const aData: Record<string, unknown> = {
+                  title: a.title.trim() || "",
+                  description: a.description.trim() || "",
+                  type: a.type,
+                  points: Number(a.points) || 10,
+                  maxAttempts: a.maxAttempts ? Number(a.maxAttempts) : null,
+                };
+                if (a.type === "quiz" && a.quizOptions?.length) {
+                  aData.options = JSON.stringify(a.quizOptions.map((o) => o.text));
+                  aData.correctAnswer = JSON.stringify(
+                    a.quizOptions.map((o, i) => o.isCorrect ? i : -1).filter((i) => i >= 0)
+                  );
+                } else if (a.type === "matching" && a.matchingPairs?.length) {
+                  const pairs = a.matchingPairs.map((p) => ({ left: p.left, right: p.right }));
+                  aData.options = JSON.stringify(pairs);
+                  aData.correctAnswer = JSON.stringify(pairs);
+                } else if (a.type === "ordering" && a.orderingItems?.length) {
+                  aData.options = JSON.stringify(a.orderingItems.map((o) => o.text));
+                  aData.correctAnswer = JSON.stringify(a.orderingItems.map((o) => o.text));
+                } else if (a.type === "drag_drop" && a.dragDropItems?.length) {
+                  aData.options = JSON.stringify(a.dragDropItems.map((d) => ({ id: d.id, text: d.text, group: d.group })));
+                  aData.correctAnswer = JSON.stringify(
+                    Object.fromEntries(a.dragDropItems.map((d) => [d.id, d.group]))
+                  );
+                }
+                return aData;
+              }) : undefined,
             })),
           })),
         };

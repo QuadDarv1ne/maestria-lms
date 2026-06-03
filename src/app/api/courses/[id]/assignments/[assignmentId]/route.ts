@@ -210,6 +210,28 @@ export async function POST(
       } catch {
         log.warn("Failed to parse assignment answer for grading", { assignmentId: assignment.id, type: assignment.type });
       }
+    } else if (assignment.type === "drag_drop") {
+      try {
+        const correctAnswer = assignment.correctAnswer;
+        if (correctAnswer) {
+          const userAnswer = typeof answer === "string" ? JSON.parse(answer) : answer;
+          const correctParsed = JSON.parse(correctAnswer);
+
+          if (userAnswer && typeof userAnswer === "object" && !Array.isArray(userAnswer) &&
+              correctParsed && typeof correctParsed === "object" && !Array.isArray(correctParsed)) {
+            const totalItems = Object.keys(correctParsed).length;
+            if (totalItems > 0) {
+              const correctCount = Object.keys(correctParsed).filter(
+                (key) => userAnswer[key] === correctParsed[key]
+              ).length;
+              score = Math.round((correctCount / totalItems) * 100);
+              status = "graded";
+            }
+          }
+        }
+      } catch {
+        log.warn("Failed to parse assignment answer for grading", { assignmentId: assignment.id, type: assignment.type });
+      }
     }
 
     // Создаём новую запись (каждая попытка — отдельный row)

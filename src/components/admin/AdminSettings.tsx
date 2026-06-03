@@ -39,15 +39,15 @@ export function AdminSettings(_props: AdminTabProps) {
         body: JSON.stringify({ [key]: newValue }),
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Unknown error" }));
-        toast.error(err.error || "Failed to update setting");
+        const err = await res.json().catch(() => ({ error: t("admin.settings.unknown_error", locale) }));
+        toast.error(err.error || t("admin.settings.update_failed", locale));
         return;
       }
       const updated = await res.json();
       setSettings(updated);
-      toast.success(`${key} set to ${updated[key] ? "enabled" : "disabled"}`);
+      toast.success(`${key}: ${updated[key] ? t("admin.settings.enabled", locale) : t("admin.settings.disabled", locale)}`);
     } catch {
-      toast.error("Network error while updating settings");
+      toast.error(t("admin.settings.network_error", locale));
     } finally {
       setLoading(false);
     }
@@ -59,12 +59,12 @@ export function AdminSettings(_props: AdminTabProps) {
     try {
       const res = await fetch("/api/admin/cache/clear", { method: "POST" });
       if (!res.ok) {
-        toast.error("Failed to clear cache");
+        toast.error(t("admin.settings.cache_failed", locale));
         return;
       }
-      toast.success("Cache cleared successfully");
+      toast.success(t("admin.settings.cache_cleared", locale));
     } catch {
-      toast.error("Network error while clearing cache");
+      toast.error(t("admin.settings.cache_network_error", locale));
     } finally {
       setLoading(false);
     }
@@ -94,7 +94,7 @@ export function AdminSettings(_props: AdminTabProps) {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => toast.info("2FA is available per-user in the Users tab")}
+                    onClick={() => toast.info(t("admin.settings.2fa_info", locale))}
                   >
                     {t("adminPage.setting2FAAction", locale)}
                   </Button>
@@ -107,7 +107,9 @@ export function AdminSettings(_props: AdminTabProps) {
                       : "bg-blue-700 hover:bg-blue-800 text-white"}
                     onClick={() => toggleSetting(item.key as keyof SystemSettings)}
                   >
-                    {settings[item.key as keyof SystemSettings] ? "Disable" : "Enable"}
+                    {settings[item.key as keyof SystemSettings]
+                      ? t("admin.settings.disable", locale)
+                      : t("admin.settings.enable", locale)}
                   </Button>
                 )}
               </div>
