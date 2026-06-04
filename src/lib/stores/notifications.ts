@@ -21,10 +21,15 @@ export interface NotificationsSlice {
   unreadNotificationsCount: () => number;
   fetchNotifications: () => Promise<void>;
   publishNotification: (notification: Omit<NotificationItem, "id" | "createdAt">, userId: string) => Promise<void>;
+  hydrateNotifications: () => void;
 }
 
 export const createNotificationsSlice: StateCreator<NotificationsSlice, [], [], NotificationsSlice> = (set, get) => ({
-  notifications: load<NotificationItem[]>("maestria-notifications", []),
+  notifications: [],
+
+  hydrateNotifications: () => {
+    set({ notifications: load<NotificationItem[]>("maestria-notifications", []) });
+  },
 
   setNotifications: (notifications) => {
     save("maestria-notifications", notifications);

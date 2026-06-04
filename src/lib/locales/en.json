@@ -1282,6 +1282,12 @@
   "courseEditor.typeCoding": "Coding",
   "courseEditor.typeQuiz": "Quiz",
   "courseEditor.typeAssignment": "Assignment",
+  "courseEditor.typeMatching": "Matching",
+  "courseEditor.typeOrdering": "Ordering",
+  "courseEditor.typeEssay": "Essay",
+  "courseEditor.typeFileUpload": "File Upload",
+  "courseEditor.typeDragDrop": "Drag & Drop",
+  "courseEditor.addAssignment": "Add assignment",
   "courseEditor.moduleName": "Module {number}",
   "courseEditor.lessonName": "Lesson {number}",
   "courseEditor.zeroStudents": "0 students",
@@ -1683,5 +1689,6 @@
   "editor.assignment.add_drag_item": "Add item",
   "course.step.placeAllItems": "Place all items into groups",
   "editor.assignment.drag_drop_label": "Items and groups",
-  "editor.assignment.drag_group_placeholder": "Group"
+  "editor.assignment.drag_group_placeholder": "Group",
+  "course.step.noItems": "No items to display"
 }

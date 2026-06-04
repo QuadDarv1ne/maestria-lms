@@ -23,6 +23,8 @@ import { t } from "@/lib/i18n";
 import { lessonTypeIcon } from "@/lib/constants";
 import type { Locale } from "@/lib/stores/ui";
 import type { CourseFormData, ModuleForm, LessonForm } from "./types";
+import { createEmptyAssignment } from "./types";
+import { AssignmentEditor } from "./AssignmentEditor";
 import { VideoUploadButton } from "./VideoUploadButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,6 +47,7 @@ import {
 import {
   ArrowLeft, Plus, Trash2, ChevronDown, ChevronUp, GripVertical, BookOpen,
   Video, FileText, Code, HelpCircle, ClipboardList, GripHorizontal,
+  ArrowUpDown, Move, Upload, Pencil, Grip,
 } from "lucide-react";
 
 interface CurriculumTabProps {
@@ -279,6 +282,11 @@ function SortableLesson({
     { value: "coding", label: t("courseEditor.typeCoding", locale), icon: Code },
     { value: "quiz", label: t("courseEditor.typeQuiz", locale), icon: HelpCircle },
     { value: "assignment", label: t("courseEditor.typeAssignment", locale), icon: ClipboardList },
+    { value: "matching", label: t("courseEditor.typeMatching", locale), icon: ArrowUpDown },
+    { value: "ordering", label: t("courseEditor.typeOrdering", locale), icon: Move },
+    { value: "essay", label: t("courseEditor.typeEssay", locale), icon: Pencil },
+    { value: "file_upload", label: t("courseEditor.typeFileUpload", locale), icon: Upload },
+    { value: "drag_drop", label: t("courseEditor.typeDragDrop", locale), icon: Grip },
   ];
 
   return (
@@ -367,7 +375,7 @@ function SortableLesson({
           />
         </div>
       </div>
-      {(lesson.type === "text" || lesson.type === "coding" || lesson.type === "assignment") && (
+      {lesson.type !== "video" && (
         <div className="mt-3 space-y-1">
           <Label className="text-xs">{t("courseEditor.fieldLessonContent", locale)}</Label>
           <Textarea
@@ -396,6 +404,43 @@ function SortableLesson({
           </div>
         </div>
       )}
+      {lesson.type !== "video" && lesson.assignments.length === 0 && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-3 h-7 text-xs border-dashed text-muted-foreground hover:text-blue-700 hover:border-blue-300"
+          onClick={() => {
+            const assignment = createEmptyAssignment();
+            if (lesson.type === "matching") assignment.type = "matching";
+            else if (lesson.type === "ordering") assignment.type = "ordering";
+            else if (lesson.type === "essay") assignment.type = "essay";
+            else if (lesson.type === "drag_drop") assignment.type = "drag_drop";
+            else if (lesson.type === "file_upload") assignment.type = "file_upload";
+            else if (lesson.type === "coding") assignment.type = "coding";
+            onUpdateLesson(moduleIdx, lessonIdx, { assignments: [...lesson.assignments, assignment] });
+          }}
+        >
+          <Plus className="w-3 h-3 mr-1" />
+          {t("courseEditor.addAssignment", locale)}
+        </Button>
+      )}
+      {lesson.assignments.map((assignment, aIdx) => (
+        <AssignmentEditor
+          key={assignment.id}
+          assignment={assignment}
+          locale={locale}
+          onUpdate={(patch) => {
+            const updated = [...lesson.assignments];
+            updated[aIdx] = { ...updated[aIdx], ...patch };
+            onUpdateLesson(moduleIdx, lessonIdx, { assignments: updated });
+          }}
+          onRemove={() => {
+            const updated = [...lesson.assignments];
+            updated.splice(aIdx, 1);
+            onUpdateLesson(moduleIdx, lessonIdx, { assignments: updated });
+          }}
+        />
+      ))}
     </div>
   );
 }

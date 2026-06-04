@@ -1,4 +1,4 @@
-export type LessonType = "video" | "text" | "coding" | "quiz" | "assignment" | "interactive";
+export type LessonType = "video" | "text" | "coding" | "quiz" | "assignment" | "interactive" | "matching" | "ordering" | "essay" | "file_upload" | "drag_drop";
 export type AssignmentType = "quiz" | "coding" | "text" | "matching" | "ordering" | "file_upload" | "essay" | "drag_drop";
 export type CourseLevel = "beginner" | "intermediate" | "advanced";
 export type CourseVisibility = "public" | "private" | "unlisted";

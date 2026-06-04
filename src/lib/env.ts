@@ -19,11 +19,11 @@ function getOptionalEnv(key: string, fallback?: string): string | undefined {
 export const env = {
   // Site configuration
   get siteUrl(): string {
-    // In production, NEXT_PUBLIC_SITE_URL must be explicitly set to avoid broken links
-    if (this.isProduction) {
-      return getRequiredEnv("NEXT_PUBLIC_SITE_URL");
+    const url = process.env.NEXT_PUBLIC_SITE_URL;
+    if (this.isProduction && !url) {
+      throw new Error("Missing required environment variable: NEXT_PUBLIC_SITE_URL");
     }
-    return getOptionalEnv("NEXT_PUBLIC_SITE_URL") ?? "http://localhost:3000";
+    return url ?? "http://localhost:3000";
   },
 
   // Database
@@ -76,7 +76,7 @@ export const env = {
   },
 
   get cdnUrl(): string | undefined {
-    return getOptionalEnv("NEXT_PUBLIC_CDN_URL");
+    return process.env.NEXT_PUBLIC_CDN_URL ?? undefined;
   },
 
   // Logging

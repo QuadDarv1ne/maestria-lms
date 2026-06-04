@@ -205,11 +205,13 @@ export function StepViewerPage({
   const [dragDropGroups, setDragDropGroups] = useState<string[]>([]);
   const [dragDropAnswers, setDragDropAnswers] = useState<Record<string, string>>({});
   const [dragDropSubmitted, setDragDropSubmitted] = useState(false);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
   // Initialize drag & drop items when step changes
   useEffect(() => {
     setDragDropSubmitted(false);
     setDragDropAnswers({});
+    setSelectedItemId(null);
     const assignment = step?.assignments?.[0];
     const options = assignment?.options;
     if (!options) {
@@ -223,7 +225,7 @@ export function StepViewerPage({
         const shuffled = shuffleArray([...parsed]);
         setDragDropItems(shuffled);
         const groups = [...new Set(parsed.map((i) => i.group))];
-        setDragDropGroups(shuffleArray(groups));
+        setDragDropGroups(groups);
       } else {
         setDragDropItems([]);
         setDragDropGroups([]);
@@ -612,8 +614,8 @@ export function StepViewerPage({
       toast.error(t("course.step.dragDropHint", locale));
       return;
     }
-    const unplaced = dragDropItems.filter((item) => !dragDropAnswers[item.id]);
-    if (unplaced.length > 0) {
+    const placedCount = Object.keys(dragDropAnswers).length;
+    if (placedCount < dragDropItems.length) {
       toast.error(t("course.step.placeAllItems", locale));
       return;
     }
@@ -1410,15 +1412,14 @@ export function StepViewerPage({
                               .map((item) => (
                                 <Badge
                                   key={item.id}
-                                  className="px-3 py-2 cursor-grab text-sm bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 select-none"
+                                  className={`px-3 py-2 cursor-pointer text-sm select-none ${
+                                    selectedItemId === item.id
+                                      ? "bg-purple-600 text-white border-purple-700 ring-2 ring-purple-300"
+                                      : "bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100"
+                                  }`}
                                   onClick={() => {
                                     if (dragDropSubmitted) return;
-                                    const target = dragDropGroups.find(
-                                      (g) => !Object.values(dragDropAnswers).includes(g)
-                                    );
-                                    if (target) {
-                                      setDragDropAnswers((prev) => ({ ...prev, [item.id]: target }));
-                                    }
+                                    setSelectedItemId((prev) => prev === item.id ? null : item.id);
                                   }}
                                 >
                                   {item.text}
@@ -1437,7 +1438,17 @@ export function StepViewerPage({
                           (item) => item.group === group && dragDropAnswers[item.id] === group
                         );
                         return (
-                          <div key={group} className="border-2 border-dashed rounded-lg p-4 min-h-[60px]">
+                          <div
+                            key={group}
+                            className={`border-2 border-dashed rounded-lg p-4 min-h-[60px] ${
+                              selectedItemId && !dragDropSubmitted ? "border-purple-400 bg-purple-50/50 cursor-pointer hover:border-purple-500" : ""
+                            }`}
+                            onClick={() => {
+                              if (dragDropSubmitted || !selectedItemId) return;
+                              setDragDropAnswers((prev) => ({ ...prev, [selectedItemId]: group }));
+                              setSelectedItemId(null);
+                            }}
+                          >
                             <div className="flex items-center justify-between mb-2">
                               <p className="text-sm font-semibold text-purple-700">{group}</p>
                               {dragDropSubmitted && (
@@ -1457,8 +1468,9 @@ export function StepViewerPage({
                                         : "bg-red-100 text-red-700 border-red-200"
                                       : "bg-purple-100 text-purple-700 border-purple-200"
                                   }`}
-                                  onClick={() => {
+                                  onClick={(e) => {
                                     if (dragDropSubmitted) return;
+                                    e.stopPropagation();
                                     setDragDropAnswers((prev) => {
                                       const next = { ...prev };
                                       delete next[item.id];
@@ -1470,8 +1482,13 @@ export function StepViewerPage({
                                   {!dragDropSubmitted && <X className="w-3 h-3 ml-1 text-muted-foreground" />}
                                 </Badge>
                               ))}
-                              {itemsInGroup.length === 0 && (
+                              {itemsInGroup.length === 0 && !selectedItemId && (
                                 <span className="text-xs text-muted-foreground italic">
+                                  {t("course.step.dropHere", locale)}
+                                </span>
+                              )}
+                              {itemsInGroup.length === 0 && selectedItemId && (
+                                <span className="text-xs text-purple-500 italic">
                                   {t("course.step.dropHere", locale)}
                                 </span>
                               )}
@@ -1482,6 +1499,11 @@ export function StepViewerPage({
 
                       {/* Actions */}
                       <div className="flex items-center gap-2">
+                        {selectedItemId && !dragDropSubmitted && (
+                          <span className="text-xs text-muted-foreground">
+                            {t("course.step.dragDropHint", locale)}
+                          </span>
+                        )}
                         {!dragDropSubmitted ? (
                           <Button
                             className="bg-purple-600 hover:bg-purple-700 text-white"

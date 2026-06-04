@@ -22,7 +22,6 @@ import {
   Trash2,
   Check,
   X,
-  GripVertical,
   FileText,
   HelpCircle,
   Code2,
@@ -155,7 +154,6 @@ function SortableOrderingItem({
 }) {
   return (
     <div className="flex items-center gap-2 p-2 border rounded-lg bg-white">
-      <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab" />
       <Badge variant="secondary" className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold">
         {idx + 1}
       </Badge>
@@ -195,7 +193,6 @@ function SortableDragDropItem({
 }) {
   return (
     <div className="flex items-center gap-2 p-2 border rounded-lg bg-white">
-      <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab" />
       <Badge variant="secondary" className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold">
         {idx + 1}
       </Badge>

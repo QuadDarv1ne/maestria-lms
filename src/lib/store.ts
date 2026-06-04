@@ -11,7 +11,10 @@ import {
   type NotificationItem,
 } from "./stores/notifications";
 
-type AppStore = AuthSlice & UISlice & CatalogSlice & FavoritesSlice & NotificationsSlice & { logout: () => void };
+type AppStore = AuthSlice & UISlice & CatalogSlice & FavoritesSlice & NotificationsSlice & {
+  _hydrated: boolean;
+  logout: () => void;
+};
 
 export const useAppStore = create<AppStore>()((set, get, api) => {
   const auth = createAuthSlice(set, get, api);
@@ -26,6 +29,7 @@ export const useAppStore = create<AppStore>()((set, get, api) => {
     ...catalog,
     ...favorites,
     ...notifications,
+    _hydrated: false,
     logout: () => {
       if (typeof window !== "undefined") {
         try {
@@ -44,5 +48,13 @@ export const useAppStore = create<AppStore>()((set, get, api) => {
     },
   };
 });
+
+export function hydrateStore() {
+  const store = useAppStore.getState();
+  store.hydrate();
+  store.hydrateFavorites();
+  store.hydrateNotifications();
+  useAppStore.setState({ _hydrated: true });
+}
 
 export type { Theme, Locale, SortBy, UserData, NotificationItem };

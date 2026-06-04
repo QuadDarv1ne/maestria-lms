@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const assignmentSchema = z.object({
   id: z.string().optional(),
-  title: z.string().min(1).max(500).optional(),
+  title: z.string().max(500).optional(),
   description: z.string().optional(),
   type: z.enum(["quiz", "coding", "text", "matching", "ordering", "file_upload", "essay", "drag_drop"]).optional().default("quiz"),
   points: z.union([z.string(), z.number()]).optional().default(10),
@@ -14,7 +14,7 @@ export const assignmentSchema = z.object({
 export const lessonSchema = z.object({
   id: z.string().optional(),
   title: z.string().min(1).max(200).optional(),
-  type: z.enum(["text", "video", "coding", "quiz", "assignment"]).optional().default("text"),
+  type: z.enum(["text", "video", "coding", "quiz", "assignment", "matching", "ordering", "essay", "file_upload", "drag_drop"]).optional().default("text"),
   content: z.string().optional(),
   videoUrl: z.string().optional().refine(
     (val) => {

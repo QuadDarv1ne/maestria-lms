@@ -1282,6 +1282,12 @@
   "courseEditor.typeCoding": "编程",
   "courseEditor.typeQuiz": "测验",
   "courseEditor.typeAssignment": "作业",
+  "courseEditor.typeMatching": "配对",
+  "courseEditor.typeOrdering": "排序",
+  "courseEditor.typeEssay": "论文",
+  "courseEditor.typeFileUpload": "上传文件",
+  "courseEditor.typeDragDrop": "拖放",
+  "courseEditor.addAssignment": "添加作业",
   "courseEditor.moduleName": "模块 {number}",
   "courseEditor.lessonName": "课时 {number}",
   "courseEditor.zeroStudents": "0 名学生",
@@ -1683,5 +1689,6 @@
   "editor.assignment.add_drag_item": "新增元素",
   "course.step.placeAllItems": "將所有元素放入群組",
   "editor.assignment.drag_drop_label": "元素與群組",
-  "editor.assignment.drag_group_placeholder": "群組"
+  "editor.assignment.drag_group_placeholder": "群組",
+  "course.step.noItems": "没有可显示的项目"
 }

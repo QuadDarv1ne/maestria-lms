@@ -1282,6 +1282,12 @@
   "courseEditor.typeCoding": "Кодинг",
   "courseEditor.typeQuiz": "Тест",
   "courseEditor.typeAssignment": "Задание",
+  "courseEditor.typeMatching": "Сопоставление",
+  "courseEditor.typeOrdering": "Упорядочивание",
+  "courseEditor.typeEssay": "Эссе",
+  "courseEditor.typeFileUpload": "Загрузка файла",
+  "courseEditor.typeDragDrop": "Перетаскивание",
+  "courseEditor.addAssignment": "Добавить задание",
   "courseEditor.moduleName": "Модуль {number}",
   "courseEditor.lessonName": "Урок {number}",
   "courseEditor.zeroStudents": "0 студентов",
@@ -1706,5 +1712,6 @@
   "editor.assignment.add_drag_item": "Добавить элемент",
   "course.step.placeAllItems": "Разместите все элементы по группам",
   "editor.assignment.drag_drop_label": "Элементы и группы",
-  "editor.assignment.drag_group_placeholder": "Группа"
+  "editor.assignment.drag_group_placeholder": "Группа",
+  "course.step.noItems": "Нет элементов для отображения"
 }

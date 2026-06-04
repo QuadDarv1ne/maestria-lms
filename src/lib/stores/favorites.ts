@@ -5,10 +5,15 @@ export interface FavoritesSlice {
   favorites: string[];
   toggleFavorite: (courseId: string) => void;
   isFavorite: (courseId: string) => boolean;
+  hydrateFavorites: () => void;
 }
 
 export const createFavoritesSlice: StateCreator<FavoritesSlice, [], [], FavoritesSlice> = (set, get) => ({
-  favorites: load<string[]>("maestria-favorites", []),
+  favorites: [],
+
+  hydrateFavorites: () => {
+    set({ favorites: load<string[]>("maestria-favorites", []) });
+  },
 
   toggleFavorite: (courseId: string) => {
     const current = get().favorites;
