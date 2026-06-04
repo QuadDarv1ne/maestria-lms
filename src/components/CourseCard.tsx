@@ -49,6 +49,14 @@ export const CourseCard = React.memo(function CourseCard({ course, onClick }: Co
 
   return (
     <Card
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
       className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 border-0 shadow-sm overflow-hidden"
       onClick={onClick}
     >

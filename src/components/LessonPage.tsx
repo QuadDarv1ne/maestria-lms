@@ -233,11 +233,12 @@ export function LessonPage({
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Навигация урока */}
-      <div className="bg-white border-b sticky top-16 z-40">
+      <nav className="bg-white border-b sticky top-16 z-40" aria-label={t("lesson.lessonNav", locale)}>
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <Button
             variant="ghost"
             size="sm"
+            aria-label={t("lesson.backToCourseAria", locale)}
             onClick={() => router.push(`/course/${courseId}`)}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -255,7 +256,7 @@ export function LessonPage({
             )}
           </div>
         </div>
-      </div>
+      </nav>
 
       {/* Содержимое урока */}
       <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -324,7 +325,7 @@ export function LessonPage({
 
             {/* Тест */}
             {lesson.type === "quiz" && (
-              <div>
+              <div aria-label={t("lesson.quizSection", locale)}>
                 {lesson.content && (
                   <div className="prose prose-sm max-w-none whitespace-pre-wrap mb-4">
                     {lesson.content}
@@ -439,6 +440,7 @@ export function LessonPage({
           <Button
             variant="outline"
             disabled={!lesson.prevStepId}
+            aria-label={t("lesson.prevStepAria", locale)}
             onClick={() =>
               lesson.prevStepId &&
               router.push(`/course/${courseId}/lesson/${lesson.prevStepId}`)
@@ -464,6 +466,7 @@ export function LessonPage({
           <Button
             variant="outline"
             disabled={!lesson.nextStepId}
+            aria-label={t("lesson.nextStepAria", locale)}
             onClick={() =>
               lesson.nextStepId &&
               router.push(`/course/${courseId}/lesson/${lesson.nextStepId}`)

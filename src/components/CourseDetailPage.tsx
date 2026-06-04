@@ -25,6 +25,7 @@ import {
   Lock,
   CheckCircle2,
   ArrowLeft,
+  Loader2,
   CreditCard,
   Smartphone,
   Building,
@@ -423,7 +424,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                       </div>
 
                       {course.price > 0 && (
-                        <div className="space-y-2 mb-4">
+                        <div className="space-y-2 mb-4" role="radiogroup" aria-label={t("course.paymentMethod", locale)}>
                           <p className="text-sm font-medium">{t("course.paymentMethod", locale)}</p>
                           {[
                             { id: "sbp", label: t("course.paymentSbp", locale), icon: <Smartphone className="w-4 h-4" /> },
@@ -459,6 +460,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                         onClick={handleEnroll}
                         disabled={enrolling}
                       >
+                        {enrolling && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                         {enrolling
                           ? t("course.loading", locale)
                           : course.price === 0
@@ -554,6 +556,8 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                           return (
                             <div
                               key={lesson.id}
+                              role="button"
+                              tabIndex={canAccess ? 0 : undefined}
                               className={`flex items-center gap-3 p-2 rounded-lg ${
                                 canAccess
                                   ? "hover:bg-gray-50 cursor-pointer"
@@ -566,6 +570,12 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                                   );
                                 } else {
                                   toast.error(t("course.step.enrollFirst", locale));
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (canAccess && (e.key === 'Enter' || e.key === ' ')) {
+                                  e.preventDefault();
+                                  router.push(`course/${courseId}/lesson/${lesson.id}`);
                                 }
                               }}
                             >
@@ -641,10 +651,11 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                     <div className="flex gap-6">
                       <div className="text-center">
                         <div className="text-4xl font-bold">{course.rating}</div>
-                        <div className="flex items-center gap-0.5 mt-1">
+                        <div className="flex items-center gap-0.5 mt-1" aria-label={`${course.rating} out of 5`}>
                           {Array.from({ length: 5 }).map((_, i) => (
                             <Star
                               key={i}
+                              aria-hidden="true"
                               className={`w-4 h-4 ${
                                 i < Math.round(course.rating)
                                   ? "fill-amber-400 text-amber-400"
@@ -691,10 +702,11 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                             <span className="text-sm font-medium">
                               {review.user?.name}
                             </span>
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1" aria-label={`${review.rating} out of 5`}>
                               {Array.from({ length: 5 }).map((_, i) => (
                                 <Star
                                   key={i}
+                                  aria-hidden="true"
                                   className={`w-3 h-3 ${
                                     i < review.rating
                                       ? "fill-amber-400 text-amber-400"

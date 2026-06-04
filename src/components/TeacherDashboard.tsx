@@ -241,7 +241,7 @@ export function TeacherDashboard() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <Table>
+              <Table aria-label={t("teacher.coursesTable", locale)}>
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t("adminPage.thCourse", locale)}</TableHead>
@@ -309,6 +309,7 @@ export function TeacherDashboard() {
                         <Button
                           variant="ghost"
                           size="sm"
+                          aria-label={t("teacher.viewCourse", locale)}
                           onClick={() => router.push(`/course/${course.slug || course.id}`)}
                         >
                           <ExternalLink className="w-4 h-4" />
@@ -371,6 +372,7 @@ export function TeacherDashboard() {
                       variant="ghost"
                       size="sm"
                       className="h-7 w-7 p-0"
+                      aria-label={t("teacher.viewStudentStats", locale)}
                       onClick={() => router.push(`/admin/student/${activity.userId}`)}
                     >
                       <BarChart3 className="w-3.5 h-3.5" />

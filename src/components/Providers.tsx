@@ -15,6 +15,7 @@ function ThemeAndLocaleSync() {
     html.classList.remove("light", "dark", "amber");
     html.classList.add(theme);
     html.setAttribute("lang", locale);
+    html.style.colorScheme = theme === "amber" ? "light dark" : theme;
   }, [theme, locale]);
 
   return null;

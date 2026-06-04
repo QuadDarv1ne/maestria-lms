@@ -55,16 +55,17 @@ export function StepSidebar({
   return (
     <>
       <aside
-        className={`fixed lg:sticky top-0 left-0 z-50 lg:z-auto h-screen w-80 bg-white border-r shadow-lg lg:shadow-none transition-transform duration-300 ${
+        aria-label={t("course.step.sidebarNav", locale)}
+        className={`fixed lg:sticky top-0 left-0 z-50 lg:z-auto h-screen w-80 bg-background border-r shadow-lg lg:shadow-none transition-transform duration-300 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0 lg:w-0 lg:overflow-hidden"
         }`}
       >
         <ScrollArea className="h-full">
-          <div className="p-4 border-b bg-gradient-to-r from-blue-700 to-violet-700 text-white">
+          <div className="p-4 border-b bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
             <div className="flex items-center justify-between mb-3">
               <Button
                 variant="ghost" size="sm"
-                className="text-white hover:bg-white/10 -ml-2"
+                className="text-primary-foreground hover:bg-primary-foreground/10 -ml-2"
                 onClick={() => router.push(`/course/${courseId}`)}
               >
                 <ArrowLeft className="w-4 h-4 mr-1" />
@@ -72,8 +73,9 @@ export function StepSidebar({
               </Button>
               <Button
                 variant="ghost" size="icon"
-                className="text-white hover:bg-white/10 lg:hidden"
+                className="text-primary-foreground hover:bg-primary-foreground/10 lg:hidden"
                 onClick={onCloseSidebar}
+                aria-label={t("nav.closeMenu", locale)}
               >
                 <X className="w-5 h-5" />
               </Button>
@@ -81,12 +83,12 @@ export function StepSidebar({
             <h2 className="font-bold text-sm leading-tight mb-2 line-clamp-2">
               {courseStructure?.title || t("course.step.module", locale)}
             </h2>
-            <div className="flex items-center gap-2 text-xs text-blue-100 mb-2">
+            <div className="flex items-center gap-2 text-xs text-primary-foreground/80 mb-2">
               <span>{courseStructure?.completedLessons || 0} {t("common.of", locale)} {courseStructure?.totalLessons || 0} {t("common.steps", locale)}</span>
               <span>•</span>
               <span>{courseStructure?.progress || 0}%</span>
             </div>
-            <Progress value={courseStructure?.progress || 0} className="h-2 bg-white/20" />
+            <Progress value={courseStructure?.progress || 0} className="h-2 bg-primary-foreground/20" />
           </div>
 
           <div className="p-2">
@@ -124,6 +126,7 @@ export function StepSidebar({
                     return (
                       <button
                         key={lesson.id}
+                        aria-current={isActive ? "step" : undefined}
                         className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-xs transition-all ${
                           isActive
                             ? "bg-blue-50 border border-blue-200 text-blue-800 font-medium"
@@ -158,7 +161,7 @@ export function StepSidebar({
                         </div>
                         <span className="flex-1 truncate">{lesson.title}</span>
                         {lesson.isFree && !lesson.completed && (
-                          <Badge variant="outline" className="text-[9px] px-1 py-0 text-green-600 border-green-300 flex-shrink-0">
+                          <Badge variant="outline" className="text-[10px] px-1 py-0 text-green-600 border-green-300 flex-shrink-0">
                             {t("common.free", locale)}
                           </Badge>
                         )}
@@ -186,6 +189,7 @@ export function StepSidebar({
         <div
           className="fixed inset-0 bg-black/30 z-40 lg:hidden"
           onClick={onCloseSidebar}
+          aria-hidden="true"
         />
       )}
     </>

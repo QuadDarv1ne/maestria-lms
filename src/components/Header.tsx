@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { getInitials } from "@/lib/utils";
@@ -34,6 +34,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import Link from "next/link";
 import type { Theme, Locale } from "@/lib/store";
 
 const themeOptions: { value: Theme; icon: string; labelKey: string }[] = [
@@ -44,6 +45,7 @@ const themeOptions: { value: Theme; icon: string; labelKey: string }[] = [
 
 export function Header() {
   const router = useRouter();
+  const pathname = usePathname();
   const user = useAppStore((s) => s.user);
   const sidebarOpen = useAppStore((s) => s.sidebarOpen);
   const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
@@ -77,11 +79,10 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         {/* Логотип */}
-        <button
-          type="button"
+        <Link
+          href="/"
           aria-label={t("nav.home", locale)}
-          className="flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded-lg"
-          onClick={() => router.push("/")}
+          className="flex items-center gap-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
            <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-violet-600 rounded-lg flex items-center justify-center">
             <GraduationCap className="w-5 h-5 text-white" />
@@ -94,15 +95,16 @@ export function Header() {
               by Maestro7IT
             </p>
           </div>
-        </button>
+        </Link>
 
         {/* Навигация (десктоп) */}
-        <nav className="hidden md:flex items-center gap-1">
+        <nav className="hidden md:flex items-center gap-1" aria-label={t("nav.mainNav", locale)}>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => router.push("/")}
-            className="text-sm"
+            className={`text-sm${pathname === "/" ? " bg-accent font-medium" : ""}`}
+            aria-current={pathname === "/" ? "page" : undefined}
           >
             {t("nav.home", locale)}
           </Button>
@@ -110,7 +112,8 @@ export function Header() {
             variant="ghost"
             size="sm"
             onClick={() => router.push("/catalog")}
-            className="text-sm"
+            className={`text-sm${pathname.startsWith("/catalog") ? " bg-accent font-medium" : ""}`}
+            aria-current={pathname.startsWith("/catalog") ? "page" : undefined}
           >
             <BookOpen className="w-4 h-4 mr-1" />
             {t("nav.catalog", locale)}
@@ -119,7 +122,8 @@ export function Header() {
             variant="ghost"
             size="sm"
             onClick={() => router.push("/blog")}
-            className="text-sm"
+            className={`text-sm${pathname.startsWith("/blog") ? " bg-accent font-medium" : ""}`}
+            aria-current={pathname.startsWith("/blog") ? "page" : undefined}
           >
             <FileText className="w-4 h-4 mr-1" />
             {t("nav.blog", locale)}
@@ -128,7 +132,8 @@ export function Header() {
             variant="ghost"
             size="sm"
             onClick={() => router.push("/about")}
-            className="text-sm"
+            className={`text-sm${pathname.startsWith("/about") ? " bg-accent font-medium" : ""}`}
+            aria-current={pathname.startsWith("/about") ? "page" : undefined}
           >
             {t("nav.about", locale)}
           </Button>
@@ -136,7 +141,8 @@ export function Header() {
             variant="ghost"
             size="sm"
             onClick={() => router.push("/help")}
-            className="text-sm"
+            className={`text-sm${pathname.startsWith("/help") ? " bg-accent font-medium" : ""}`}
+            aria-current={pathname.startsWith("/help") ? "page" : undefined}
           >
             <HelpCircle className="w-4 h-4 mr-1" />
             {t("nav.help", locale)}
@@ -247,7 +253,7 @@ export function Header() {
             >
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white px-1">
+                <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white px-1" aria-live="polite">
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
@@ -363,7 +369,20 @@ export function Header() {
 
       {/* Мобильное меню */}
       {sidebarOpen && (
-        <div className="md:hidden border-t bg-background p-4 space-y-2">
+        <div
+          className="fixed inset-0 bg-black/30 z-40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+      {sidebarOpen && (
+        <nav
+          className="md:hidden border-t bg-background p-4 space-y-2 z-50 relative"
+          aria-label={t("nav.mobileNav", locale)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setSidebarOpen(false);
+          }}
+        >
           <Button
             variant="ghost"
             className="w-full justify-start"
@@ -405,6 +424,17 @@ export function Header() {
             }}
           >
             {t("nav.about", locale)}
+          </Button>
+          <Button
+            variant="ghost"
+            className="w-full justify-start"
+            onClick={() => {
+              router.push("/help");
+              setSidebarOpen(false);
+            }}
+          >
+            <HelpCircle className="w-4 h-4 mr-2" />
+            {t("nav.help", locale)}
           </Button>
           {user && (
             <>
@@ -477,7 +507,7 @@ export function Header() {
           <div className="border-t pt-3 mt-3 flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="flex-1 gap-1">
+                <Button variant="outline" size="sm" className="flex-1 gap-1" aria-label={t("nav.theme", locale)}>
                   <Palette className="w-4 h-4" />
                   {themeOptions.find(o => o.value === theme)?.icon} {t(themeOptions.find(o => o.value === theme)?.labelKey || "theme.light", locale)}
                 </Button>
@@ -500,7 +530,7 @@ export function Header() {
             </DropdownMenu>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="flex-1 gap-1">
+                <Button variant="outline" size="sm" className="flex-1 gap-1" aria-label={t("nav.language", locale)}>
                   <Globe className="w-4 h-4" />
                   {localeOptions.find(o => o.value === locale)?.flag} {localeOptions.find(o => o.value === locale)?.label}
                 </Button>
@@ -534,7 +564,7 @@ export function Header() {
               {t("nav.login", locale)}
             </Button>
           )}
-        </div>
+        </nav>
       )}
     </header>
   );

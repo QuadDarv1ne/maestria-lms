@@ -160,6 +160,7 @@ export function CatalogPage() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
+              aria-label={t("catalog.search", locale)}
               placeholder={t("catalog.search", locale)}
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
@@ -167,7 +168,7 @@ export function CatalogPage() {
               className="pl-10"
             />
           </div>
-          <Button className="bg-blue-700 hover:bg-blue-800 text-white">
+          <Button aria-disabled="true" className="bg-blue-700 hover:bg-blue-800 text-white opacity-50 cursor-not-allowed">
             {t("common.find", locale)}
           </Button>
           <Button
@@ -295,7 +296,7 @@ export function CatalogPage() {
 
       {/* Пагинация */}
       {totalPages > 1 && (
-        <div className="flex justify-center gap-2 mt-8">
+        <div className="flex justify-center gap-2 mt-8" aria-label="Pagination">
           <Button
             variant="outline"
             size="sm"

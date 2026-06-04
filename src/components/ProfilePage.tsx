@@ -19,7 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   BookOpen, Award, Trophy, User, Activity, Clock, BookmarkCheck, Bookmark,
-  CheckCircle2, Edit3, Loader2, LogOut, MessageSquare, Save, Settings, Target,
+  CheckCircle2, Edit3, Loader2, Lock, LogOut, MessageSquare, Save, Settings, Target,
 } from "lucide-react";
 import { ProfileSkeleton } from "@/components/skeletons/ProfileSkeleton";
 import { AchievementsPage } from "@/components/AchievementsPage";
@@ -110,6 +110,7 @@ export function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const [editForm, setEditForm] = useState({
     name: "",
     bio: "",
@@ -304,6 +305,7 @@ export function ProfilePage() {
   };
 
   const handleLogout = async () => {
+    setLoggingOut(true);
     try {
       await signOut({ redirect: false });
     } catch (e: unknown) {
@@ -389,8 +391,8 @@ export function ProfilePage() {
                   {roleLabels[profile?.role || user.role] || user.role}
                 </Badge>
                 {profile?.twoFactorEnabled && (
-                  <Badge variant="outline" className="text-xs">
-                    🔒 2FA
+                  <Badge variant="outline" className="text-xs" aria-label="2FA enabled">
+                    <Lock className="w-3 h-3 mr-1" />2FA
                   </Badge>
                 )}
                 <span className="text-xs text-muted-foreground">
@@ -406,7 +408,7 @@ export function ProfilePage() {
                 <Edit3 className="w-4 h-4 mr-2" />
                 {editing ? t("profile.cancel", locale) : t("profile.edit", locale)}
               </Button>
-              <Button variant="destructive" size="sm" onClick={handleLogout}>
+              <Button variant="destructive" size="sm" onClick={handleLogout} disabled={loggingOut}>
                 <LogOut className="w-4 h-4 mr-2" />
                 {t("nav.logout", locale)}
               </Button>
@@ -767,8 +769,11 @@ export function ProfilePage() {
                 return (
                   <Card
                     key={courseId}
+                    role="button"
+                    tabIndex={0}
                     className="cursor-pointer hover:shadow-md transition-shadow border-0 shadow-sm"
                     onClick={() => !isLoading && router.push(`/course/${courseId}`)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (!isLoading) router.push(`/course/${courseId}`); } }}
                   >
                     <CardContent className="p-4 flex items-center gap-3">
                       <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-violet-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">

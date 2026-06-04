@@ -57,7 +57,7 @@
   --secondary: oklch(0.97 0.01 270);
   --secondary-foreground: oklch(0.25 0.15 270);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  --muted-foreground: oklch(0.48 0 0);
   --accent: oklch(0.97 0.01 270);
   --accent-foreground: oklch(0.25 0.15 270);
   --destructive: oklch(0.577 0.245 27.325);
@@ -95,8 +95,8 @@
   --accent: oklch(0.25 0.03 270);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
+  --border: oklch(1 0 0 / 15%);
+  --input: oklch(1 0 0 / 20%);
   --ring: oklch(0.65 0.2 265);
   --chart-1: oklch(0.65 0.2 265);
   --chart-2: oklch(0.7 0.18 290);
@@ -125,7 +125,7 @@
   --secondary: oklch(0.90 0.03 75);
   --secondary-foreground: oklch(0.30 0.04 60);
   --muted: oklch(0.90 0.02 75);
-  --muted-foreground: oklch(0.50 0.04 60);
+  --muted-foreground: oklch(0.45 0.04 60);
   --accent: oklch(0.88 0.04 75);
   --accent-foreground: oklch(0.30 0.04 60);
   --destructive: oklch(0.577 0.245 27.325);
@@ -149,10 +149,30 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .cursor-dot,
+  .cursor-outline {
+    transition: none !important;
+    display: none !important;
   }
 }
 
@@ -167,12 +187,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: oklch(0.8 0 0);
+  background: var(--border);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.6 0 0);
+  background: var(--muted-foreground);
 }
 
 /* Стиль для line-clamp */
@@ -191,9 +211,9 @@
 .prose ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 0.75rem; }
 .prose ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 0.75rem; }
 .prose li { margin-bottom: 0.25rem; }
-.prose code { background: oklch(0.95 0 0); padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.875rem; }
-.prose pre { background: oklch(0.15 0 0); color: oklch(0.9 0 0); padding: 1rem; border-radius: 0.5rem; overflow-x: auto; margin-bottom: 0.75rem; }
-.prose blockquote { border-left: 3px solid oklch(0.8 0 0); padding-left: 1rem; font-style: italic; margin-bottom: 0.75rem; }
+.prose code { background: var(--muted); padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.875rem; }
+.prose pre { background: var(--card); color: var(--card-foreground); padding: 1rem; border-radius: 0.5rem; overflow-x: auto; margin-bottom: 0.75rem; border: 1px solid var(--border); }
+.prose blockquote { border-left: 3px solid var(--border); padding-left: 1rem; font-style: italic; margin-bottom: 0.75rem; }
 
 /* ═══════════════════════════════════════════════════════════════════════
    КАСТОМНЫЙ КУРСОР — Maestria
@@ -261,17 +281,18 @@
 }
 
 /* Только десктоп — показываем кастомный курсор */
-@media (pointer: fine) {
+@media (pointer: fine) and (prefers-reduced-motion: no-preference) {
   .cursor-dot,
   .cursor-outline {
     display: block;
   }
 }
 
-/* На тач-устройствах — полностью скрываем */
 @media (pointer: coarse) {
   .cursor-dot,
   .cursor-outline {
     display: none !important;
   }
 }
+
+/* На тач-устройствах — полностью скрываем */

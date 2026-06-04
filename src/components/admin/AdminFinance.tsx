@@ -23,7 +23,7 @@ export function AdminFinance(props: AdminTabProps) {
           { label: t("adminPage.kpiFreeCourses", locale), value: courses.filter(c => c.price === 0).length, icon: <Gift className="w-5 h-5 text-amber-600" /> },
           { label: t("adminPage.kpiAvgCheck", locale), value: courses.filter(c => c.price > 0).length > 0 ? `${formatNumber(Math.round(courses.filter(c => c.price > 0).reduce((a, c) => a + c.price, 0) / courses.filter(c => c.price > 0).length), locale)} ₽` : "0 ₽", icon: <Wallet className="w-5 h-5 text-violet-600" /> },
         ].map((stat, i) => (
-          <Card key={i} className="border-0 shadow-sm">
+          <Card key={i} className="border-0 shadow-sm" aria-label={stat.label}>
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-1">{stat.icon}<span className="text-xl font-bold">{stat.value}</span></div>
               <p className="text-xs text-muted-foreground">{stat.label}</p>

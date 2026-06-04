@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -22,6 +23,7 @@ import {
   EyeOff,
   ArrowLeft,
   KeyRound,
+  Loader2,
 } from "lucide-react";
 import { t } from "@/lib/i18n";
 import { toast } from "sonner";
@@ -205,7 +207,7 @@ export function AuthDialogs() {
     <>
       {/* Диалог входа */}
       <Dialog open={dialogType === "login"} onOpenChange={(open) => !open && closeDialog()}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" onOpenAutoFocus={(e) => { e.preventDefault(); document.getElementById("login-email")?.focus(); }}>
           <DialogHeader>
             <div className="flex items-center gap-2 mb-2">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-violet-600 rounded-lg flex items-center justify-center">
@@ -213,6 +215,7 @@ export function AuthDialogs() {
               </div>
               <div>
                 <DialogTitle>{t("auth.login", locale)}</DialogTitle>
+                <DialogDescription className="sr-only">{t("auth.login", locale) + " form"}</DialogDescription>
                 <p className="text-sm text-muted-foreground">
                   Maestria
                 </p>
@@ -235,6 +238,7 @@ export function AuthDialogs() {
                   }
                   className="pl-10"
                   required
+                  disabled={loginLoading}
                 />
               </div>
             </div>
@@ -254,11 +258,13 @@ export function AuthDialogs() {
                   autoComplete="current-password"
                   className="pl-10 pr-10"
                   required
+                  disabled={loginLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowLoginPassword(!showLoginPassword)}
                   aria-label={showLoginPassword ? t("auth.hidePassword", locale) : t("auth.showPassword", locale)}
+                  aria-pressed={showLoginPassword}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
                   {showLoginPassword ? (
@@ -308,6 +314,7 @@ export function AuthDialogs() {
               className="w-full bg-blue-700 hover:bg-blue-800 text-white"
               disabled={loginLoading}
             >
+              {loginLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {loginLoading ? t("auth.loggingIn", locale) : t("auth.loginBtn", locale)}
             </Button>
 
@@ -364,7 +371,7 @@ export function AuthDialogs() {
 
       {/* Диалог регистрации */}
       <Dialog open={dialogType === "register"} onOpenChange={(open) => !open && closeDialog()}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" onOpenAutoFocus={(e) => { e.preventDefault(); document.getElementById("reg-name")?.focus(); }}>
           <DialogHeader>
             <div className="flex items-center gap-2 mb-2">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-violet-600 rounded-lg flex items-center justify-center">
@@ -372,6 +379,7 @@ export function AuthDialogs() {
               </div>
               <div>
                 <DialogTitle>{t("auth.registration", locale)}</DialogTitle>
+                <DialogDescription className="sr-only">{t("auth.registration", locale) + " form"}</DialogDescription>
                 <p className="text-sm text-muted-foreground">
                   {t("auth.createAccount", locale)}
                 </p>
@@ -394,6 +402,7 @@ export function AuthDialogs() {
                   }
                   className="pl-10"
                   required
+                  disabled={registerLoading}
                 />
               </div>
             </div>
@@ -412,6 +421,7 @@ export function AuthDialogs() {
                   }
                   className="pl-10"
                   required
+                  disabled={registerLoading}
                 />
               </div>
             </div>
@@ -435,11 +445,13 @@ export function AuthDialogs() {
                   className="pl-10 pr-10"
                   required
                   minLength={8}
+                  disabled={registerLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowRegisterPassword(!showRegisterPassword)}
                   aria-label={showRegisterPassword ? t("auth.hidePassword", locale) : t("auth.showPassword", locale)}
+                  aria-pressed={showRegisterPassword}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
                   {showRegisterPassword ? (
@@ -469,6 +481,7 @@ export function AuthDialogs() {
                   autoComplete="new-password"
                   className="pl-10"
                   required
+                  disabled={registerLoading}
                 />
               </div>
             </div>
@@ -478,6 +491,7 @@ export function AuthDialogs() {
               className="w-full bg-blue-700 hover:bg-blue-800 text-white"
               disabled={registerLoading}
             >
+              {registerLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {registerLoading ? t("auth.registering", locale) : t("auth.registerBtn", locale)}
             </Button>
 
@@ -502,9 +516,10 @@ export function AuthDialogs() {
         open={dialogType === "forgot-password"}
         onOpenChange={(open) => !open && closeDialog()}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" onOpenAutoFocus={(e) => { e.preventDefault(); document.getElementById("forgot-email")?.focus(); }}>
           <DialogHeader>
             <DialogTitle>{t("auth.recovery", locale)}</DialogTitle>
+            <DialogDescription className="sr-only">{t("auth.recovery", locale) + " form"}</DialogDescription>
           </DialogHeader>
 
           {forgotSent ? (
@@ -538,6 +553,7 @@ export function AuthDialogs() {
                     onChange={(e) => setForgotEmail(e.target.value)}
                     className="pl-10"
                     required
+                    disabled={forgotLoading}
                   />
                 </div>
               </div>
@@ -547,6 +563,7 @@ export function AuthDialogs() {
                 className="w-full bg-blue-700 hover:bg-blue-800 text-white"
                 disabled={forgotLoading}
               >
+                {forgotLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {forgotLoading ? t("auth.sending", locale) : t("auth.sendInstruction", locale)}
               </Button>
 

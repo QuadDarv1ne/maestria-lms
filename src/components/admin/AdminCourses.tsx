@@ -66,7 +66,7 @@ export function AdminCourses(props: AdminTabProps) {
                       }
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm" onClick={() => router.push(`/course/${course.id}`)}>
+                      <Button variant="ghost" size="sm" aria-label={t("adminPage.viewCourse", locale)} onClick={() => router.push(`/course/${course.id}`)}>
                         <Eye className="w-4 h-4" />
                       </Button>
                     </TableCell>

@@ -14,7 +14,7 @@ export function AdminReports(props: AdminTabProps) {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4 bg-red-50 dark:bg-red-950/30 rounded-xl">
             <p className="text-3xl font-bold text-red-600">{reports.filter(r => r.status === "pending").length}</p>
@@ -67,10 +67,10 @@ export function AdminReports(props: AdminTabProps) {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="sm" onClick={() => toast.success(t("adminPage.reportMarkReviewed", locale))}>
+                        <Button variant="ghost" size="sm" aria-label={t("adminPage.reportMarkReviewed", locale)} onClick={() => toast.success(t("adminPage.reportMarkReviewed", locale))}>
                           <CheckCircle2 className="w-4 h-4 text-green-600" />
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => toast.success(t("adminPage.reportRejected", locale))}>
+                        <Button variant="ghost" size="sm" aria-label={t("adminPage.reportRejected", locale)} onClick={() => toast.success(t("adminPage.reportRejected", locale))}>
                           <XCircle className="w-4 h-4 text-red-600" />
                         </Button>
                       </div>

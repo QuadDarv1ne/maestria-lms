@@ -53,7 +53,7 @@ export function LineChart({
   const areaPath = `${linePath} L${points[points.length - 1].x},${padding.top + chartH} L${points[0].x},${padding.top + chartH} Z`;
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="w-full" preserveAspectRatio="none" style={{ height }}>
+    <svg role="img" aria-label="Line chart" viewBox={`0 0 ${width} ${height}`} className="w-full" preserveAspectRatio="none" style={{ height }}>
       {[0.25, 0.5, 0.75].map((ratio) => (
         <line
           key={ratio}
@@ -105,7 +105,7 @@ export function BarChart({
   const gap = (chartW / data.length) * 0.35;
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="w-full" preserveAspectRatio="none" style={{ height }}>
+    <svg role="img" aria-label="Bar chart" viewBox={`0 0 ${width} ${height}`} className="w-full" preserveAspectRatio="none" style={{ height }}>
       {[0.25, 0.5, 0.75, 1].map((ratio) => (
         <line
           key={ratio}
@@ -163,7 +163,7 @@ export function DonutChart({
 
   return (
     <div className="flex items-center gap-4">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="shrink-0">
+      <svg role="img" aria-label="Donut chart" width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="shrink-0">
         <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="currentColor" strokeOpacity={0.06} strokeWidth={strokeWidth} />
         {arcs.map((arc, i) => (
           <circle
@@ -218,7 +218,7 @@ export function Sparkline({ data, color = "#4f46e5", width = 80, height = 32 }: 
   });
 
   return (
-    <svg width={width} height={height} className="shrink-0">
+    <svg role="img" aria-label="Sparkline chart" width={width} height={height} className="shrink-0">
       <polyline points={points.join(" ")} fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );

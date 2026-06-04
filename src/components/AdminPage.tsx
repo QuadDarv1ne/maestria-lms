@@ -252,12 +252,15 @@ export function AdminPage() {
   return (
     <div className="flex min-h-[calc(100vh-8rem)]">
       <aside
+        aria-label="Admin sidebar"
         className={`hidden lg:flex flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 shrink-0 ${
           sidebarCollapsed ? "w-[68px]" : "w-[260px]"
         }`}
       >
         {renderSidebar()}
         <button
+          aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-expanded={!sidebarCollapsed}
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
           className="absolute top-1/2 -translate-y-1/2 z-10 w-5 h-10 bg-sidebar-accent border border-sidebar-border rounded-r-md flex items-center justify-center hover:bg-sidebar-accent/80 transition-colors"
           style={{ left: sidebarCollapsed ? "63px" : "255px" }}
@@ -269,7 +272,7 @@ export function AdminPage() {
       {mobileSidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileSidebarOpen(false)} />
-          <aside className="absolute left-0 top-0 bottom-0 w-[260px] bg-sidebar border-r border-sidebar-border">
+          <aside aria-label="Admin sidebar" className="absolute left-0 top-0 bottom-0 w-[260px] bg-sidebar border-r border-sidebar-border">
             {renderSidebar()}
           </aside>
         </div>
