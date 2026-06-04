@@ -1,30 +1,9 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { env } from "@/lib/env";
-/**
- * Constant-time comparison to prevent timing attacks.
- * Uses Web Crypto API for Edge Runtime compatibility.
- */
-function constantTimeCompare(a: string, b: string): boolean {
-  if (a.length !== b.length) {
-    return false;
-  }
-
-  const encoder = new TextEncoder();
-  const aBytes = encoder.encode(a);
-  const bBytes = encoder.encode(b);
-
-  let diff = 0;
-  for (let i = 0; i < aBytes.length; i++) {
-    diff |= aBytes[i] ^ bBytes[i];
-  }
-
-  return diff === 0;
-}
 
 const SAFE_METHODS = ["GET", "HEAD", "OPTIONS"];
 const CSRF_COOKIE_NAME = "csrf-token";
-const CSRF_HEADER_NAME = "x-csrf-token";
 
 function generateToken(): string {
   const bytes = new Uint8Array(32);
@@ -49,18 +28,23 @@ export function validateCsrf(request: NextRequest): boolean {
     return true;
   }
 
-  const cookieToken = request.cookies.get(CSRF_COOKIE_NAME)?.value;
-  const headerToken = request.headers.get(CSRF_HEADER_NAME);
+  // Origin-based CSRF protection.
+  // The SameSite=Strict cookie gives us defence-in-depth; validating the
+  // Origin header is sufficient for all browser-initiated requests without
+  // requiring client-side cooperation to mirror the cookie into a header.
+  const origin = request.headers.get("origin");
+  const host = request.headers.get("host");
 
-  if (!cookieToken || !headerToken) {
+  if (!origin || !host) {
     return false;
   }
 
-  if (cookieToken.length !== headerToken.length) {
+  try {
+    const originUrl = new URL(origin);
+    return originUrl.host === host;
+  } catch {
     return false;
   }
-
-  return constantTimeCompare(cookieToken, headerToken);
 }
 
 export function csrfProtection(request: NextRequest): NextResponse | null {

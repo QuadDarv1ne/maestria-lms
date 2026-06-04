@@ -44,7 +44,7 @@ export async function middleware(request: NextRequest) {
   // All internal API routes use cookie-based JWT sessions and MUST be CSRF-protected.
   const csrfExcludedPaths = [
     "/api/payments/webhook",       // External payment provider webhooks (HMAC verified)
-    "/api/auth/callback/",         // NextAuth OAuth callbacks (trailing slash for prefix match)
+    "/api/auth/callback",          // NextAuth OAuth callbacks
     "/api/auth/session",           // NextAuth session endpoint (CSRF handled internally)
     "/api/auth/csrf",              // NextAuth CSRF token endpoint
     "/api/auth/signout",           // NextAuth signout endpoint (CSRF handled internally)
