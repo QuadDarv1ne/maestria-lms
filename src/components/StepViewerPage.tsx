@@ -172,6 +172,8 @@ export function StepViewerPage({
   const router = useRouter();
   const user = useAppStore((s) => s.user);
   const { locale } = useLocale();
+  const localeRef = useRef(locale);
+  localeRef.current = locale;
   const [step, setStep] = useState<StepData | null>(null);
   const [courseStructure, setCourseStructure] = useState<CourseStructure | null>(null);
   const [loading, setLoading] = useState(true);
@@ -296,7 +298,7 @@ export function StepViewerPage({
             setStep(data.lesson);
           }
         } else {
-          let errorMessage = t("course.step.errorAccess", locale);
+          let errorMessage = t("course.step.errorAccess", localeRef.current);
           try {
             const data = await res.json();
             errorMessage = data.error || errorMessage;
@@ -310,8 +312,8 @@ export function StepViewerPage({
         }
       } catch (e: unknown) {
         if (!cancelled) {
-          log.error(t("course.step.errorLoad", locale), { error: e instanceof Error ? e.message : String(e) });
-          toast.error(t("course.step.errorLoad", locale));
+          log.error(t("course.step.errorLoad", localeRef.current), { error: e instanceof Error ? e.message : String(e) });
+          toast.error(t("course.step.errorLoad", localeRef.current));
         }
       } finally {
         if (!cancelled) {
@@ -323,7 +325,6 @@ export function StepViewerPage({
     return () => {
       cancelled = true;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseId, lessonId, router]);
 
   // Cleanup navigation timer on unmount
@@ -381,8 +382,8 @@ export function StepViewerPage({
         }
       } catch (e: unknown) {
         if (!cancelled) {
-          log.error(t("course.step.errorLoad", locale), { error: e instanceof Error ? e.message : String(e) });
-          toast.error(t("course.step.errorLoad", locale));
+          log.error(t("course.step.errorLoad", localeRef.current), { error: e instanceof Error ? e.message : String(e) });
+          toast.error(t("course.step.errorLoad", localeRef.current));
         }
       }
     };
@@ -390,7 +391,6 @@ export function StepViewerPage({
     return () => {
       cancelled = true;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseId]);
 
   // Calculate quiz score (percentage of correct answers)

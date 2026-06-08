@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { formatNumber } from "@/lib/utils";
@@ -76,6 +76,9 @@ export function PaymentPageClient({
     }
   }, [paymentId, locale]);
 
+  const fetchPaymentRef = useRef(fetchPayment);
+  fetchPaymentRef.current = fetchPayment;
+
   useEffect(() => {
     fetchPayment();
   }, [fetchPayment]);
@@ -88,7 +91,7 @@ export function PaymentPageClient({
         clearInterval(interval);
         return;
       }
-      const updated = await fetchPayment();
+      const updated = await fetchPaymentRef.current();
       if (!isMounted) return;
       if (updated && updated.status !== "pending") {
         clearInterval(interval);
@@ -99,7 +102,6 @@ export function PaymentPageClient({
       isMounted = false;
       clearInterval(interval);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleInitYooKassa = async () => {

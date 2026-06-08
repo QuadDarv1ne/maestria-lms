@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     if (existingUser) {
       return NextResponse.json(
         { error: "Ошибка регистрации" },
-        { status: 409 }
+        { status: 400 }
       );
     }
 
