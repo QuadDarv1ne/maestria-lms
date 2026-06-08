@@ -16,7 +16,27 @@ export async function GET(request: NextRequest) {
     const adminError = requireAdmin(session);
     if (adminError) return adminError;
 
-    const [userCounts, courseCounts, enrollmentAgg, paymentAgg, activeUsersCount, activeWeekCount, activeMonthCount] = await Promise.all([
+    const now = new Date();
+    const oneDayAgo = new Date(now);
+    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+    const oneWeekAgo = new Date(now);
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const oneMonthAgo = new Date(now);
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    if (oneMonthAgo.getMonth() === now.getMonth()) {
+      oneMonthAgo.setDate(0);
+    }
+
+    const [
+      userCounts,
+      courseCounts,
+      publishedCourseCount,
+      enrollmentAgg,
+      paymentAgg,
+      activeUsersCount,
+      activeWeekCount,
+      activeMonthCount,
+    ] = await Promise.all([
       db.user.groupBy({
         by: ["role"],
         _count: true,
@@ -25,6 +45,7 @@ export async function GET(request: NextRequest) {
         _count: true,
         _sum: { price: true },
       }),
+      db.course.count({ where: { isPublished: true } }),
       db.enrollment.aggregate({
         _count: true,
       }),
@@ -38,9 +59,7 @@ export async function GET(request: NextRequest) {
           isActive: true,
           progress: {
             some: {
-              lastAccessed: {
-                gte: new Date(new Date().setDate(new Date().getDate() - 1)),
-              },
+              lastAccessed: { gte: oneDayAgo },
             },
           },
         },
@@ -50,9 +69,7 @@ export async function GET(request: NextRequest) {
           isActive: true,
           progress: {
             some: {
-              lastAccessed: {
-                gte: new Date(new Date().setDate(new Date().getDate() - 7)),
-              },
+              lastAccessed: { gte: oneWeekAgo },
             },
           },
         },
@@ -62,9 +79,7 @@ export async function GET(request: NextRequest) {
           isActive: true,
           progress: {
             some: {
-              lastAccessed: {
-                gte: new Date(new Date().setMonth(new Date().getMonth() - 1)),
-              },
+              lastAccessed: { gte: oneMonthAgo },
             },
           },
         },
@@ -85,7 +100,7 @@ export async function GET(request: NextRequest) {
       totalTeachers,
       totalAdmins,
       totalCourses: courseCounts._count,
-      totalPublishedCourses: await db.course.count({ where: { isPublished: true } }),
+      totalPublishedCourses: publishedCourseCount,
       totalEnrollments: enrollmentAgg._count,
       totalRevenue,
       totalPayments,
@@ -95,10 +110,7 @@ export async function GET(request: NextRequest) {
       serverUptime: process.uptime() < 3600
         ? `${Math.floor(process.uptime() / 60)} мин`
         : `${(process.uptime() / 3600).toFixed(1)} ч`,
-      dbSize: getDatabaseProvider() === "postgresql" ? "PostgreSQL"
-        : getDatabaseProvider() === "mysql" ? "MySQL"
-        : getDatabaseProvider() === "mongodb" ? "MongoDB"
-        : "SQLite",
+      dbSize: ({ postgresql: "PostgreSQL", mysql: "MySQL", mongodb: "MongoDB" } as Record<string, string>)[getDatabaseProvider()] ?? "SQLite",
     };
 
     return NextResponse.json(stats);
