@@ -11,15 +11,15 @@ const checkRateLimit = rateLimit("notifications", RATE_LIMITS.default);
 
 // PATCH: Mark all notifications as read (bulk operation)
 export async function PATCH(request: NextRequest) {
-  const blocked = checkRateLimit(request);
-  if (blocked) return blocked;
-
-  const session = await getAuthSession();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
-  }
-
   try {
+    const blocked = checkRateLimit(request);
+    if (blocked) return blocked;
+
+    const session = await getAuthSession();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
+    }
+
     await db.notification.updateMany({
       where: {
         userId: session.user.id,

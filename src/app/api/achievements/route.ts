@@ -12,9 +12,10 @@ const checkRateLimit = rateLimit("achievements", RATE_LIMITS.default);
 export const revalidate = 120;
 
 export async function GET(request: Request) {
-  const blocked = checkRateLimit(request);
-  if (blocked) return blocked;
   try {
+    const blocked = checkRateLimit(request);
+    if (blocked) return blocked;
+
     const session = await getAuthSession();
     if (!session?.user) {
       return NextResponse.json(
@@ -25,39 +26,29 @@ export async function GET(request: Request) {
 
     const userId = session.user.id;
 
-    // Count completed coding/assignment lessons from Progress
-    const completedCodingLessons = await db.progress.findMany({
-      where: {
-        userId,
-        completed: true,
-        lesson: {
-          type: { in: ["coding", "assignment"] },
+    const [completedCodingAssignments, completedLessonsCount, totalUsers, user] = await Promise.all([
+      db.progress.count({
+        where: {
+          userId,
+          completed: true,
+          lesson: {
+            type: { in: ["coding", "assignment"] },
+          },
         },
-      },
-      select: {
-        id: true,
-        lessonId: true,
-      },
-    });
+      }),
+      db.progress.count({
+        where: {
+          userId,
+          completed: true,
+        },
+      }),
+      db.user.count(),
+      db.user.findUnique({
+        where: { id: userId },
+        select: { createdAt: true },
+      }),
+    ]);
 
-    // Count total completed lessons
-    const completedLessonsCount = await db.progress.count({
-      where: {
-        userId,
-        completed: true,
-      },
-    });
-
-    // Count total users for "early adopter" check
-    const totalUsers = await db.user.count();
-
-    // Get user's registration order
-    const user = await db.user.findUnique({
-      where: { id: userId },
-      select: { createdAt: true },
-    });
-
-    // Count users registered before this user
     const usersBefore = user
       ? await db.user.count({
           where: {
@@ -68,7 +59,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(
       {
-        completedCodingAssignments: completedCodingLessons.length,
+        completedCodingAssignments,
         completedLessonsCount,
         totalUsers,
         userRegistrationOrder: usersBefore + 1,
