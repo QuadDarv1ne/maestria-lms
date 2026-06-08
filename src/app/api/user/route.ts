@@ -73,6 +73,16 @@ export async function GET(request: NextRequest) {
               title: true,
               image: true,
               level: true,
+              modules: {
+                select: {
+                  lessons: {
+                    select: {
+                      id: true,
+                      duration: true,
+                    },
+                  },
+                },
+              },
             },
           },
         },
@@ -105,9 +115,63 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
+    // Build lessonId → progress lookup
+    const progressMap = new Map(progress.map((p) => [p.lessonId, p]));
+
+    // Compute per-enrollment stats server-side to eliminate N+1 client fetches
+    const enrollmentDetails = enrollments.map((enrollment) => {
+      const lessons = enrollment.course.modules.flatMap((m) => m.lessons);
+      const totalLessons = lessons.length;
+
+      let completedLessons = 0;
+      let totalTimeSpent = 0;
+      let lastAccessed: Date | null = null;
+      const scores: number[] = [];
+
+      for (const lesson of lessons) {
+        const p = progressMap.get(lesson.id);
+        if (!p) continue;
+        if (p.completed) completedLessons++;
+        totalTimeSpent += p.timeSpent;
+        if (p.score !== null) scores.push(p.score);
+        if (!lastAccessed || p.lastAccessed > lastAccessed) {
+          lastAccessed = p.lastAccessed;
+        }
+      }
+
+      const avgScore = scores.length > 0
+        ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+        : null;
+
+      return {
+        id: enrollment.id,
+        status: enrollment.status,
+        progress: enrollment.progress,
+        enrolledAt: enrollment.enrolledAt,
+        course: {
+          id: enrollment.course.id,
+          title: enrollment.course.title,
+          image: enrollment.course.image,
+          level: enrollment.course.level,
+        },
+        totalLessons,
+        completedLessons,
+        totalTimeSpent,
+        lastAccessed: lastAccessed?.toISOString() ?? null,
+        avgScore,
+      };
+    });
+
+    // Strip internal modules data from enrollments — only send what the client needs
+    const enrollmentsForClient = enrollments.map(({ course: { modules: _modules, ...courseRest }, ...rest }) => ({
+      ...rest,
+      course: courseRest,
+    }));
+
     return NextResponse.json({
       user,
-      enrollments,
+      enrollments: enrollmentsForClient,
+      enrollmentDetails,
       certificates,
       progress,
     }, { status: 200 });

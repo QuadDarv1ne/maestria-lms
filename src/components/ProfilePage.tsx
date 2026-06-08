@@ -83,17 +83,6 @@ interface Certificate {
   };
 }
 
-interface CourseModuleData {
-  lessons?: { id: string }[];
-}
-interface ProgressData {
-  lessonId: string;
-  completed: boolean;
-  timeSpent?: number;
-  score?: number | null;
-  lastAccessed: string;
-}
-
 export function ProfilePage() {
   const router = useRouter();
   const user = useAppStore((s) => s.user);
@@ -181,62 +170,9 @@ export function ProfilePage() {
             });
           }
 
-          // Fetch detailed enrollment stats using progress data
-          if (data.enrollments?.length > 0 && data.progress && !cancelled) {
-            // Build a map of lessonId -> courseId by fetching course details
-            const courseLessonsMap: Record<string, string[]> = {};
-            const courseFetches = data.enrollments.map((enrollment: Enrollment) =>
-              fetch(`/api/courses/${enrollment.course.id}`)
-                .then(async (res) => {
-                  if (!res.ok) return { id: enrollment.course.id, modules: [] };
-                  const courseData = await res.json();
-                  const course = courseData.course || courseData;
-                  return { id: enrollment.course.id, modules: course.modules || [] };
-                })
-                .catch((err) => {
-                  log.error("Failed to fetch course for profile", { courseId: enrollment.course.id, error: err });
-                  return { id: enrollment.course.id, modules: [] };
-                })
-            );
-
-            const results = await Promise.allSettled(courseFetches);
-            for (const result of results) {
-              if (result.status === "fulfilled") {
-                const { id, modules } = result.value;
-                courseLessonsMap[id] = modules.flatMap((mod: CourseModuleData) =>
-                  mod.lessons?.map((l: { id: string }) => l.id) || []
-                );
-              }
-            }
-
-            const details = data.enrollments.map((enrollment: Enrollment) => {
-              const courseLessonIds = courseLessonsMap[enrollment.course.id] || [];
-              const courseProgress: ProgressData[] = data.progress.filter((p: ProgressData) =>
-                courseLessonIds.includes(p.lessonId)
-              );
-              const completedLessons = courseProgress.filter((p: ProgressData) => p.completed).length;
-              const totalTimeSpent = courseProgress.reduce((sum: number, p: ProgressData) => sum + (p.timeSpent || 0), 0);
-              const scores = courseProgress.map((p: ProgressData) => p.score).filter((s): s is number => s !== null && s !== undefined);
-              const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
-              const lastAccessed = courseProgress.length > 0
-                ? [...courseProgress].sort((a: ProgressData, b: ProgressData) =>
-                    new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime()
-                  )[0].lastAccessed
-                : null;
-
-              return {
-                ...enrollment,
-                totalLessons: courseLessonIds.length,
-                completedLessons,
-                totalTimeSpent,
-                lastAccessed,
-                avgScore,
-              };
-            });
-            if (!cancelled) {
-              setEnrollmentDetails(details);
-              setError(null);
-            }
+          if (data.enrollmentDetails?.length > 0 && !cancelled) {
+            setEnrollmentDetails(data.enrollmentDetails);
+            setError(null);
           } else if (!cancelled) {
             setError(null);
           }
