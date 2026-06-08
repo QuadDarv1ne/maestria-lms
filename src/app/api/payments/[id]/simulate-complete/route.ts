@@ -17,9 +17,8 @@ export async function POST(
   const blocked = checkRateLimit(request);
   if (blocked) return blocked;
 
-  const { id } = await params;
-
   try {
+    const { id } = await params;
     const session = await getAuthSession();
     if (!session?.user) {
       return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });

@@ -64,10 +64,10 @@ export async function GET(
 ) {
   const blocked = checkPaymentGetRateLimit(request);
   if (blocked) return blocked;
-  
-  const { id } = await params;
-  
+
+  let id: string | undefined;
   try {
+    ({ id } = await params);
     const session = await getAuthSession();
 
     if (!session?.user) {
@@ -111,6 +111,7 @@ export async function GET(
     return NextResponse.json({ payment }, { status: 200 });
   } catch (error: unknown) {
     return handleApiError(error, { route: "payments/[id]/GET", metadata: { paymentId: id } });
+
   }
 }
 
@@ -123,10 +124,10 @@ export async function PUT(
 ) {
   const blocked = checkRateLimit(request);
   if (blocked) return blocked;
-  
-  const { id } = await params;
-  
+
+  let id: string | undefined;
   try {
+    ({ id } = await params);
     const session = await getAuthSession();
     if (!session?.user) {
       return NextResponse.json(
