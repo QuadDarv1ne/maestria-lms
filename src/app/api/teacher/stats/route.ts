@@ -9,18 +9,18 @@ export const runtime = "nodejs";
 const checkRateLimit = rateLimit("teacher-stats", RATE_LIMITS.default);
 
 export async function GET(request: NextRequest) {
-  const blocked = checkRateLimit(request);
-  if (blocked) return blocked;
-  const session = await getAuthSession();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
-  }
-
-  if (session.user.role !== "teacher" && session.user.role !== "admin") {
-    return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
-  }
-
   try {
+    const blocked = checkRateLimit(request);
+    if (blocked) return blocked;
+    const session = await getAuthSession();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
+    }
+
+    if (session.user.role !== "teacher" && session.user.role !== "admin") {
+      return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
+    }
+
     const teacherId = session.user.id;
 
     const courses = await db.course.findMany({

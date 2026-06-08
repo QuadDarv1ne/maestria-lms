@@ -18,15 +18,15 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const blocked = checkRateLimit(request);
-  if (blocked) return blocked;
-
-  const session = await getAuthSession();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
-  }
-
   try {
+    const blocked = checkRateLimit(request);
+    if (blocked) return blocked;
+
+    const session = await getAuthSession();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
+    }
+
     const { id } = await params;
 
     const notification = await db.notification.findUnique({
@@ -85,15 +85,15 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const blocked = checkRateLimit(request);
-  if (blocked) return blocked;
-
-  const session = await getAuthSession();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
-  }
-
   try {
+    const blocked = checkRateLimit(request);
+    if (blocked) return blocked;
+
+    const session = await getAuthSession();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
+    }
+
     const { id } = await params;
 
     const notification = await db.notification.findUnique({

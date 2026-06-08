@@ -20,34 +20,34 @@ const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 const checkRateLimit = rateLimit("upload", RATE_LIMITS.upload);
 
 export async function POST(req: NextRequest) {
-  const blocked = checkRateLimit(req);
-  if (blocked) return blocked;
-  const session = await getAuthSession();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
-  }
-
-  // Разрешаем загрузку всем авторизованным пользователям (студентам — для file_upload заданий)
-  const allowedRoles = ["admin", "teacher", "student"];
-  if (!allowedRoles.includes(session.user.role)) {
-    return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
-  }
-
-  if (!isS3Available()) {
-    return NextResponse.json(
-      { error: "Хранилище не настроено — обратитесь к администратору" },
-      { status: 503 }
-    );
-  }
-
-  if (!s3Client) {
-    return NextResponse.json(
-      { error: "S3 клиент не инициализирован" },
-      { status: 500 }
-    );
-  }
-
   try {
+    const blocked = checkRateLimit(req);
+    if (blocked) return blocked;
+    const session = await getAuthSession();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
+    }
+
+    // Разрешаем загрузку всем авторизованным пользователям (студентам — для file_upload заданий)
+    const allowedRoles = ["admin", "teacher", "student"];
+    if (!allowedRoles.includes(session.user.role)) {
+      return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
+    }
+
+    if (!isS3Available()) {
+      return NextResponse.json(
+        { error: "Хранилище не настроено — обратитесь к администратору" },
+        { status: 503 }
+      );
+    }
+
+    if (!s3Client) {
+      return NextResponse.json(
+        { error: "S3 клиент не инициализирован" },
+        { status: 500 }
+      );
+    }
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const rawFolder = (formData.get("folder") as string) || "uploads";

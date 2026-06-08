@@ -4,6 +4,11 @@ import { getToken } from "next-auth/jwt";
 import { csrfProtection, getCsrfCookie } from "@/lib/csrf";
 import { env } from "@/lib/env";
 
+function safeOrigin(url: string | undefined): string | null {
+  if (!url) return null;
+  try { return new URL(url).origin; } catch { return null; }
+}
+
 type Role = "admin" | "teacher";
 const PROTECTED_ROUTES = {
   "/admin": ["admin" as const],
@@ -75,24 +80,34 @@ export async function middleware(request: NextRequest) {
   response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
   response.headers.set("Cross-Origin-Resource-Policy", "same-origin");
 
-  if (env.isProduction) {
+  const isProduction = env.isProduction;
+
+  if (isProduction) {
     response.headers.set(
       "Strict-Transport-Security",
       "max-age=63072000; includeSubDomains; preload",
     );
   }
 
-  const isProduction = env.isProduction;
+  const cdnOrigin = safeOrigin(env.cdnUrl);
+  const s3Origin = safeOrigin(env.s3Endpoint);
+
+  const imgSources = ["'self'", "data:", "https://api.dicebear.com", "https://freeimage.host"];
+  if (cdnOrigin) imgSources.push(cdnOrigin);
+
+  const connectSources = ["'self'", ...(isProduction ? [] : ["ws:", "wss:"])];
+  if (cdnOrigin) connectSources.push(cdnOrigin);
+  if (s3Origin) connectSources.push(s3Origin);
 
   response.headers.set(
     "Content-Security-Policy",
     [
       "default-src 'self'",
-      `script-src 'self' 'unsafe-inline' ${isProduction ? "" : "'unsafe-eval'"}`,
+      `script-src 'self' 'unsafe-inline'${isProduction ? "" : " 'unsafe-eval'"}`,
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: https://api.dicebear.com https://freeimage.host https://ui3adtb308.a.trbcdn.net",
+      `img-src ${imgSources.join(" ")}`,
       "font-src 'self' https://fonts.gstatic.com",
-      `connect-src 'self' ${isProduction ? "" : "ws: wss:"}`,
+      `connect-src ${connectSources.join(" ")}`,
       "frame-ancestors 'none'",
       "object-src 'none'",
       "base-uri 'self'",

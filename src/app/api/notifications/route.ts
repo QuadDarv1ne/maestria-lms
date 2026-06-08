@@ -9,14 +9,14 @@ export const runtime = "nodejs";
 const checkRateLimit = rateLimit("notifications", RATE_LIMITS.default);
 
 export async function GET(request: NextRequest) {
-  const blocked = checkRateLimit(request);
-  if (blocked) return blocked;
-
-  const session = await getAuthSession();
-  const authError = requireAuth(session);
-  if (authError) return authError;
-
   try {
+    const blocked = checkRateLimit(request);
+    if (blocked) return blocked;
+
+    const session = await getAuthSession();
+    const authError = requireAuth(session);
+    if (authError) return authError;
+
     const authSession = session as ExtendedSession;
     const url = new URL(request.url);
     const limit = Math.min(Number(url.searchParams.get("limit")) || 50, 100);
@@ -54,14 +54,14 @@ export async function GET(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const blocked = checkRateLimit(request);
-  if (blocked) return blocked;
-
-  const session = await getAuthSession();
-  const authError = requireAuth(session);
-  if (authError) return authError;
-
   try {
+    const blocked = checkRateLimit(request);
+    if (blocked) return blocked;
+
+    const session = await getAuthSession();
+    const authError = requireAuth(session);
+    if (authError) return authError;
+
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
     const authSession = session as ExtendedSession;

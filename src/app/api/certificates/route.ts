@@ -9,13 +9,13 @@ export const runtime = "nodejs";
 const checkRateLimit = rateLimit("certificates", RATE_LIMITS.default);
 
 export async function GET(request: NextRequest) {
-  const blocked = checkRateLimit(request);
-  if (blocked) return blocked;
-  const session = await getAuthSession();
-  const authError = requireAuth(session);
-  if (authError) return authError;
-
   try {
+    const blocked = checkRateLimit(request);
+    if (blocked) return blocked;
+    const session = await getAuthSession();
+    const authError = requireAuth(session);
+    if (authError) return authError;
+
     const url = new URL(request.url);
     const courseId = url.searchParams.get("courseId");
 

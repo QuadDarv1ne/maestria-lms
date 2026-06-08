@@ -16,15 +16,15 @@ const publishSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const rateLimitResult = rateLimit("notifications/publish", RATE_LIMITS.default)(req);
-  if (rateLimitResult) return rateLimitResult;
-
-  const session = await getAuthSession();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
-  }
-
   try {
+    const rateLimitResult = rateLimit("notifications/publish", RATE_LIMITS.default)(req);
+    if (rateLimitResult) return rateLimitResult;
+
+    const session = await getAuthSession();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
+    }
+
     const body = await req.json();
     const validation = publishSchema.safeParse(body);
 

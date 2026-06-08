@@ -168,7 +168,7 @@ export function CatalogPage() {
               className="pl-10"
             />
           </div>
-          <Button aria-disabled="true" className="bg-blue-700 hover:bg-blue-800 text-white opacity-50 cursor-not-allowed">
+          <Button aria-disabled={true} className="bg-blue-700 hover:bg-blue-800 text-white opacity-50 cursor-not-allowed">
             {t("common.find", locale)}
           </Button>
           <Button

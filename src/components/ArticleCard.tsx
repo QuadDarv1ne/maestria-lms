@@ -62,7 +62,10 @@ export const ArticleCard = React.memo(function ArticleCard({ article, onClick }:
   return (
     <Card
       className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 border-0 shadow-sm overflow-hidden group"
+      tabIndex={0}
+      role="button"
       onClick={onClick}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick?.(); } }}
     >
       <CardContent className="p-0">
         {/* Cover Image */}

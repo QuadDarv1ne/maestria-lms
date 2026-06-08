@@ -153,8 +153,8 @@ export async function cacheDelete(key: string): Promise<boolean> {
     try {
       await redis.del(key);
       return true;
-    } catch {
-      // ignore
+    } catch (err) {
+      log.warn("cacheDelete failed", { key, error: err instanceof Error ? err.message : String(err) });
     }
   }
 

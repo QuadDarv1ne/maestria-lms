@@ -1,3 +1,4 @@
+import { log } from "@/lib/logger";
 import type { NotificationItem } from "./stores/notifications";
 
 const clients = new Map<string, Set<ReadableStreamDefaultController>>();
@@ -30,7 +31,8 @@ function broadcastToClients(userId: string, data: string) {
   for (const controller of userClients) {
     try {
       controller.enqueue(encoded);
-    } catch {
+    } catch (err) {
+      log.warn("SSE broadcast failed, removing client", { error: err instanceof Error ? err.message : String(err) });
       failed.push(controller);
     }
   }
