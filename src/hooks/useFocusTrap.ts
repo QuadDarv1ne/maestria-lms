@@ -92,7 +92,10 @@ export function useFocusRestore(isActive: boolean = true) {
   useEffect(() => {
     if (!isActive) return;
 
-    previouslyFocusedRef.current = document.activeElement as HTMLElement;
+    const activeEl = document.activeElement;
+    if (activeEl instanceof HTMLElement) {
+      previouslyFocusedRef.current = activeEl;
+    }
 
     return () => {
       previouslyFocusedRef.current?.focus();
