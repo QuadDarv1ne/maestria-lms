@@ -3,6 +3,7 @@
 import React from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import { formatDate } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Eye, User } from "lucide-react";
@@ -57,15 +58,6 @@ export const ArticleCard = React.memo(function ArticleCard({ article, onClick }:
   const categoryLabel = t(`blog.category.${article.category}`, locale) || article.category;
   const categoryColor = categoryColors[article.category] || "bg-gray-500/10 text-gray-700 border-gray-200";
   const categoryIcon = categoryIcons[article.category] || "📄";
-
-  const formatDate = (date: Date) => {
-    const d = typeof date === "string" ? new Date(date) : date;
-    return d.toLocaleDateString(locale === "ru" ? "ru-RU" : locale === "zh" ? "zh-CN" : "en-US", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-  };
 
   return (
     <Card
@@ -135,7 +127,7 @@ export const ArticleCard = React.memo(function ArticleCard({ article, onClick }:
 
           {/* Date */}
           <div className="text-xs text-muted-foreground">
-            {formatDate(article.createdAt)}
+            {formatDate(article.createdAt, locale)}
           </div>
         </div>
       </CardContent>

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Clock, Eye, User, Calendar } from "lucide-react";
@@ -119,14 +120,6 @@ export function ArticlePage({ slug }: ArticlePageProps) {
   const categoryColor = categoryColors[article.category] || "bg-gray-500/10 text-gray-700 border-gray-200";
   const categoryIcon = categoryIcons[article.category] || "📄";
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString(locale === "ru" ? "ru-RU" : locale === "zh" ? "zh-CN" : "en-US", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-  };
-
   const tags = article.tags?.split(",").filter(Boolean) || [];
 
   return (
@@ -165,7 +158,7 @@ export function ArticlePage({ slug }: ArticlePageProps) {
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
-              <span>{formatDate(article.createdAt)}</span>
+              <span>{formatDate(article.createdAt, locale)}</span>
             </div>
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4" />

@@ -22,9 +22,10 @@ export function formatDate(
 
 export function formatNumber(
   value: number,
-  locale: string = "ru"
+  locale: string = "ru",
+  options?: Intl.NumberFormatOptions
 ): string {
-  return value.toLocaleString(localeMap[locale] || "ru-RU");
+  return value.toLocaleString(localeMap[locale] || "ru-RU", options);
 }
 
 export function parsePagination(

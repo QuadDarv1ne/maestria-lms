@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import { formatNumber } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -261,7 +262,7 @@ export function PaymentPageClient({
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">{t("payment.amount", locale)}</span>
               <span className="font-semibold text-lg">
-                {payment.amount.toLocaleString("ru-RU", {
+                {formatNumber(payment.amount, locale, {
                   style: "currency",
                   currency: payment.currency || "RUB",
                 })}

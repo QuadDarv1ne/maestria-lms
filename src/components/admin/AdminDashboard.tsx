@@ -1,4 +1,5 @@
 import { t } from "@/lib/i18n";
+import { formatDate } from "@/lib/utils";
 import type { Locale } from "@/lib/store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -148,13 +149,13 @@ export function AdminDashboard(props: AdminTabProps) {
                   type: "user" as const,
                   description: `${t("admin.activity.registration", locale)} ${u.name || u.email}`,
                   userName: u.email,
-                  timestamp: u.createdAt ? new Date(u.createdAt).toLocaleDateString(locale === "ru" ? "ru-RU" : locale === "zh" ? "zh-CN" : "en-US") : "",
+                  timestamp: u.createdAt ? formatDate(u.createdAt, locale) : "",
                 }));
                 const recentCourses = courses.slice(0, 3).map((c) => ({
                   type: "course" as const,
                   description: `${t("admin.activity.course_created", locale)} ${c.title}`,
                   userName: c.teacher?.name || "",
-                  timestamp: c.createdAt ? new Date(c.createdAt).toLocaleDateString(locale === "ru" ? "ru-RU" : locale === "zh" ? "zh-CN" : "en-US") : "",
+                  timestamp: c.createdAt ? formatDate(c.createdAt, locale) : "",
                 }));
                 const activities = [...recentUsers, ...recentCourses]
                   .sort((a, b) => (b.timestamp || "").localeCompare(a.timestamp || ""))

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { sanitizeContent } from "@/lib/sanitize";
+import { log } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -173,7 +174,8 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
       } else {
         toast.error(data.error || t("common.error", locale));
       }
-    } catch {
+    } catch (err) {
+      log.error("Enroll failed", { error: err instanceof Error ? err.message : String(err) });
       toast.error(t("common.error", locale));
     } finally {
       setEnrolling(false);
@@ -194,11 +196,14 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
     if (navigator.share) {
       try {
         await navigator.share({ title: course?.title, url });
-      } catch { /* user cancelled share dialog — safe to ignore */ }
+      } catch (err) {
+        log.warn("Share cancelled", { error: err instanceof Error ? err.message : String(err) });
+      }
     } else {
       try {
         await navigator.clipboard.writeText(url);
-      } catch {
+      } catch (err) {
+        log.error("Copy link failed", { error: err instanceof Error ? err.message : String(err) });
         toast.error(t("common.error", locale));
         return;
       }
@@ -226,7 +231,8 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
     if (!str) return fallback;
     try {
       return JSON.parse(str) as T;
-    } catch {
+    } catch (err) {
+      log.warn("safeJsonParse failed", { error: err instanceof Error ? err.message : String(err) });
       return fallback;
     }
   }

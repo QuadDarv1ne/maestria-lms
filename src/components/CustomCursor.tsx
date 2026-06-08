@@ -108,8 +108,8 @@ export function CustomCursor() {
 
     // Определяем интерактивные элементы
     const handleMouseOver = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target) return;
+      if (!(e.target instanceof Element)) return;
+      const target = e.target;
 
       // Кнопки, ссылки, input, select, интерактивные элементы
       const isButton = target.closest(
