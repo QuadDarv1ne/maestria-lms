@@ -20,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   BookOpen, Award, Trophy, User, Activity, Clock, BookmarkCheck, Bookmark,
   CheckCircle2, Edit3, Loader2, Lock, LogOut, MessageSquare, Save, Settings, Target,
+  Upload,
 } from "lucide-react";
 import { ProfileSkeleton } from "@/components/skeletons/ProfileSkeleton";
 import { AchievementsPage } from "@/components/AchievementsPage";
@@ -110,6 +111,7 @@ export function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [editForm, setEditForm] = useState({
     name: "",
@@ -257,6 +259,34 @@ export function ProfilePage() {
       cancelled = true;
     };
   }, [user, locale, router]);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error(t("profile.fileTooLarge", locale));
+      return;
+    }
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", "avatars");
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || t("profile.uploadError", locale));
+      }
+      const data = await res.json();
+      setEditForm((prev) => ({ ...prev, image: data.url }));
+      toast.success(t("profile.avatarUploaded", locale));
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t("profile.uploadError", locale));
+    } finally {
+      setUploadingAvatar(false);
+      e.target.value = "";
+    }
+  };
 
   const handleSaveProfile = async () => {
     setSaving(true);
@@ -497,16 +527,47 @@ export function ProfilePage() {
                 />
               </div>
               <div>
-                <Label htmlFor="image">{t("profile.avatarUrl", locale)}</Label>
-                <Input
-                  id="image"
-                  value={editForm.image}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, image: e.target.value })
-                  }
-                  placeholder="https://example.com/avatar.jpg"
-                  disabled={saving}
-                />
+                <Label>{t("profile.avatar", locale)}</Label>
+                <div className="flex items-center gap-3">
+                  <Avatar className="w-14 h-14 border-2 border-muted">
+                    <AvatarImage src={editForm.image || ""} alt="Avatar preview" />
+                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-violet-600 text-white text-lg font-bold">
+                      {getInitials(editForm.name, "U")}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 space-y-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarUpload}
+                      disabled={saving || uploadingAvatar}
+                      className="hidden"
+                      id="avatar-upload"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={saving || uploadingAvatar}
+                      onClick={() => document.getElementById("avatar-upload")?.click()}
+                    >
+                      {uploadingAvatar ? (
+                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                      ) : (
+                        <Upload className="w-4 h-4 mr-1" />
+                      )}
+                      {uploadingAvatar ? t("profile.uploading", locale) : t("profile.uploadPhoto", locale)}
+                    </Button>
+                    <Input
+                      placeholder="https://example.com/avatar.jpg"
+                      value={editForm.image}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, image: e.target.value })
+                      }
+                      disabled={saving}
+                      className="text-xs"
+                    />
+                  </div>
+                </div>
               </div>
               <div className="flex gap-2">
                 <Button

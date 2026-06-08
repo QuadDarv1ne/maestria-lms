@@ -70,6 +70,7 @@ export interface ModuleForm {
 export interface CourseFormData {
   title: string;
   slug: string;
+  image: string;
   shortDesc: string;
   description: string;
   categorySlug: string;
@@ -180,6 +181,7 @@ export function createEmptyLesson(sortOrder: number): LessonForm {
 export const initialFormData: CourseFormData = {
   title: "",
   slug: "",
+  image: "",
   shortDesc: "",
   description: "",
   categorySlug: "",

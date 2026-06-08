@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
 import {
   ArrowLeft,
   ArrowRight,
@@ -660,6 +661,7 @@ export function StepViewerPage({
   }, [locale]);
 
   // Submit file upload
+  const [uploadProgress, setUploadProgress] = useState(0);
   const handleFileSubmit = useCallback(async () => {
     if (!selectedFile) {
       toast.error(t("course.step.selectFileFirst", locale) );
@@ -667,23 +669,42 @@ export function StepViewerPage({
     }
     const formData = new FormData();
     formData.append("file", selectedFile);
+    formData.append("folder", "submissions");
     setSubmittingAssignment(true);
+    setUploadProgress(0);
     try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
+      const xhr = new XMLHttpRequest();
+      xhr.upload.addEventListener("progress", (evt) => {
+        if (evt.lengthComputable) {
+          setUploadProgress(Math.round((evt.loaded / evt.total) * 100));
+        }
       });
-      if (res.ok) {
-        setFileUploaded(true);
-        toast.success(t("course.step.fileSent", locale) );
-      } else {
-        const data = await res.json().catch(() => ({}));
-        toast.error(data.error || t("course.step.errorLoad", locale));
-      }
-    } catch {
-      toast.error(t("course.step.errorLoad", locale));
+
+      const result = await new Promise<void>((resolve, reject) => {
+        xhr.addEventListener("load", () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve();
+          } else {
+            try {
+              const data = JSON.parse(xhr.responseText);
+              reject(new Error(data.error || t("course.step.errorLoad", locale)));
+            } catch {
+              reject(new Error(t("course.step.errorLoad", locale)));
+            }
+          }
+        });
+        xhr.addEventListener("error", () => reject(new Error(t("course.step.errorLoad", locale))));
+        xhr.open("POST", "/api/upload");
+        xhr.send(formData);
+      });
+
+      setFileUploaded(true);
+      toast.success(t("course.step.fileSent", locale) );
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t("course.step.errorLoad", locale));
     } finally {
       setSubmittingAssignment(false);
+      setUploadProgress(0);
     }
   }, [selectedFile, locale]);
 
@@ -1652,14 +1673,25 @@ export function StepViewerPage({
                         </div>
                       )}
 
+                      {/* Upload progress */}
+                      {submittingAssignment && (
+                        <div className="space-y-1">
+                          <Progress value={uploadProgress} className="h-2" />
+                          <p className="text-xs text-muted-foreground text-right">{uploadProgress}%</p>
+                        </div>
+                      )}
+
                       {/* Submit button */}
                       <Button
                         className="bg-slate-600 hover:bg-slate-700 text-white"
                         onClick={handleFileSubmit}
                         disabled={!selectedFile || submittingAssignment}
                       >
-                        <Send className="w-4 h-4 mr-2" />
-                        {t("course.step.submitFile", locale) }
+                        {submittingAssignment ? (
+                          <><span className="animate-spin mr-2">⏳</span>{uploadProgress}%</>
+                        ) : (
+                          <><Send className="w-4 h-4 mr-2" />{t("course.step.submitFile", locale)}</>
+                        )}
                       </Button>
                     </div>
                   ) : (

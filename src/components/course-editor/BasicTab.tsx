@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { t } from "@/lib/i18n";
+import { toast } from "sonner";
 import type { Locale } from "@/lib/stores/ui";
 import type { CourseFormData } from "./types";
 import { CATEGORIES } from "@/lib/constants";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FileText, GraduationCap, Star } from "lucide-react";
+import { FileText, GraduationCap, Image, Star, Upload, Loader2 } from "lucide-react";
 
 const CATEGORY_OPTIONS = CATEGORIES;
 
@@ -34,6 +37,36 @@ interface BasicTabProps {
 export function BasicTab({
   form, locale, levelOptions, onUpdateField, onTitleChange, onNextTab: _onNextTab,
 }: BasicTabProps) {
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error(t("courseEditor.fileTooLarge", locale));
+      return;
+    }
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", "courses");
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || t("courseEditor.uploadError", locale));
+      }
+      const data = await res.json();
+      onUpdateField("image", data.url);
+      toast.success(t("courseEditor.imageUploaded", locale));
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t("courseEditor.uploadError", locale));
+    } finally {
+      setUploadingImage(false);
+      e.target.value = "";
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div className="space-y-6">
@@ -154,6 +187,72 @@ export function BasicTab({
                 onChange={(e) => onUpdateField("duration", e.target.value)}
               />
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Image className="w-5 h-5 text-blue-600" />
+              {t("courseEditor.courseCover", locale)}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div
+              className="relative h-40 rounded-lg bg-muted flex items-center justify-center overflow-hidden border-2 border-dashed border-muted-foreground/20"
+            >
+              {form.image ? (
+                <img
+                  src={form.image}
+                  alt={t("courseEditor.coverPreview", locale)}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              ) : (
+                <div className="text-center text-muted-foreground">
+                  <Image className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                  <p className="text-sm">{t("courseEditor.noCover", locale)}</p>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleCoverUpload}
+                disabled={uploadingImage}
+                className="hidden"
+                id="cover-upload"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={uploadingImage}
+                onClick={() => document.getElementById("cover-upload")?.click()}
+              >
+                {uploadingImage ? (
+                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                ) : (
+                  <Upload className="w-4 h-4 mr-1" />
+                )}
+                {uploadingImage ? t("courseEditor.uploading", locale) : t("courseEditor.uploadCover", locale)}
+              </Button>
+              {form.image && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-500 hover:text-red-700"
+                  onClick={() => onUpdateField("image", "")}
+                >
+                  {t("common.remove", locale)}
+                </Button>
+              )}
+            </div>
+            <Input
+              placeholder="https://example.com/course-cover.jpg"
+              value={form.image}
+              onChange={(e) => onUpdateField("image", e.target.value)}
+              className="text-xs"
+            />
           </CardContent>
         </Card>
 

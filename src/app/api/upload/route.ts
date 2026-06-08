@@ -27,9 +27,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
   }
 
-  const isAdmin = session.user.role === "admin";
-  const isTeacher = session.user.role === "teacher";
-  if (!isAdmin && !isTeacher) {
+  // Разрешаем загрузку всем авторизованным пользователям (студентам — для file_upload заданий)
+  const allowedRoles = ["admin", "teacher", "student"];
+  if (!allowedRoles.includes(session.user.role)) {
     return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
   }
 

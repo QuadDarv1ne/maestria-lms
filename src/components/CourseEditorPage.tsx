@@ -237,6 +237,7 @@ export function CourseEditorPage() {
         const body: Record<string, unknown> = {
           title: form.title.trim(),
           slug: form.slug.trim() || slugify(form.title),
+          image: form.image || undefined,
           description: form.description.trim(),
           shortDesc: form.shortDesc.trim() || undefined,
           level: form.level,
