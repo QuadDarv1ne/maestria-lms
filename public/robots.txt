@@ -1,0 +1,34 @@
+# robots.txt for Maestria LMS
+
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://maestria-lms.vercel.app/sitemap.xml
+
+# Disallow admin and private areas
+Disallow: /admin
+Disallow: /teacher
+Disallow: /course-editor
+Disallow: /api/
+Disallow: /*?*
+
+# Specific rules for major search engines
+User-agent: Googlebot
+Allow: /
+Disallow: /api/
+Disallow: /*?*
+
+User-agent: Googlebot-Image
+Allow: /
+Disallow: /api/
+
+User-agent: Bingbot
+Allow: /
+Disallow: /api/
+Disallow: /*?*
+
+# Crawl-delay for polite crawling
+User-agent: *
+Crawl-delay: 10

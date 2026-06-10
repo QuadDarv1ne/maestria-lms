@@ -4,7 +4,7 @@
   <img src="https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript" alt="TypeScript">
   <img src="https://img.shields.io/badge/Tailwind_CSS-4-06b6d4?style=flat-square&logo=tailwindcss" alt="Tailwind CSS">
   <img src="https://img.shields.io/badge/License-CC_BY--SA_4.0-green?style=flat-square" alt="License">
-  <img src="https://img.shields.io/badge/version-3.1.2-blueviolet?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.1.3-blueviolet?style=flat-square" alt="Version">
 </p>
 
 <h1 align="center">Maestria — LMS Platform</h1>
@@ -307,6 +307,16 @@ Platform source code is the property of Maestro7IT.
 - **App shortcuts** (Catalog, Profile)
 - Custom app icons and theme colors
 
+### SEO & Analytics
+- **Dynamic sitemap.xml** with courses and articles
+- **robots.txt** with crawl directives
+- **Enhanced Open Graph** tags for social sharing
+- **Twitter Cards** support
+- **Schema.org** structured data (JSON-LD)
+- **Breadcrumbs** navigation
+- **Social media images** (og-image)
+- Multi-language SEO (ru/en/zh)
+
 ### Security Headers
 - Content Security Policy (CSP)
 - HSTS in production
@@ -330,5 +340,5 @@ See [`next.config.ts`](next.config.ts) for detailed optimization settings.
 - [Changelog](CHANGELOG.md)
 
 <p align="center">
-  <strong>Maestria v3.1.2</strong> · May 15, 2026 · Maestro7IT
+  <strong>Maestria v3.1.3</strong> · May 15, 2026 · Maestro7IT
 </p>

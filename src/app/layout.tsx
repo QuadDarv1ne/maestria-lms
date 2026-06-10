@@ -157,12 +157,19 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: "Maestria",
       type: "website",
       locale: localeTag,
+      url: siteUrl,
       images: [
+        {
+          url: "/og-image.png",
+          width: 1200,
+          height: 630,
+          alt: "Maestria — Learning Platform",
+        },
         {
           url: "/maestro7it-logo.png",
           width: 512,
           height: 512,
-          alt: "Maestria — Learning Platform",
+          alt: "Maestria Logo",
         },
       ],
     },
@@ -175,7 +182,9 @@ export async function generateMetadata(): Promise<Metadata> {
           : locale === "zh"
             ? "从零到专业的互动编程课程。34+ 门课程，12,000+ 名学生。"
             : "Interactive programming courses from zero to pro. 34+ courses, 12,000+ students.",
-      images: ["/maestro7it-logo.png"],
+      images: ["/og-image.png"],
+      creator: "@maestro7it",
+      site: "@maestro7it",
     },
     robots: {
       index: true,
@@ -195,6 +204,13 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     formatDetection: {
       telephone: false,
+    },
+    other: {
+      "article:publisher": "Maestro7IT",
+      "al:ios:app_store_id": "1234567890",
+      "al:android:package": "com.maestro7it.maestria",
+      "al:ios:app_name": "Maestria",
+      "al:android:app_name": "Maestria",
     },
   };
 }
@@ -223,6 +239,18 @@ export default async function RootLayout({
         <meta name="theme-color" content="oklch(var(--background))" />
         {/* PWA иконки для iOS */}
         <link rel="apple-touch-icon" href="/icons/icon-180x180.png" />
+        {/* Additional SEO meta tags */}
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="Maestria" />
+        <meta name="application-name" content="Maestria" />
+        <meta name="msapplication-TileColor" content="#ffffff" />
+        <meta name="msapplication-tap-highlight" content="no" />
+        {/* Favicon */}
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
