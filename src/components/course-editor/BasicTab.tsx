@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import NextImage from "next/image";
 import { t } from "@/lib/i18n";
 import { toast } from "sonner";
 import type { Locale } from "@/lib/stores/ui";
@@ -202,10 +203,12 @@ export function BasicTab({
               className="relative h-40 rounded-lg bg-muted flex items-center justify-center overflow-hidden border-2 border-dashed border-muted-foreground/20"
             >
               {form.image ? (
-                <img
+                <NextImage
                   src={form.image}
-                  alt={t("courseEditor.coverPreview", locale)}
+                  alt={t("courseEditor.coverPreview", locale) || "Course cover"}
                   className="absolute inset-0 w-full h-full object-cover"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
                 />
               ) : (
                 <div className="text-center text-muted-foreground">

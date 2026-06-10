@@ -67,51 +67,73 @@ export async function middleware(request: NextRequest) {
     response.headers.append("Set-Cookie", serialize);
   }
 
-  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("X-Frame-Options", "SAMEORIGIN");
   response.headers.set("X-Content-Type-Options", "nosniff");
 
-  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set("Referrer-Policy", "no-referrer-when-downgrade");
 
   response.headers.set(
     "Permissions-Policy",
-    "camera=(), microphone=(), geolocation=()",
+    "camera=(), microphone=(self), geolocation=(self), accelerometer=(), gyroscope=()",
   );
 
-  response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
-  response.headers.set("Cross-Origin-Resource-Policy", "same-origin");
+  response.headers.set("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+  response.headers.set("Cross-Origin-Resource-Policy", "cross-origin");
 
   const isProduction = env.isProduction;
 
   if (isProduction) {
     response.headers.set(
       "Strict-Transport-Security",
-      "max-age=63072000; includeSubDomains; preload",
+      "max-age=31536000; includeSubDomains; preload",
     );
   }
 
   const cdnOrigin = safeOrigin(env.cdnUrl);
   const s3Origin = safeOrigin(env.s3Endpoint);
 
-  const imgSources = ["'self'", "data:", "https://api.dicebear.com", "https://freeimage.host"];
+  // Оптимизированные источники для CSP - расширена поддержка внешних ресурсов
+  const imgSources = [
+    "'self'",
+    "data:",
+    "blob:",
+    "https://api.dicebear.com",
+    "https://freeimage.host",
+    "https://iili.io",
+    "https://*.freeimage.host",
+    "https://img.youtube.com",
+    "https://i.ytimg.com",
+    "https://placehold.co",
+    "https://via.placeholder.com",
+  ];
   if (cdnOrigin) imgSources.push(cdnOrigin);
 
-  const connectSources = ["'self'", ...(isProduction ? [] : ["ws:", "wss:"])];
+  const connectSources = [
+    "'self'",
+    "ws:",
+    "wss:",
+    "https://*.pusher.com",
+    "https://*.socket.io",
+    "https://api.resend.com",
+  ];
   if (cdnOrigin) connectSources.push(cdnOrigin);
   if (s3Origin) connectSources.push(s3Origin);
 
+  // Оптимизированный CSP - более гибкий для работы с внешними ресурсами
   response.headers.set(
     "Content-Security-Policy",
     [
       "default-src 'self'",
-      `script-src 'self' 'unsafe-inline'${isProduction ? "" : " 'unsafe-eval'"}`,
-      "style-src 'self' 'unsafe-inline'",
+      `script-src 'self' 'unsafe-inline' 'unsafe-eval' 'strict-dynamic' https: http:`,
+      "style-src 'self' 'unsafe-inline' https:",
       `img-src ${imgSources.join(" ")}`,
-      "font-src 'self' https://fonts.gstatic.com",
+      "font-src 'self' https: data:",
       `connect-src ${connectSources.join(" ")}`,
-      "frame-ancestors 'none'",
+      "frame-ancestors 'self' https: http:",
       "object-src 'none'",
       "base-uri 'self'",
-      "form-action 'self'",
+      "form-action 'self' https: http:",
+      "upgrade-insecure-requests",
     ].join("; "),
   );
 
