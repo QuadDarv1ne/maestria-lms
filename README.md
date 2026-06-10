@@ -4,7 +4,7 @@
   <img src="https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript" alt="TypeScript">
   <img src="https://img.shields.io/badge/Tailwind_CSS-4-06b6d4?style=flat-square&logo=tailwindcss" alt="Tailwind CSS">
   <img src="https://img.shields.io/badge/License-CC_BY--SA_4.0-green?style=flat-square" alt="License">
-  <img src="https://img.shields.io/badge/version-3.1.0-blueviolet?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.1.1-blueviolet?style=flat-square" alt="Version">
 </p>
 
 <h1 align="center">Maestria — LMS Platform</h1>
@@ -272,6 +272,45 @@ Platform source code is the property of Maestro7IT.
 
 ---
 
+## Performance & Optimization
+
+### Image Optimization
+- Automatic WebP/AVIF format conversion
+- Responsive images with device size detection
+- Lazy loading for all images
+- CDN integration (freeimage.host, Cloudflare)
+
+### Bundle Optimization
+- SWC minification enabled
+- Code splitting by route
+- Tree-shaking and dead code elimination
+- Console removal in production
+- Optimized chunk splitting (polyfills, react, UI)
+
+### Database Optimization
+- Prisma query optimization
+- Strategic indexes on frequently queried fields
+- Connection pooling
+- N+1 query prevention with `include`
+
+### Caching
+- Redis caching for API responses (with in-memory fallback)
+- HTTP caching headers for static assets
+- Stale-while-revalidate strategy
+- Tag-based cache invalidation
+
+### Security Headers
+- Content Security Policy (CSP)
+- HSTS in production
+- X-Frame-Options, X-Content-Type-Options
+- CSRF protection for state-changing requests
+- Permissions-Policy restrictions
+
+### Configuration
+See [`next.config.ts`](next.config.ts) for detailed optimization settings.
+
+---
+
 ## Documentation
 
 - [English README](README_EN.md)
@@ -283,5 +322,5 @@ Platform source code is the property of Maestro7IT.
 - [Changelog](CHANGELOG.md)
 
 <p align="center">
-  <strong>Maestria v3.1.0</strong> · May 15, 2026 · Maestro7IT
+  <strong>Maestria v3.1.1</strong> · May 15, 2026 · Maestro7IT
 </p>

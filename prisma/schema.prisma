@@ -307,6 +307,10 @@ model Payment {
   @@index([status])
   @@index([transactionId])
   @@index([userId, courseId, status])
+  // Additional composite indexes for analytics
+  @@index([status, createdAt])
+  @@index([paymentMethod, status])
+  @@index([createdAt])
 }
 
 // ============ CERTIFICATES ============
@@ -325,6 +329,8 @@ model Notification {
 
   @@index([userId, read])
   @@index([userId, createdAt])
+  @@index([type, createdAt])
+  @@index([read, createdAt])
 }
 
 model Certificate {

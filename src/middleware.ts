@@ -80,6 +80,13 @@ export async function middleware(request: NextRequest) {
   response.headers.set("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
   response.headers.set("Cross-Origin-Resource-Policy", "cross-origin");
 
+  // CORS для health check и API
+  if (pathname.startsWith("/api/health") || pathname.startsWith("/api/")) {
+    response.headers.set("Access-Control-Allow-Origin", "*");
+    response.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  }
+
   const isProduction = env.isProduction;
 
   if (isProduction) {
