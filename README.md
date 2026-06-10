@@ -4,7 +4,7 @@
   <img src="https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript" alt="TypeScript">
   <img src="https://img.shields.io/badge/Tailwind_CSS-4-06b6d4?style=flat-square&logo=tailwindcss" alt="Tailwind CSS">
   <img src="https://img.shields.io/badge/License-CC_BY--SA_4.0-green?style=flat-square" alt="License">
-  <img src="https://img.shields.io/badge/version-3.1.1-blueviolet?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.1.2-blueviolet?style=flat-square" alt="Version">
 </p>
 
 <h1 align="center">Maestria — LMS Platform</h1>
@@ -298,6 +298,14 @@ Platform source code is the property of Maestro7IT.
 - HTTP caching headers for static assets
 - Stale-while-revalidate strategy
 - Tag-based cache invalidation
+- **Service Worker** for offline support and caching
+
+### PWA (Progressive Web App)
+- **Installable** on mobile devices
+- **Offline mode** for cached content
+- **Push notifications** support
+- **App shortcuts** (Catalog, Profile)
+- Custom app icons and theme colors
 
 ### Security Headers
 - Content Security Policy (CSP)
@@ -322,5 +330,5 @@ See [`next.config.ts`](next.config.ts) for detailed optimization settings.
 - [Changelog](CHANGELOG.md)
 
 <p align="center">
-  <strong>Maestria v3.1.1</strong> · May 15, 2026 · Maestro7IT
+  <strong>Maestria v3.1.2</strong> · May 15, 2026 · Maestro7IT
 </p>

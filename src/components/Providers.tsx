@@ -5,6 +5,8 @@ import { SessionProvider } from "next-auth/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useAppStore } from "@/lib/store";
 import { useSSENotifications } from "@/hooks/useSSENotifications";
+import { useServiceWorker } from "@/hooks/useServiceWorker";
+import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 
 function ThemeAndLocaleSync() {
   const theme = useAppStore((s) => s.theme);
@@ -23,6 +25,11 @@ function ThemeAndLocaleSync() {
 
 function SSENotificationsSync() {
   useSSENotifications();
+  return null;
+}
+
+function ServiceWorkerSync() {
+  useServiceWorker();
   return null;
 }
 
@@ -45,6 +52,8 @@ export function Providers({ children }: { children: ReactNode }) {
       <SessionProvider>
         <ThemeAndLocaleSync />
         <SSENotificationsSync />
+        <ServiceWorkerSync />
+        <PWAInstallPrompt />
         {children}
       </SessionProvider>
     </QueryClientProvider>

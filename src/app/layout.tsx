@@ -148,7 +148,9 @@ export async function generateMetadata(): Promise<Metadata> {
     publisher: "Maestro7IT",
     icons: {
       icon: "/maestro7it-logo.png",
+      apple: "/icons/icon-180x180.png",
     },
+    manifest: "/manifest.json",
     openGraph: {
       title: titles[locale],
       description: descriptions[locale],
@@ -186,6 +188,14 @@ export async function generateMetadata(): Promise<Metadata> {
         "max-snippet": -1,
       },
     },
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "default",
+      title: locale === "ru" ? "Maestria" : locale === "zh" ? "Maestria" : "Maestria",
+    },
+    formatDetection: {
+      telephone: false,
+    },
   };
 }
 
@@ -210,7 +220,9 @@ export default async function RootLayout({
           __html: `(function(){try{var t=localStorage.getItem('maestria-theme');if(t==='dark'||t==='amber')document.documentElement.classList.add(t)}catch(e){}})();`
         }} />
         {/* Theme color для мобильных браузеров */}
-        <meta name="theme-color" content="#1e40af" />
+        <meta name="theme-color" content="oklch(var(--background))" />
+        {/* PWA иконки для iOS */}
+        <link rel="apple-touch-icon" href="/icons/icon-180x180.png" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
