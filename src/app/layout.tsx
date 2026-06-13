@@ -200,7 +200,7 @@ export async function generateMetadata(): Promise<Metadata> {
     appleWebApp: {
       capable: true,
       statusBarStyle: "default",
-      title: locale === "ru" ? "Maestria" : locale === "zh" ? "Maestria" : "Maestria",
+      title: "Maestria",
     },
     formatDetection: {
       telephone: false,

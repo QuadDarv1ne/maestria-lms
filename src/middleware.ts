@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { csrfProtection, getCsrfCookie } from "@/lib/csrf";
+import { csrfProtection } from "@/lib/csrf";
 import { env } from "@/lib/env";
 
 function safeOrigin(url: string | undefined): string | null {
@@ -61,12 +61,6 @@ export async function middleware(request: NextRequest) {
     if (csrfResponse) return csrfResponse;
   }
 
-  // Set CSRF cookie on responses for new sessions
-  if (!request.cookies.has("csrf-token")) {
-    const { serialize } = getCsrfCookie();
-    response.headers.append("Set-Cookie", serialize);
-  }
-
   response.headers.set("X-Frame-Options", "SAMEORIGIN");
   response.headers.set("X-Content-Type-Options", "nosniff");
 
@@ -99,7 +93,6 @@ export async function middleware(request: NextRequest) {
   const cdnOrigin = safeOrigin(env.cdnUrl);
   const s3Origin = safeOrigin(env.s3Endpoint);
 
-  // Оптимизированные источники для CSP - расширена поддержка внешних ресурсов
   const imgSources = [
     "'self'",
     "data:",
@@ -126,20 +119,19 @@ export async function middleware(request: NextRequest) {
   if (cdnOrigin) connectSources.push(cdnOrigin);
   if (s3Origin) connectSources.push(s3Origin);
 
-  // Оптимизированный CSP - более гибкий для работы с внешними ресурсами
   response.headers.set(
     "Content-Security-Policy",
     [
       "default-src 'self'",
-      `script-src 'self' 'unsafe-inline' 'unsafe-eval' 'strict-dynamic' https: http:`,
+      `script-src 'self' 'unsafe-inline' 'unsafe-eval'`,
       "style-src 'self' 'unsafe-inline' https:",
       `img-src ${imgSources.join(" ")}`,
       "font-src 'self' https: data:",
       `connect-src ${connectSources.join(" ")}`,
-      "frame-ancestors 'self' https: http:",
+      "frame-ancestors 'self'",
       "object-src 'none'",
       "base-uri 'self'",
-      "form-action 'self' https: http:",
+      "form-action 'self'",
       "upgrade-insecure-requests",
     ].join("; "),
   );
