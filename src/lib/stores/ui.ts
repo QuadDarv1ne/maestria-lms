@@ -28,7 +28,6 @@ export interface UISlice {
   locale: Locale;
   sidebarOpen: boolean;
   isLoading: boolean;
-  _hydrated: boolean;
   setTheme: (theme: Theme) => void;
   setLocale: (locale: Locale) => void;
   setSidebarOpen: (open: boolean) => void;
@@ -41,12 +40,11 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   locale: DEFAULT_LOCALE,
   sidebarOpen: false,
   isLoading: false,
-  _hydrated: false,
 
   hydrate: () => {
     const storedTheme = validateTheme(loadString("maestria-theme", DEFAULT_THEME));
     const storedLocale = validateLocale(loadString("maestria-locale", DEFAULT_LOCALE));
-    set({ theme: storedTheme, locale: storedLocale, _hydrated: true });
+    set({ theme: storedTheme, locale: storedLocale });
   },
 
   setTheme: (theme: Theme) => {

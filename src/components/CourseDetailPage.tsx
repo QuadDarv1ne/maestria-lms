@@ -572,7 +572,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                               onClick={() => {
                                 if (canAccess) {
                                   router.push(
-                                    `course/${courseId}/lesson/${lesson.id}`
+                                    `/course/${courseId}/lesson/${lesson.id}`
                                   );
                                 } else {
                                   toast.error(t("course.step.enrollFirst", locale));
@@ -581,7 +581,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                               onKeyDown={(e) => {
                                 if (canAccess && (e.key === 'Enter' || e.key === ' ')) {
                                   e.preventDefault();
-                                  router.push(`course/${courseId}/lesson/${lesson.id}`);
+                                  router.push(`/course/${courseId}/lesson/${lesson.id}`);
                                 }
                               }}
                             >

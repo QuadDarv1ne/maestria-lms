@@ -10,29 +10,26 @@ export function useServiceWorker() {
       return;
     }
 
-    // Register the service worker
-    const registerSW = async () => {
+    let updateInterval: ReturnType<typeof setInterval> | undefined;
+
+    const registerSWAsync = async () => {
       try {
         const registration = await navigator.serviceWorker.register("/sw.js", {
           scope: "/",
         });
 
-        console.log("Service Worker registered successfully:", registration);
-
         // Check for updates periodically
-        setInterval(async () => {
+        updateInterval = setInterval(async () => {
           const newRegistration = await navigator.serviceWorker.ready;
           await newRegistration.update();
-        }, 6 * 60 * 60 * 1000); // Check every 6 hours
+        }, 6 * 60 * 60 * 1000);
 
-        // Handle updates
         registration.addEventListener("updatefound", () => {
           const newWorker = registration.installing;
           if (!newWorker) return;
 
           newWorker.addEventListener("statechange", () => {
             if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-              // New content is available, show update notification
               console.log("New content available, please refresh.");
             }
           });
@@ -42,13 +39,19 @@ export function useServiceWorker() {
       }
     };
 
-    registerSW();
+    registerSWAsync();
 
-    // Handle messages from service worker
-    navigator.serviceWorker.addEventListener("message", (event) => {
+    const handleMessage = (event: MessageEvent) => {
       if (event.data.type === "CACHE_UPDATED") {
         console.log("Cache updated:", event.data.payload);
       }
-    });
+    };
+
+    navigator.serviceWorker.addEventListener("message", handleMessage);
+
+    return () => {
+      if (updateInterval) clearInterval(updateInterval);
+      navigator.serviceWorker.removeEventListener("message", handleMessage);
+    };
   }, []);
 }

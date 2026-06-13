@@ -37,8 +37,9 @@ export function useSSENotifications() {
 
     // Fetch existing notifications from server on mount
     if (!hasFetchedRef.current) {
-      hasFetchedRef.current = true;
-      fetchNotificationsRef.current();
+      fetchNotificationsRef.current()?.finally(() => {
+        hasFetchedRef.current = true;
+      });
     }
 
     function connect() {
