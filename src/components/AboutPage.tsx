@@ -136,7 +136,7 @@ onClick={() => router.push("?dialog=login")}
       </section>
 
       {/* ===== 3. Director Section ===== */}
-      <section className="bg-gray-50 py-16 md:py-20">
+      <section className="bg-gray-50 dark:bg-gray-900/50 py-16 md:py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-10">
             <Badge className="mb-3 bg-amber-100 text-amber-700 border-0">
@@ -279,7 +279,7 @@ onClick={() => router.push("?dialog=login")}
       </section>
 
       {/* ===== 5. Technologies Section ===== */}
-      <section className="bg-gray-50 py-16 md:py-20">
+      <section className="bg-gray-50 dark:bg-gray-900/50 py-16 md:py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-10">
             <Badge className="mb-3 bg-blue-100 text-blue-700 border-0">

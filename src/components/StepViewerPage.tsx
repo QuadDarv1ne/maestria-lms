@@ -149,15 +149,16 @@ function checkQuizAnswer(
 // ==================== MAIN COMPONENT ====================
 
 const stepTypeColors: Record<string, string> = {
-  video: "bg-blue-100 text-blue-700",
-  text: "bg-violet-100 text-violet-700",
-  coding: "bg-amber-100 text-amber-700",
-  quiz: "bg-orange-100 text-orange-700",
-  assignment: "bg-indigo-100 text-indigo-700",
-  matching: "bg-teal-100 text-teal-700",
-  ordering: "bg-cyan-100 text-cyan-700",
-  essay: "bg-pink-100 text-pink-700",
-  file_upload: "bg-slate-100 text-slate-700",
+  video: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400",
+  text: "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400",
+  coding: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400",
+  quiz: "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400",
+  assignment: "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400",
+  matching: "bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400",
+  ordering: "bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400",
+  essay: "bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-400",
+  file_upload: "bg-slate-100 dark:bg-slate-900/30 text-slate-700 dark:text-slate-400",
+  drag_drop: "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400",
 };
 
 // ==================== MAIN COMPONENT ====================
@@ -769,7 +770,7 @@ export function StepViewerPage({
       {/* ==================== MAIN CONTENT ==================== */}
       <main className="flex-1 min-w-0">
         {/* Top Navigation Bar */}
-        <div className="bg-white border-b sticky top-0 z-30">
+        <div className="bg-white dark:bg-card border-b sticky top-0 z-30">
           <div className="px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Button
@@ -803,7 +804,7 @@ export function StepViewerPage({
                 {t(`course.step.type.${step.type}`, locale)}
               </Badge>
               {step.completed && (
-                <Badge className="bg-green-100 text-green-700 border-0">
+                <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-0">
                   <CheckCircle2 className="w-3 h-3 mr-1" />
                   {t("course.step.completed", locale)}
                 </Badge>
@@ -819,7 +820,7 @@ export function StepViewerPage({
           </div>
 
           {/* Thin progress bar */}
-          <div className="h-1 bg-gray-100">
+          <div className="h-1 bg-gray-100 dark:bg-gray-800">
             <div
               className="h-full bg-gradient-to-r from-blue-500 to-violet-500 transition-all duration-500"
               style={{
@@ -893,7 +894,7 @@ export function StepViewerPage({
           {step.type === "text" && (
             <Card className="border-0 shadow-sm mb-6">
               <CardContent className="p-6 md:p-8">
-                <div className="flex items-center gap-2 mb-4 text-sm text-violet-600">
+                <div className="flex items-center gap-2 mb-4 text-sm text-violet-600 dark:text-violet-400">
                   <FileText className="w-4 h-4" />
                   <span className="font-medium">{t("course.step.theory", locale)}</span>
                 </div>
@@ -911,7 +912,7 @@ export function StepViewerPage({
               {step.content && (
                 <Card className="border-0 shadow-sm">
                   <CardContent className="p-6">
-                    <div className="flex items-center gap-2 mb-3 text-sm text-amber-600">
+                    <div className="flex items-center gap-2 mb-3 text-sm text-amber-600 dark:text-amber-400">
                       <Lightbulb className="w-4 h-4" />
                       <span className="font-medium">{t("course.step.theory", locale)}</span>
                     </div>
@@ -994,7 +995,7 @@ export function StepViewerPage({
             <div className="space-y-4 mb-6">
               {/* Quiz score banner */}
               {quizScore !== null && (
-                <Card className={`border-0 shadow-sm ${quizScore >= 60 ? "bg-green-50" : "bg-red-50"}`}>
+                <Card className={`border-0 shadow-sm ${quizScore >= 60 ? "bg-green-50 dark:bg-green-950/30" : "bg-red-50 dark:bg-red-950/30"}`}>
                   <CardContent className="p-4 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       {quizScore >= 60 ? (
@@ -1006,7 +1007,7 @@ export function StepViewerPage({
                         {t("course.step.result", locale)}: {quizScore}%
                       </span>
                     </div>
-                    <Badge className={quizScore >= 60 ? "bg-green-100 text-green-700 border-0" : "bg-red-100 text-red-700 border-0"}>
+                    <Badge className={quizScore >= 60 ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-0" : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-0"}>
                       {quizScore >= 60 ? t("course.step.passed", locale) : t("course.step.failed", locale)}
                     </Badge>
                   </CardContent>
@@ -1052,9 +1053,9 @@ export function StepViewerPage({
                       className={`px-4 py-3 flex items-center justify-between ${
                         isSubmitted
                           ? isCorrect
-                            ? "bg-green-50"
-                            : "bg-red-50"
-                          : "bg-orange-50"
+                            ? "bg-green-50 dark:bg-green-950/30"
+                            : "bg-red-50 dark:bg-red-950/30"
+                          : "bg-orange-50 dark:bg-orange-950/30"
                       }`}
                     >
                       <div className="flex items-center gap-2">
@@ -1064,7 +1065,7 @@ export function StepViewerPage({
                         </span>
                       </div>
                       {isSubmitted && (
-                        <Badge className={`${isCorrect ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"} border-0 text-xs`}>
+                        <Badge className={`${isCorrect ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"} border-0 text-xs`}>
                           {isCorrect ? t("course.step.correct", locale) : t("course.step.incorrect", locale)}
                         </Badge>
                       )}
@@ -1085,17 +1086,17 @@ export function StepViewerPage({
                             ? checkQuizAnswer(assignment.correctAnswer, opt, assignment.options ?? undefined, optIdx)
                             : false;
 
-                          let optionClass = "border-gray-200 hover:bg-gray-50 cursor-pointer";
+                          let optionClass = "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer";
                           if (isSubmitted) {
                             if (isCorrectOption) {
-                              optionClass = "border-green-400 bg-green-50";
+                              optionClass = "border-green-400 bg-green-50 dark:bg-green-950/30";
                             } else if (isSelected && !isCorrect) {
-                              optionClass = "border-red-400 bg-red-50";
+                              optionClass = "border-red-400 bg-red-50 dark:bg-red-950/30";
                             } else {
-                              optionClass = "border-gray-200 opacity-60";
+                              optionClass = "border-gray-200 dark:border-gray-700 opacity-60";
                             }
                           } else if (isSelected) {
-                            optionClass = "border-blue-500 bg-blue-50";
+                            optionClass = "border-blue-500 bg-blue-50 dark:bg-blue-950/30";
                           }
 
                           return (
@@ -1235,7 +1236,7 @@ export function StepViewerPage({
               {/* Matching exercise */}
               <Card className="border-0 shadow-sm">
                 <CardContent className="p-6">
-                  <div className="flex items-center gap-2 mb-4 text-sm text-teal-600">
+                    <div className="flex items-center gap-2 mb-4 text-sm text-teal-600 dark:text-teal-400">
                     <ArrowUpDown className="w-4 h-4" />
                     <span className="font-medium">{t("course.step.matchingExercise", locale) }</span>
                   </div>
@@ -1263,7 +1264,7 @@ export function StepViewerPage({
                         <div className="space-y-2">
                           {pairs.map((pair) => (
                             <div key={pair.left} className="flex items-center gap-4">
-                              <div className="flex-1 p-3 bg-teal-50 rounded-lg border border-teal-200">
+                              <div className="flex-1 p-3 bg-teal-50 dark:bg-teal-950/30 rounded-lg border border-teal-200 dark:border-teal-800">
                                 <span className="text-sm font-medium">{pair.left}</span>
                               </div>
                               <span className="text-muted-foreground">→</span>
@@ -1303,7 +1304,7 @@ export function StepViewerPage({
                               {t("course.step.submitAnswer", locale)}
                             </Button>
                           ) : (
-                            <Badge className="bg-green-100 text-green-700 border-0">
+                            <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-0">
                               {t("course.step.sent", locale)}
                             </Badge>
                           )}
@@ -1333,7 +1334,7 @@ export function StepViewerPage({
               {/* Ordering exercise */}
               <Card className="border-0 shadow-sm">
                 <CardContent className="p-6">
-                  <div className="flex items-center gap-2 mb-4 text-sm text-cyan-600">
+                    <div className="flex items-center gap-2 mb-4 text-sm text-cyan-600 dark:text-cyan-400">
                     <Move className="w-4 h-4" />
                     <span className="font-medium">{t("course.step.orderingExercise", locale) }</span>
                   </div>
@@ -1346,7 +1347,7 @@ export function StepViewerPage({
                     return (
                       <div className="space-y-2">
                         {orderingItems.map((item, idx) => (
-                          <div key={item} className="flex items-center gap-2 p-3 bg-cyan-50 rounded-lg border border-cyan-200">
+                            <div key={item} className="flex items-center gap-2 p-3 bg-cyan-50 dark:bg-cyan-950/30 rounded-lg border border-cyan-200 dark:border-cyan-800">
                             <Badge variant="secondary" className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold">
                               {idx + 1}
                             </Badge>
@@ -1386,7 +1387,7 @@ export function StepViewerPage({
                               {t("course.step.submitAnswer", locale)}
                             </Button>
                           ) : (
-                            <Badge className="bg-green-100 text-green-700 border-0">
+                            <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-0">
                               {t("course.step.sent", locale)}
                             </Badge>
                           )}
@@ -1414,7 +1415,7 @@ export function StepViewerPage({
 
               <Card className="border-0 shadow-sm">
                 <CardContent className="p-6">
-                  <div className="flex items-center gap-2 mb-4 text-sm text-purple-600">
+                  <div className="flex items-center gap-2 mb-4 text-sm text-purple-600 dark:text-purple-400">
                     <Grip className="w-4 h-4" />
                     <span className="font-medium">{t("course.step.dragDropExercise", locale)}</span>
                   </div>
@@ -1473,7 +1474,7 @@ export function StepViewerPage({
                             <div className="flex items-center justify-between mb-2">
                               <p className="text-sm font-semibold text-purple-700">{group}</p>
                               {dragDropSubmitted && (
-                                <Badge className={correctItemsInGroup.length === itemsInGroup.length && itemsInGroup.length > 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}>
+                                <Badge className={correctItemsInGroup.length === itemsInGroup.length && itemsInGroup.length > 0 ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"}>
                                   {itemsInGroup.length > 0 ? `${correctItemsInGroup.length}/${itemsInGroup.length}` : "-"}
                                 </Badge>
                               )}
@@ -1485,9 +1486,9 @@ export function StepViewerPage({
                                   className={`px-3 py-1.5 text-sm cursor-pointer select-none ${
                                     dragDropSubmitted
                                       ? item.group === group
-                                        ? "bg-green-100 text-green-700 border-green-200"
-                                        : "bg-red-100 text-red-700 border-red-200"
-                                      : "bg-purple-100 text-purple-700 border-purple-200"
+                                        ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800"
+                                        : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800"
+                                      : "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800"
                                   }`}
                                   onClick={(e) => {
                                     if (dragDropSubmitted) return;
@@ -1535,7 +1536,7 @@ export function StepViewerPage({
                             {t("course.step.submitDragDrop", locale)}
                           </Button>
                         ) : (
-                          <Badge className="bg-green-100 text-green-700 border-0">
+                          <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-0">
                             {t("course.step.sent", locale)}
                           </Badge>
                         )}
@@ -1564,7 +1565,7 @@ export function StepViewerPage({
               {/* Essay editor */}
               <Card className="border-0 shadow-sm">
                 <CardContent className="p-6">
-                  <div className="flex items-center gap-2 mb-3 text-sm text-pink-600">
+                    <div className="flex items-center gap-2 mb-3 text-sm text-pink-600 dark:text-pink-400">
                     <Pencil className="w-4 h-4" />
                     <span className="font-medium">{t("course.step.essay", locale) }</span>
                   </div>
@@ -1595,7 +1596,7 @@ export function StepViewerPage({
                           {t("course.step.submitEssay", locale) }
                         </Button>
                       ) : (
-                        <Badge className="bg-blue-100 text-blue-700 border-0">
+                        <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-0">
                           {t("course.step.awaitingReview", locale)}
                         </Badge>
                       )}
@@ -1623,7 +1624,7 @@ export function StepViewerPage({
               {/* File upload */}
               <Card className="border-0 shadow-sm">
                 <CardContent className="p-6">
-                  <div className="flex items-center gap-2 mb-4 text-sm text-slate-600">
+                    <div className="flex items-center gap-2 mb-4 text-sm text-slate-600 dark:text-slate-400">
                     <Upload className="w-4 h-4" />
                     <span className="font-medium">{t("course.step.fileUpload", locale) }</span>
                   </div>
@@ -1631,7 +1632,7 @@ export function StepViewerPage({
                   {!fileUploaded ? (
                     <div className="space-y-4">
                       {/* File input */}
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
+                        <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-blue-400 dark:hover:border-blue-500 transition-colors">
                         <Upload className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
                         <p className="text-sm text-muted-foreground mb-2">
                           {t("course.step.dragDropFile", locale) }
@@ -1654,7 +1655,7 @@ export function StepViewerPage({
 
                       {/* Selected file info */}
                       {selectedFile && (
-                        <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border">
+                        <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg border dark:border-gray-700">
                           <FileText className="w-5 h-5 text-slate-600" />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{selectedFile.name}</p>
@@ -1701,7 +1702,7 @@ export function StepViewerPage({
                       {selectedFile && (
                         <p className="text-xs text-muted-foreground">{selectedFile.name}</p>
                       )}
-                      <Badge className="bg-blue-100 text-blue-700 border-0 mt-2">
+                      <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-0 mt-2">
                         {t("course.step.awaitingReview", locale)}
                       </Badge>
                     </div>
@@ -1744,7 +1745,7 @@ export function StepViewerPage({
                 </Button>
               )}
               {step.completed && (
-                <Badge className="bg-green-100 text-green-700 border-0 px-4 py-2">
+                <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-0 px-4 py-2">
                   <CheckCircle2 className="w-4 h-4 mr-2" />
                   {t("course.step.completed", locale)}
                 </Badge>
@@ -1779,7 +1780,7 @@ export function StepViewerPage({
                         ? "bg-blue-600"
                         : s.completed
                         ? "bg-green-400"
-                        : "bg-gray-200"
+                        : "bg-gray-200 dark:bg-gray-700"
                     }`}
                     onClick={() => router.push(`/course/${courseId}/lesson/${s.id}`)}
                     title={s.title}
