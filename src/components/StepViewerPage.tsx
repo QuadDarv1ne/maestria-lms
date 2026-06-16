@@ -1,5 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useAppStore } from "@/lib/store";
@@ -37,6 +38,11 @@ import {
 import { toast } from "sonner";
 
 import { StepSidebar } from "@/components/step-viewer/StepSidebar";
+const LazyStepMatching = dynamic(() => import("@/components/step-viewer/StepMatching").then(m => m.StepMatching), { ssr: false });
+const LazyStepOrdering = dynamic(() => import("@/components/step-viewer/StepOrdering").then(m => m.StepOrdering), { ssr: false });
+const LazyStepDragDrop = dynamic(() => import("@/components/step-viewer/StepDragDrop").then(m => m.StepDragDrop), { ssr: false });
+const LazyStepEssay = dynamic(() => import("@/components/step-viewer/StepEssay").then(m => m.StepEssay), { ssr: false });
+const LazyStepFileUpload = dynamic(() => import("@/components/step-viewer/StepFileUpload").then(m => m.StepFileUpload), { ssr: false });
 
 // ==================== TYPES ====================
 
@@ -1221,103 +1227,18 @@ export function StepViewerPage({
 
           {/* ==================== STEP TYPE: MATCHING ==================== */}
           {step.type === "matching" && (
-            <div className="space-y-4 mb-6">
-              {/* Description */}
-              {step.content && (
-                <Card className="border-0 shadow-sm">
-                  <CardContent className="p-6">
-                    <div className="prose prose-sm max-w-none whitespace-pre-wrap">
-                      {step.content}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Matching exercise */}
-              <Card className="border-0 shadow-sm">
-                <CardContent className="p-6">
-                    <div className="flex items-center gap-2 mb-4 text-sm text-teal-600 dark:text-teal-400">
-                    <ArrowUpDown className="w-4 h-4" />
-                    <span className="font-medium">{t("course.step.matchingExercise", locale) }</span>
-                  </div>
-
-                  {step.assignments?.[0] && (() => {
-                    let pairs: Array<{ left: string; right: string }> = [];
-                    if (step.assignments[0].options) {
-                      try {
-                        pairs = JSON.parse(step.assignments[0].options);
-                      } catch {
-                        pairs = [];
-                      }
-                    }
-
-                    if (pairs.length === 0) {
-                      return <p className="text-muted-foreground">{t("course.step.noPairs", locale) }</p>;
-                    }
-
-                    // Get all right options and shuffle them
-                    const rightOptions = shuffleArray(pairs.map(p => p.right));
-
-                    return (
-                      <div className="space-y-4">
-                        {/* Left column (questions) */}
-                        <div className="space-y-2">
-                          {pairs.map((pair) => (
-                            <div key={pair.left} className="flex items-center gap-4">
-                              <div className="flex-1 p-3 bg-teal-50 dark:bg-teal-950/30 rounded-lg border border-teal-200 dark:border-teal-800">
-                                <span className="text-sm font-medium">{pair.left}</span>
-                              </div>
-                              <span className="text-muted-foreground">→</span>
-                              <select
-                                className="flex-1 p-2 border rounded-lg text-sm"
-                                value={matchingAnswers[pair.left] }
-                                onChange={(e) =>
-                                  setMatchingAnswers((prev) => ({ ...prev, [pair.left]: e.target.value }))
-                                }
-                                disabled={matchingSubmitted}
-                              >
-                                <option value="">{t("course.step.selectMatch", locale) }</option>
-                                {rightOptions.map((opt) => (
-                                  <option key={opt} value={opt}>{opt}</option>
-                                ))}
-                              </select>
-                              {matchingSubmitted && (
-                                matchingAnswers[pair.left] === pair.right ? (
-                                  <CheckCircle2 className="w-5 h-5 text-green-600" />
-                                ) : (
-                                  <X className="w-5 h-5 text-red-600" />
-                                )
-                              )}
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex items-center gap-2 mt-4">
-                          {!matchingSubmitted ? (
-                            <Button
-                              className="bg-teal-600 hover:bg-teal-700 text-white"
-                              onClick={handleMatchingSubmit}
-                              disabled={matchingSubmitted || submittingAssignment}
-                            >
-                              <Send className="w-4 h-4 mr-2" />
-                              {t("course.step.submitAnswer", locale)}
-                            </Button>
-                          ) : (
-                            <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-0">
-                              {t("course.step.sent", locale)}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </CardContent>
-              </Card>
-            </div>
+            <LazyStepMatching
+              step={step}
+              locale={locale}
+              matchingAnswers={matchingAnswers}
+              setMatchingAnswers={setMatchingAnswers}
+              matchingSubmitted={matchingSubmitted}
+              handleMatchingSubmit={handleMatchingSubmit}
+              submittingAssignment={submittingAssignment}
+            />
           )}
 
-          {/* ==================== STEP TYPE: ORDERING ==================== */}
+          
           {step.type === "ordering" && (
             <div className="space-y-4 mb-6">
               {/* Description */}
@@ -1402,153 +1323,22 @@ export function StepViewerPage({
 
           {/* ==================== STEP TYPE: DRAG & DROP ==================== */}
           {step.type === "drag_drop" && (
-            <div className="space-y-4 mb-6">
-              {step.content && (
-                <Card className="border-0 shadow-sm">
-                  <CardContent className="p-6">
-                    <div className="prose prose-sm max-w-none whitespace-pre-wrap">
-                      {step.content}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              <Card className="border-0 shadow-sm">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-2 mb-4 text-sm text-purple-600 dark:text-purple-400">
-                    <Grip className="w-4 h-4" />
-                    <span className="font-medium">{t("course.step.dragDropExercise", locale)}</span>
-                  </div>
-
-                  {dragDropItems.length === 0 ? (
-                    <p className="text-muted-foreground">{t("course.step.noItems", locale)}</p>
-                  ) : (
-                    <div className="space-y-6">
-                      {/* Unplaced items */}
-                      {dragDropItems.filter((item) => !dragDropAnswers[item.id]).length > 0 && (
-                        <div>
-                          <p className="text-xs text-muted-foreground mb-2">{t("course.step.dragDropHint", locale)}</p>
-                          <div className="flex flex-wrap gap-2">
-                            {dragDropItems
-                              .filter((item) => !dragDropAnswers[item.id])
-                              .map((item) => (
-                                <Badge
-                                  key={item.id}
-                                  className={`px-3 py-2 cursor-pointer text-sm select-none ${
-                                    selectedItemId === item.id
-                                      ? "bg-purple-600 text-white border-purple-700 ring-2 ring-purple-300"
-                                      : "bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100"
-                                  }`}
-                                  onClick={() => {
-                                    if (dragDropSubmitted) return;
-                                    setSelectedItemId((prev) => prev === item.id ? null : item.id);
-                                  }}
-                                >
-                                  {item.text}
-                                </Badge>
-                              ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Groups */}
-                      {dragDropGroups.map((group) => {
-                        const itemsInGroup = dragDropItems.filter(
-                          (item) => dragDropAnswers[item.id] === group
-                        );
-                        const correctItemsInGroup = dragDropItems.filter(
-                          (item) => item.group === group && dragDropAnswers[item.id] === group
-                        );
-                        return (
-                          <div
-                            key={group}
-                            className={`border-2 border-dashed rounded-lg p-4 min-h-[60px] ${
-                              selectedItemId && !dragDropSubmitted ? "border-purple-400 bg-purple-50/50 cursor-pointer hover:border-purple-500" : ""
-                            }`}
-                            onClick={() => {
-                              if (dragDropSubmitted || !selectedItemId) return;
-                              setDragDropAnswers((prev) => ({ ...prev, [selectedItemId]: group }));
-                              setSelectedItemId(null);
-                            }}
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <p className="text-sm font-semibold text-purple-700">{group}</p>
-                              {dragDropSubmitted && (
-                                <Badge className={correctItemsInGroup.length === itemsInGroup.length && itemsInGroup.length > 0 ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"}>
-                                  {itemsInGroup.length > 0 ? `${correctItemsInGroup.length}/${itemsInGroup.length}` : "-"}
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="flex flex-wrap gap-2 min-h-[28px]">
-                              {itemsInGroup.map((item) => (
-                                <Badge
-                                  key={item.id}
-                                  className={`px-3 py-1.5 text-sm cursor-pointer select-none ${
-                                    dragDropSubmitted
-                                      ? item.group === group
-                                        ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800"
-                                        : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800"
-                                      : "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800"
-                                  }`}
-                                  onClick={(e) => {
-                                    if (dragDropSubmitted) return;
-                                    e.stopPropagation();
-                                    setDragDropAnswers((prev) => {
-                                      const next = { ...prev };
-                                      delete next[item.id];
-                                      return next;
-                                    });
-                                  }}
-                                >
-                                  {item.text}
-                                  {!dragDropSubmitted && <X className="w-3 h-3 ml-1 text-muted-foreground" />}
-                                </Badge>
-                              ))}
-                              {itemsInGroup.length === 0 && !selectedItemId && (
-                                <span className="text-xs text-muted-foreground italic">
-                                  {t("course.step.dropHere", locale)}
-                                </span>
-                              )}
-                              {itemsInGroup.length === 0 && selectedItemId && (
-                                <span className="text-xs text-purple-500 italic">
-                                  {t("course.step.dropHere", locale)}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-
-                      {/* Actions */}
-                      <div className="flex items-center gap-2">
-                        {selectedItemId && !dragDropSubmitted && (
-                          <span className="text-xs text-muted-foreground">
-                            {t("course.step.dragDropHint", locale)}
-                          </span>
-                        )}
-                        {!dragDropSubmitted ? (
-                          <Button
-                            className="bg-purple-600 hover:bg-purple-700 text-white"
-                            onClick={handleDragDropSubmit}
-                            disabled={dragDropSubmitted || submittingAssignment}
-                          >
-                            <Send className="w-4 h-4 mr-2" />
-                            {t("course.step.submitDragDrop", locale)}
-                          </Button>
-                        ) : (
-                          <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-0">
-                            {t("course.step.sent", locale)}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+            <LazyStepDragDrop
+              step={step}
+              locale={locale}
+              dragDropItems={dragDropItems}
+              dragDropGroups={dragDropGroups}
+              dragDropAnswers={dragDropAnswers}
+              setDragDropAnswers={setDragDropAnswers}
+              dragDropSubmitted={dragDropSubmitted}
+              selectedItemId={selectedItemId}
+              setSelectedItemId={setSelectedItemId}
+              handleDragDropSubmit={handleDragDropSubmit}
+              submittingAssignment={submittingAssignment}
+            />
           )}
 
-          {/* ==================== STEP TYPE: ESSAY ==================== */}
+          
           {step.type === "essay" && (
             <div className="space-y-4 mb-6">
               {/* Description */}
@@ -1609,107 +1399,17 @@ export function StepViewerPage({
 
           {/* ==================== STEP TYPE: FILE UPLOAD ==================== */}
           {step.type === "file_upload" && (
-            <div className="space-y-4 mb-6">
-              {/* Description */}
-              {step.content && (
-                <Card className="border-0 shadow-sm">
-                  <CardContent className="p-6">
-                    <div className="prose prose-sm max-w-none whitespace-pre-wrap">
-                      {step.content}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* File upload */}
-              <Card className="border-0 shadow-sm">
-                <CardContent className="p-6">
-                    <div className="flex items-center gap-2 mb-4 text-sm text-slate-600 dark:text-slate-400">
-                    <Upload className="w-4 h-4" />
-                    <span className="font-medium">{t("course.step.fileUpload", locale) }</span>
-                  </div>
-
-                  {!fileUploaded ? (
-                    <div className="space-y-4">
-                      {/* File input */}
-                        <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-blue-400 dark:hover:border-blue-500 transition-colors">
-                        <Upload className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-                        <p className="text-sm text-muted-foreground mb-2">
-                          {t("course.step.dragDropFile", locale) }
-                        </p>
-                        <label className="inline-block cursor-pointer">
-                          <span className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                            {t("course.step.browseFiles", locale) }
-                          </span>
-                          <input
-                            type="file"
-                            className="hidden"
-                            onChange={handleFileSelect}
-                            accept=".pdf,.doc,.docx,.txt,.zip,.jpg,.png"
-                          />
-                        </label>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          {t("course.step.maxFileSize", locale) }
-                        </p>
-                      </div>
-
-                      {/* Selected file info */}
-                      {selectedFile && (
-                        <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg border dark:border-gray-700">
-                          <FileText className="w-5 h-5 text-slate-600" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{selectedFile.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                            </p>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0"
-                            onClick={() => setSelectedFile(null)}
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      )}
-
-                      {/* Upload progress */}
-                      {submittingAssignment && (
-                        <div className="space-y-1">
-                          <Progress value={uploadProgress} className="h-2" />
-                          <p className="text-xs text-muted-foreground text-right">{uploadProgress}%</p>
-                        </div>
-                      )}
-
-                      {/* Submit button */}
-                      <Button
-                        className="bg-slate-600 hover:bg-slate-700 text-white"
-                        onClick={handleFileSubmit}
-                        disabled={!selectedFile || submittingAssignment}
-                      >
-                        {submittingAssignment ? (
-                          <><span className="animate-spin mr-2">⏳</span>{uploadProgress}%</>
-                        ) : (
-                          <><Send className="w-4 h-4 mr-2" />{t("course.step.submitFile", locale)}</>
-                        )}
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <CheckCircle2 className="w-12 h-12 text-green-600 mx-auto mb-3" />
-                      <p className="text-sm font-medium mb-1">{t("course.step.fileUploaded", locale) }</p>
-                      {selectedFile && (
-                        <p className="text-xs text-muted-foreground">{selectedFile.name}</p>
-                      )}
-                      <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-0 mt-2">
-                        {t("course.step.awaitingReview", locale)}
-                      </Badge>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+            <LazyStepFileUpload
+              step={step}
+              locale={locale}
+              fileUploaded={fileUploaded}
+              selectedFile={selectedFile}
+              setSelectedFile={setSelectedFile}
+              handleFileSelect={handleFileSelect}
+              handleFileSubmit={handleFileSubmit}
+              uploadProgress={uploadProgress}
+              submittingAssignment={submittingAssignment}
+            />
           )}
 
           {/* ==================== BOTTOM NAVIGATION ==================== */}
