@@ -76,7 +76,7 @@ export function StepQuiz({ step, locale }: StepComponentProps) {
   return (
     <div className="space-y-4 mb-6">
       {quizScore !== null && (
-        <Card className={`border-0 shadow-sm ${quizScore >= 60 ? "bg-green-50" : "bg-red-50"}`}>
+        <Card className={`border-0 shadow-sm ${quizScore >= 60 ? "bg-green-50 dark:bg-green-950/30" : "bg-red-50 dark:bg-red-950/30"}`}>
           <CardContent className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               {quizScore >= 60 ? <CheckCircle2 className="w-5 h-5 text-green-600" /> : <HelpCircle className="w-5 h-5 text-red-600" />}
@@ -107,7 +107,7 @@ export function StepQuiz({ step, locale }: StepComponentProps) {
 
         return (
           <Card key={assignment.id} className={`border-0 shadow-sm overflow-hidden transition-all ${isSubmitted ? isCorrect ? "ring-2 ring-green-400" : "ring-2 ring-red-400" : ""}`}>
-            <div className={`px-4 py-3 flex items-center justify-between ${isSubmitted ? isCorrect ? "bg-green-50" : "bg-red-50" : "bg-orange-50"}`}>
+            <div className={`px-4 py-3 flex items-center justify-between ${isSubmitted ? isCorrect ? "bg-green-50 dark:bg-green-950/30" : "bg-red-50 dark:bg-red-950/30" : "bg-orange-50 dark:bg-orange-950/30"}`}>
               <div className="flex items-center gap-2">
                 <HelpCircle className={`w-4 h-4 ${isSubmitted ? isCorrect ? "text-green-600" : "text-red-600" : "text-orange-600"}`} />
                 <span className="font-medium text-sm">{t("course.step.question", locale)} {aIdx + 1}</span>
@@ -128,16 +128,16 @@ export function StepQuiz({ step, locale }: StepComponentProps) {
                   const isCorrectOption = assignment.correctAnswer
                     ? checkQuizAnswer(assignment.correctAnswer, opt, assignment.options ?? undefined, optIdx)
                     : false;
-                  let optionClass = "border-gray-200 hover:bg-gray-50 cursor-pointer";
+                  let optionClass = "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer";
                   if (isSubmitted) {
-                    if (isCorrectOption) optionClass = "border-green-400 bg-green-50";
-                    else if (isSelected && !isCorrect) optionClass = "border-red-400 bg-red-50";
-                    else optionClass = "border-gray-200 opacity-60";
-                  } else if (isSelected) optionClass = "border-blue-500 bg-blue-50";
+                    if (isCorrectOption) optionClass = "border-green-400 bg-green-50 dark:bg-green-950/30";
+                    else if (isSelected && !isCorrect) optionClass = "border-red-400 bg-red-50 dark:bg-red-950/30";
+                    else optionClass = "border-gray-200 dark:border-gray-700 opacity-60";
+                  } else if (isSelected) optionClass = "border-blue-500 bg-blue-50 dark:bg-blue-950/30";
 
                   return (
                     <label key={optIdx} className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${optionClass} ${isSubmitted ? "cursor-default" : "cursor-pointer"}`}>
-                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${isSelected ? isSubmitted ? isCorrectOption ? "border-green-500 bg-green-500" : "border-red-500 bg-red-500" : "border-blue-500 bg-blue-500" : "border-gray-300"}`}>
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${isSelected ? isSubmitted ? isCorrectOption ? "border-green-500 bg-green-500" : "border-red-500 bg-red-500" : "border-blue-500 bg-blue-500" : "border-gray-300 dark:border-gray-600"}`}>
                         {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
                       </div>
                       <span className="text-sm">{opt}</span>

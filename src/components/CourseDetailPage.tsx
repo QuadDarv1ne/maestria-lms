@@ -573,7 +573,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                   >
                     <AccordionTrigger className="hover:no-underline py-4">
                       <div className="flex items-center gap-3 text-left">
-                        <span className="w-8 h-8 bg-violet-100 text-violet-700 rounded-lg flex items-center justify-center text-sm font-semibold">
+                        <span className="w-8 h-8 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 rounded-lg flex items-center justify-center text-sm font-semibold">
                           {mIdx + 1}
                         </span>
                         <div>
@@ -596,7 +596,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                               tabIndex={canAccess ? 0 : undefined}
                               className={`flex items-center gap-3 p-2 rounded-lg ${
                                 canAccess
-                                  ? "hover:bg-gray-50 cursor-pointer"
+                                  ? "hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
                                   : "opacity-60"
                               }`}
                               onClick={() => {
@@ -655,7 +655,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
               <h2 className="text-xl font-bold mb-4">{t("course.instructor", locale)}</h2>
               <Card className="border-0 shadow-sm">
                 <CardContent className="p-4 flex items-center gap-4">
-                  <div className="w-16 h-16 bg-violet-100 rounded-full flex items-center justify-center text-violet-700 font-bold text-xl">
+                  <div className="w-16 h-16 bg-violet-100 dark:bg-violet-900/30 rounded-full flex items-center justify-center text-violet-700 dark:text-violet-400 font-bold text-xl">
                     {getInitials(course.teacher?.name, "T")}
                   </div>
                   <div>
@@ -709,7 +709,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                           <div key={star} className="flex items-center gap-2 text-sm">
                             <span className="w-3 text-right">{star}</span>
                             <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                            <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="flex-1 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                               <div
                                 className="h-full bg-amber-400 rounded-full transition-all"
                                 style={{ width: `${pct}%` }}
@@ -731,7 +731,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                     <Card key={review.id} className="border-0 shadow-sm">
                       <CardContent className="p-4">
                         <div className="flex items-center gap-3 mb-2">
-                          <div className="w-8 h-8 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center text-xs font-semibold">
+                          <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full flex items-center justify-center text-xs font-semibold">
                             {getInitials(review.user?.name, "U")}
                           </div>
                           <div className="flex-1">

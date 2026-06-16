@@ -728,7 +728,7 @@ export function StepViewerPage({
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-violet-600 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
             <GraduationCap className="w-8 h-8 text-white" />
@@ -741,7 +741,7 @@ export function StepViewerPage({
 
   if (!step) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-background flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-xl font-semibold mb-2">{t("course.step.notFound", locale)}</h2>
           <Button variant="outline" onClick={() => router.push(`/course/${courseId}`)}>
@@ -755,7 +755,7 @@ export function StepViewerPage({
   const isEnrolled = !!(step.isFree || user);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 dark:bg-background flex">
       <StepSidebar
         courseStructure={courseStructure}
         courseId={courseId}

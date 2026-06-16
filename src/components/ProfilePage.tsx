@@ -602,7 +602,7 @@ export function ProfilePage() {
             <Bookmark className="w-4 h-4 mr-2" />
             {t("profile.bookmarksTab", locale)}
             {favorites.length > 0 && (
-              <Badge className="ml-1.5 bg-blue-100 text-blue-700 border-0 text-[10px] h-5 min-w-5 px-1">
+              <Badge className="ml-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-0 text-[10px] h-5 min-w-5 px-1">
                 {favorites.length}
               </Badge>
             )}
@@ -648,7 +648,7 @@ export function ProfilePage() {
                     ? "bg-blue-500"
                     : enrollment.progress > 0
                       ? "bg-amber-500"
-                      : "bg-gray-300";
+                      : "bg-gray-300 dark:bg-gray-600";
 
                 return (
                   <Card
@@ -681,7 +681,7 @@ export function ProfilePage() {
                               <span>{t("profile.courseProgress", locale)}</span>
                               <span className={isCompleted ? "text-green-600 font-medium" : ""}>{enrollment.progress}%</span>
                             </div>
-                            <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
+                            <div className="h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
                               <div
                                 className={`h-full rounded-full transition-all duration-500 ${progressColor}`}
                                 style={{ width: `${enrollment.progress}%` }}
@@ -690,12 +690,12 @@ export function ProfilePage() {
                           </div>
                           <div className="flex items-center gap-2 mt-2">
                             {isCompleted ? (
-                              <Badge className="bg-green-100 text-green-700 border-0 text-[10px]">
+                              <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-0 text-[10px]">
                                 <CheckCircle2 className="w-3 h-3 mr-1" />
                                 {t("profile.completed", locale)}
                               </Badge>
                             ) : (
-                              <Badge className="bg-blue-100 text-blue-700 border-0 text-[10px]">
+                              <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-0 text-[10px]">
                                 <Clock className="w-3 h-3 mr-1" />
                                 {t("profile.inProgress", locale)}
                               </Badge>

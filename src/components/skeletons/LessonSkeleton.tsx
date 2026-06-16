@@ -2,8 +2,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function LessonSkeleton() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b sticky top-16 z-40">
+    <div className="min-h-screen bg-gray-50 dark:bg-background">
+      <div className="bg-white dark:bg-card border-b sticky top-16 z-40">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <Skeleton className="h-8 w-24" />
           <div className="flex items-center gap-2">

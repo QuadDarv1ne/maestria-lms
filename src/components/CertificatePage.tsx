@@ -135,8 +135,8 @@ export function CertificatePage({ courseId }: { courseId: string }) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="animate-pulse space-y-4 max-w-4xl mx-auto">
-          <div className="h-10 bg-gray-200 rounded w-1/3" />
-          <div className="h-[500px] bg-gray-100 rounded-xl" />
+          <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
+          <div className="h-[500px] bg-gray-100 dark:bg-gray-800 rounded-xl" />
         </div>
       </div>
     );

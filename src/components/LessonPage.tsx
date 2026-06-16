@@ -1,58 +1,37 @@
 "use client";
 import { useRouter } from "next/navigation";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { log } from "@/lib/logger";
 import type { Locale } from "@/lib/stores/ui";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Clock,
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
-  Play,
 } from "lucide-react";
 import { toast } from "sonner";
 import { lessonTypeIcon } from "@/lib/constants";
 import { LessonSkeleton } from "@/components/skeletons/LessonSkeleton";
+import { StepVideo } from "@/components/step-viewer/StepVideo";
+import { StepText } from "@/components/step-viewer/StepText";
+import { StepCoding } from "@/components/step-viewer/StepCoding";
+import { StepQuiz } from "@/components/step-viewer/StepQuiz";
+import type { StepData } from "@/components/step-viewer/StepTypes";
 
-function LessonVideo({ src }: { src: string }) {
-  const [error, setError] = useState(false);
-  const [loaded, setLoaded] = useState(false);
-  const locale = useAppStore((s) => s.locale);
-
-  if (error) {
-    return (
-      <div className="bg-gray-900 rounded-lg aspect-video flex items-center justify-center mb-4">
-        <div className="text-center text-white">
-          <Play className="w-16 h-16 mx-auto mb-2 opacity-50" />
-          <p className="text-sm opacity-50">{t("lesson.videoError", locale)}</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative bg-black rounded-lg overflow-hidden mb-4">
-      {!loaded && (
-        <div className="absolute inset-0 bg-gray-800 animate-pulse flex items-center justify-center">
-          <Play className="w-12 h-12 text-white/30" />
-        </div>
-      )}
-      <video
-        src={src}
-        controls
-        preload="metadata"
-        className="w-full aspect-video"
-        onLoadedData={() => setLoaded(true)}
-        onError={() => setError(true)}
-      />
-    </div>
-  );
+function lessonTypeLabel(type: string, locale: Locale): string {
+  const map: Record<string, string> = {
+    video: "lesson.typeVideo",
+    text: "lesson.typeText",
+    coding: "lesson.typeCoding",
+    quiz: "lesson.typeQuiz",
+    assignment: "lesson.typeAssignment",
+  };
+  return t(map[type] || type, locale);
 }
 
 interface AssignmentItem {
@@ -85,22 +64,12 @@ interface LessonData {
     id: string;
     title: string;
     courseId: string;
+    sortOrder: number;
   };
   assignments: AssignmentItem[];
   progress: LessonProgress | null;
   prevStepId: string | null;
   nextStepId: string | null;
-}
-
-function lessonTypeLabel(type: string, locale: Locale): string {
-  const map: Record<string, string> = {
-    video: "lesson.typeVideo",
-    text: "lesson.typeText",
-    coding: "lesson.typeCoding",
-    quiz: "lesson.typeQuiz",
-    assignment: "lesson.typeAssignment",
-  };
-  return t(map[type] || type, locale);
 }
 
 export function LessonPage({
@@ -116,15 +85,7 @@ export function LessonPage({
   const [lesson, setLesson] = useState<LessonData | null>(null);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
-
-  // Quiz state
-  const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
-  const [quizSubmitted, setQuizSubmitted] = useState(false);
-
-  useEffect(() => {
-    setQuizAnswers({});
-    setQuizSubmitted(false);
-  }, [lessonId]);
+  const [submittingAssignment, setSubmittingAssignment] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -140,12 +101,12 @@ export function LessonPage({
             setLesson(data.lesson);
           }
         } else {
-          let errorMessage = t("lesson.accessError", locale);
+          let errorMessage = t("course.step.errorAccess", locale);
           try {
             const data = await res.json();
             errorMessage = data.error || errorMessage;
           } catch {
-            // Response may not be JSON, use default message
+            // Response may not be JSON
           }
           if (!cancelled) {
             toast.error(errorMessage);
@@ -153,39 +114,18 @@ export function LessonPage({
           }
         }
       } catch (e: unknown) {
-        log.error(t("profile.errorLoadingLesson", locale), { courseId, lessonId, error: e instanceof Error ? e.message : String(e) });
-        if (!cancelled) toast.error(t("profile.errorLoadingLesson", locale));
+        log.error(t("course.step.errorLoad", locale), { courseId, lessonId, error: e instanceof Error ? e.message : String(e) });
+        if (!cancelled) toast.error(t("course.step.errorLoad", locale));
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     };
     fetchLesson();
     return () => { cancelled = true; };
   }, [courseId, lessonId, locale, router]);
 
-  const handleQuizSubmit = () => {
-    const scores: Record<string, boolean> = {};
-    lesson?.assignments.forEach((assignment) => {
-      const parsed = assignment.correctAnswer
-        ? parseInt(assignment.correctAnswer, 10)
-        : -1;
-      const correctIndex = Number.isNaN(parsed) ? -1 : parsed;
-      scores[assignment.id] =
-        correctIndex >= 0 && quizAnswers[assignment.id] === correctIndex;
-    });
-    setQuizSubmitted(true);
-
-    const correctCount = Object.values(scores).filter(Boolean).length;
-    const total = Object.keys(scores).length;
-    if (total > 0) {
-      toast.success(`${t("lesson.quizCorrectAnswers", locale)} ${correctCount}/${total}`);
-    }
-  };
-
-  const handleComplete = async () => {
-    if (!user) return;
+  const handleStepComplete = useCallback(async () => {
+    if (!user || !lesson) return;
     setCompleting(true);
     try {
       const res = await fetch(
@@ -195,63 +135,154 @@ export function LessonPage({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             completed: true,
-            timeSpent: lesson?.duration || 5,
+            timeSpent: lesson.duration || 5,
           }),
         }
       );
       if (res.ok) {
-        toast.success(t("lesson.markedCompleted", locale));
+        toast.success(t("course.step.markedComplete", locale));
         setLesson((prev) =>
           prev ? { ...prev, completed: true } : prev
         );
       } else {
         const error = await res.json().catch(() => null);
-        toast.error(error?.error || t("lesson.progressUpdateError", locale));
+        toast.error(error?.error || t("course.step.errorProgress", locale));
       }
     } catch {
-      toast.error(t("lesson.progressUpdateError", locale));
+      toast.error(t("course.step.errorProgress", locale));
     } finally {
       setCompleting(false);
     }
-  };
+  }, [user, lesson, courseId, lessonId, locale]);
 
-  if (loading) {
-    return <LessonSkeleton />;
-  }
+  const handleSubmitAssignment = useCallback(async (assignmentId: string, answer: unknown) => {
+    if (!user) return null;
+    setSubmittingAssignment(true);
+    try {
+      const res = await fetch(
+        `/api/courses/${courseId}/lessons/${lessonId}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            assignmentId,
+            answer,
+            timeSpent: lesson?.duration || 5,
+          }),
+        }
+      );
+      if (res.ok) {
+        toast.success(t("course.step.codeSent", locale));
+        return await res.json();
+      }
+      toast.error(t("course.step.errorProgress", locale));
+      return null;
+    } catch {
+      toast.error(t("course.step.errorProgress", locale));
+      return null;
+    } finally {
+      setSubmittingAssignment(false);
+    }
+  }, [user, courseId, lessonId, lesson?.duration, locale]);
+
+  if (loading) return <LessonSkeleton />;
 
   if (!lesson) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
-        <h2 className="text-xl font-semibold mb-2">{t("lesson.notFound", locale)}</h2>
+        <h2 className="text-xl font-semibold mb-2">{t("course.step.lessonNotFound", locale)}</h2>
         <Button variant="outline" onClick={() => router.push(`/course/${courseId}`)}>
-          {t("lesson.backToCourse", locale)}
+          {t("course.step.backToCourse", locale)}
         </Button>
       </div>
     );
   }
 
+  const stepData: StepData = {
+    id: lesson.id,
+    title: lesson.title,
+    type: lesson.type as StepData["type"],
+    content: lesson.content,
+    videoUrl: lesson.videoUrl,
+    duration: lesson.duration,
+    isFree: lesson.isFree,
+    sortOrder: lesson.sortOrder,
+    completed: lesson.completed,
+    module: {
+      id: lesson.module.id,
+      title: lesson.module.title,
+      courseId: lesson.module.courseId,
+      sortOrder: 0,
+    },
+    assignments: lesson.assignments.map((a) => ({
+      id: a.id,
+      title: a.title,
+      description: a.description,
+      type: a.type,
+      options: a.options ?? null,
+      correctAnswer: a.correctAnswer ?? null,
+      points: a.points,
+    })),
+    progress: lesson.progress ? {
+      id: "",
+      completed: lesson.progress.completed,
+      score: lesson.progress.score ?? null,
+      timeSpent: lesson.progress.timeSpent,
+    } : null,
+    prevStepId: lesson.prevStepId,
+    nextStepId: lesson.nextStepId,
+  };
+
+  const commonProps = {
+    step: stepData,
+    locale,
+    submittingAssignment,
+    onSubmitAssignment: handleSubmitAssignment,
+    onStepComplete: handleStepComplete,
+  };
+
+  const renderStepContent = () => {
+    switch (lesson.type) {
+      case "video":
+        return <StepVideo {...commonProps} />;
+      case "text":
+      case "assignment":
+        return <StepText {...commonProps} />;
+      case "coding":
+        return <StepCoding {...commonProps} />;
+      case "quiz":
+        return <StepQuiz {...commonProps} />;
+      default:
+        return lesson.content ? (
+          <div className="prose prose-sm max-w-none whitespace-pre-wrap">
+            {lesson.content}
+          </div>
+        ) : null;
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-background">
       {/* Навигация урока */}
-      <nav className="bg-white border-b sticky top-16 z-40" aria-label={t("lesson.lessonNav", locale)}>
+      <nav className="bg-white dark:bg-card border-b sticky top-16 z-40" aria-label={t("course.step.sidebarNav", locale)}>
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <Button
             variant="ghost"
             size="sm"
-            aria-label={t("lesson.backToCourseAria", locale)}
+            aria-label={t("course.step.backToCourse", locale)}
             onClick={() => router.push(`/course/${courseId}`)}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            {t("lesson.toCourse", locale)}
+            {t("course.step.toCourse", locale)}
           </Button>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-xs">
               {lessonTypeLabel(lesson.type, locale)}
             </Badge>
             {lesson.completed && (
-              <Badge className="bg-green-100 text-green-700 border-0">
+              <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-0">
                 <CheckCircle2 className="w-3 h-3 mr-1" />
-                {t("lesson.completed", locale)}
+                {t("course.step.completed", locale)}
               </Badge>
             )}
           </div>
@@ -262,7 +293,7 @@ export function LessonPage({
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-6">
           <p className="text-sm text-muted-foreground mb-1">
-            {t("lesson.module", locale)} {lesson.module?.title}
+            {t("course.step.module", locale)} {lesson.module?.title}
           </p>
           <h1 className="text-2xl font-bold mb-2">{lesson.title}</h1>
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
@@ -277,188 +308,32 @@ export function LessonPage({
           </div>
         </div>
 
-        <Card className="border-0 shadow-sm mb-6">
-          <CardContent className="p-6">
-            {/* Видеоурок */}
-            {lesson.type === "video" && (
-              <div>
-                {lesson.videoUrl ? (
-                  <LessonVideo src={lesson.videoUrl} />
-                ) : (
-                  <div className="bg-gray-900 rounded-lg aspect-video flex items-center justify-center mb-4">
-                    <div className="text-center text-white">
-                      <Play className="w-16 h-16 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm opacity-50">{t("lesson.videoNotLoaded", locale)}</p>
-                    </div>
-                  </div>
-                )}
-                {lesson.content && (
-                  <div className="prose prose-sm max-w-none whitespace-pre-wrap">
-                    {lesson.content}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Текстовый урок */}
-            {(lesson.type === "text" || lesson.type === "assignment") && (
-              <div className="prose prose-sm max-w-none whitespace-pre-wrap">
-                {lesson.content || t("lesson.contentLoading", locale)}
-              </div>
-            )}
-
-            {/* Практика / Кодинг */}
-            {lesson.type === "coding" && (
-              <div>
-                {lesson.content && (
-                  <div className="prose prose-sm max-w-none whitespace-pre-wrap mb-4">
-                    {lesson.content}
-                  </div>
-                )}
-                <div className="bg-gray-900 rounded-lg p-4 text-sm text-green-400 font-mono">
-                  <p className="text-gray-500 mb-2">{t("lesson.writeCodeHere", locale)}</p>
-                  <p className="text-gray-500">{t("lesson.forExample", locale)}</p>
-                  <p>print(&quot;Hello, World!&quot;)</p>
-                </div>
-              </div>
-            )}
-
-            {/* Тест */}
-            {lesson.type === "quiz" && (
-              <div aria-label={t("lesson.quizSection", locale)}>
-                {lesson.content && (
-                  <div className="prose prose-sm max-w-none whitespace-pre-wrap mb-4">
-                    {lesson.content}
-                  </div>
-                )}
-                {lesson.assignments?.map((assignment: AssignmentItem) => {
-                  let options: string[] = [];
-                  try {
-                    if (assignment.options) {
-                      options = JSON.parse(assignment.options);
-                    }
-                  } catch {
-                    // invalid JSON
-                  }
-
-                  const parsed = assignment.correctAnswer
-                    ? parseInt(assignment.correctAnswer, 10)
-                    : -1;
-                  const correctIndex = Number.isNaN(parsed) ? -1 : parsed;
-
-                  return (
-                    <Card key={assignment.id} className="mb-3 border shadow-sm">
-                      <CardContent className="p-4">
-                        <h4 className="font-semibold mb-2">
-                          {assignment.title}
-                        </h4>
-                        <p className="text-sm text-muted-foreground mb-3">
-                          {assignment.description}
-                        </p>
-                        {options.length > 0 && (
-                          <div className="space-y-2">
-                            {options.map((opt: string, i: number) => {
-                              const isSelected = quizAnswers[assignment.id] === i;
-                              const isCorrect = i === correctIndex;
-                              let optionStyle = "border cursor-pointer hover:bg-gray-50";
-                              if (quizSubmitted) {
-                                if (isCorrect) {
-                                  optionStyle = "border-green-500 bg-green-50 dark:bg-green-900/20 cursor-default";
-                                } else if (isSelected && !isCorrect) {
-                                  optionStyle = "border-red-500 bg-red-50 dark:bg-red-900/20 cursor-default";
-                                } else {
-                                  optionStyle = "border opacity-50 cursor-default";
-                                }
-                              }
-                              return (
-                                <label
-                                  key={i}
-                                  className={`flex items-center gap-2 p-2 rounded-lg transition-colors ${optionStyle}`}
-                                >
-                                  <input
-                                    type="radio"
-                                    name={`quiz-${assignment.id}`}
-                                    className="accent-blue-700"
-                                    checked={isSelected}
-                                    onChange={() => {
-                                      if (!quizSubmitted) {
-                                        setQuizAnswers((prev) => ({
-                                          ...prev,
-                                          [assignment.id]: i,
-                                        }));
-                                      }
-                                    }}
-                                    disabled={quizSubmitted}
-                                  />
-                                  <span className="text-sm flex-1">{opt}</span>
-                                  {quizSubmitted && isCorrect && (
-                                    <span className="text-green-600 text-xs font-medium">✓</span>
-                                  )}
-                                  {quizSubmitted && isSelected && !isCorrect && (
-                                    <span className="text-red-600 text-xs font-medium">✗</span>
-                                  )}
-                                </label>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-                {lesson.assignments?.length > 0 && (
-                  <div className="flex gap-2 mt-4">
-                    {!quizSubmitted && (
-                      <Button
-                        className="bg-blue-700 hover:bg-blue-800 text-white"
-                        onClick={handleQuizSubmit}
-                        disabled={Object.keys(quizAnswers).length === 0}
-                      >
-                        {t("lesson.checkAnswers", locale)}
-                      </Button>
-                    )}
-                    {quizSubmitted && (
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setQuizSubmitted(false);
-                          setQuizAnswers({});
-                        }}
-                      >
-                        {t("lesson.tryAgain", locale)}
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {renderStepContent()}
 
         {/* Действия */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mt-6">
           <Button
             variant="outline"
             disabled={!lesson.prevStepId}
-            aria-label={t("lesson.prevStepAria", locale)}
+            aria-label={t("course.step.prev", locale)}
             onClick={() =>
               lesson.prevStepId &&
               router.push(`/course/${courseId}/lesson/${lesson.prevStepId}`)
             }
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            {t("lesson.previousStep", locale)}
+            {t("course.step.prev", locale)}
           </Button>
 
           <div className="flex items-center gap-2">
             {!lesson.completed && (
               <Button
                 className="bg-blue-700 hover:bg-blue-800 text-white"
-                onClick={handleComplete}
+                onClick={handleStepComplete}
                 disabled={completing}
               >
                 <CheckCircle2 className="w-4 h-4 mr-2" />
-                {completing ? t("common.saving", locale) : t("lesson.markComplete", locale)}
+                {completing ? t("course.step.saving", locale) : t("course.step.markComplete", locale)}
               </Button>
             )}
           </div>
@@ -466,13 +341,13 @@ export function LessonPage({
           <Button
             variant="outline"
             disabled={!lesson.nextStepId}
-            aria-label={t("lesson.nextStepAria", locale)}
+            aria-label={t("course.step.next", locale)}
             onClick={() =>
               lesson.nextStepId &&
               router.push(`/course/${courseId}/lesson/${lesson.nextStepId}`)
             }
           >
-            {t("lesson.nextStep", locale)}
+            {t("course.step.next", locale)}
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </div>

@@ -46,7 +46,7 @@ export function HomePageSkeleton() {
       </section>
 
       {/* Promo carousel skeleton */}
-      <section className="bg-gray-50 py-12">
+      <section className="bg-gray-50 dark:bg-gray-900/50 py-12">
         <div className="container mx-auto px-4">
           <Skeleton className="h-8 w-48 mb-8" />
           <div className="flex gap-4 overflow-hidden">
