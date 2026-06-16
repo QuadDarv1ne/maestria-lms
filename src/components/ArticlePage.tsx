@@ -76,7 +76,7 @@ export function ArticlePage({ slug }: ArticlePageProps) {
         const data = await res.json();
         setArticle(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Ошибка загрузки");
+        setError(err instanceof Error ? err.message : t("common.error", locale));
       } finally {
         setIsLoading(false);
       }

@@ -1,11 +1,12 @@
 "use client";
 import { useRouter } from "next/navigation";
 
-import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { CatalogSkeleton } from "@/components/skeletons/CatalogSkeleton";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Search,
   SlidersHorizontal,
@@ -24,9 +25,19 @@ import {
 } from "@/components/ui/select";
 import type { SortBy } from "@/lib/store";
 import { CourseCard } from "@/components/CourseCard";
+import { ScrollReveal } from "@/components/ScrollReveal";
 import { CATEGORIES } from "@/lib/constants";
 import { useCourses } from "@/hooks/useCourses";
 import { PromoBanner } from "@/components/PromoBanner";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationPrevious,
+  PaginationNext,
+  PaginationLink,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
 
 export function CatalogPage() {
   const router = useRouter();
@@ -158,17 +169,35 @@ export function CatalogPage() {
       <div className="mb-6 space-y-4">
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             <Input
               aria-label={t("catalog.search", locale)}
               placeholder={t("catalog.search", locale)}
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && setPagination((prev) => ({ ...prev, page: 1 }))}
-              className="pl-10"
+              className="pl-10 pr-8 transition-shadow duration-200 focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:shadow-[0_0_0_4px_rgba(59,130,246,0.1)]"
             />
+            {searchInput && (
+              <button
+                type="button"
+                aria-label={t("catalog.clearFilters", locale)}
+                onClick={() => { setSearchInput(""); setCourseFilters({ search: "" }); setPagination((prev) => ({ ...prev, page: 1 })); }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
-          <Button aria-disabled={true} className="bg-blue-700 hover:bg-blue-800 text-white opacity-50 cursor-not-allowed">
+          <Button
+            variant="default"
+            className="bg-blue-700 hover:bg-blue-800 text-white"
+            onClick={() => {
+              setCourseFilters({ search: searchInput });
+              setPagination((prev) => ({ ...prev, page: 1 }));
+            }}
+          >
+            <Search className="w-4 h-4 mr-1" />
             {t("common.find", locale)}
           </Button>
           <Button
@@ -254,8 +283,17 @@ export function CatalogPage() {
       </div>
 
       {/* Результаты */}
-      <div className="mb-4 text-sm text-muted-foreground">
-        {isLoading ? t("common.loading", locale) : `${t("catalog.found", locale)} ${total}`}
+      <div className="mb-4 flex items-center gap-2">
+        {isLoading ? (
+          <span className="text-sm text-muted-foreground">{t("common.loading", locale)}</span>
+        ) : (
+          <>
+            <Badge variant="secondary" className="text-xs">
+              {total}
+            </Badge>
+            <span className="text-sm text-muted-foreground">{t("catalog.found", locale)}</span>
+          </>
+        )}
       </div>
 
       {isLoading ? (
@@ -273,9 +311,11 @@ export function CatalogPage() {
         </div>
       ) : sortedCourses.length === 0 ? (
         <div className="text-center py-16">
-          <BookOpen className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
+          <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-6">
+            <BookOpen className="w-10 h-10 text-muted-foreground/60" />
+          </div>
           <h3 className="text-lg font-semibold mb-2">{t("catalog.noResults", locale)}</h3>
-          <p className="text-muted-foreground mb-4">
+          <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
             {t("catalog.noResultsHint", locale)}
           </p>
           <Button variant="outline" onClick={clearFilters}>
@@ -283,44 +323,68 @@ export function CatalogPage() {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {sortedCourses.map((course) => (
-            <CourseCard
-              key={course.id}
-              course={course}
-              onClick={() => router.push(`/course/${course.id}`)}
-            />
-          ))}
-        </div>
+        <ScrollReveal direction="up" delay={100}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {sortedCourses.map((course) => (
+              <CourseCard
+                key={course.id}
+                course={course}
+                onClick={() => router.push(`/course/${course.id}`)}
+              />
+            ))}
+          </div>
+        </ScrollReveal>
       )}
 
       {/* Пагинация */}
       {totalPages > 1 && (
-        <div className="flex justify-center gap-2 mt-8" aria-label="Pagination">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={pagination.page <= 1}
-            onClick={() =>
-              setPagination((prev) => ({ ...prev, page: prev.page - 1 }))
-            }
-          >
-            {t("common.back", locale)}
-          </Button>
-          <span className="flex items-center text-sm text-muted-foreground px-3">
-            {t("common.page", locale)} {pagination.page} {t("common.of", locale)} {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={pagination.page >= totalPages}
-            onClick={() =>
-              setPagination((prev) => ({ ...prev, page: prev.page + 1 }))
-            }
-          >
-            {t("common.next", locale)}
-          </Button>
-        </div>
+        <Pagination className="mt-8">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (pagination.page > 1) setPagination((prev) => ({ ...prev, page: prev.page - 1 }));
+                }}
+                isActive={pagination.page > 1}
+              />
+            </PaginationItem>
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter((p) => p === 1 || p === totalPages || Math.abs(p - pagination.page) <= 1)
+              .map((p, idx, arr) => (
+                <React.Fragment key={p}>
+                  {idx > 0 && arr[idx - 1] !== p - 1 && (
+                    <PaginationItem>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                  )}
+                  <PaginationItem>
+                    <PaginationLink
+                      href="#"
+                      isActive={p === pagination.page}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setPagination((prev) => ({ ...prev, page: p }));
+                      }}
+                    >
+                      {p}
+                    </PaginationLink>
+                  </PaginationItem>
+                </React.Fragment>
+              ))}
+            <PaginationItem>
+              <PaginationNext
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (pagination.page < totalPages) setPagination((prev) => ({ ...prev, page: prev.page + 1 }));
+                }}
+                isActive={pagination.page < totalPages}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
       )}
     </div>
   );

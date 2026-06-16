@@ -96,7 +96,6 @@ export function CertificatePage({ courseId }: { courseId: string }) {
   const completionDate = certificate?.issuedAt || new Date().toISOString();
   const userName = certificate?.userName || user?.name || user?.email || "";
 
-  /* download: try html2canvas PDF, fallback to print */
   const handleDownloadPdf = useCallback(async () => {
     if (!certRef.current) {
       log.error("Certificate download failed: certificate ref is null");
@@ -107,9 +106,10 @@ export function CertificatePage({ courseId }: { courseId: string }) {
       const html2canvasModule = await import("html2canvas");
       const html2canvas = html2canvasModule.default;
       const canvas = await html2canvas(certRef.current, {
-        scale: 2,
+        scale: 3,
         useCORS: true,
         backgroundColor: "#ffffff",
+        logging: false,
       });
       const link = document.createElement("a");
       link.download = `certificate-${certificateNumber}.png`;
@@ -126,7 +126,6 @@ export function CertificatePage({ courseId }: { courseId: string }) {
     }
   }, [certificateNumber]);
 
-  /* print */
   const handlePrint = useCallback(() => {
     window.print();
   }, []);
@@ -252,12 +251,21 @@ export function CertificatePage({ courseId }: { courseId: string }) {
             {t("cert.print", locale)}
           </Button>
           <Button
-            className="bg-blue-700 hover:bg-blue-800 text-white"
+            className="bg-blue-700 hover:bg-blue-800 text-white min-w-[140px]"
             onClick={handleDownloadPdf}
             disabled={downloading}
           >
-            <FileDown className="w-4 h-4 mr-2" />
-            {downloading ? "..." : t("cert.download", locale)}
+            {downloading ? (
+              <span className="flex items-center gap-2">
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                {t("cert.downloading", locale) || "..."}
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <FileDown className="w-4 h-4" />
+                {t("cert.download", locale)}
+              </span>
+            )}
           </Button>
         </div>
       </div>

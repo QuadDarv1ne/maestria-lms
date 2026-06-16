@@ -257,7 +257,7 @@ export default async function RootLayout({
       >
         <SkipLink />
         <Providers>
-          <main id="main-content" role="main" tabIndex={-1}>
+            <main role="main" tabIndex={-1}>
             {children}
           </main>
           <Toaster position="top-right" richColors />

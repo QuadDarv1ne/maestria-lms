@@ -35,11 +35,13 @@ export function useSSENotifications() {
 
     let retryDelay = 1000;
 
-    // Fetch existing notifications from server on mount
     if (!hasFetchedRef.current) {
-      fetchNotificationsRef.current()?.finally(() => {
+      const fetchPromise = fetchNotificationsRef.current();
+      if (fetchPromise && typeof fetchPromise.then === "function") {
+        fetchPromise.then(() => { hasFetchedRef.current = true; }).catch(() => { hasFetchedRef.current = true; });
+      } else {
         hasFetchedRef.current = true;
-      });
+      }
     }
 
     function connect() {

@@ -5,6 +5,7 @@ import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { ArrowUp } from "lucide-react";
 import { useScrollProgress } from "@/hooks/useScrollProgress";
+import { cn } from "@/lib/utils";
 
 export function GlobalScrollToTop() {
   const [visible, setVisible] = useState(() =>
@@ -53,28 +54,27 @@ export function GlobalScrollToTop() {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       aria-label={t("doc.scrollToTop", locale)}
-      title={`${progressPercent}% ${t("read.percent", locale)}`}
-      className={`
-        fixed bottom-6 right-6 z-50
-        flex items-center justify-center
-        w-12 h-12 rounded-full
-        bg-background/80 backdrop-blur-md
-        text-foreground shadow-lg
-        border border-border/50
-        transition-all duration-300 ease-out
-        hover:scale-110 hover:shadow-xl hover:border-primary/40
-        active:scale-95
-        ${visible ? "translate-y-0 opacity-100 pointer-events-auto" : "translate-y-4 opacity-0 pointer-events-none"}
-      `}
+      title={`${progressPercent}%`}
+      className={cn(
+        "fixed bottom-6 right-6 z-50",
+        "flex items-center justify-center",
+        "w-12 h-12 rounded-full",
+        "bg-background/80 backdrop-blur-md",
+        "text-foreground shadow-lg",
+        "border border-border/50",
+        "transition-all duration-300 ease-out",
+        "hover:scale-110 hover:shadow-xl hover:border-primary/40",
+        "active:scale-95",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        visible ? "translate-y-0 opacity-100 pointer-events-auto" : "translate-y-4 opacity-0 pointer-events-none"
+      )}
       data-cursor="pointer"
     >
-      {/* SVG прогресс-кольцо */}
       <svg
         className="absolute inset-0 w-full h-full -rotate-90"
         viewBox="0 0 48 48"
         aria-hidden="true"
       >
-        {/* Фоновая дорожка */}
         <circle
           cx="24"
           cy="24"
@@ -83,7 +83,6 @@ export function GlobalScrollToTop() {
           stroke={trackColor}
           strokeWidth="3"
         />
-        {/* Прогресс */}
         <circle
           cx="24"
           cy="24"
@@ -98,7 +97,10 @@ export function GlobalScrollToTop() {
         />
       </svg>
       <ArrowUp
-        className={`w-4 h-4 relative z-10 transition-transform duration-300 ${hovered ? "-translate-y-0.5" : ""}`}
+        className={cn(
+          "w-4 h-4 relative z-10 transition-all duration-300",
+          hovered ? "-translate-y-0.5 scale-110" : ""
+        )}
       />
     </button>
   );

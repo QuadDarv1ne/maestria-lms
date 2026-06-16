@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
@@ -9,9 +9,18 @@ import { signOut } from "next-auth/react";
 import { log } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetClose,
+} from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import {
   GraduationCap,
   Menu,
-  X,
   LogOut,
   User,
   Shield,
@@ -25,6 +34,8 @@ import {
   Check,
   HelpCircle,
   FileText,
+  Home,
+  Info,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -47,14 +58,14 @@ export function Header() {
   const router = useRouter();
   const pathname = usePathname();
   const user = useAppStore((s) => s.user);
-  const sidebarOpen = useAppStore((s) => s.sidebarOpen);
-  const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
   const logout = useAppStore((s) => s.logout);
   const unreadNotificationsCount = useAppStore((s) => s.unreadNotificationsCount);
   const theme = useAppStore((s) => s.theme);
   const setTheme = useAppStore((s) => s.setTheme);
   const locale = useAppStore((s) => s.locale);
   const setLocale = useAppStore((s) => s.setLocale);
+
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
 
   const localeOptions = useMemo<{ value: Locale; flag: string; label: string }[]>(() => [
     { value: "ru", flag: "🇷🇺", label: t("locale.ru", locale) },
@@ -74,6 +85,18 @@ export function Header() {
   };
 
   const userInitials = getInitials(user?.name, "??");
+
+  const navItems = useMemo(() => [
+    { href: "/", label: t("nav.home", locale), icon: Home, show: true as const },
+    { href: "/catalog", label: t("nav.catalog", locale), icon: BookOpen, show: true as const },
+    { href: "/blog", label: t("nav.blog", locale), icon: FileText, show: true as const },
+    { href: "/about", label: t("nav.about", locale), icon: Info, show: true as const },
+    { href: "/help", label: t("nav.help", locale), icon: HelpCircle, show: true as const },
+    { href: "/profile", label: t("nav.myCourses", locale), icon: BookOpen, show: !!user },
+    { href: "/achievements", label: t("nav.achievements", locale), icon: Trophy, show: !!user },
+    { href: "/teacher", label: t("nav.teacher", locale), icon: GraduationCap, show: user?.role === "teacher" },
+    { href: "/admin", label: t("nav.admin", locale), icon: Shield, show: user?.role === "admin" },
+  ], [locale, user]);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
@@ -349,223 +372,129 @@ export function Header() {
             </Button>
           )}
 
-          {/* Мобильное меню */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            aria-label={sidebarOpen ? t("nav.closeMenu", locale) : t("nav.openMenu", locale)}
-            aria-expanded={sidebarOpen}
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-          >
-            {sidebarOpen ? (
-              <X className="h-5 w-5" />
-            ) : (
-              <Menu className="h-5 w-5" />
-            )}
-          </Button>
+          {/* Мобильное меню: Sheet-панель */}
+          <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden"
+                aria-label={t("nav.openMenu", locale)}
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[280px] sm:w-[320px] p-0">
+              <SheetHeader className="p-4 border-b">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-violet-600 rounded-lg flex items-center justify-center">
+                    <GraduationCap className="w-4 h-4 text-white" />
+                  </div>
+                  <SheetTitle className="text-left">Maestria</SheetTitle>
+                </div>
+              </SheetHeader>
+              <ScrollArea className="flex-1 h-[calc(100vh-80px)]">
+                <div className="p-4 space-y-1">
+                  {/* Профиль (если авторизован) */}
+                  {user && (
+                    <div className="flex items-center gap-3 p-3 mb-2 rounded-lg bg-muted/50">
+                      <Avatar className="h-10 w-10">
+                        {user.image && <AvatarImage src={user.image} alt={user.name || ""} />}
+                        <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-semibold">
+                          {userInitials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{user.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Навигационные ссылки */}
+                  {navItems.filter(item => item.show).map((item) => {
+                    const Icon = item.icon;
+                    const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+                    return (
+                      <SheetClose key={item.href} asChild>
+                        <Button
+                          variant={isActive ? "secondary" : "ghost"}
+                          className="w-full justify-start gap-3"
+                          onClick={() => { router.push(item.href); setMobileSheetOpen(false); }}
+                        >
+                          <Icon className="w-4 h-4" />
+                          {item.label}
+                        </Button>
+                      </SheetClose>
+                    );
+                  })}
+                </div>
+
+                <Separator className="my-2" />
+
+                {/* Переключатели темы и языка */}
+                <div className="px-4 py-2 space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    {t("nav.settings", locale)}
+                  </p>
+                  <div className="grid grid-cols-3 gap-1">
+                    {themeOptions.map((opt) => (
+                      <Button
+                        key={opt.value}
+                        variant={theme === opt.value ? "default" : "outline"}
+                        size="sm"
+                        className="gap-1"
+                        onClick={() => setTheme(opt.value)}
+                      >
+                        <span>{opt.icon}</span>
+                      </Button>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-3 gap-1">
+                    {localeOptions.map((opt) => (
+                      <Button
+                        key={opt.value}
+                        variant={locale === opt.value ? "default" : "outline"}
+                        size="sm"
+                        className="gap-1 text-xs"
+                        onClick={() => setLocale(opt.value)}
+                      >
+                        <span>{opt.flag}</span>
+                        <span>{opt.label}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <Separator className="my-2" />
+
+                {/* Выход / Вход */}
+                <div className="px-4 pb-4">
+                  {user ? (
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start gap-3 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => { handleLogout(); setMobileSheetOpen(false); }}
+                    >
+                      <LogOut className="w-4 h-4" />
+                      {t("nav.logout", locale)}
+                    </Button>
+                  ) : (
+                    <SheetClose asChild>
+                      <Button
+                        className="w-full bg-blue-700 hover:bg-blue-800 text-white"
+                        onClick={() => router.push("?dialog=login")}
+                      >
+                        {t("nav.login", locale)}
+                      </Button>
+                    </SheetClose>
+                  )}
+                </div>
+              </ScrollArea>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
-
-      {/* Мобильное меню */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/30 z-40 md:hidden"
-          onClick={() => setSidebarOpen(false)}
-          aria-hidden="true"
-        />
-      )}
-      {sidebarOpen && (
-        <nav
-          className="md:hidden border-t bg-background p-4 space-y-2 z-50 relative"
-          aria-label={t("nav.mobileNav", locale)}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") setSidebarOpen(false);
-          }}
-        >
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            onClick={() => {
-              router.push("/");
-              setSidebarOpen(false);
-            }}
-          >
-            {t("nav.home", locale)}
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            onClick={() => {
-              router.push("/catalog");
-              setSidebarOpen(false);
-            }}
-          >
-            <BookOpen className="w-4 h-4 mr-2" />
-            {t("nav.catalog", locale)}
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            onClick={() => {
-              router.push("/blog");
-              setSidebarOpen(false);
-            }}
-          >
-            <FileText className="w-4 h-4 mr-2" />
-            {t("nav.blog", locale)}
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            onClick={() => {
-              router.push("/about");
-              setSidebarOpen(false);
-            }}
-          >
-            {t("nav.about", locale)}
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            onClick={() => {
-              router.push("/help");
-              setSidebarOpen(false);
-            }}
-          >
-            <HelpCircle className="w-4 h-4 mr-2" />
-            {t("nav.help", locale)}
-          </Button>
-          {user && (
-            <>
-              <Button
-                variant="ghost"
-                className="w-full justify-start"
-                onClick={() => {
-                  router.push("/profile");
-                  setSidebarOpen(false);
-                }}
-              >
-                {t("nav.myCourses", locale)}
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full justify-start"
-                onClick={() => {
-                  router.push("/achievements");
-                  setSidebarOpen(false);
-                }}
-              >
-                <Trophy className="w-4 h-4 mr-2" />
-                {t("nav.achievements", locale)}
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full justify-start"
-                onClick={() => {
-                  router.push("/notifications");
-                  setSidebarOpen(false);
-                }}
-              >
-                <Bell className="w-4 h-4 mr-2" />
-                {t("nav.notifications", locale)}
-                {unreadCount > 0 && (
-                  <span className="ml-auto bg-red-100 text-red-700 text-xs font-semibold px-1.5 py-0.5 rounded-full">
-                    {unreadCount}
-                  </span>
-                )}
-              </Button>
-              {user.role === "teacher" && (
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start"
-                  onClick={() => {
-                    router.push("/teacher");
-                    setSidebarOpen(false);
-                  }}
-                >
-                  <GraduationCap className="w-4 h-4 mr-2" />
-                  {t("nav.teacher", locale)}
-                </Button>
-              )}
-              {user.role === "admin" && (
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start"
-                  onClick={() => {
-                    router.push("/admin");
-                    setSidebarOpen(false);
-                  }}
-                >
-                  <Shield className="w-4 h-4 mr-2" />
-                  {t("nav.admin", locale)}
-                </Button>
-              )}
-            </>
-          )}
-          {/* Мобильные переключатели темы и языка */}
-          <div className="border-t pt-3 mt-3 flex items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="flex-1 gap-1" aria-label={t("nav.theme", locale)}>
-                  <Palette className="w-4 h-4" />
-                  {themeOptions.find(o => o.value === theme)?.icon} {t(themeOptions.find(o => o.value === theme)?.labelKey || "theme.light", locale)}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-40">
-                {themeOptions.map((opt) => (
-                  <DropdownMenuItem
-                    key={opt.value}
-                    onClick={() => setTheme(opt.value)}
-                    className="flex items-center justify-between"
-                  >
-                    <span className="flex items-center gap-2">
-                      <span>{opt.icon}</span>
-                      <span>{t(opt.labelKey, locale)}</span>
-                    </span>
-                    {theme === opt.value && <Check className="h-4 w-4 text-primary" />}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="flex-1 gap-1" aria-label={t("nav.language", locale)}>
-                  <Globe className="w-4 h-4" />
-                  {localeOptions.find(o => o.value === locale)?.flag} {localeOptions.find(o => o.value === locale)?.label}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-40">
-                {localeOptions.map((opt) => (
-                  <DropdownMenuItem
-                    key={opt.value}
-                    onClick={() => setLocale(opt.value)}
-                    className="flex items-center justify-between"
-                  >
-                    <span className="flex items-center gap-2">
-                      <span>{opt.flag}</span>
-                      <span>{opt.label}</span>
-                    </span>
-                    {locale === opt.value && <Check className="h-4 w-4 text-primary" />}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-          {!user && (
-            <Button
-              className="w-full bg-blue-700 hover:bg-blue-800 text-white"
-              aria-label={t("nav.login", locale)}
-              onClick={() => {
-                router.push("?dialog=login");
-                setSidebarOpen(false);
-              }}
-            >
-              {t("nav.login", locale)}
-            </Button>
-          )}
-        </nav>
-      )}
     </header>
   );
 }

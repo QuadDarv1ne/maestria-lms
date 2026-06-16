@@ -7,7 +7,7 @@ import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 
-export default function ErrorPage({
+export default function MainError({
   error,
   reset,
 }: {
@@ -38,7 +38,7 @@ export default function ErrorPage({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          {t("error.serverErrorTitle", locale) || "500"}
+          500
         </motion.h1>
         <motion.p
           className="text-muted-foreground"
@@ -46,7 +46,7 @@ export default function ErrorPage({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
         >
-          {t("error.serverErrorDescription", locale) || "Произошла ошибка на сервере. Пожалуйста, попробуйте позже."}
+          {t("error.serverErrorDescription", locale)}
         </motion.p>
         {process.env.NODE_ENV === "development" && error && (
           <motion.pre
@@ -66,7 +66,7 @@ export default function ErrorPage({
         >
           <Button onClick={reset} size="lg">
             <RefreshCw className="w-4 h-4 mr-2" />
-            {t("error.tryAgain", locale) || "Попробовать снова"}
+            {t("error.tryAgain", locale)}
           </Button>
           <Button variant="outline" size="lg" asChild>
             <Link href="/">

@@ -111,7 +111,7 @@ export function BlogPage() {
           totalPages: data.pagination.totalPages,
         }));
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Ошибка загрузки");
+        setError(err instanceof Error ? err.message : t("common.error", locale));
       } finally {
         setIsLoading(false);
       }

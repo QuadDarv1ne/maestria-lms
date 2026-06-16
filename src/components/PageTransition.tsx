@@ -75,16 +75,18 @@ export function PageTransition({
   const prevKey = useRef(pageKey);
 
   useEffect(() => {
-    if (pageKey !== prevKey.current && scrollToTop) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
+    if (pageKey !== prevKey.current) {
       prevKey.current = pageKey;
+      if (scrollToTop) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
     }
   }, [pageKey, scrollToTop]);
 
   const animation = variants[variant];
 
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence mode="wait" initial={false}>
       <motion.div
         key={pageKey}
         initial={animation.initial}

@@ -64,8 +64,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   handleGoHome = () => {
     this.setState({ hasError: false, error: null, locale: this.state.locale });
-    window.location.hash = "home";
-    window.location.reload();
+    window.location.href = "/";
   };
 
   render() {

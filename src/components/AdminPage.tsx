@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
@@ -37,17 +37,17 @@ export function AdminPage() {
   const user = useAppStore((s) => s.user);
   const router = useRouter();
   const locale = useAppStore((s) => s.locale);
-  const monthLabels = [
+  const monthLabels = useMemo(() => [
     t("common.monthJan", locale), t("common.monthFeb", locale), t("common.monthMar", locale),
     t("common.monthApr", locale), t("common.monthMay", locale), t("common.monthJun", locale),
     t("common.monthJul", locale), t("common.monthAug", locale), t("common.monthSep", locale),
     t("common.monthOct", locale), t("common.monthNov", locale), t("common.monthDec", locale),
-  ];
-  const dayLabels = [
+  ], [locale]);
+  const dayLabels = useMemo(() => [
     t("common.dayMon", locale), t("common.dayTue", locale), t("common.dayWed", locale),
     t("common.dayThu", locale), t("common.dayFri", locale), t("common.daySat", locale),
     t("common.daySun", locale),
-  ];
+  ], [locale]);
   const queryClient = useQueryClient();
   const [reports] = useState<ReportItem[]>(demoReports);
   const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
@@ -57,6 +57,13 @@ export function AdminPage() {
   const [userRoleFilter, setUserRoleFilter] = useState("all");
   const [userPage, setUserPage] = useState(1);
   const userPageSize = 20;
+
+  useEffect(() => {
+    if (!user || user.role !== "admin") {
+      toast.error(t("adminPage.roleUpdateError", locale));
+      router.replace("/");
+    }
+  }, [user, router, locale]);
 
   const handleUserSearch = (value: string) => { setUserSearch(value); setUserPage(1); };
   const handleRoleFilter = (value: string) => { setUserRoleFilter(value); setUserPage(1); };
@@ -93,13 +100,13 @@ export function AdminPage() {
     toast.success(t("adminPage.dataUpdated", locale));
   };
 
-  const totalStudents = users.filter((u) => u.role === "student").length;
-  const totalTeachers = users.filter((u) => u.role === "teacher").length;
-  const totalEnrollments = courses.reduce((acc, c) => acc + c._count.enrollments, 0);
-  const avgRating = courses.length > 0 ? (courses.reduce((a, c) => a + c.rating, 0) / courses.length).toFixed(1) : "0";
-  const totalRevenue = courses.reduce((a, c) => a + c.price * c._count.enrollments, 0);
-  const pendingReports = reports.filter((r) => r.status === "pending").length;
-  const activeUsers = users.filter((u) => u.isActive).length;
+  const totalStudents = useMemo(() => users.filter((u) => u.role === "student").length, [users]);
+  const totalTeachers = useMemo(() => users.filter((u) => u.role === "teacher").length, [users]);
+  const totalEnrollments = useMemo(() => courses.reduce((acc, c) => acc + c._count.enrollments, 0), [courses]);
+  const avgRating = useMemo(() => courses.length > 0 ? (courses.reduce((a, c) => a + c.rating, 0) / courses.length).toFixed(1) : "0", [courses]);
+  const totalRevenue = useMemo(() => courses.reduce((a, c) => a + c.price * c._count.enrollments, 0), [courses]);
+  const pendingReports = useMemo(() => reports.filter((r) => r.status === "pending").length, [reports]);
+  const activeUsers = useMemo(() => users.filter((u) => u.isActive).length, [users]);
 
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
@@ -253,7 +260,7 @@ export function AdminPage() {
     <div className="flex min-h-[calc(100vh-8rem)]">
       <aside
         aria-label="Admin sidebar"
-        className={`hidden lg:flex flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 shrink-0 ${
+        className={`hidden lg:flex flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 shrink-0 relative ${
           sidebarCollapsed ? "w-[68px]" : "w-[260px]"
         }`}
       >
@@ -262,8 +269,7 @@ export function AdminPage() {
           aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           aria-expanded={!sidebarCollapsed}
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="absolute top-1/2 -translate-y-1/2 z-10 w-5 h-10 bg-sidebar-accent border border-sidebar-border rounded-r-md flex items-center justify-center hover:bg-sidebar-accent/80 transition-colors"
-          style={{ left: sidebarCollapsed ? "63px" : "255px" }}
+          className="absolute top-1/2 -translate-y-1/2 z-10 w-5 h-10 bg-sidebar-accent border border-sidebar-border rounded-r-md flex items-center justify-center hover:bg-sidebar-accent/80 transition-colors -right-[10px]"
         >
           {sidebarCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
         </button>

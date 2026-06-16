@@ -1,9 +1,10 @@
 "use client";
 
 import { Fragment } from "react";
+import Link from "next/link";
 import { ChevronRight, Home } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { t } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 import type { Locale } from "@/lib/store";
 
 interface BreadcrumbItem {
@@ -14,40 +15,37 @@ interface BreadcrumbItem {
 interface BreadcrumbsProps {
   items: BreadcrumbItem[];
   locale: Locale;
+  className?: string;
 }
 
-export function Breadcrumbs({ items, locale }: BreadcrumbsProps) {
-  const homeLabel = locale === "ru" ? "Главная" : locale === "zh" ? "首页" : "Home";
+export function Breadcrumbs({ items, locale, className }: BreadcrumbsProps) {
+  const homeLabel = t("nav.home", locale);
 
   return (
-    <nav aria-label="Breadcrumb" className="mb-4">
-      <ol className="flex items-center gap-2 text-sm">
+    <nav aria-label="Breadcrumb" className={cn("mb-4", className)}>
+      <ol className="flex items-center gap-1.5 text-sm">
         <li>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="p-1 h-auto"
-            onClick={() => (window.location.hash = "#home")}
+          <Link
+            href="/"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-md hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label={homeLabel}
           >
             <Home className="w-4 h-4" />
-            <span className="sr-only">{homeLabel}</span>
-          </Button>
+          </Link>
         </li>
         {items.map((item, index) => (
           <Fragment key={index}>
-            <li>
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            <li aria-hidden="true" className="text-muted-foreground">
+              <ChevronRight className="w-4 h-4" />
             </li>
             <li>
               {item.href && index < items.length - 1 ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="p-0 h-auto font-normal"
-                  onClick={() => (window.location.hash = item.href || "#")}
+                <Link
+                  href={item.href}
+                  className="text-muted-foreground hover:text-foreground transition-colors rounded px-1.5 py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   {item.label || "Page"}
-                </Button>
+                </Link>
               ) : (
                 <span className="text-foreground font-medium" aria-current="page">
                   {item.label || "Page"}
@@ -59,71 +57,4 @@ export function Breadcrumbs({ items, locale }: BreadcrumbsProps) {
       </ol>
     </nav>
   );
-}
-
-// Helper для генерации breadcrumbs из текущего хеша
-export function generateBreadcrumbs(hash: string, locale: Locale): BreadcrumbItem[] {
-  const labels: Record<string, Record<Locale, string>> = {
-    catalog: {
-      ru: "Каталог курсов",
-      en: "Course Catalog",
-      zh: "课程目录",
-    },
-    course: {
-      ru: "Курс",
-      en: "Course",
-      zh: "课程",
-    },
-    profile: {
-      ru: "Профиль",
-      en: "Profile",
-      zh: "个人资料",
-    },
-    achievements: {
-      ru: "Достижения",
-      en: "Achievements",
-      zh: "成就",
-    },
-    "course-editor": {
-      ru: "Редактор курсов",
-      en: "Course Editor",
-      zh: "课程编辑器",
-    },
-    admin: {
-      ru: "Админ-панель",
-      en: "Admin Panel",
-      zh: "管理面板",
-    },
-  };
-
-  const parts = hash.replace("#", "").split("/");
-  const breadcrumbs: BreadcrumbItem[] = [];
-
-  if (parts[0] && parts[0] !== "home") {
-    const baseKey = parts[0];
-    if (labels[baseKey]) {
-      const label = labels[baseKey][locale] || labels[baseKey]["ru"];
-      if (label) {
-        breadcrumbs.push({
-          label,
-          href: `#${parts[0]}`,
-        });
-      }
-    }
-
-    // Добавляем дополнительные части пути
-    if (parts.length > 1 && parts[1]) {
-      if (parts[0] === "course") {
-        const courseLabel = labels.course[locale];
-        if (courseLabel) {
-          breadcrumbs.push({
-            label: `${courseLabel} #${parts[1]}`,
-            href: `#${parts.join("/")}`,
-          });
-        }
-      }
-    }
-  }
-
-  return breadcrumbs;
 }

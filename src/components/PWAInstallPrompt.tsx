@@ -12,8 +12,8 @@ import {
 } from "@/components/ui/dialog";
 import { Download, X } from "lucide-react";
 import { t } from "@/lib/i18n";
-import type { Locale } from "@/lib/store";
 import { useAppStore } from "@/lib/store";
+import { log } from "@/lib/logger";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -26,9 +26,8 @@ export function PWAInstallPrompt() {
   const locale = useAppStore((s) => s.locale);
 
   useEffect(() => {
-    // Check if already installed
     if (window.matchMedia("(display-mode: standalone)").matches) {
-      return; // Already installed, don't show prompt
+      return;
     }
 
     const handler = (e: Event) => {
@@ -52,13 +51,13 @@ export function PWAInstallPrompt() {
       const { outcome } = await deferredPrompt.userChoice;
 
       if (outcome === "accepted") {
-        console.log("User accepted the install prompt");
+        log.info("User accepted the PWA install prompt");
       }
 
       setDeferredPrompt(null);
       setShowPrompt(false);
     } catch (error) {
-      console.error("Install prompt error:", error);
+      log.error("PWA install prompt error", { error });
     }
   };
 
@@ -66,41 +65,16 @@ export function PWAInstallPrompt() {
     setShowPrompt(false);
   };
 
-  // Don't show if already installed or prompt not available
   if (!showPrompt || !deferredPrompt) {
     return null;
   }
-
-  const titles: Record<Locale, string> = {
-    ru: "Установить приложение",
-    en: "Install App",
-    zh: "安装应用",
-  };
-
-  const descriptions: Record<Locale, string> = {
-    ru: "Установите Maestria на ваше устройство для быстрого доступа и работы оффлайн.",
-    en: "Install Maestria on your device for quick access and offline work.",
-    zh: "在您的设备上安装 Maestria 以快速访问和离线工作。",
-  };
-
-  const installButtons: Record<Locale, string> = {
-    ru: "Установить",
-    en: "Install",
-    zh: "安装",
-  };
-
-  const laterButtons: Record<Locale, string> = {
-    ru: "Напомнить позже",
-    en: "Remind me later",
-    zh: "以后再说",
-  };
 
   return (
     <Dialog open={showPrompt} onOpenChange={setShowPrompt}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center justify-between mb-2">
-            <DialogTitle className="text-xl">{titles[locale]}</DialogTitle>
+            <DialogTitle className="text-xl">{t("pwa.installTitle", locale)}</DialogTitle>
             <Button
               variant="ghost"
               size="icon"
@@ -112,7 +86,7 @@ export function PWAInstallPrompt() {
             </Button>
           </div>
           <DialogDescription className="text-base">
-            {descriptions[locale]}
+            {t("pwa.installDesc", locale)}
           </DialogDescription>
         </DialogHeader>
         <div className="flex items-center gap-4 py-4">
@@ -121,20 +95,16 @@ export function PWAInstallPrompt() {
           </div>
           <div className="flex-1">
             <p className="text-sm text-muted-foreground">
-              {locale === "ru"
-                ? "Быстрый доступ к курсам и уведомлениям"
-                : locale === "zh"
-                  ? "快速访问课程和通知"
-                  : "Quick access to courses and notifications"}
+              {t("pwa.quickAccess", locale)}
             </p>
           </div>
         </div>
         <DialogFooter className="sm:justify-end gap-2">
           <Button variant="outline" onClick={handleClose}>
-            {laterButtons[locale]}
+            {t("pwa.remindLater", locale)}
           </Button>
           <Button onClick={handleInstall}>
-            {installButtons[locale]}
+            {t("pwa.installNow", locale)}
           </Button>
         </DialogFooter>
       </DialogContent>

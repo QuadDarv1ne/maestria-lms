@@ -202,16 +202,15 @@ export const Footer = React.memo(function Footer() {
       {/* Нижняя панель */}
       <div className="border-t bg-muted/30">
         <div className="container mx-auto px-4 py-6">
-          {/* Ряд бейджей магазинов приложений */}
           <div className="flex flex-wrap items-center justify-center gap-3 mb-5">
-            {/* App Store badge */}
             <a
               href="#"
               aria-disabled="true"
               aria-label={t("footer.downloadOn", locale) + " App Store"}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-black rounded-lg text-white hover:bg-gray-800 transition-colors opacity-75 cursor-not-allowed"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-foreground/90 rounded-lg text-background hover:bg-foreground transition-colors opacity-60 cursor-not-allowed"
+              tabIndex={-1}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
               </svg>
               <div className="text-left leading-none">
@@ -220,14 +219,14 @@ export const Footer = React.memo(function Footer() {
               </div>
             </a>
 
-            {/* Google Play badge */}
             <a
               href="#"
               aria-disabled="true"
               aria-label={t("footer.getItOn", locale) + " Google Play"}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-black rounded-lg text-white hover:bg-gray-800 transition-colors opacity-75 cursor-not-allowed"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-foreground/90 rounded-lg text-background hover:bg-foreground transition-colors opacity-60 cursor-not-allowed"
+              tabIndex={-1}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M3 20.5v-17c0-.59.34-1.11.84-1.35L13.69 12l-9.85 9.85c-.5-.24-.84-.76-.84-1.35m13.81-5.38L6.05 21.34l8.49-8.49 2.27 2.27m.91-.91L19.59 12l-1.87-1.21-2.27 2.27 2.27 1.15M6.05 2.66l10.76 6.22-2.27 2.27-8.49-8.49z"/>
               </svg>
               <div className="text-left leading-none">
@@ -236,14 +235,14 @@ export const Footer = React.memo(function Footer() {
               </div>
             </a>
 
-            {/* RuStore badge */}
             <a
               href="#"
               aria-disabled="true"
               aria-label={t("footer.ruStoreAvailable", locale) + " RuStore"}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-black rounded-lg text-white hover:bg-gray-800 transition-colors opacity-75 cursor-not-allowed"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-foreground/90 rounded-lg text-background hover:bg-foreground transition-colors opacity-60 cursor-not-allowed"
+              tabIndex={-1}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
               </svg>
               <div className="text-left leading-none">
@@ -256,13 +255,13 @@ export const Footer = React.memo(function Footer() {
           {/* Копирайт и лицензия */}
           <div className="text-center space-y-1.5">
             <p className="text-xs text-muted-foreground">
-              © 2024-2026 Maestria by Maestro7IT. {t("footer.rights", locale)}
+              © 2024-{new Date().getFullYear()} Maestria by Maestro7IT. {t("footer.rights", locale)}
             </p>
             <p className="text-xs text-muted-foreground">
               {t("footer.contribution", locale)}
             </p>
             <p className="text-xs text-muted-foreground/50">
-              v2.4.0
+              v3.1.3
             </p>
           </div>
 

@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { sanitizeContent } from "@/lib/sanitize";
@@ -37,6 +37,20 @@ import {
 import { toast } from "sonner";
 
 import { ReviewForm } from "@/components/ReviewForm";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationPrevious,
+  PaginationNext,
+  PaginationLink,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
+import {
+  RadioGroup,
+  RadioGroupItem,
+} from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { CourseImage } from "@/components/CourseImage";
 import { formatDate, formatNumber, getInitials } from "@/lib/utils";
 import { levelLabels, levelColors } from "@/lib/constants";
@@ -123,9 +137,10 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
   const queryClient = useQueryClient();
   const [enrolling, setEnrolling] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string>("sbp");
+  const [reviewPage, setReviewPage] = useState(1);
 
   const { data: courseData, isLoading } = useCourse(courseId);
-  const { data: reviewsData } = useCourseReviews(courseId);
+  const { data: reviewsData } = useCourseReviews(courseId, reviewPage);
 
   const course = courseData?.course as CourseDetail | null | undefined;
   const reviews = (reviewsData?.reviews as ReviewItem[] | undefined) ?? [];
@@ -263,6 +278,10 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
             <div className="absolute inset-0 bg-gradient-to-br from-blue-900/80 to-violet-900/80" />
           </>
         )}
+        <div className="absolute inset-0 opacity-15 pointer-events-none">
+          <div className="hero-blob-1 absolute top-10 left-10 w-64 h-64 bg-blue-400 rounded-full blur-[100px]" />
+          <div className="hero-blob-2 absolute bottom-10 right-10 w-72 h-72 bg-violet-400 rounded-full blur-[100px]" />
+        </div>
         <div className="container mx-auto px-4 py-8 md:py-12">
           <div className="flex items-center gap-2 mb-4">
             <Button
@@ -342,7 +361,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
 
             {/* Карточка записи */}
             <div className="lg:col-span-1">
-              <Card className="border-0 shadow-xl">
+              <Card className="border-0 shadow-xl lg:sticky lg:top-20">
                 <CardContent className="p-6">
                   {course.isEnrolled ? (
                     <div>
@@ -430,48 +449,55 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                       </div>
 
                       {course.price > 0 && (
-                        <div className="space-y-2 mb-4" role="radiogroup" aria-label={t("course.paymentMethod", locale)}>
+                        <div className="space-y-3 mb-4">
                           <p className="text-sm font-medium">{t("course.paymentMethod", locale)}</p>
-                          {[
-                            { id: "sbp", label: t("course.paymentSbp", locale), icon: <Smartphone className="w-4 h-4" /> },
-                            { id: "yookassa", label: t("course.paymentYookassa", locale), icon: <CreditCard className="w-4 h-4" /> },
-                            { id: "tinkoff", label: t("course.paymentTinkoff", locale), icon: <Building className="w-4 h-4" /> },
-                          ].map((method) => (
-                            <label
-                              key={method.id}
-                              className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer border ${
-                                paymentMethod === method.id
-                                  ? "border-blue-500 bg-blue-50"
-                                  : "border-gray-200"
-                              }`}
-                            >
-                              <input
-                                type="radio"
-                                name="payment"
-                                value={method.id}
-                                checked={paymentMethod === method.id}
-                                onChange={(e) => setPaymentMethod(e.target.value)}
-                                className="accent-blue-700"
-                              />
-                              {method.icon}
-                              <span className="text-sm">{method.label}</span>
-                            </label>
-                          ))}
+                          <RadioGroup
+                            value={paymentMethod}
+                            onValueChange={setPaymentMethod}
+                            className="gap-2"
+                          >
+                            {[
+                              { id: "sbp", label: t("course.paymentSbp", locale), icon: <Smartphone className="w-4 h-4" /> },
+                              { id: "yookassa", label: t("course.paymentYookassa", locale), icon: <CreditCard className="w-4 h-4" /> },
+                              { id: "tinkoff", label: t("course.paymentTinkoff", locale), icon: <Building className="w-4 h-4" /> },
+                            ].map((method) => (
+                              <Label
+                                key={method.id}
+                                htmlFor={`payment-${method.id}`}
+                                className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer border transition-all ${
+                                  paymentMethod === method.id
+                                    ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-400 shadow-sm"
+                                    : "border-border hover:border-blue-200 dark:hover:border-blue-800"
+                                }`}
+                              >
+                                <RadioGroupItem value={method.id} id={`payment-${method.id}`} />
+                                <span className="text-muted-foreground">{method.icon}</span>
+                                <span className="text-sm font-medium">{method.label}</span>
+                              </Label>
+                            ))}
+                          </RadioGroup>
                         </div>
                       )}
 
                       <Button
-                        className="w-full bg-blue-700 hover:bg-blue-800 text-white"
+                        className={`w-full bg-blue-700 hover:bg-blue-800 text-white relative overflow-hidden ${course.price === 0 ? 'shadow-lg shadow-blue-500/25' : ''}`}
                         size="lg"
                         onClick={handleEnroll}
                         disabled={enrolling}
                       >
-                        {enrolling && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                        {enrolling
-                          ? t("course.loading", locale)
-                          : course.price === 0
-                          ? t("course.enrollFree", locale)
-                          : t("course.enrollPay", locale)}
+                        {enrolling && (
+                          <>
+                            <span className="absolute inset-0 bg-blue-800 animate-pulse" />
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin relative z-10" />
+                          </>
+                        )}
+                        <span className="relative z-10">
+                          {enrolling
+                            ? t("course.loading", locale)
+                            : course.price === 0
+                            ? t("course.enrollFree", locale)
+                            : t("course.enrollPay", locale)}
+                        </span>
                       </Button>
                     </div>
                   )}
@@ -497,14 +523,18 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
             {whatYouLearn.length > 0 && (
               <div>
                 <h2 className="text-xl font-bold mb-4">{t("course.whatYouLearn", locale)}</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {whatYouLearn.map((item: string, i: number) => (
-                    <div key={i} className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm">{item}</span>
+                <Card className="border shadow-sm">
+                  <CardContent className="p-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {whatYouLearn.map((item: string, i: number) => (
+                        <div key={i} className="flex items-start gap-2.5">
+                          <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                          <span className="text-sm">{item}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </CardContent>
+                </Card>
               </div>
             )}
 
@@ -734,6 +764,46 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                       </CardContent>
                     </Card>
                   ))}
+
+                  {/* Пагинация отзывов */}
+                  {reviewsData?.pagination && reviewsData.pagination.totalPages > 1 && (
+                    <Pagination className="mt-6">
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious
+                            href="#"
+                            onClick={(e) => { e.preventDefault(); setReviewPage((p) => Math.max(1, p - 1)); }}
+                          />
+                        </PaginationItem>
+                        {Array.from({ length: reviewsData.pagination.totalPages }, (_, i) => i + 1)
+                          .filter((p) => p === 1 || p === reviewsData.pagination.totalPages || Math.abs(p - reviewPage) <= 1)
+                          .map((p, idx, arr) => (
+                            <React.Fragment key={p}>
+                              {idx > 0 && arr[idx - 1] !== p - 1 && (
+                                <PaginationItem>
+                                  <PaginationEllipsis />
+                                </PaginationItem>
+                              )}
+                              <PaginationItem>
+                                <PaginationLink
+                                  href="#"
+                                  isActive={p === reviewPage}
+                                  onClick={(e) => { e.preventDefault(); setReviewPage(p); }}
+                                >
+                                  {p}
+                                </PaginationLink>
+                              </PaginationItem>
+                            </React.Fragment>
+                          ))}
+                        <PaginationItem>
+                          <PaginationNext
+                            href="#"
+                            onClick={(e) => { e.preventDefault(); setReviewPage((p) => Math.min(reviewsData.pagination.totalPages, p + 1)); }}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  )}
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground text-center py-6">

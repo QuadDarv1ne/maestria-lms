@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
@@ -24,7 +24,10 @@ import {
   ArrowLeft,
   KeyRound,
   Loader2,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { t } from "@/lib/i18n";
 import { toast } from "sonner";
 
@@ -58,6 +61,24 @@ export function AuthDialogs() {
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
+
+  const pwdHasMinLen = registerForm.password.length >= 8;
+
+  const passwordStrength = useMemo(() => {
+    const pwd = registerForm.password;
+    if (!pwd) return { score: 0, label: "", color: "bg-gray-200", text: "" };
+    let score = 0;
+    if (pwd.length >= 8) score += 25;
+    if (pwd.length >= 12) score += 10;
+    if (/[a-z]/.test(pwd)) score += 15;
+    if (/[A-Z]/.test(pwd)) score += 15;
+    if (/[0-9]/.test(pwd)) score += 15;
+    if (/[^a-zA-Z0-9]/.test(pwd)) score += 20;
+    if (score <= 25) return { score, label: t("auth.passwordWeak", locale), color: "bg-red-500", text: "text-red-500" };
+    if (score <= 50) return { score, label: t("auth.passwordFair", locale), color: "bg-orange-500", text: "text-orange-500" };
+    if (score <= 75) return { score, label: t("auth.passwordGood", locale), color: "bg-yellow-500", text: "text-yellow-500" };
+    return { score, label: t("auth.passwordStrong", locale), color: "bg-green-500", text: "text-green-500" };
+  }, [registerForm.password, locale]);
 
   // Определяем тип диалога из search params
   const dialogParam = searchParams.get("dialog");
@@ -461,6 +482,42 @@ export function AuthDialogs() {
                   )}
                 </button>
               </div>
+              {registerForm.password && (
+                <div className="mt-2 space-y-1">
+                  <div className="flex gap-1">
+                    {[25, 50, 75, 100].map((threshold) => (
+                      <div
+                        key={threshold}
+                        className={cn(
+                          "h-1.5 flex-1 rounded-full transition-colors",
+                          passwordStrength.score >= threshold ? passwordStrength.color : "bg-muted"
+                        )}
+                      />
+                    ))}
+                  </div>
+                  <p className={cn("text-xs", passwordStrength.text)}>
+                    {passwordStrength.label}
+                  </p>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    <span className={cn("flex items-center gap-1", pwdHasMinLen && "text-green-600")}>
+                      {pwdHasMinLen ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                      {t("auth.reqMinChars", locale)}
+                    </span>
+                    <span className={cn("flex items-center gap-1", /[A-Z]/.test(registerForm.password) && "text-green-600")}>
+                      {/[A-Z]/.test(registerForm.password) ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                      {t("auth.reqUppercase", locale)}
+                    </span>
+                    <span className={cn("flex items-center gap-1", /[0-9]/.test(registerForm.password) && "text-green-600")}>
+                      {/[0-9]/.test(registerForm.password) ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                      {t("auth.reqDigits", locale)}
+                    </span>
+                    <span className={cn("flex items-center gap-1", /[^a-zA-Z0-9]/.test(registerForm.password) && "text-green-600")}>
+                      {/[^a-zA-Z0-9]/.test(registerForm.password) ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                      {t("auth.reqSymbols", locale)}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>

@@ -1,16 +1,17 @@
 "use client";
 
-import { useEffect, Suspense } from "react";
+import { useEffect, Suspense, lazy } from "react";
 import { useAppStore } from "@/lib/store";
 import { HomePage } from "@/components/HomePage";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { AuthDialogs } from "@/components/AuthDialogs";
-import { CustomCursor } from "@/components/CustomCursor";
 import { GlobalScrollToTop } from "@/components/GlobalScrollToTop";
 import { PageTransition } from "@/components/PageTransition";
 import { PageWrapper } from "@/components/PageWrapper";
 import { log } from "@/lib/logger";
+
+const CustomCursor = lazy(() => import("@/components/CustomCursor").then(m => ({ default: m.CustomCursor })));
+const AuthDialogs = lazy(() => import("@/components/AuthDialogs").then(m => ({ default: m.AuthDialogs })));
 
 /**
  * Root page (/) — HomePage with full layout.
@@ -52,10 +53,12 @@ export default function Page() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
-      <CustomCursor />
+      <Suspense fallback={null}>
+        <CustomCursor />
+      </Suspense>
       <GlobalScrollToTop />
       <Header />
-      <main className="flex-1">
+      <main id="main-content" className="flex-1" tabIndex={-1}>
         <PageWrapper>
           <PageTransition pageKey="home">
             <HomePage />

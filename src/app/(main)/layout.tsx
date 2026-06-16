@@ -1,15 +1,16 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, lazy } from "react";
 import { usePathname } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { AuthDialogs } from "@/components/AuthDialogs";
-import { CustomCursor } from "@/components/CustomCursor";
 import { GlobalScrollToTop } from "@/components/GlobalScrollToTop";
 import { PageTransition } from "@/components/PageTransition";
 import { PageWrapper } from "@/components/PageWrapper";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+
+const CustomCursor = lazy(() => import("@/components/CustomCursor").then(m => ({ default: m.CustomCursor })));
+const AuthDialogs = lazy(() => import("@/components/AuthDialogs").then(m => ({ default: m.AuthDialogs })));
 
 export default function MainLayout({
   children,
@@ -21,10 +22,12 @@ export default function MainLayout({
   return (
     <ErrorBoundary>
       <div className="min-h-screen flex flex-col bg-background text-foreground">
-        <CustomCursor />
+        <Suspense fallback={null}>
+          <CustomCursor />
+        </Suspense>
         <GlobalScrollToTop />
         <Header />
-        <main className="flex-1">
+        <main id="main-content" className="flex-1" tabIndex={-1}>
           <PageWrapper>
             <PageTransition pageKey={pathname}>
               {children}

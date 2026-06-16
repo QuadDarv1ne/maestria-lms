@@ -7,6 +7,8 @@ import { useAppStore } from "@/lib/store";
 import { useSSENotifications } from "@/hooks/useSSENotifications";
 import { useServiceWorker } from "@/hooks/useServiceWorker";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
+import { loadLocale } from "@/lib/i18n";
+import { log } from "@/lib/logger";
 
 function ThemeAndLocaleSync() {
   const theme = useAppStore((s) => s.theme);
@@ -19,6 +21,10 @@ function ThemeAndLocaleSync() {
     html.setAttribute("lang", locale);
     html.style.colorScheme = theme === "amber" ? "light dark" : theme;
   }, [theme, locale]);
+
+  useEffect(() => {
+    loadLocale(locale).catch((err) => log.warn("Locale load failed", { error: String(err) }));
+  }, [locale]);
 
   return null;
 }

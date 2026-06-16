@@ -1,6 +1,23 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Плавный переход темы — только для фонов и цветов текста */
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+html *, html *::before, html *::after {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html, html *, html *::before, html *::after {
+    transition: none !important;
+  }
+}
+
 @custom-variant dark (&:is(.dark *), &:is(.amber *));
 @custom-variant amber (&:is(.amber *));
 
@@ -296,3 +313,136 @@
 }
 
 /* На тач-устройствах — полностью скрываем */
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ГЛОБАЛЬНЫЕ УЛУЧШЕНИЯ UX
+   ═══════════════════════════════════════════════════════════════════════ */
+
+::selection {
+  background: oklch(0.55 0.18 265 / 0.2);
+  color: inherit;
+}
+
+.dark ::selection {
+  background: oklch(0.65 0.2 265 / 0.3);
+}
+
+.amber ::selection {
+  background: oklch(0.55 0.18 55 / 0.25);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Улучшенные тач-таргеты на мобильных */
+@media (pointer: coarse) {
+  button, a, [role="button"], input, select, textarea {
+    min-height: 44px;
+  }
+}
+
+/* Анимация скелетонов — более плавная */
+@keyframes skeleton-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--muted) 25%,
+    var(--muted-foreground) 50%,
+    var(--muted) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 2s ease-in-out infinite;
+}
+
+/* Плавное появление тостов и диалогов */
+@keyframes toast-enter {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Запрет скролла при открытом мобильном меню */
+body.overflow-hidden {
+  overflow: hidden;
+  padding-right: var(--scrollbar-width, 0px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   HERO SECTION — АНИМАЦИИ
+   ═══════════════════════════════════════════════════════════════════════ */
+
+@keyframes hero-blob-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.2; }
+  33% { transform: translate(30px, -20px) scale(1.1); opacity: 0.3; }
+  66% { transform: translate(-20px, 20px) scale(0.9); opacity: 0.15; }
+}
+
+@keyframes hero-blob-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.2; }
+  33% { transform: translate(-40px, 30px) scale(1.15); opacity: 0.25; }
+  66% { transform: translate(20px, -30px) scale(0.85); opacity: 0.15; }
+}
+
+@keyframes hero-blob-3 {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.15; }
+  50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.25; }
+}
+
+@keyframes hero-gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.hero-blob-1 {
+  animation: hero-blob-1 8s ease-in-out infinite;
+}
+
+.hero-blob-2 {
+  animation: hero-blob-2 10s ease-in-out infinite;
+}
+
+.hero-blob-3 {
+  animation: hero-blob-3 12s ease-in-out infinite;
+}
+
+.hero-gradient-text {
+  background-size: 200% auto;
+  animation: hero-gradient-shift 4s ease-in-out infinite;
+}
+
+.stat-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 50%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.stat-card:hover::before {
+  opacity: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   КАРТОЧКИ — УЛУЧШЕННЫЕ ТЕНИ
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.group:hover {
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1),
+              0 4px 12px -4px rgba(0, 0, 0, 0.05);
+}
+
+.dark .group:hover {
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.4),
+              0 4px 12px -4px rgba(0, 0, 0, 0.2);
+}
+

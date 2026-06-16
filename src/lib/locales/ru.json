@@ -17,6 +17,7 @@
   "nav.closeMenu": "Закрыть меню",
   "nav.mainNav": "Основная навигация",
   "nav.mobileNav": "Мобильная навигация",
+  "nav.settings": "Настройки",
   "hero.title": "Образовательная платформа нового поколения",
   "hero.subtitle": "Изучайте программирование, веб-разработку, создание игр и Data Science у лучших преподавателей в своём темпе",
   "hero.cta": "Начать обучение",
@@ -1770,5 +1771,14 @@
   "status.unknown": "Неизвестно",
   "status.latency": "Задержка",
   "status.fetchFailed": "Не удалось получить данные статуса",
-  "status.unknownError": "Неизвестная ошибка"
+  "status.unknownError": "Неизвестная ошибка",
+  "auth.reqMinChars": "8+ символов",
+  "auth.reqUppercase": "Заглавные",
+  "auth.reqDigits": "Цифры",
+  "auth.reqSymbols": "Символы",
+  "pwa.installTitle": "Установить приложение",
+  "pwa.installDesc": "Установите Maestria на ваше устройство для быстрого доступа и работы оффлайн.",
+  "pwa.installNow": "Установить",
+  "pwa.remindLater": "Напомнить позже",
+  "pwa.quickAccess": "Быстрый доступ к курсам и уведомлениям"
 }

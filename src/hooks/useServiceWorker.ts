@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
+import { log } from "@/lib/logger";
 
 export function useServiceWorker() {
   useEffect(() => {
-    // Check if service workers are supported
     if (!("serviceWorker" in navigator)) {
-      console.log("Service workers are not supported");
+      log.debug("Service workers are not supported");
       return;
     }
 
@@ -18,7 +18,6 @@ export function useServiceWorker() {
           scope: "/",
         });
 
-        // Check for updates periodically
         updateInterval = setInterval(async () => {
           const newRegistration = await navigator.serviceWorker.ready;
           await newRegistration.update();
@@ -30,12 +29,12 @@ export function useServiceWorker() {
 
           newWorker.addEventListener("statechange", () => {
             if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-              console.log("New content available, please refresh.");
+              log.debug("New content available, please refresh.");
             }
           });
         });
       } catch (error) {
-        console.error("Service Worker registration failed:", error);
+        log.error("Service Worker registration failed:", { error: error instanceof Error ? error.message : String(error) });
       }
     };
 
@@ -43,7 +42,7 @@ export function useServiceWorker() {
 
     const handleMessage = (event: MessageEvent) => {
       if (event.data.type === "CACHE_UPDATED") {
-        console.log("Cache updated:", event.data.payload);
+        log.debug("Cache updated:", event.data.payload);
       }
     };
 
