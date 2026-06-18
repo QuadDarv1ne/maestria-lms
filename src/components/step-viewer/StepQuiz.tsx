@@ -42,11 +42,6 @@ export function StepQuiz({ step, locale }: StepComponentProps) {
     return Math.round((correct / step.assignments.length) * 100);
   }, [step, quizSubmitted, quizResults]);
 
-  const allQuizAnswered = useMemo(() => {
-    if (!step.assignments?.length) return true;
-    return step.assignments.every((a) => quizSubmitted[a.id]);
-  }, [step, quizSubmitted]);
-
   const handleSubmit = useCallback((assignmentId: string) => {
     if (!step) return;
     const assignment = step.assignments.find((a) => a.id === assignmentId);

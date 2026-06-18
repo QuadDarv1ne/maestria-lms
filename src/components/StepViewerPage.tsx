@@ -11,7 +11,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { Progress } from "@/components/ui/progress";
 import {
   ArrowLeft,
   ArrowRight,
@@ -28,20 +27,14 @@ import {
   RotateCcw,
   Lightbulb,
   GraduationCap,
-  ArrowUpDown,
   Move,
-  Upload,
   Pencil,
-  X,
-  Grip,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { StepSidebar } from "@/components/step-viewer/StepSidebar";
 const LazyStepMatching = dynamic(() => import("@/components/step-viewer/StepMatching").then(m => m.StepMatching), { ssr: false });
-const LazyStepOrdering = dynamic(() => import("@/components/step-viewer/StepOrdering").then(m => m.StepOrdering), { ssr: false });
 const LazyStepDragDrop = dynamic(() => import("@/components/step-viewer/StepDragDrop").then(m => m.StepDragDrop), { ssr: false });
-const LazyStepEssay = dynamic(() => import("@/components/step-viewer/StepEssay").then(m => m.StepEssay), { ssr: false });
 const LazyStepFileUpload = dynamic(() => import("@/components/step-viewer/StepFileUpload").then(m => m.StepFileUpload), { ssr: false });
 
 // ==================== TYPES ====================
@@ -687,7 +680,7 @@ export function StepViewerPage({
         }
       });
 
-      const result = await new Promise<void>((resolve, reject) => {
+      await new Promise<void>((resolve, reject) => {
         xhr.addEventListener("load", () => {
           if (xhr.status >= 200 && xhr.status < 300) {
             resolve();

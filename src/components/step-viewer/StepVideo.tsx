@@ -1,7 +1,6 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Play, CheckCircle2 } from "lucide-react";
 import { t } from "@/lib/i18n";
 import type { StepComponentProps } from "./StepTypes";
