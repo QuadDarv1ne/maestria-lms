@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FileText, GraduationCap, Image, Star, Upload, Loader2 } from "lucide-react";
+import { FileText, GraduationCap, Image as ImageIcon, Star, Upload, Loader2 } from "lucide-react";
 
 const CATEGORY_OPTIONS = CATEGORIES;
 
@@ -194,7 +194,7 @@ export function BasicTab({
         <Card className="border-0 shadow-sm">
           <CardHeader className="pb-4">
             <CardTitle className="text-lg flex items-center gap-2">
-              <Image className="w-5 h-5 text-blue-600" />
+              <ImageIcon className="w-5 h-5 text-blue-600" />
               {t("courseEditor.courseCover", locale)}
             </CardTitle>
           </CardHeader>
@@ -212,7 +212,7 @@ export function BasicTab({
                 />
               ) : (
                 <div className="text-center text-muted-foreground">
-                  <Image className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                  <ImageIcon className="w-10 h-10 mx-auto mb-2 opacity-40" />
                   <p className="text-sm">{t("courseEditor.noCover", locale)}</p>
                 </div>
               )}
