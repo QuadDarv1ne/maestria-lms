@@ -83,7 +83,7 @@ export function ArticlePage({ slug }: ArticlePageProps) {
     };
 
     if (slug) fetchArticle();
-  }, [slug]);
+  }, [slug, locale]);
 
   if (isLoading) {
     return (

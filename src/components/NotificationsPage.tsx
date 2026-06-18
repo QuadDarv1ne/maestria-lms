@@ -34,37 +34,37 @@ function getTypeConfig(locale: Locale): Record<NotificationType, TypeConfig> {
   return {
     enrollment: {
       icon: BookOpen,
-      iconColor: "text-blue-600",
-      iconBg: "bg-blue-100",
-      badgeColor: "bg-blue-100 text-blue-700",
+      iconColor: "text-blue-600 dark:text-blue-400",
+      iconBg: "bg-blue-100 dark:bg-blue-900/30",
+      badgeColor: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400",
       label: t("notifications.type.enrollment", locale),
     },
     completion: {
       icon: Award,
-      iconColor: "text-green-600",
-      iconBg: "bg-green-100",
-      badgeColor: "bg-green-100 text-green-700",
+      iconColor: "text-green-600 dark:text-green-400",
+      iconBg: "bg-green-100 dark:bg-green-900/30",
+      badgeColor: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400",
       label: t("notifications.type.completion", locale),
     },
     achievement: {
       icon: Trophy,
-      iconColor: "text-amber-600",
-      iconBg: "bg-amber-100",
-      badgeColor: "bg-amber-100 text-amber-700",
+      iconColor: "text-amber-600 dark:text-amber-400",
+      iconBg: "bg-amber-100 dark:bg-amber-900/30",
+      badgeColor: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400",
       label: t("notifications.type.achievement", locale),
     },
     review: {
       icon: Star,
-      iconColor: "text-violet-600",
-      iconBg: "bg-violet-100",
-      badgeColor: "bg-violet-100 text-violet-700",
+      iconColor: "text-violet-600 dark:text-violet-400",
+      iconBg: "bg-violet-100 dark:bg-violet-900/30",
+      badgeColor: "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400",
       label: t("notifications.type.review", locale),
     },
     system: {
       icon: Bell,
-      iconColor: "text-gray-500",
-      iconBg: "bg-gray-100",
-      badgeColor: "bg-gray-100 text-gray-600",
+      iconColor: "text-gray-500 dark:text-gray-400",
+      iconBg: "bg-gray-100 dark:bg-gray-800",
+      badgeColor: "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400",
       label: t("notifications.type.system", locale),
     },
   };
@@ -159,7 +159,7 @@ export function NotificationsPage() {
 
         <Card className="border-0 shadow-sm">
           <CardContent className="p-12 text-center">
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
               <Bell className="w-10 h-10 text-gray-400" />
             </div>
             <h2 className="text-xl font-semibold mb-2">{t("notifications.noNotifications", locale)}</h2>

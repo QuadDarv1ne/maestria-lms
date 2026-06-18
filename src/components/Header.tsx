@@ -306,7 +306,7 @@ export function Header() {
                 >
                   <Avatar className="h-9 w-9">
                     {user.image && <AvatarImage src={user.image} alt={user.name || ""} />}
-                    <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-semibold">
+                    <AvatarFallback className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-semibold">
                       {userInitials}
                     </AvatarFallback>
                   </Avatar>
@@ -337,7 +337,7 @@ export function Header() {
                   <Bell className="mr-2 h-4 w-4" />
                   {t("nav.notifications", locale)}
                   {unreadCount > 0 && (
-                    <span className="ml-auto bg-red-100 text-red-700 text-xs font-semibold px-1.5 py-0.5 rounded-full">
+                    <span className="ml-auto bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-semibold px-1.5 py-0.5 rounded-full">
                       {unreadCount}
                     </span>
                   )}
@@ -400,7 +400,7 @@ export function Header() {
                     <div className="flex items-center gap-3 p-3 mb-2 rounded-lg bg-muted/50">
                       <Avatar className="h-10 w-10">
                         {user.image && <AvatarImage src={user.image} alt={user.name || ""} />}
-                        <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-semibold">
+                        <AvatarFallback className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-semibold">
                           {userInitials}
                         </AvatarFallback>
                       </Avatar>
@@ -473,7 +473,7 @@ export function Header() {
                   {user ? (
                     <Button
                       variant="ghost"
-                      className="w-full justify-start gap-3 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      className="w-full justify-start gap-3 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
                       onClick={() => { handleLogout(); setMobileSheetOpen(false); }}
                     >
                       <LogOut className="w-4 h-4" />

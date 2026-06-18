@@ -581,7 +581,7 @@ export function AuthDialogs() {
 
           {forgotSent ? (
             <div className="text-center py-4">
-              <div className="w-16 h-16 bg-blue-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+              <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full mx-auto mb-4 flex items-center justify-center">
                 <Mail className="w-8 h-8 text-blue-700" />
               </div>
               <h3 className="font-semibold mb-2">{t("auth.emailSent", locale)}</h3>

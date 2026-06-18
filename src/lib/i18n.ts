@@ -27,6 +27,7 @@ let ruFallback: Record<string, string> | null = null;
 
 if (typeof window === "undefined") {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     ruFallback = require("./locales/ru.json");
   } catch {
     ruFallback = {};

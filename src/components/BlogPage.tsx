@@ -118,7 +118,7 @@ export function BlogPage() {
     };
 
     fetchArticles();
-  }, [pagination.page, pagination.limit, filters.category, filters.search, filters.sortBy]);
+  }, [pagination.page, pagination.limit, filters.category, filters.search, filters.sortBy, locale]);
 
   const handleCategoryChange = useCallback((value: string) => {
     setFilters((prev) => ({ ...prev, category: value }));
