@@ -127,7 +127,7 @@ export async function POST(
     // Check if course exists (support both ID and slug)
     const course = await db.course.findFirst({
       where: { OR: [{ id: courseId }, { slug: courseId }] },
-      select: { id: true, rating: true, reviewCount: true },
+      select: { id: true, rating: true, reviewCount: true, title: true, teacherId: true },
     });
 
     if (!course) {
@@ -230,20 +230,14 @@ export async function POST(
     });
 
     // Send notification for new review (not for updates)
-    if (!result.wasUpdated) {
-      const courseData = await db.course.findUnique({
-        where: { id: resolvedCourseId },
-        select: { title: true, teacherId: true },
-      });
-      if (courseData?.teacherId) {
-        createNotification({
-          userId: courseData.teacherId,
-          type: "review",
-          title: "Новый отзыв",
-          message: `Студент оставил отзыв на курс "${courseData.title}"`,
-          link: `/course/${resolvedCourseId}`,
-        }).catch((err) => log.error("Failed to send review notification", { error: err }));
-      }
+    if (!result.wasUpdated && course.teacherId) {
+      createNotification({
+        userId: course.teacherId,
+        type: "review",
+        title: "Новый отзыв",
+        message: `Студент оставил отзыв на курс "${course.title}"`,
+        link: `/course/${resolvedCourseId}`,
+      }).catch((err) => log.error("Failed to send review notification", { error: err }));
     }
 
     return NextResponse.json(

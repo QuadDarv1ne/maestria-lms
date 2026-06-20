@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { SessionProvider } from "next-auth/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useAppStore } from "@/lib/store";
+import { useAppStore, hydrateStore } from "@/lib/store";
 import { useSSENotifications } from "@/hooks/useSSENotifications";
 import { useServiceWorker } from "@/hooks/useServiceWorker";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
@@ -40,6 +40,10 @@ function ServiceWorkerSync() {
 }
 
 export function Providers({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    hydrateStore();
+  }, []);
+
   const [queryClient] = useState(
     () =>
       new QueryClient({

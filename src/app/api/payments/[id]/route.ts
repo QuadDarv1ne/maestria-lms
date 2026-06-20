@@ -211,30 +211,25 @@ export async function PUT(
 
       // Если платёж завершён успешно — записываем на курс
       if (status === "completed" && wasStatusUpdated) {
-        const currentPayment = await tx.payment.findUnique({ where: { id } });
-        if (currentPayment) {
-          await ensureEnrollment(tx, currentPayment.userId, currentPayment.courseId);
-        }
+        // payment already fetched before transaction with userId/courseId
+        await ensureEnrollment(tx, payment.userId, payment.courseId);
       }
 
       // Если платёж возвращён — отменяем запись и декрементируем studentCount
       if (status === "refunded") {
-        const currentPayment = await tx.payment.findUnique({ where: { id } });
-        if (currentPayment) {
-          const cancelled = await tx.enrollment.updateMany({
-            where: {
-              userId: currentPayment.userId,
-              courseId: currentPayment.courseId,
-              status: "active",
-            },
-            data: { status: "cancelled" },
+        const cancelled = await tx.enrollment.updateMany({
+          where: {
+            userId: payment.userId,
+            courseId: payment.courseId,
+            status: "active",
+          },
+          data: { status: "cancelled" },
+        });
+        if (cancelled.count > 0) {
+          await tx.course.update({
+            where: { id: payment.courseId },
+            data: { studentCount: { decrement: 1 } },
           });
-          if (cancelled.count > 0) {
-            await tx.course.update({
-              where: { id: currentPayment.courseId },
-              data: { studentCount: { decrement: 1 } },
-            });
-          }
         }
       }
 

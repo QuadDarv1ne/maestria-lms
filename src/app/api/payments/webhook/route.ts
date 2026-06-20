@@ -19,6 +19,9 @@ const webhookBodySchema = z.object({
     paymentId: z.string().optional(),
     transactionId: z.string().optional(),
     status: z.string().optional(),
+    metadata: z.object({
+      paymentId: z.string().optional(),
+    }).optional(),
     amount: z.object({
       value: z.string().optional(),
       currency: z.string().optional(),
@@ -171,12 +174,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true, status: normalizedStatus });
     }
 
-    // Find payment by provider's transaction ID or internal payment ID
+    // Find payment by metadata.paymentId (set during payment creation),
+    // then fall back to provider's transaction ID or object ID
     const providerTransactionId = data.object?.transactionId;
     const providerObjectId = data.object?.id;
+    const metaPaymentId = data.object?.metadata?.paymentId;
     let payment = null;
 
-    if (providerTransactionId) {
+    if (metaPaymentId) {
+      payment = await db.payment.findFirst({
+        where: { id: metaPaymentId, status: "pending" },
+      });
+    }
+
+    if (!payment && providerTransactionId) {
       payment = await db.payment.findFirst({
         where: { transactionId: providerTransactionId, status: "pending" },
       });

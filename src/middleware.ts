@@ -56,7 +56,8 @@ export async function middleware(request: NextRequest) {
   ];
   const isCsrfExcluded = csrfExcludedPaths.some((path) => pathname === path || pathname.startsWith(path + "/"));
 
-  if (!isCsrfExcluded) {
+  const isSafeMethod = ["GET", "HEAD", "OPTIONS"].includes(request.method);
+  if (!isCsrfExcluded && !isSafeMethod) {
     const csrfResponse = csrfProtection(request);
     if (csrfResponse) return csrfResponse;
   }
