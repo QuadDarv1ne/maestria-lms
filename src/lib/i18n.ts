@@ -23,26 +23,42 @@ async function loadLocale(locale: Locale): Promise<void> {
   return loadingPromises[locale];
 }
 
-let ruFallback: Record<string, string> | null = null;
+const fallbackCache: Partial<Record<Locale, Record<string, string>>> = {};
 
-if (typeof window === "undefined") {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    ruFallback = require("./locales/ru.json");
-  } catch {
-    ruFallback = {};
+function ensureLocaleLoadedSync(locale: Locale): Record<string, string> | null {
+  const cached = fallbackCache[locale];
+  if (cached) return cached;
+  const isNode = typeof process !== "undefined" && process.versions?.node;
+  if (isNode) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const data = require(`./locales/${locale}.json`);
+      const loaded = data.default || data;
+      fallbackCache[locale] = loaded;
+      return loaded;
+    } catch {
+      return null;
+    }
   }
+  return null;
 }
 
 export function t(key: string, locale?: Locale): string {
   const loc = locale || "ru";
-  const dict = translationCache[loc];
+  let dict = translationCache[loc];
+  if (!dict) {
+    const fallback = ensureLocaleLoadedSync(loc);
+    if (fallback) {
+      translationCache[loc] = fallback;
+      dict = fallback;
+    }
+  }
   if (dict) return dict[key] ?? key;
-  if (loc === "ru" && ruFallback) return ruFallback[key] ?? key;
   if (loc !== "ru") {
+    const ruFallback = ensureLocaleLoadedSync("ru");
+    if (ruFallback) return ruFallback[key] ?? key;
     const ruDict = translationCache["ru"];
     if (ruDict) return ruDict[key] ?? key;
-    if (ruFallback) return ruFallback[key] ?? key;
   }
   return key;
 }

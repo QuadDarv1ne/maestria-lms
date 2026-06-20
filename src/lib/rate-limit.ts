@@ -237,7 +237,7 @@ function checkMemoryLimit(
     store.set(key, entry);
   }
 
-  const limited = entry.count > maxRequests;
+  const limited = entry.count >= maxRequests;
   if (!limited) {
     entry.count++;
   }
