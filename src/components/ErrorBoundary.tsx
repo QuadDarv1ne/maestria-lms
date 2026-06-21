@@ -8,6 +8,12 @@ import type { Locale } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Home, RefreshCw, RotateCcw } from "lucide-react";
 
+let currentLocale: Locale = "ru";
+
+export function syncErrorBoundaryLocale() {
+  currentLocale = useAppStore.getState().locale;
+}
+
 interface ErrorBoundaryProps {
   children: ReactNode;
   fallback?: ReactNode;
@@ -25,18 +31,20 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false, error: null, locale: "ru" };
+    this.state = { hasError: false, error: null, locale: currentLocale };
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, error, locale: "ru" };
+    return { hasError: true, error, locale: currentLocale };
   }
 
   componentDidMount() {
-    this.setState({ locale: useAppStore.getState().locale });
+    currentLocale = useAppStore.getState().locale;
+    this.setState({ locale: currentLocale });
     this.unsubscribe = useAppStore.subscribe((state, prevState) => {
       if (state.locale !== prevState.locale) {
-        this.setState({ locale: state.locale });
+        currentLocale = state.locale;
+        this.setState({ locale: currentLocale });
       }
     });
   }
@@ -53,17 +61,17 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   handleRetry = () => {
-    this.setState({ hasError: false, error: null, locale: this.state.locale });
+    this.setState({ hasError: false, error: null, locale: currentLocale });
     this.props.onRetry?.();
   };
 
   handleReload = () => {
-    this.setState({ hasError: false, error: null, locale: this.state.locale });
+    this.setState({ hasError: false, error: null, locale: currentLocale });
     window.location.reload();
   };
 
   handleGoHome = () => {
-    this.setState({ hasError: false, error: null, locale: this.state.locale });
+    this.setState({ hasError: false, error: null, locale: currentLocale });
     window.location.href = "/";
   };
 
@@ -85,11 +93,6 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             <p className="text-muted-foreground mb-2">
               {t("error.description", locale)}
             </p>
-            {this.state.error && (
-              <p className="text-xs text-muted-foreground/60 mb-6 font-mono bg-muted/50 p-3 rounded-lg overflow-auto max-h-24">
-                {this.state.error.message}
-              </p>
-            )}
             <div className="flex gap-3 justify-center flex-wrap">
               {this.props.onRetry && (
                 <Button onClick={this.handleRetry} variant="outline">

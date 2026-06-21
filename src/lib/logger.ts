@@ -1,3 +1,5 @@
+/* eslint-disable no-console */
+
 import { env } from "@/lib/env";
 
 type LogLevel = "error" | "warn" | "info" | "debug";
@@ -40,8 +42,12 @@ function writeLog(entry: LogEntry): void {
     case "warn":
       console.warn(formatted);
       break;
-    default:
-      console.log(formatted);
+    case "info":
+      console.info(formatted);
+      break;
+    case "debug":
+      console.debug(formatted);
+      break;
   }
 }
 

@@ -17,6 +17,7 @@ export function formatDate(
   options: Intl.DateTimeFormatOptions = { day: "numeric", month: "long", year: "numeric" }
 ): string {
   const d = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(d.getTime())) return "Invalid date";
   return d.toLocaleDateString(localeMap[locale] || "ru-RU", options);
 }
 
