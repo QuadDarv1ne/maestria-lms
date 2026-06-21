@@ -59,9 +59,17 @@ export async function middleware(request: NextRequest) {
   const isSafeMethod = ["GET", "HEAD", "OPTIONS"].includes(request.method);
   if (!isCsrfExcluded && !isSafeMethod) {
     const csrfResponse = csrfProtection(request);
-    if (csrfResponse) return csrfResponse;
+    if (csrfResponse) {
+      applySecurityHeaders(csrfResponse, pathname);
+      return csrfResponse;
+    }
   }
 
+  applySecurityHeaders(response, pathname);
+  return response;
+}
+
+function applySecurityHeaders(response: NextResponse, pathname: string): void {
   response.headers.set("X-Frame-Options", "SAMEORIGIN");
   response.headers.set("X-Content-Type-Options", "nosniff");
 
@@ -82,9 +90,7 @@ export async function middleware(request: NextRequest) {
     response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
   }
 
-  const isProduction = env.isProduction;
-
-  if (isProduction) {
+  if (env.isProduction) {
     response.headers.set(
       "Strict-Transport-Security",
       "max-age=31536000; includeSubDomains; preload",
@@ -136,8 +142,6 @@ export async function middleware(request: NextRequest) {
       "upgrade-insecure-requests",
     ].join("; "),
   );
-
-  return response;
 }
 
 export const config = {
