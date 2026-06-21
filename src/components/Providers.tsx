@@ -39,6 +39,38 @@ function ServiceWorkerSync() {
   return null;
 }
 
+function SessionSync() {
+  const setUser = useAppStore((s) => s.setUser);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadSession = async () => {
+      try {
+        const res = await fetch("/api/auth/session");
+        if (res.ok) {
+          const session = await res.json();
+          if (session?.user && !cancelled) {
+            setUser({
+              id: session.user.id || "",
+              email: session.user.email || "",
+              name: session.user.name || null,
+              image: session.user.image || null,
+              role: session.user.role || "student",
+            });
+          }
+        }
+      } catch (error: unknown) {
+        log.debug("Session load skipped for unauthenticated user", { error: error instanceof Error ? error.message : String(error) });
+      }
+    };
+
+    loadSession();
+    return () => { cancelled = true; };
+  }, [setUser]);
+
+  return null;
+}
+
 export function Providers({ children }: { children: ReactNode }) {
   useEffect(() => {
     hydrateStore();
@@ -60,6 +92,7 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <SessionProvider>
+        <SessionSync />
         <ThemeAndLocaleSync />
         <SSENotificationsSync />
         <ServiceWorkerSync />
