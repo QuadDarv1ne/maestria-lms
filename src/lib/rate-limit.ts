@@ -196,7 +196,10 @@ async function checkRedisLimit(
   );
 
   const results = await pipeline.exec();
-  const count = (results?.[0]?.[1] as number) ?? 0;
+  if (!results || results[0][0]) {
+    throw new Error("Redis pipeline error in rate-limit check");
+  }
+  const count = (results[0][1] as number) ?? 0;
   const remaining = Math.max(0, maxRequests - count);
   const limited = count > maxRequests;
 
