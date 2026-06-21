@@ -70,7 +70,10 @@ export function useFocusTrap(isActive: boolean = true) {
  */
 export function useEscapeKey(handler: () => void, isActive: boolean = true) {
   const handlerRef = useRef(handler);
-  handlerRef.current = handler;
+
+  useEffect(() => {
+    handlerRef.current = handler;
+  });
 
   useEffect(() => {
     if (!isActive) return;
