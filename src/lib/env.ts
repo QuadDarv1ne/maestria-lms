@@ -119,7 +119,7 @@ export const env = {
   get isTest(): boolean {
     return this.nodeEnv === "test";
   },
-} as const;
+};
 
 // Type for environment variable keys (useful for documentation)
 export type EnvKey = keyof typeof env;

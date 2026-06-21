@@ -69,18 +69,21 @@ export function useFocusTrap(isActive: boolean = true) {
  * Hook to handle Escape key press.
  */
 export function useEscapeKey(handler: () => void, isActive: boolean = true) {
+  const handlerRef = useRef(handler);
+  handlerRef.current = handler;
+
   useEffect(() => {
     if (!isActive) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        handler();
+        handlerRef.current();
       }
     };
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [handler, isActive]);
+  }, [isActive]);
 }
 
 /**

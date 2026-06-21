@@ -83,6 +83,8 @@ export function BlogPage() {
 
   // Fetch articles
   useEffect(() => {
+    let cancelled = false;
+
     const fetchArticles = async () => {
       setIsLoading(true);
       setError(null);
@@ -104,20 +106,30 @@ export function BlogPage() {
         if (!res.ok) throw new Error("Failed to fetch articles");
 
         const data = await res.json();
-        setArticles(data.articles);
-        setPagination((prev) => ({
-          ...prev,
-          total: data.pagination.total,
-          totalPages: data.pagination.totalPages,
-        }));
+        if (!cancelled) {
+          setArticles(data.articles);
+          setPagination((prev) => ({
+            ...prev,
+            total: data.pagination.total,
+            totalPages: data.pagination.totalPages,
+          }));
+        }
       } catch (err) {
-        setError(err instanceof Error ? err.message : t("common.error", locale));
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : t("common.error", locale));
+        }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchArticles();
+
+    return () => {
+      cancelled = true;
+    };
   }, [pagination.page, pagination.limit, filters.category, filters.search, filters.sortBy, locale]);
 
   const handleCategoryChange = useCallback((value: string) => {

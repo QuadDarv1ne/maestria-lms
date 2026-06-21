@@ -48,7 +48,8 @@ export function PaymentPageClient({
   paymentId: string;
 }) {
   const router = useRouter();
-  const { user, locale } = useAppStore();
+  const user = useAppStore((s) => s.user);
+  const locale = useAppStore((s) => s.locale);
   const [payment, setPayment] = useState<PaymentData["payment"] | null>(null);
   const [loading, setLoading] = useState(true);
   const [initiating, setInitiating] = useState(false);

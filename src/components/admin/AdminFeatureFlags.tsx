@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +23,7 @@ export function AdminFeatureFlags({ locale }: { locale: Locale }) {
   const [flags, setFlags] = useState<FlagDefinition[]>([]);
   const [loading, setLoading] = useState(true);
 
-  async function fetchFlags() {
+  const fetchFlags = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/admin/feature-flags");
@@ -35,12 +35,11 @@ export function AdminFeatureFlags({ locale }: { locale: Locale }) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [locale]);
 
   useEffect(() => {
     fetchFlags();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchFlags]);
 
   async function toggleFlag(key: string, enabled: boolean) {
     try {

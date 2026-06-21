@@ -59,7 +59,6 @@ export function Header() {
   const pathname = usePathname();
   const user = useAppStore((s) => s.user);
   const logout = useAppStore((s) => s.logout);
-  const unreadNotificationsCount = useAppStore((s) => s.unreadNotificationsCount);
   const theme = useAppStore((s) => s.theme);
   const setTheme = useAppStore((s) => s.setTheme);
   const locale = useAppStore((s) => s.locale);
@@ -73,7 +72,7 @@ export function Header() {
     { value: "zh", flag: "🇨🇳", label: t("locale.zh", locale) },
   ], [locale]);
 
-  const unreadCount = unreadNotificationsCount();
+  const unreadCount = useAppStore((s) => s.notifications.filter((n) => !n.read).length);
 
   const handleLogout = async () => {
     try {

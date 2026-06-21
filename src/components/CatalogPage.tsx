@@ -193,6 +193,7 @@ export function CatalogPage() {
             variant="default"
             className="bg-blue-700 hover:bg-blue-800 text-white"
             onClick={() => {
+              if (debounceRef.current) clearTimeout(debounceRef.current);
               setCourseFilters({ search: searchInput });
               setPagination((prev) => ({ ...prev, page: 1 }));
             }}
