@@ -99,7 +99,7 @@ export async function queryWithRetry<T>(
       lastError = error instanceof Error ? error : new Error(String(error));
 
       // Only retry on transient errors
-      const errorCode = (lastError as NodeJS.ErrnoException).code;
+      const errorCode = "code" in lastError ? (lastError as { code: string }).code : undefined;
       const isTransient =
         errorCode === 'ECONNRESET' ||
         errorCode === 'ETIMEDOUT' ||

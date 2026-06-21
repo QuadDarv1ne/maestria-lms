@@ -77,7 +77,7 @@ export default function NotFound() {
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            {locale === "ru" ? "Назад" : locale === "zh" ? "返回" : "Go back"}
+            {t("notFound.goBack", locale)}
           </button>
         </motion.div>
       </div>

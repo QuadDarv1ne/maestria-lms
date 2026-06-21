@@ -1191,6 +1191,7 @@
   "notFound.description": "Запрашиваемая страница не существует или была удалена.",
   "notFound.toHome": "На главную",
   "notFound.toCatalog": "Каталог курсов",
+  "notFound.goBack": "Назад",
   "error.serverErrorTitle": "Ошибка сервера",
   "error.serverErrorDescription": "Произошла ошибка на сервере. Пожалуйста, попробуйте позже.",
   "error.tryAgain": "Попробовать снова",

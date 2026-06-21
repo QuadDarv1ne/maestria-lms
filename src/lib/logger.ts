@@ -33,6 +33,9 @@ function formatLogEntry(entry: LogEntry): string {
 function writeLog(entry: LogEntry): void {
   if (!shouldLog(entry.level)) return;
 
+  // In production, only allow error and warn to avoid leaking debug info via console
+  if (env.isProduction && (entry.level === "info" || entry.level === "debug")) return;
+
   const formatted = formatLogEntry(entry);
 
   switch (entry.level) {

@@ -35,7 +35,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    const role = (token as { role?: Role }).role;
+    const role = "role" in token ? (token as { role?: Role }).role : undefined;
     if (!role || !allowedRoles.includes(role)) {
       const homeUrl = new URL("/", request.url);
       return NextResponse.redirect(homeUrl);
@@ -130,7 +130,9 @@ function applySecurityHeaders(response: NextResponse, pathname: string): void {
     "Content-Security-Policy",
     [
       "default-src 'self'",
-      `script-src 'self' 'unsafe-inline' 'unsafe-eval'`,
+      env.isProduction
+        ? `script-src 'self' 'unsafe-inline'`
+        : `script-src 'self' 'unsafe-inline' 'unsafe-eval'`,
       "style-src 'self' 'unsafe-inline' https:",
       `img-src ${imgSources.join(" ")}`,
       "font-src 'self' https: data:",

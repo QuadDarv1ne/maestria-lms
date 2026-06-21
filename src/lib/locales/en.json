@@ -1191,6 +1191,7 @@
   "notFound.description": "The requested page does not exist or has been removed.",
   "notFound.toHome": "Go home",
   "notFound.toCatalog": "Course catalog",
+  "notFound.goBack": "Go back",
   "error.serverErrorTitle": "Server Error",
   "error.serverErrorDescription": "An error occurred on the server. Please try again later.",
   "error.tryAgain": "Try again",
