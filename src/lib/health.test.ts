@@ -30,7 +30,7 @@ describe("Health & Metrics Endpoints", () => {
   describe("GET /api/ (health)", () => {
     it("should return ok status when database is connected", async () => {
       const { db } = await import("@/lib/db");
-      vi.mocked(db.$queryRaw).mockResolvedValue([{ "1": 1 }] as any);
+      vi.mocked(db.$queryRaw).mockResolvedValue([{ "1": 1 }] as unknown as Array<Record<string, number>>);
 
       expect(db.$queryRaw).not.toHaveBeenCalled();
     });

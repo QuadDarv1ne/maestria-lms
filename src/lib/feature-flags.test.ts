@@ -60,6 +60,7 @@ describe("Feature Flags", () => {
       const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
       const { isFeatureEnabled } = await import("@/lib/feature-flags");
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       isFeatureEnabled("nonexistentFlag" as any);
 
       expect(consoleSpy).toHaveBeenCalledWith(
