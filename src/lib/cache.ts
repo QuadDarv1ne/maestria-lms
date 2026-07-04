@@ -1,66 +1,5 @@
-import Redis from "ioredis";
 import { log } from "@/lib/logger";
-import { env } from "@/lib/env";
-
-// Redis client for caching (reuses connection from rate-limit if possible)
-let cacheClient: Redis | null = null;
-let cacheConnectionFailed = false;
-let reconnectTimeout: NodeJS.Timeout | null = null;
-const RECONNECT_DELAY_MS = 30_000; // 30 seconds between reconnect attempts
-
-function scheduleReconnect(): void {
-  if (reconnectTimeout) return;
-  reconnectTimeout = setTimeout(() => {
-    reconnectTimeout = null;
-    cacheConnectionFailed = false;
-    log.info("Attempting to reconnect Redis cache");
-    // Force recreation on next getCacheClient call
-    if (cacheClient) {
-      cacheClient.disconnect();
-      cacheClient = null;
-    }
-  }, RECONNECT_DELAY_MS);
-}
-
-function getCacheClient(): Redis | null {
-  if (cacheConnectionFailed) return null;
-  if (cacheClient) return cacheClient;
-
-  const redisUrl = env.redisUrl;
-  if (!redisUrl) return null;
-
-  try {
-    cacheClient = new Redis(redisUrl, {
-      maxRetriesPerRequest: 3,
-      connectTimeout: 3000,
-      lazyConnect: true,
-      keyPrefix: "cache:",
-    });
-
-    cacheClient.on("error", (error) => {
-      log.warn("Redis cache connection error, scheduling reconnect", {
-        error: error.message,
-      });
-      cacheConnectionFailed = true;
-      cacheClient?.disconnect();
-      cacheClient = null;
-      scheduleReconnect();
-    });
-
-    cacheClient.on("ready", () => {
-      if (cacheConnectionFailed) {
-        log.info("Redis cache connection restored");
-        cacheConnectionFailed = false;
-      }
-    });
-
-    return cacheClient;
-  } catch {
-    cacheConnectionFailed = true;
-    scheduleReconnect();
-    return null;
-  }
-}
+import { getRedisClient } from "@/lib/redis";
 
 // In-memory fallback cache
 const memoryCache = new Map<string, { data: unknown; expiresAt: number }>();
@@ -74,11 +13,11 @@ interface CacheOptions {
 const DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes
 
 export async function cacheGet<T>(key: string): Promise<T | null> {
-  const redis = getCacheClient();
+  const redis = getRedisClient();
 
   if (redis) {
     try {
-      const data = await redis.get(key);
+      const data = await redis.get(`cache:${key}`);
       if (data) {
         return JSON.parse(data) as T;
       }
@@ -110,15 +49,15 @@ export async function cacheSet(
   const { ttl = DEFAULT_TTL, tags } = options;
   const expiresAt = Date.now() + ttl;
 
-  const redis = getCacheClient();
+  const redis = getRedisClient();
 
   if (redis) {
     try {
-      await redis.setex(key, Math.ceil(ttl / 1000), JSON.stringify(data));
+      await redis.setex(`cache:${key}`, Math.ceil(ttl / 1000), JSON.stringify(data));
 
       // Store tags for invalidation
       if (tags?.length) {
-        const tagKeys = tags.map((tag) => `tag:${tag}`);
+        const tagKeys = tags.map((tag) => `cache:tag:${tag}`);
         const pipeline = redis.pipeline();
         for (const tagKey of tagKeys) {
           pipeline.sadd(tagKey, key);
@@ -147,11 +86,11 @@ export async function cacheSet(
 }
 
 export async function cacheDelete(key: string): Promise<boolean> {
-  const redis = getCacheClient();
+  const redis = getRedisClient();
 
   if (redis) {
     try {
-      await redis.del(key);
+      await redis.del(`cache:${key}`);
       return true;
     } catch (err) {
       log.warn("cacheDelete failed", { key, error: err instanceof Error ? err.message : String(err) });
@@ -163,16 +102,16 @@ export async function cacheDelete(key: string): Promise<boolean> {
 }
 
 export async function cacheInvalidateByTag(tag: string): Promise<boolean> {
-  const redis = getCacheClient();
+  const redis = getRedisClient();
 
   if (redis) {
     try {
-      const tagKey = `tag:${tag}`;
+      const tagKey = `cache:tag:${tag}`;
       const keys = await redis.smembers(tagKey);
       if (keys.length > 0) {
         const pipeline = redis.pipeline();
         for (const key of keys) {
-          pipeline.del(key);
+          pipeline.del(`cache:${key}`);
         }
         pipeline.del(tagKey);
         await pipeline.exec();

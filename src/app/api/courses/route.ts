@@ -4,6 +4,8 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { parsePagination } from "@/lib/utils";
 import { cacheGet, cacheSet, generateCacheKey, createCacheHeaders } from "@/lib/cache";
+import { validateSearchParams } from "@/lib/api-validation";
+import { coursesListQuerySchema } from "./_validation";
 
 export const runtime = "nodejs";
 
@@ -15,7 +17,11 @@ export async function GET(request: NextRequest) {
   if (blocked) return blocked;
   try {
     const { searchParams } = new URL(request.url);
-    const ids = searchParams.get("ids");
+
+    // Validate query parameters
+    const validated = validateSearchParams(searchParams, coursesListQuerySchema);
+    if (validated instanceof NextResponse) return validated;
+    const { ids } = validated;
 
     // Batch fetch by IDs - lightweight response for bookmark/title fetching
     if (ids) {
@@ -55,11 +61,9 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const category = searchParams.get("category");
-    const search = searchParams.get("search");
-    const level = searchParams.get("level");
+    const { category, search, level, sortBy: sortByParam } = validated;
     const { page, limit, skip } = parsePagination(searchParams, { defaultLimit: 12, maxLimit: 100 });
-    const sortBy = searchParams.get("sortBy") || "new";
+    const sortBy = sortByParam || "new";
 
     // Строим условия фильтрации
     const where: Prisma.CourseWhereInput = {

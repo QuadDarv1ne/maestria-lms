@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import Redis from "ioredis";
 import { log } from "@/lib/logger";
-import { env } from "@/lib/env";
+import { getRedisClient } from "@/lib/redis";
 
 interface RateLimitConfig {
   windowMs: number;
@@ -19,65 +19,6 @@ const defaultConfig: RateLimitConfig = {
   windowMs: 60_000,
   maxRequests: 30,
 };
-
-// Redis client with lazy initialization
-let redisClient: Redis | null = null;
-let redisConnectionFailed = false;
-let reconnectTimeout: NodeJS.Timeout | null = null;
-const RECONNECT_DELAY_MS = 30_000; // 30 seconds between reconnect attempts
-
-function scheduleReconnect(): void {
-  if (reconnectTimeout) return;
-  reconnectTimeout = setTimeout(() => {
-    reconnectTimeout = null;
-    redisConnectionFailed = false;
-    log.info("Attempting to reconnect Redis rate limiter");
-    // Force recreation on next getRedisClient call
-    if (redisClient) {
-      redisClient.disconnect();
-      redisClient = null;
-    }
-  }, RECONNECT_DELAY_MS);
-}
-
-function getRedisClient(): Redis | null {
-  if (redisConnectionFailed) return null;
-  if (redisClient) return redisClient;
-
-  const redisUrl = env.redisUrl;
-  if (!redisUrl) return null;
-
-  try {
-    redisClient = new Redis(redisUrl, {
-      maxRetriesPerRequest: 3,
-      connectTimeout: 5000,
-      lazyConnect: true,
-    });
-
-    redisClient.on("error", (error) => {
-      log.warn("Redis rate limiter connection error, scheduling reconnect", {
-        error: error.message,
-      });
-      redisConnectionFailed = true;
-      redisClient?.disconnect();
-      redisClient = null;
-      scheduleReconnect();
-    });
-
-    redisClient.on("ready", () => {
-      if (redisConnectionFailed) {
-        log.info("Redis rate limiter connection restored");
-        redisConnectionFailed = false;
-      }
-    });
-
-    return redisClient;
-  } catch {
-    redisConnectionFailed = true;
-    scheduleReconnect();
-    return null;
-  }
-}
 
 function getClientIp(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for");
@@ -315,8 +256,6 @@ export async function rateLimitAsync(
       log.warn("Redis rate check failed, falling back to memory", {
         error: error instanceof Error ? error.message : String(error),
       });
-      redisConnectionFailed = true;
-      redis.disconnect();
       result = checkMemoryLimit(routeId, ip, userId, windowMs, maxRequests);
     }
   } else {

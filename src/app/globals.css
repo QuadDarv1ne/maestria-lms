@@ -1,21 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* Плавный переход темы — только для фонов и цветов текста */
+/* Плавный переход темы — только для фона и цвета текста */
 html {
   transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-html *, html *::before, html *::after {
-  transition-property: background-color, border-color, color, fill, stroke;
-  transition-duration: 0.2s;
-  transition-timing-function: ease;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html, html *, html *::before, html *::after {
-    transition: none !important;
-  }
 }
 
 @custom-variant dark (&:is(.dark *), &:is(.amber *));

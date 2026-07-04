@@ -1,5 +1,5 @@
 import { MongoClient, type MongoClientOptions } from "mongodb"
-import { logger } from "./logger"
+import { log } from "./logger"
 import { env } from "@/lib/env"
 
 const MONGODB_URI = env.databaseUrl || "mongodb://localhost:27017/maestria_lms"
@@ -35,7 +35,7 @@ async function connectMongo() {
     globalForMongo._mongoDb = db
   }
 
-  logger("info", "MongoDB connected")
+  log.info("MongoDB connected")
   return { client, db }
 }
 

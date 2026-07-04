@@ -81,7 +81,7 @@ const nextConfig: NextConfig = {
             },
             // UI компоненты
             ui: {
-              test: /[\\/]node_modules[\\/](@radix-ui|shadcn-ui|tailwind-merge|clsx)[\\/]/i,
+              test: /[\\/]node_modules[\\/](@radix-ui|tailwind-merge|clsx|class-variance-authority|cmdk|vaul|sonner)[\\/]/i,
               name: "ui",
               priority: 10,
             },
