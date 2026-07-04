@@ -36,7 +36,6 @@ export function HomePage() {
   const locale = useAppStore((s) => s.locale);
   const { data: coursesData, isLoading, error } = useCourses({ limit: 6 });
   const featuredCourses = coursesData?.courses ?? [];
-  const loading = isLoading;
 
   const defaultCategories = useMemo(() => CATEGORIES.map((c, i) => ({
     id: String(i + 1),
@@ -203,7 +202,7 @@ export function HomePage() {
               </Button>
             </div>
 
-            {loading ? (
+            {isLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
                   <Card key={i} className="border-0 shadow-sm overflow-hidden">

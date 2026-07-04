@@ -4,6 +4,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { db } from "@/lib/db";
 import { log } from "@/lib/logger";
 import { env } from "@/lib/env";
+import { APP_VERSION } from "@/lib/constants";
 
 const checkRateLimit = rateLimit("health", { windowMs: 60000, maxRequests: 30 });
 
@@ -87,7 +88,7 @@ export async function GET(request: NextRequest) {
   const response: Record<string, unknown> = {
     status: overallStatus,
     service: "Maestria LMS",
-    version: process.env.npm_package_version || "3.1.0",
+    version: APP_VERSION,
     uptime: getUptime(),
     timestamp: new Date().toISOString(),
     database: dbCheck,

@@ -57,47 +57,6 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  // Bundle analyzer в dev
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      config.optimization = {
-        ...config.optimization,
-        splitChunks: {
-          chunks: "all",
-          cacheGroups: {
-            default: false,
-            vendors: false,
-            // Полифины
-            polyfills: {
-              test: /[\\/]node_modules[\\/].*polyfill.*/i,
-              name: "polyfills",
-              priority: 20,
-            },
-            // React и зависимости
-            react: {
-              test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/i,
-              name: "react",
-              priority: 15,
-            },
-            // UI компоненты
-            ui: {
-              test: /[\\/]node_modules[\\/](@radix-ui|tailwind-merge|clsx|class-variance-authority|cmdk|vaul|sonner)[\\/]/i,
-              name: "ui",
-              priority: 10,
-            },
-            // Общие чанки
-            common: {
-              minChunks: 2,
-              name: "common",
-              priority: 5,
-            },
-          },
-        },
-      };
-    }
-    return config;
-  },
-  // Трекинг размера bundle
   productionBrowserSourceMaps: false,
   // Удаление строк логов в продакшене
   compiler: {

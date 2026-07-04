@@ -1,23 +1,19 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { env } from "@/lib/env";
+import { APP_VERSION } from "@/lib/constants";
+import { getRedisClient } from "@/lib/redis";
 
-/**
- * Health check endpoint
- * Returns status of all critical services
- */
 export async function GET() {
   const checks = {
     status: "healthy" as "healthy" | "unhealthy",
     timestamp: new Date().toISOString(),
-    version: "3.1.1",
+    version: APP_VERSION,
     services: {
       database: { status: "unknown" as string, responseTime: 0 as number },
       cache: { status: "unknown" as string, responseTime: 0 as number },
     },
   };
 
-  // Check database
   const dbStart = Date.now();
   try {
     await db.$queryRaw`SELECT 1`;
@@ -29,12 +25,11 @@ export async function GET() {
     checks.status = "unhealthy";
   }
 
-  // Check Redis cache (simple ping check)
   const cacheStart = Date.now();
   try {
-    const redisUrl = env.redisUrl;
-    if (redisUrl) {
-      // Redis is available if URL is configured
+    const redis = getRedisClient();
+    if (redis) {
+      await redis.ping();
       checks.services.cache.status = "healthy";
     } else {
       checks.services.cache.status = "unavailable";
@@ -45,9 +40,7 @@ export async function GET() {
     checks.services.cache.responseTime = Date.now() - cacheStart;
   }
 
-  // Return 503 if any service is unhealthy
   const status = checks.status === "unhealthy" ? 503 : 200;
-
   return NextResponse.json(checks, { status });
 }
 

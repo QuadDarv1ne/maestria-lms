@@ -48,6 +48,21 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import type { Theme, Locale } from "@/lib/store";
 
+const NAV_LINK_BASE = "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-sm font-medium h-9 px-3 transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
+
+function NavLink({ href, isActive, icon: Icon, children }: { href: string; isActive: boolean; icon?: React.ComponentType<{ className?: string }>; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className={`${NAV_LINK_BASE}${isActive ? " bg-accent font-medium" : ""}`}
+      aria-current={isActive ? "page" : undefined}
+    >
+      {Icon && <Icon className="w-4 h-4" />}
+      {children}
+    </Link>
+  );
+}
+
 const themeOptions: { value: Theme; icon: string; labelKey: string }[] = [
   { value: "light", icon: "☀️", labelKey: "theme.light" },
   { value: "dark", icon: "🌙", labelKey: "theme.dark" },
@@ -121,78 +136,40 @@ export function Header() {
 
         {/* Навигация (десктоп) */}
         <nav className="hidden md:flex items-center gap-1" aria-label={t("nav.mainNav", locale)}>
-          <Link
-            href="/"
-            className={`inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-sm font-medium h-9 px-3 transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2${pathname === "/" ? " bg-accent font-medium" : ""}`}
-            aria-current={pathname === "/" ? "page" : undefined}
-          >
+          <NavLink href="/" isActive={pathname === "/"}>
             {t("nav.home", locale)}
-          </Link>
-          <Link
-            href="/catalog"
-            className={`inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-sm font-medium h-9 px-3 transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2${pathname.startsWith("/catalog") ? " bg-accent font-medium" : ""}`}
-            aria-current={pathname.startsWith("/catalog") ? "page" : undefined}
-          >
-            <BookOpen className="w-4 h-4" />
+          </NavLink>
+          <NavLink href="/catalog" isActive={pathname.startsWith("/catalog")} icon={BookOpen}>
             {t("nav.catalog", locale)}
-          </Link>
-          <Link
-            href="/blog"
-            className={`inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-sm font-medium h-9 px-3 transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2${pathname.startsWith("/blog") ? " bg-accent font-medium" : ""}`}
-            aria-current={pathname.startsWith("/blog") ? "page" : undefined}
-          >
-            <FileText className="w-4 h-4" />
+          </NavLink>
+          <NavLink href="/blog" isActive={pathname.startsWith("/blog")} icon={FileText}>
             {t("nav.blog", locale)}
-          </Link>
-          <Link
-            href="/about"
-            className={`inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-sm font-medium h-9 px-3 transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2${pathname.startsWith("/about") ? " bg-accent font-medium" : ""}`}
-            aria-current={pathname.startsWith("/about") ? "page" : undefined}
-          >
+          </NavLink>
+          <NavLink href="/about" isActive={pathname.startsWith("/about")}>
             {t("nav.about", locale)}
-          </Link>
-          <Link
-            href="/help"
-            className={`inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-sm font-medium h-9 px-3 transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2${pathname.startsWith("/help") ? " bg-accent font-medium" : ""}`}
-            aria-current={pathname.startsWith("/help") ? "page" : undefined}
-          >
-            <HelpCircle className="w-4 h-4" />
+          </NavLink>
+          <NavLink href="/help" isActive={pathname.startsWith("/help")} icon={HelpCircle}>
             {t("nav.help", locale)}
-          </Link>
+          </NavLink>
           {user && (
-            <Link
-              href="/profile"
-              className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-sm font-medium h-9 px-3 transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            >
+            <NavLink href="/profile" isActive={pathname.startsWith("/profile")}>
               {t("nav.myCourses", locale)}
-            </Link>
+            </NavLink>
           )}
           {user && (
-            <Link
-              href="/achievements"
-              className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-sm font-medium h-9 px-3 transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            >
-              <Trophy className="w-4 h-4" />
+            <NavLink href="/achievements" isActive={pathname.startsWith("/achievements")} icon={Trophy}>
               {t("nav.achievements", locale)}
-            </Link>
+            </NavLink>
           )}
           {user?.role === "teacher" && (
-            <Link
-              href="/teacher"
-              className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-sm font-medium h-9 px-3 transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            >
-              <GraduationCap className="w-4 h-4" />
+            <NavLink href="/teacher" isActive={pathname.startsWith("/teacher")} icon={GraduationCap}>
               {t("nav.teacher", locale)}
-            </Link>
+            </NavLink>
           )}
           {user?.role === "admin" && (
-            <Link
-              href="/admin"
-              className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-sm font-medium h-9 px-3 transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            >
-              <Shield className="w-4 h-4" />
+            <NavLink href="/admin" isActive={pathname.startsWith("/admin")} icon={Shield}>
               {t("nav.admin", locale)}
-            </Link>
+            </NavLink>
           )}
         </nav>
 

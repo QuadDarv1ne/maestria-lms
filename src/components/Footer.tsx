@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import type { Locale } from "@/lib/store";
+import { APP_VERSION } from "@/lib/constants";
 
 export const Footer = React.memo(function Footer() {
   const locale = useAppStore((s) => s.locale);
@@ -261,7 +262,7 @@ export const Footer = React.memo(function Footer() {
               {t("footer.contribution", locale)}
             </p>
             <p className="text-xs text-muted-foreground/50">
-              v3.2.0
+              v{APP_VERSION}
             </p>
           </div>
 

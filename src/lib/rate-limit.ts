@@ -278,14 +278,6 @@ export async function rateLimitAsync(
   return { response: null, headers };
 }
 
-export function getRateLimitHeaders(result: RateLimitResult): Record<string, string> {
-  return {
-    "X-RateLimit-Limit": String(result.limit),
-    "X-RateLimit-Remaining": String(result.remaining),
-    "X-RateLimit-Reset": String(result.resetAt),
-  };
-}
-
 export const RATE_LIMITS = {
   register: { windowMs: 60_000, maxRequests: 5 },
   forgotPassword: { windowMs: 60_000, maxRequests: 3 },

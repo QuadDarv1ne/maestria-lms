@@ -83,11 +83,16 @@ function applySecurityHeaders(response: NextResponse, pathname: string): void {
   response.headers.set("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
   response.headers.set("Cross-Origin-Resource-Policy", "cross-origin");
 
-  // CORS для health check и API
-  if (pathname.startsWith("/api/health") || pathname.startsWith("/api/")) {
-    response.headers.set("Access-Control-Allow-Origin", "*");
+  // CORS: health check — public (*), authenticated API — site origin only
+  if (pathname.startsWith("/api/")) {
+    const isPublicEndpoint = pathname.startsWith("/api/health") || pathname.startsWith("/api/auth/");
+    response.headers.set(
+      "Access-Control-Allow-Origin",
+      isPublicEndpoint ? "*" : env.siteUrl,
+    );
     response.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
     response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    response.headers.set("Access-Control-Allow-Credentials", "true");
   }
 
   if (env.isProduction) {

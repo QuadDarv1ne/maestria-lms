@@ -4,6 +4,7 @@
 /* Плавный переход темы — только для фона и цвета текста */
 html {
   transition: background-color 0.3s ease, color 0.3s ease;
+  scroll-behavior: smooth;
 }
 
 @custom-variant dark (&:is(.dark *), &:is(.amber *));
@@ -309,10 +310,6 @@ html {
 
 .amber ::selection {
   background: oklch(0.55 0.18 55 / 0.25);
-}
-
-html {
-  scroll-behavior: smooth;
 }
 
 /* Улучшенные тач-таргеты на мобильных */
