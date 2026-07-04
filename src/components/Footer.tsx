@@ -261,7 +261,7 @@ export const Footer = React.memo(function Footer() {
               {t("footer.contribution", locale)}
             </p>
             <p className="text-xs text-muted-foreground/50">
-              v3.1.3
+              v3.2.0
             </p>
           </div>
 

@@ -121,96 +121,78 @@ export function Header() {
 
         {/* Навигация (десктоп) */}
         <nav className="hidden md:flex items-center gap-1" aria-label={t("nav.mainNav", locale)}>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push("/")}
-            className={`text-sm${pathname === "/" ? " bg-accent font-medium" : ""}`}
+          <Link
+            href="/"
+            className={`inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-sm font-medium h-9 px-3 transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2${pathname === "/" ? " bg-accent font-medium" : ""}`}
             aria-current={pathname === "/" ? "page" : undefined}
           >
             {t("nav.home", locale)}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push("/catalog")}
-            className={`text-sm${pathname.startsWith("/catalog") ? " bg-accent font-medium" : ""}`}
+          </Link>
+          <Link
+            href="/catalog"
+            className={`inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-sm font-medium h-9 px-3 transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2${pathname.startsWith("/catalog") ? " bg-accent font-medium" : ""}`}
             aria-current={pathname.startsWith("/catalog") ? "page" : undefined}
           >
-            <BookOpen className="w-4 h-4 mr-1" />
+            <BookOpen className="w-4 h-4" />
             {t("nav.catalog", locale)}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push("/blog")}
-            className={`text-sm${pathname.startsWith("/blog") ? " bg-accent font-medium" : ""}`}
+          </Link>
+          <Link
+            href="/blog"
+            className={`inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-sm font-medium h-9 px-3 transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2${pathname.startsWith("/blog") ? " bg-accent font-medium" : ""}`}
             aria-current={pathname.startsWith("/blog") ? "page" : undefined}
           >
-            <FileText className="w-4 h-4 mr-1" />
+            <FileText className="w-4 h-4" />
             {t("nav.blog", locale)}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push("/about")}
-            className={`text-sm${pathname.startsWith("/about") ? " bg-accent font-medium" : ""}`}
+          </Link>
+          <Link
+            href="/about"
+            className={`inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-sm font-medium h-9 px-3 transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2${pathname.startsWith("/about") ? " bg-accent font-medium" : ""}`}
             aria-current={pathname.startsWith("/about") ? "page" : undefined}
           >
             {t("nav.about", locale)}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push("/help")}
-            className={`text-sm${pathname.startsWith("/help") ? " bg-accent font-medium" : ""}`}
+          </Link>
+          <Link
+            href="/help"
+            className={`inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-sm font-medium h-9 px-3 transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2${pathname.startsWith("/help") ? " bg-accent font-medium" : ""}`}
             aria-current={pathname.startsWith("/help") ? "page" : undefined}
           >
-            <HelpCircle className="w-4 h-4 mr-1" />
+            <HelpCircle className="w-4 h-4" />
             {t("nav.help", locale)}
-          </Button>
+          </Link>
           {user && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.push("/profile")}
-              className="text-sm"
+            <Link
+              href="/profile"
+              className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-sm font-medium h-9 px-3 transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               {t("nav.myCourses", locale)}
-            </Button>
+            </Link>
           )}
           {user && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.push("/achievements")}
-              className="text-sm"
+            <Link
+              href="/achievements"
+              className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-sm font-medium h-9 px-3 transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
-              <Trophy className="w-4 h-4 mr-1" />
+              <Trophy className="w-4 h-4" />
               {t("nav.achievements", locale)}
-            </Button>
+            </Link>
           )}
           {user?.role === "teacher" && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.push("/teacher")}
-              className="text-sm"
+            <Link
+              href="/teacher"
+              className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-sm font-medium h-9 px-3 transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
-              <GraduationCap className="w-4 h-4 mr-1" />
+              <GraduationCap className="w-4 h-4" />
               {t("nav.teacher", locale)}
-            </Button>
+            </Link>
           )}
           {user?.role === "admin" && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.push("/admin")}
-              className="text-sm"
+            <Link
+              href="/admin"
+              className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-sm font-medium h-9 px-3 transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
-              <Shield className="w-4 h-4 mr-1" />
+              <Shield className="w-4 h-4" />
               {t("nav.admin", locale)}
-            </Button>
+            </Link>
           )}
         </nav>
 

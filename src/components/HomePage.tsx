@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 
 import { useAppStore } from "@/lib/store";
@@ -37,14 +38,14 @@ export function HomePage() {
   const featuredCourses = coursesData?.courses ?? [];
   const loading = isLoading;
 
-  const defaultCategories = CATEGORIES.map((c, i) => ({
+  const defaultCategories = useMemo(() => CATEGORIES.map((c, i) => ({
     id: String(i + 1),
     name: t(c.labelKey, locale),
     slug: c.slug,
     icon: c.icon,
     color: categoryColors[i],
     description: "",
-  }));
+  })), [locale]);
 
   return (
     <div>

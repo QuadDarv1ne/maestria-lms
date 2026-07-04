@@ -13,6 +13,14 @@ interface ScrollRevealProps {
   once?: boolean;
 }
 
+const DIRECTION_OFFSET: Record<string, string> = {
+  up: "translate-y-8",
+  down: "-translate-y-8",
+  left: "translate-x-8",
+  right: "-translate-x-8",
+  none: "",
+};
+
 export function ScrollReveal({
   children,
   className,
@@ -43,13 +51,7 @@ export function ScrollReveal({
     return () => observer.disconnect();
   }, [threshold, once]);
 
-  const directionOffset = {
-    up: "translate-y-8",
-    down: "-translate-y-8",
-    left: "translate-x-8",
-    right: "-translate-x-8",
-    none: "",
-  };
+  const offsetClass = DIRECTION_OFFSET[direction];
 
   return (
     <div
@@ -58,7 +60,7 @@ export function ScrollReveal({
         "transition-all ease-out",
         visible
           ? "opacity-100 translate-x-0 translate-y-0"
-          : `opacity-0 ${directionOffset[direction]}`,
+          : `opacity-0 ${offsetClass}`,
         className
       )}
       style={{
