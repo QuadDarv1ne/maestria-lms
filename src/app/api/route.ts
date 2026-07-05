@@ -6,6 +6,8 @@ import { log } from "@/lib/logger";
 import { env } from "@/lib/env";
 import { APP_VERSION } from "@/lib/constants";
 
+export const runtime = "nodejs";
+
 const checkRateLimit = rateLimit("health", { windowMs: 60000, maxRequests: 30 });
 
 const startTime = Date.now();

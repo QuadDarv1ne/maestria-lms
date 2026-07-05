@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { APP_VERSION } from "@/lib/constants";
 import { getRedisClient } from "@/lib/redis";
 
+export const runtime = "nodejs";
+
 export async function GET() {
   const checks = {
     status: "healthy" as "healthy" | "unhealthy",

@@ -3,10 +3,12 @@ import { getAuthSession, requireAdmin } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-errors";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { z } from "zod";
-import fs from "fs/promises";
-import path from "path";
+import { getRedisClient } from "@/lib/redis";
 
-const SETTINGS_PATH = path.join(process.cwd(), "data", "settings.json");
+export const runtime = "nodejs";
+
+const SETTINGS_KEY = "admin:settings";
+const SETTINGS_TTL = 365 * 24 * 60 * 60; // 1 year in seconds
 
 const checkAdminRateLimit = rateLimit("admin", RATE_LIMITS.admin);
 
@@ -17,26 +19,29 @@ const DEFAULT_SETTINGS = {
   emailNotificationsEnabled: false,
 };
 
-async function ensureSettingsDir() {
-  const dir = path.dirname(SETTINGS_PATH);
-  await fs.mkdir(dir, { recursive: true });
-}
-
-async function readSettings() {
-  try {
-    await fs.access(SETTINGS_PATH);
-    const content = await fs.readFile(SETTINGS_PATH, "utf-8");
-    return JSON.parse(content);
-  } catch {
-    await ensureSettingsDir();
-    await fs.writeFile(SETTINGS_PATH, JSON.stringify(DEFAULT_SETTINGS, null, 2));
-    return DEFAULT_SETTINGS;
+async function readSettings(): Promise<typeof DEFAULT_SETTINGS> {
+  const redis = getRedisClient();
+  if (redis) {
+    try {
+      const data = await redis.get(SETTINGS_KEY);
+      if (data) return JSON.parse(data) as typeof DEFAULT_SETTINGS;
+    } catch {
+      // Fall through to defaults
+    }
   }
+  return DEFAULT_SETTINGS;
 }
 
-async function writeSettings(settings: Record<string, unknown>) {
-  await ensureSettingsDir();
-  await fs.writeFile(SETTINGS_PATH, JSON.stringify(settings, null, 2));
+async function writeSettings(settings: typeof DEFAULT_SETTINGS) {
+  const redis = getRedisClient();
+  if (redis) {
+    try {
+      await redis.setex(SETTINGS_KEY, SETTINGS_TTL, JSON.stringify(settings));
+      return;
+    } catch {
+      // Fall through silently
+    }
+  }
 }
 
 export async function GET(request: NextRequest) {

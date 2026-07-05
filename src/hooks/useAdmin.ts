@@ -99,7 +99,7 @@ export function useUpdateUserRole() {
         body: JSON.stringify({ userId, role }),
       });
       if (!res.ok) {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({ error: null }));
         throw new Error(data.error || "Failed to update role");
       }
       return { userId, role };
@@ -213,7 +213,7 @@ export function useToggleUserStatus() {
         body: JSON.stringify({ userId, isActive }),
       });
       if (!res.ok) {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({ error: null }));
         throw new Error(data.error || "Failed to update status");
       }
       return { userId, isActive };

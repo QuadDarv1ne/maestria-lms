@@ -150,6 +150,23 @@ export function generateCacheKey(prefix: string, params: Record<string, unknown>
   return `${prefix}:${toBase64Url(paramString).substring(0, 32)}`;
 }
 
+export async function flushAll(): Promise<void> {
+  const redis = getRedisClient();
+  if (redis) {
+    try {
+      const keys = await redis.keys("cache:*");
+      if (keys.length > 0) {
+        await redis.del(...keys);
+      }
+    } catch (error: unknown) {
+      log.warn("Redis cache flush failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+  memoryCache.clear();
+}
+
 export function createCacheHeaders(
   maxAge: number,
   isPublic = true,

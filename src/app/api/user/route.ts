@@ -173,7 +173,6 @@ export async function GET(request: NextRequest) {
       enrollments: enrollmentsForClient,
       enrollmentDetails,
       certificates,
-      progress,
     }, { status: 200 });
   } catch (error: unknown) {
     return handleApiError(error, { route: "profile GET" });

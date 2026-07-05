@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
       include: {
         category: { select: { name: true, slug: true } },
         enrollments: {
+          take: 100,
           include: {
             user: {
               select: {

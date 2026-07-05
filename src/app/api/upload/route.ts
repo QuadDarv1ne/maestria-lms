@@ -5,6 +5,8 @@ import { s3Client, S3_BUCKET, toCdnUrl, makeFileKey, isS3Available } from "@/lib
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 
+export const runtime = "nodejs";
+
 const ALLOWED_TYPES = [
   "image/jpeg",
   "image/png",

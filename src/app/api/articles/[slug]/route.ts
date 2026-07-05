@@ -4,6 +4,7 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { getAuthSession, requireAuth, type ExtendedSession } from "@/lib/auth";
 import { z } from "zod";
+import { sanitizeContent } from "@/lib/sanitize";
 
 export const runtime = "nodejs";
 
@@ -50,16 +51,18 @@ export async function GET(
 
     if (!article.isPublished) {
       const session = await getAuthSession();
-      if (!session?.user) {
+      if (!session?.user || (session.user.role !== "admin" && session.user.role !== "teacher")) {
         return NextResponse.json({ error: "Article not found" }, { status: 404 });
       }
     }
 
-    // Increment views (atomic to prevent race conditions)
-    await db.article.update({
-      where: { id: article.id },
-      data: { views: { increment: 1 } },
-    });
+    // Increment views only for published articles
+    if (article.isPublished) {
+      await db.article.update({
+        where: { id: article.id },
+        data: { views: { increment: 1 } },
+      });
+    }
 
     return NextResponse.json(article, { status: 200 });
   } catch (error: unknown) {
@@ -102,9 +105,17 @@ export async function PATCH(
       return NextResponse.json({ error: validation.error.issues[0]?.message || "Invalid input" }, { status: 400 });
     }
 
+    const updateData = { ...validation.data };
+    if (updateData.content) {
+      updateData.content = sanitizeContent(updateData.content);
+    }
+    if (updateData.excerpt) {
+      updateData.excerpt = sanitizeContent(updateData.excerpt);
+    }
+
     const updated = await db.article.update({
       where: { id: article.id },
-      data: validation.data,
+      data: updateData,
     });
 
     return NextResponse.json(updated, { status: 200 });

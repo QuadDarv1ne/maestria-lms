@@ -6,6 +6,21 @@
 
 ---
 
+## [3.4.0] — 2026-07-05
+
+### Исправлено
+- **CRITICAL**: Добавлен `runtime = "nodejs"` на 5 API-маршрутов (`api/route.ts`, `health/route.ts`, `upload/route.ts`, `admin/settings/route.ts`, `admin/cache/clear/route.ts`) — краш на edge runtime
+- **CRITICAL**: Статьи — неопубликованные статьи теперь доступны только admin/teacher; просмотры не инкрементируются для неопубликованных
+- **XSS**: PATCH `/api/articles/[slug]` теперь санитизирует content через `sanitizeContent()`
+- **Performance**: Список статей `/api/articles` больше не возвращает HTML-контент в list view (select вместо include)
+- **Performance**: Teacher stats — добавлен лимит `take: 100` на enrollments для предотвращения OOM
+- **Performance**: User profile — убран raw `progress` массив из ответа (enrollmentDetails уже содержит вычисленную статистику)
+- **Reliability**: `useUpdateUserRole` и `useToggleUserStatus` — добавлен `.catch()` на `res.json()` для обработки non-JSON ответов
+- **Settings**: admin/settings теперь хранит настройки в Redis вместо файловой системы (совместимо с serverless)
+- **Cache**: admin/cache/clear теперь очищает Redis + memory cache вместо удаления `.next/cache`
+
+---
+
 ## [3.3.0] — 2026-07-05
 
 ### Оптимизировано
