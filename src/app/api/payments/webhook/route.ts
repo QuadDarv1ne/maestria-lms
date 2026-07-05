@@ -6,6 +6,7 @@ import { log } from "@/lib/logger";
 import { env } from "@/lib/env";
 import { z } from "zod";
 import { verifyWebhookSignature } from "@/lib/webhook-verify";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -105,7 +106,11 @@ async function completePayment(paymentId: string, transactionId: string) {
   return result;
 }
 
+const checkWebhookRateLimit = rateLimit("webhook", { windowMs: 60_000, maxRequests: 100 });
+
 export async function POST(request: NextRequest) {
+  const blocked = checkWebhookRateLimit(request);
+  if (blocked) return blocked;
   try {
     const provider = request.headers.get("x-payment-provider")?.toLowerCase();
     const rawBody = await request.text();

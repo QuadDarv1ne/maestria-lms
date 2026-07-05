@@ -96,13 +96,22 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }): Promise<ExtendedJWT> {
+      const extendedToken = token as ExtendedJWT;
       if (user) {
-        const extendedToken = token as ExtendedJWT;
         extendedToken.role = (user as ExtendedUser).role;
         extendedToken.id = user.id;
-        return extendedToken;
       }
-      return token as ExtendedJWT;
+      // Refresh role from DB to catch demotions/deactivations
+      if (extendedToken.id) {
+        const dbUser = await db.user.findUnique({
+          where: { id: extendedToken.id },
+          select: { role: true, isActive: true },
+        });
+        if (dbUser) {
+          extendedToken.role = dbUser.role;
+        }
+      }
+      return extendedToken;
     },
     async session({ session, token }): Promise<ExtendedSession> {
       const extendedSession = session as ExtendedSession;

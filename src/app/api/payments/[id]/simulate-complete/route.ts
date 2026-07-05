@@ -58,10 +58,19 @@ export async function POST(
         return { alreadyCompleted: true };
       }
 
-      await tx.course.updateMany({
-        where: { id: payment.courseId },
-        data: { studentCount: { increment: 1 } },
+      // Only increment studentCount if enrollment is new
+      const existingEnrollment = await tx.enrollment.findUnique({
+        where: {
+          userId_courseId: { userId: payment.userId, courseId: payment.courseId },
+        },
       });
+
+      if (!existingEnrollment) {
+        await tx.course.updateMany({
+          where: { id: payment.courseId },
+          data: { studentCount: { increment: 1 } },
+        });
+      }
 
       await tx.enrollment.upsert({
         where: {

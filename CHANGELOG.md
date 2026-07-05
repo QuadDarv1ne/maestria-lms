@@ -6,6 +6,19 @@
 
 ---
 
+## [3.5.0] — 2026-07-05
+
+### Исправлено
+- **CRITICAL SECURITY**: 2FA enrollment hijack — секрет теперь хранится на сервере (pendingTwoFactorSecret), клиент не получает raw secret. PUT читает секрет из БД, а не из тела запроса. Полная защита от account takeover через 2FA setup.
+- **MEDIUM**: JWT role caching — теперь при каждом использовании токена роль обновляется из БД. Демотация/deactivation пользователя мгновенно отражается (вместо 30-дневного кэша).
+- **MEDIUM**: payments/webhook — добавлен rate limiting (100 req/min) для предотвращения CPU exhaustion через HMAC verification.
+- **MEDIUM**: payments/simulate-complete — studentCount больше не инкрементируется при повторной активации существующей записи.
+- **LOW**: logger.ts — убрана production-блокировка info/debug логов. Теперь LOG_LEVEL работает корректно в продакшене.
+- **LOW**: StepViewerPage — добавлен AbortController в fetchStep для корректной отмены при навигации между шагами.
+- **Prisma schema**: добавлено поле `pendingTwoFactorSecret` для серверного хранения 2FA секрета.
+
+---
+
 ## [3.4.0] — 2026-07-05
 
 ### Исправлено

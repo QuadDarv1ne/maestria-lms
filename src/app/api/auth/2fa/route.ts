@@ -18,7 +18,6 @@ const enable2FASchema = z.object({
 
 const verify2FASchema = z.object({
   code: z.string().length(6, "Код должен содержать 6 цифр"),
-  secret: z.string().min(1, "Секрет обязателен"),
 });
 
 const disable2FASchema = z.object({
@@ -26,7 +25,6 @@ const disable2FASchema = z.object({
   code: z.string().length(6, "Код должен содержать 6 цифр"),
 });
 
-// Криптографически безопасная генерация секрета для 2FA
 function generateSecret(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
   let secret = '';
@@ -38,14 +36,13 @@ function generateSecret(): string {
   return secret;
 }
 
-// Генерация данных QR-кода (otpauth URL)
 function generateOtpAuthUrl(secret: string, email: string): string {
   const issuer = encodeURIComponent('Maestria');
   const account = encodeURIComponent(email);
   return `otpauth://totp/${issuer}:${account}?secret=${secret}&issuer=${issuer}&algorithm=SHA1&digits=6&period=30`;
 }
 
-// POST: Включить 2FA — генерирует секрет и возвращает данные QR-кода
+// POST: Generate 2FA secret — store it server-side, return only otpauthUrl
 export async function POST(request: NextRequest) {
   const blocked = checkRateLimit(request);
   if (blocked) return blocked;
@@ -57,7 +54,6 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const validation = enable2FASchema.safeParse(body);
-
     if (!validation.success) {
       return NextResponse.json(
         { error: validation.error.issues[0]?.message || "Ошибка валидации" },
@@ -67,7 +63,6 @@ export async function POST(request: NextRequest) {
 
     const userId = session.user.id;
     const user = await db.user.findUnique({ where: { id: userId } });
-
     if (!user) {
       return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
     }
@@ -76,28 +71,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "2FA уже включена" }, { status: 400 });
     }
 
-    // Verify password before allowing 2FA setup
     if (!user.passwordHash || !(await bcrypt.compare(body.password, user.passwordHash))) {
       return NextResponse.json({ error: "Неверный пароль" }, { status: 401 });
     }
 
-    // Генерируем секрет и возвращаем OTPAuth URL
-    // НЕ сохраняем в БД до верификации кода — предотвращает зависание секрета
     const secret = generateSecret();
     const otpauthUrl = generateOtpAuthUrl(secret, user.email || '');
+
+    // Store secret server-side — never return raw secret to client
+    await db.user.update({
+      where: { id: userId },
+      data: { pendingTwoFactorSecret: secret },
+    });
 
     return NextResponse.json({
       message: "Отсканируйте QR-код в приложении-аутентификаторе и введите код для подтверждения",
       otpauthUrl,
-      // Возвращаем секрет клиенту — он будет отправлен вместе с кодом для верификации
-      secret,
     }, { status: 200 });
   } catch (error: unknown) {
     return handleApiError(error, { route: "auth/2fa POST" });
   }
 }
 
-// PUT: Подтвердить настройку 2FA
+// PUT: Verify 2FA setup — read secret from DB, not from request body
 export async function PUT(request: NextRequest) {
   const blocked = checkRateLimit(request);
   if (blocked) return blocked;
@@ -109,7 +105,6 @@ export async function PUT(request: NextRequest) {
 
     const body = await request.json();
     const validation = verify2FASchema.safeParse(body);
-
     if (!validation.success) {
       return NextResponse.json(
         { error: validation.error.issues[0]?.message || "Ошибка валидации" },
@@ -117,11 +112,9 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const { code, secret } = validation.data;
+    const { code } = validation.data;
     const userId = session.user.id;
-
     const user = await db.user.findUnique({ where: { id: userId } });
-
     if (!user) {
       return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
     }
@@ -130,10 +123,15 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "2FA уже включена" }, { status: 400 });
     }
 
-    // Проверяем TOTP-код против секрета из запроса
+    // Read secret from DB — attacker cannot control it
+    const storedSecret = user.pendingTwoFactorSecret;
+    if (!storedSecret) {
+      return NextResponse.json({ error: "Сначала запросите настройку 2FA (POST /api/auth/2fa)" }, { status: 400 });
+    }
+
     let isValid = false;
     try {
-      isValid = authenticator.verify({ token: code, secret });
+      isValid = authenticator.verify({ token: code, secret: storedSecret });
     } catch {
       log.warn("Invalid 2FA token format during verification", { userId });
     }
@@ -141,10 +139,14 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Неверный код подтверждения" }, { status: 400 });
     }
 
-    // Сохраняем секрет и активируем 2FA только после успешной верификации
+    // Activate 2FA with server-side secret
     await db.user.update({
       where: { id: userId },
-      data: { twoFactorSecret: secret, twoFactorEnabled: true },
+      data: {
+        twoFactorSecret: storedSecret,
+        twoFactorEnabled: true,
+        pendingTwoFactorSecret: null,
+      },
     });
 
     return NextResponse.json({ message: "Двухфакторная аутентификация успешно включена" }, { status: 200 });
@@ -153,7 +155,7 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// DELETE: Отключить 2FA
+// DELETE: Disable 2FA
 export async function DELETE(request: NextRequest) {
   const blocked = checkRateLimit(request);
   if (blocked) return blocked;
@@ -165,7 +167,6 @@ export async function DELETE(request: NextRequest) {
 
     const body = await request.json();
     const validation = disable2FASchema.safeParse(body);
-
     if (!validation.success) {
       return NextResponse.json(
         { error: validation.error.issues[0]?.message || "Ошибка валидации" },
@@ -174,9 +175,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const userId = session.user.id;
-
     const user = await db.user.findUnique({ where: { id: userId } });
-
     if (!user) {
       return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
     }
@@ -185,12 +184,10 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "2FA не включена" }, { status: 400 });
     }
 
-    // Verify password before allowing 2FA disable
     if (!user.passwordHash || !(await bcrypt.compare(body.password, user.passwordHash))) {
       return NextResponse.json({ error: "Неверный пароль" }, { status: 401 });
     }
 
-    // Verify the current 2FA code to ensure the user has access to their authenticator device
     const { code } = validation.data;
     let isValid = false;
     try {
@@ -202,13 +199,9 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Неверный код подтверждения" }, { status: 400 });
     }
 
-    // Отключаем 2FA и удаляем секрет
     await db.user.update({
       where: { id: userId },
-      data: {
-        twoFactorEnabled: false,
-        twoFactorSecret: null,
-      },
+      data: { twoFactorEnabled: false, twoFactorSecret: null },
     });
 
     return NextResponse.json({ message: "Двухфакторная аутентификация отключена" }, { status: 200 });

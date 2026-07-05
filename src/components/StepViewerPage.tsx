@@ -271,6 +271,7 @@ export function StepViewerPage({
 
   // Load step data
   useEffect(() => {
+    const controller = new AbortController();
     let cancelled = false;
     const fetchStep = async () => {
       setLoading(true);
@@ -291,7 +292,7 @@ export function StepViewerPage({
       setSelectedFile(null);
       setFileUploaded(false);
       try {
-        const res = await fetch(`/api/courses/${courseId}/lessons/${lessonId}`);
+        const res = await fetch(`/api/courses/${courseId}/lessons/${lessonId}`, { signal: controller.signal });
         if (res.ok) {
           const data = await res.json();
           if (!cancelled) {
@@ -324,6 +325,7 @@ export function StepViewerPage({
     fetchStep();
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [courseId, lessonId, router]);
 
