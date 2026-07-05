@@ -12,7 +12,7 @@ node_modules
 /coverage
 
 # Production
-/prisma/migrations
+# /prisma/migrations — needed for prisma migrate deploy at runtime
 
 # Misc
 .DS_Store
@@ -58,9 +58,10 @@ Dockerfile
 !.env.example
 LICENSE
 
-# Scripts (keep generate-secret.js)
+# Scripts (keep generate-secret.js and copy-build-assets.js)
 /scripts
 !/scripts/generate-secret.js
+!/scripts/copy-build-assets.js
 
 # Data
 /data

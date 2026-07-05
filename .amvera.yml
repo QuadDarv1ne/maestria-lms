@@ -1,9 +1,0 @@
-version: "1.0"
-services:
-  app:
-    dockerfile: Dockerfile
-    buildType: dockerfile
-    ports:
-      - "8080:3000"
-    env:
-      - NODE_ENV=production
