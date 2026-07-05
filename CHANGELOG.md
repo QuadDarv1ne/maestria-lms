@@ -6,6 +6,26 @@
 
 ---
 
+## [3.3.0] — 2026-07-05
+
+### Оптимизировано
+- **CORS**: сужены исключения — `/api/auth/session` и `/api/auth/signout` теперь используют site origin вместо `*`
+- **Env vars**: ленивое кэширование в `env.ts` — чтение `process.env` кэшируется при первом обращении, eliminates повторные чтения в hot paths
+- **AdminPage**: `tabProps` и `sidebarItems` обёрнуты в `useMemo`, предотвращая лишние re-renders дочерних табов
+- **StepViewerPage**: добавлен `AbortController` в fetch запроса — при анмаунте компонента запрос корректно отменяется
+- **Error pages**: заменены `framer-motion` анимации на CSS `tailwindcss-animate` — экономит ~40KB gzip на страницах ошибок
+- **Test coverage thresholds**: увеличены с 60% до 75% (branches, functions, lines, statements)
+- Добавлено исправление для `env.ts` кэша в тестах через `clearEnvCache()`
+
+### Удалено
+- Удалён неиспользуемый `react-syntax-highlighter` из зависимостей
+- Удалены 6 неиспользуемых UI-компонентов (`aspect-ratio`, `context-menu`, `hover-card`, `menubar`, `navigation-menu`, `slider`) и их `@radix-ui` зависимости
+
+### Исправлено
+- Pre-existing TypeScript ошибки в `seed/route.ts` и `db.ts`
+
+---
+
 ## [3.1.0] — 2026-05-15
 
 ### Добавлено

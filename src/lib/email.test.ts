@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { clearEnvCache } from "./env";
 
 vi.mock("./logger", () => ({
   log: {
@@ -25,6 +26,7 @@ vi.mock("resend", () => ({
 describe("sendEmail", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearEnvCache();
     vi.useFakeTimers();
     process.env.RESEND_API_KEY = "test-key";
   });
@@ -32,6 +34,7 @@ describe("sendEmail", () => {
   afterEach(() => {
     vi.useRealTimers();
     delete process.env.RESEND_API_KEY;
+    clearEnvCache();
   });
 
   it("returns false and logs warning when RESEND_API_KEY is not configured", async () => {

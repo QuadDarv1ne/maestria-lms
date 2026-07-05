@@ -126,13 +126,7 @@ export function AdminPage() {
 
   const totalUserPages = Math.ceil(filteredUsers.length / userPageSize);
 
-  if (!user || user.role !== "admin") return null;
-
-  if (loading) {
-    return <AdminSkeleton />;
-  }
-
-  const tabProps = {
+  const tabProps = useMemo(() => ({
     locale,
     courses,
     users,
@@ -158,19 +152,33 @@ export function AdminPage() {
     handleUserRoleChange,
     handleUserStatusChange,
     setUserPage,
-  };
+  }), [
+    locale, courses, users, monthLabels, dayLabels,
+    totalStudents, totalTeachers, totalEnrollments, avgRating,
+    totalRevenue, pendingReports, activeUsers,
+    userSearch, userRoleFilter, userPage, userPageSize,
+    filteredUsers, totalUserPages, paginatedUsers, reports,
+    handleUserSearch, handleRoleFilter, handleUserRoleChange,
+    handleUserStatusChange, setUserPage,
+  ]);
 
-  const sidebarItems: { id: AdminTab; label: string; icon: React.ReactNode; badge?: number }[] = [
-    { id: "dashboard", label: t("adminPage.tabDashboard", locale), icon: <LayoutDashboard className="w-5 h-5" /> },
-    { id: "users", label: t("adminPage.tabUsers", locale), icon: <Users className="w-5 h-5" />, badge: users.length },
-    { id: "tests", label: t("adminPage.tabTests", locale), icon: <ClipboardCheck className="w-5 h-5" /> },
-    { id: "materials", label: t("adminPage.tabMaterials", locale), icon: <FileText className="w-5 h-5" /> },
-    { id: "finance", label: t("adminPage.tabFinance", locale), icon: <Wallet className="w-5 h-5" /> },
-    { id: "courses", label: t("adminPage.tabCourses", locale), icon: <BookOpen className="w-5 h-5" />, badge: courses.length },
-    { id: "reports", label: t("adminPage.tabReports", locale), icon: <Flag className="w-5 h-5" />, badge: pendingReports },
-    { id: "logs", label: t("adminPage.tabLogs", locale), icon: <Clock className="w-5 h-5" /> },
-    { id: "settings", label: t("adminPage.tabSettings", locale), icon: <Settings className="w-5 h-5" /> },
-  ];
+  const sidebarItems = useMemo(() => [
+    { id: "dashboard" as AdminTab, label: t("adminPage.tabDashboard", locale), icon: <LayoutDashboard className="w-5 h-5" /> },
+    { id: "users" as AdminTab, label: t("adminPage.tabUsers", locale), icon: <Users className="w-5 h-5" />, badge: users.length },
+    { id: "tests" as AdminTab, label: t("adminPage.tabTests", locale), icon: <ClipboardCheck className="w-5 h-5" /> },
+    { id: "materials" as AdminTab, label: t("adminPage.tabMaterials", locale), icon: <FileText className="w-5 h-5" /> },
+    { id: "finance" as AdminTab, label: t("adminPage.tabFinance", locale), icon: <Wallet className="w-5 h-5" /> },
+    { id: "courses" as AdminTab, label: t("adminPage.tabCourses", locale), icon: <BookOpen className="w-5 h-5" />, badge: courses.length },
+    { id: "reports" as AdminTab, label: t("adminPage.tabReports", locale), icon: <Flag className="w-5 h-5" />, badge: pendingReports },
+    { id: "logs" as AdminTab, label: t("adminPage.tabLogs", locale), icon: <Clock className="w-5 h-5" /> },
+    { id: "settings" as AdminTab, label: t("adminPage.tabSettings", locale), icon: <Settings className="w-5 h-5" /> },
+  ], [locale, users.length, courses.length, pendingReports]);
+
+  if (!user || user.role !== "admin") return null;
+
+  if (loading) {
+    return <AdminSkeleton />;
+  }
 
   const renderSidebar = () => (
     <div className="flex flex-col h-full">

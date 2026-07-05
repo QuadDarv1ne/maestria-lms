@@ -1,125 +1,125 @@
 /**
  * Centralized environment configuration with validation.
  * Provides type-safe access to environment variables across the application.
+ * Values are lazily cached on first access — env vars don't change at runtime.
  */
 
-function getRequiredEnv(key: string, fallback?: string): string {
-  const value = process.env[key];
-  if (!value) {
-    if (fallback !== undefined) return fallback;
-    throw new Error(`Missing required environment variable: ${key}`);
-  }
+const cache = new Map<string, unknown>();
+
+function cached<T>(key: string, compute: () => T): T {
+  if (cache.has(key)) return cache.get(key) as T;
+  const value = compute();
+  cache.set(key, value);
   return value;
 }
 
-function getOptionalEnv(key: string, fallback?: string): string | undefined {
-  return process.env[key] ?? fallback;
+function getRequiredEnv(key: string): string {
+  const value = process.env[key];
+  if (!value) throw new Error(`Missing required environment variable: ${key}`);
+  return value;
 }
 
 export const env = {
-  // Site configuration
   get siteUrl(): string {
-    const url = process.env.NEXT_PUBLIC_SITE_URL;
-    if (this.isProduction && !url) {
-      throw new Error("Missing required environment variable: NEXT_PUBLIC_SITE_URL");
-    }
-    return url ?? "http://localhost:3000";
+    return cached("siteUrl", () => {
+      const url = process.env.NEXT_PUBLIC_SITE_URL;
+      if (this.isProduction && !url) {
+        throw new Error("Missing required environment variable: NEXT_PUBLIC_SITE_URL");
+      }
+      return url ?? "http://localhost:3000";
+    });
   },
 
-  // Database
   get databaseUrl(): string {
-    return getRequiredEnv("DATABASE_URL");
+    return cached("databaseUrl", () => getRequiredEnv("DATABASE_URL"));
   },
 
-  // NextAuth
   get nextAuthSecret(): string {
-    return getRequiredEnv("NEXTAUTH_SECRET");
+    return cached("nextAuthSecret", () => getRequiredEnv("NEXTAUTH_SECRET"));
   },
 
   get nextAuthUrl(): string | undefined {
-    return getOptionalEnv("NEXTAUTH_URL");
+    return cached("nextAuthUrl", () => process.env.NEXTAUTH_URL);
   },
 
-  // Email (Resend)
   get resendApiKey(): string | undefined {
-    return getOptionalEnv("RESEND_API_KEY");
+    return cached("resendApiKey", () => process.env.RESEND_API_KEY);
   },
 
   get emailFrom(): string {
-    return getOptionalEnv("EMAIL_FROM") ?? "Maestria LMS <noreply@maestria.edu>";
+    return cached("emailFrom", () => process.env.EMAIL_FROM ?? "Maestria LMS <noreply@maestria.edu>");
   },
 
-  // Redis
   get redisUrl(): string | undefined {
-    return getOptionalEnv("REDIS_URL");
+    return cached("redisUrl", () => process.env.REDIS_URL);
   },
 
-  // S3 Storage
   get s3Endpoint(): string | undefined {
-    return getOptionalEnv("S3_ENDPOINT");
+    return cached("s3Endpoint", () => process.env.S3_ENDPOINT);
   },
 
   get s3AccessKeyId(): string | undefined {
-    return getOptionalEnv("S3_ACCESS_KEY_ID");
+    return cached("s3AccessKeyId", () => process.env.S3_ACCESS_KEY_ID);
   },
 
   get s3SecretAccessKey(): string | undefined {
-    return getOptionalEnv("S3_SECRET_ACCESS_KEY");
+    return cached("s3SecretAccessKey", () => process.env.S3_SECRET_ACCESS_KEY);
   },
 
   get s3BucketName(): string | undefined {
-    return getOptionalEnv("S3_BUCKET_NAME");
+    return cached("s3BucketName", () => process.env.S3_BUCKET_NAME);
   },
 
   get s3Region(): string {
-    return getOptionalEnv("S3_REGION") ?? "auto";
+    return cached("s3Region", () => process.env.S3_REGION ?? "auto");
   },
 
   get cdnUrl(): string | undefined {
-    return process.env.NEXT_PUBLIC_CDN_URL ?? undefined;
+    return cached("cdnUrl", () => process.env.NEXT_PUBLIC_CDN_URL);
   },
 
-  // Logging
   get logLevel(): string {
-    return getOptionalEnv("LOG_LEVEL") ?? "info";
+    return cached("logLevel", () => process.env.LOG_LEVEL ?? "info");
   },
 
-  // Payment webhook
   get paymentWebhookSecret(): string | undefined {
-    return getOptionalEnv("PAYMENT_WEBHOOK_SECRET");
+    return cached("paymentWebhookSecret", () => process.env.PAYMENT_WEBHOOK_SECRET);
   },
 
-  // YooKassa
   get yooKassaShopId(): string | undefined {
-    return getOptionalEnv("YOOKASSA_SHOP_ID");
+    return cached("yooKassaShopId", () => process.env.YOOKASSA_SHOP_ID);
   },
 
   get yooKassaSecretKey(): string | undefined {
-    return getOptionalEnv("YOOKASSA_SECRET_KEY");
+    return cached("yooKassaSecretKey", () => process.env.YOOKASSA_SECRET_KEY);
   },
 
-  // Seed
   get allowSeedData(): boolean {
-    return process.env.ALLOW_SEED_DATA === "true";
+    return cached("allowSeedData", () => process.env.ALLOW_SEED_DATA === "true");
   },
 
-  // Node environment
   get nodeEnv(): string {
-    return process.env.NODE_ENV || "development";
+    return cached("nodeEnv", () => process.env.NODE_ENV || "development");
   },
 
   get isDevelopment(): boolean {
-    return this.nodeEnv === "development";
+    return cached("isDevelopment", () => this.nodeEnv === "development");
   },
 
   get isProduction(): boolean {
-    return this.nodeEnv === "production";
+    return cached("isProduction", () => this.nodeEnv === "production");
   },
 
   get isTest(): boolean {
-    return this.nodeEnv === "test";
+    return cached("isTest", () => this.nodeEnv === "test");
   },
 };
 
-// Type for environment variable keys (useful for documentation)
 export type EnvKey = keyof typeof env;
+
+/**
+ * Clear the env cache. Only needed in tests that modify process.env.
+ */
+export function clearEnvCache(): void {
+  cache.clear();
+}

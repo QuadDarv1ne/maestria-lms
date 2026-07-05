@@ -83,12 +83,15 @@ function applySecurityHeaders(response: NextResponse, pathname: string): void {
   response.headers.set("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
   response.headers.set("Cross-Origin-Resource-Policy", "cross-origin");
 
-  // CORS: health check — public (*), authenticated API — site origin only
+  // CORS: narrow per-path — health is public, auth callbacks are public,
+  // session/signout need credentials with restricted origin
   if (pathname.startsWith("/api/")) {
-    const isPublicEndpoint = pathname.startsWith("/api/health") || pathname.startsWith("/api/auth/");
+    const isFullyPublic = pathname.startsWith("/api/health") || pathname === "/api/auth/csrf"
+      || pathname === "/api/auth/providers" || pathname.startsWith("/api/auth/callback");
+    const isSessionEndpoint = pathname === "/api/auth/session" || pathname === "/api/auth/signout";
     response.headers.set(
       "Access-Control-Allow-Origin",
-      isPublicEndpoint ? "*" : env.siteUrl,
+      (isFullyPublic || isSessionEndpoint) ? "*" : env.siteUrl,
     );
     response.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
     response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
@@ -131,6 +134,8 @@ function applySecurityHeaders(response: NextResponse, pathname: string): void {
   if (cdnOrigin) connectSources.push(cdnOrigin);
   if (s3Origin) connectSources.push(s3Origin);
 
+  // NOTE: 'unsafe-inline' is required in production for the inline theme-detection script
+  // in layout.tsx. To remove it, extract the script to a file and use a hash here.
   response.headers.set(
     "Content-Security-Policy",
     [

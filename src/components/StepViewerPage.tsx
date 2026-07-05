@@ -339,9 +339,10 @@ export function StepViewerPage({
   // Load course structure for sidebar
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
     const fetchStructure = async () => {
       try {
-        const res = await fetch(`/api/courses/${courseId}`);
+        const res = await fetch(`/api/courses/${courseId}`, { signal: controller.signal });
         if (res.ok) {
           const data = await res.json();
           const course = data.course;
@@ -390,6 +391,7 @@ export function StepViewerPage({
     fetchStructure();
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [courseId]);
 
