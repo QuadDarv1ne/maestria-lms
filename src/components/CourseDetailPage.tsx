@@ -321,8 +321,8 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                 <Badge className="bg-white/20 text-white border-0">
                   {course.category?.name}
                 </Badge>
-                <Badge className={levelColors[course.level]}>
-                  {t(levelLabels[course.level], locale)}
+                <Badge className={levelColors[course.level] || "bg-gray-100 text-gray-800"}>
+                  {t(levelLabels[course.level] || `levels.${course.level}`, locale)}
                 </Badge>
               </div>
               <h1 className="text-2xl md:text-4xl font-bold mb-3">

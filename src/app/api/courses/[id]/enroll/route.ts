@@ -153,7 +153,26 @@ export async function POST(
           return { error: "Вы уже записаны на этот курс", status: 400 as const };
         }
         if (existingEnrollment.status === "cancelled") {
-          if (course.price === 0 && course.maxStudents && course.maxStudents > 0) {
+          if (course.price > 0) {
+            // Paid course re-enrollment requires a new payment
+            const payment = await tx.payment.create({
+              data: {
+                userId,
+                courseId: resolvedCourseId,
+                amount: course.price,
+                currency: course.currency,
+                status: "pending",
+                paymentMethod,
+              },
+            });
+            return {
+              message: "Для повторной записи на платный курс необходимо оплатить",
+              requiresPayment: true,
+              paymentId: payment.id,
+              status: 200 as const,
+            };
+          }
+          if (course.maxStudents && course.maxStudents > 0) {
             const canReenroll = await tx.course.updateMany({
               where: {
                 id: resolvedCourseId,
@@ -164,7 +183,7 @@ export async function POST(
             if (canReenroll.count === 0) {
               return { error: "Достигнут лимит студентов на курсе", status: 400 as const };
             }
-          } else if (course.price === 0) {
+          } else {
             await tx.course.update({
               where: { id: resolvedCourseId },
               data: { studentCount: { increment: 1 } },

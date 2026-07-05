@@ -107,11 +107,19 @@ export async function PUT(request: NextRequest) {
     const { userId, ...updateData } = validation.data;
 
     // Проверяем, не пытается ли админ заблокировать сам себя
-    if (userId === authenticatedSession.user.id && updateData.isActive === false) {
-      return NextResponse.json(
-        { error: "Нельзя заблокировать самого себя" },
-        { status: 400 }
-      );
+    if (userId === authenticatedSession.user.id) {
+      if (updateData.isActive === false) {
+        return NextResponse.json(
+          { error: "Нельзя заблокировать самого себя" },
+          { status: 400 }
+        );
+      }
+      if ("role" in updateData && updateData.role && updateData.role !== "admin") {
+        return NextResponse.json(
+          { error: "Нельзя понизить свою роль" },
+          { status: 400 }
+        );
+      }
     }
 
     const updatedUser = await db.user.update({

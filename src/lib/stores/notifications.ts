@@ -39,13 +39,14 @@ export const createNotificationsSlice: StateCreator<NotificationsSlice, [], [], 
   addNotification: (notification) => {
     const existing = get().notifications;
     if (existing.some((n) => n.id === notification.id)) return;
-    const updated = [notification, ...existing];
+    const updated = [notification, ...existing].slice(0, 200);
     save("maestria-notifications", updated);
     set({ notifications: updated });
   },
 
   markNotificationRead: async (id: string) => {
-    const updated = get().notifications.map((n) =>
+    const previous = get().notifications;
+    const updated = previous.map((n) =>
       n.id === id ? { ...n, read: true } : n
     );
     save("maestria-notifications", updated);
@@ -58,12 +59,18 @@ export const createNotificationsSlice: StateCreator<NotificationsSlice, [], [], 
         body: JSON.stringify({ read: true }),
       });
       if (!res.ok) {
+        // Rollback on server failure
+        save("maestria-notifications", previous);
+        set({ notifications: previous });
         log.warn("Server failed to mark notification as read", {
           notificationId: id,
           status: res.status,
         });
       }
     } catch (err: unknown) {
+      // Rollback on network error
+      save("maestria-notifications", previous);
+      set({ notifications: previous });
       log.warn("Failed to sync notification read status to server", {
         notificationId: id,
         error: err instanceof Error ? err.message : String(err),

@@ -44,7 +44,7 @@ export const moduleSchema = z.object({
 
 export const createCourseSchema = z.object({
   title: z.string().min(3, "Название должно быть от 3 до 200 символов").max(200),
-  slug: z.string().min(3, "Slug должен быть от 3 до 100 символов").max(100),
+  slug: z.string().min(3, "Slug должен быть от 3 до 100 символов").max(100).regex(/^[a-z0-9-]+$/, "Slug может содержать только латинские буквы, цифры и дефис"),
   description: z.string().min(10, "Описание должно быть от 10 до 5000 символов").max(5000),
   shortDesc: z.string().max(500, "Краткое описание не должно превышать 500 символов").optional().nullable(),
   price: z.union([z.string(), z.number()]).optional().default(0),
@@ -108,6 +108,9 @@ export function validatePrices(price: unknown, oldPrice: unknown): { error: stri
     const parsedOldPrice = Number(oldPrice);
     if (!Number.isFinite(parsedOldPrice) || parsedOldPrice < 0) {
       return { error: "Старая цена должна быть неотрицательным числом" };
+    }
+    if (parsedOldPrice <= parsedPrice) {
+      return { error: "Старая цена должна быть больше текущей" };
     }
   }
 
