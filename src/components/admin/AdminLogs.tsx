@@ -36,7 +36,7 @@ export function AdminLogs(props: AdminTabProps) {
                 </div>
                 <Badge
                   variant="outline"
-                  className={`text-[10px] shrink-0 ${ACTIVITY_TYPE_COLORS[item.type] || "border-gray-300 text-gray-700"}`}
+                  className={`text-[10px] shrink-0 ${ACTIVITY_TYPE_COLORS[item.type] || "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-400"}`}
                 >
                   {t(ACTIVITY_TYPE_LABELS[item.type] || item.type, locale)}
                 </Badge>

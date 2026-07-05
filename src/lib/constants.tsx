@@ -30,9 +30,9 @@ export const levelLabels: Record<string, string> = {
 };
 
 export const levelColors: Record<string, string> = {
-  beginner: "bg-blue-100 text-blue-700",
-  intermediate: "bg-amber-100 text-amber-700",
-  advanced: "bg-red-100 text-red-700",
+  beginner: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  intermediate: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  advanced: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 };
 
 export interface CategoryOption {
@@ -61,13 +61,13 @@ export const ACTIVITY_TYPE_LABELS: Record<string, string> = {
 };
 
 export const ACTIVITY_TYPE_COLORS: Record<string, string> = {
-  payment: "border-emerald-300 text-emerald-700",
-  report: "border-red-300 text-red-700",
-  course_publish: "border-green-300 text-green-700",
-  user_register: "border-blue-300 text-blue-700",
-  enrollment: "border-violet-300 text-violet-700",
-  course_create: "border-purple-300 text-purple-700",
-  settings_change: "border-gray-300 text-gray-700",
+  payment: "border-emerald-300 text-emerald-700 dark:border-emerald-700 dark:text-emerald-400",
+  report: "border-red-300 text-red-700 dark:border-red-700 dark:text-red-400",
+  course_publish: "border-green-300 text-green-700 dark:border-green-700 dark:text-green-400",
+  user_register: "border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-400",
+  enrollment: "border-violet-300 text-violet-700 dark:border-violet-700 dark:text-violet-400",
+  course_create: "border-purple-300 text-purple-700 dark:border-purple-700 dark:text-purple-400",
+  settings_change: "border-gray-300 text-gray-700 dark:border-gray-600 dark:text-gray-400",
 };
 
 interface IconEntry {
@@ -76,13 +76,13 @@ interface IconEntry {
 }
 
 const ACTIVITY_ICON_META: Record<string, IconEntry> = {
-  user_register: { icon: Users, color: "text-green-600" },
-  enrollment: { icon: BookOpen, color: "text-blue-600" },
-  payment: { icon: DollarSign, color: "text-emerald-600" },
-  course_create: { icon: Plus, color: "text-violet-600" },
-  course_publish: { icon: CheckCircle2, color: "text-green-600" },
-  report: { icon: Flag, color: "text-red-600" },
-  settings_change: { icon: Settings, color: "text-gray-600" },
+  user_register: { icon: Users, color: "text-green-600 dark:text-green-400" },
+  enrollment: { icon: BookOpen, color: "text-blue-600 dark:text-blue-400" },
+  payment: { icon: DollarSign, color: "text-emerald-600 dark:text-emerald-400" },
+  course_create: { icon: Plus, color: "text-violet-600 dark:text-violet-400" },
+  course_publish: { icon: CheckCircle2, color: "text-green-600 dark:text-green-400" },
+  report: { icon: Flag, color: "text-red-600 dark:text-red-400" },
+  settings_change: { icon: Settings, color: "text-gray-600 dark:text-gray-400" },
 };
 
 export function activityIcon(type: string, className = "w-3.5 h-3.5"): ReactNode {

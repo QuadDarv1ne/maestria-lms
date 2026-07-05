@@ -384,7 +384,7 @@ export function AchievementsPage() {
                       isEarned
                         ? `border-2 ${ach.colorBorder} shadow-md`
                         : isInProgress
-                          ? "border border-dashed border-gray-300 shadow-sm"
+                          ? "border border-dashed border-gray-300 dark:border-gray-600 shadow-sm"
                           : "border-0 shadow-sm opacity-60"
                     }`}
                   >
@@ -437,7 +437,7 @@ export function AchievementsPage() {
                             {t("achievements.gotIt", locale)}
                           </Badge>
                         ) : isInProgress ? (
-                          <Badge className="bg-amber-50 text-amber-600 border border-amber-200 text-[10px] font-semibold">
+                          <Badge className="bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-700 text-[10px] font-semibold">
                             {t("achievements.inProgress", locale)}
                           </Badge>
                         ) : (

@@ -29,7 +29,8 @@
     "docker:db:logs": "docker compose -f docker-compose.db.yml logs -f",
     "prepare": "husky",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "prisma": {
     "seed": "node prisma/seed.js"

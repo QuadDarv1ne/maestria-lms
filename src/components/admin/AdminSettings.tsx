@@ -159,7 +159,7 @@ export function AdminSettings(_props: AdminTabProps) {
               <p className="text-sm font-medium">{t("adminPage.settingClearCache", locale)}</p>
               <p className="text-xs text-muted-foreground">{t("adminPage.settingClearCacheDesc", locale)}</p>
             </div>
-            <Button size="sm" variant="outline" className="border-red-300 text-red-600 hover:bg-red-50" disabled={loading} onClick={clearCache}>
+            <Button size="sm" variant="outline" className="border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30" disabled={loading} onClick={clearCache}>
               {t("adminPage.settingClearCacheBtn", locale)}
             </Button>
           </div>
@@ -168,7 +168,7 @@ export function AdminSettings(_props: AdminTabProps) {
               <p className="text-sm font-medium">{t("adminPage.settingResetData", locale)}</p>
               <p className="text-xs text-muted-foreground">{t("adminPage.settingResetDataDesc", locale)}</p>
             </div>
-            <Button size="sm" variant="outline" className="border-red-300 text-red-600 hover:bg-red-50" disabled onClick={undefined}>
+            <Button size="sm" variant="outline" className="border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30" disabled onClick={undefined}>
               {t("adminPage.settingResetDataBtn", locale)}
             </Button>
           </div>

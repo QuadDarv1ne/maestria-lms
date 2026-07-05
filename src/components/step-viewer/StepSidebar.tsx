@@ -129,12 +129,12 @@ export function StepSidebar({
                         aria-current={isActive ? "step" : undefined}
                         className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-xs transition-all ${
                           isActive
-                            ? "bg-blue-50 border border-blue-200 text-blue-800 font-medium"
+                            ? "bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 text-blue-800 dark:text-blue-300 font-medium"
                             : lesson.completed
-                            ? "hover:bg-green-50 text-green-700"
+                            ? "hover:bg-green-50 dark:hover:bg-green-900/20 text-green-700 dark:text-green-400"
                             : isLocked
                             ? "opacity-50 cursor-not-allowed"
-                            : "hover:bg-gray-50 text-gray-600"
+                            : "hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
                         }`}
                         onClick={() => {
                           if (isLocked) {
@@ -161,7 +161,7 @@ export function StepSidebar({
                         </div>
                         <span className="flex-1 truncate">{lesson.title}</span>
                         {lesson.isFree && !lesson.completed && (
-                          <Badge variant="outline" className="text-[10px] px-1 py-0 text-green-600 border-green-300 flex-shrink-0">
+                          <Badge variant="outline" className="text-[10px] px-1 py-0 text-green-600 dark:text-green-400 border-green-300 dark:border-green-700 flex-shrink-0">
                             {t("common.free", locale)}
                           </Badge>
                         )}
@@ -174,7 +174,7 @@ export function StepSidebar({
           </div>
 
           {courseStructure?.progress === 100 && (
-            <div className="p-4 m-2 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border border-amber-200">
+            <div className="p-4 m-2 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-xl border border-amber-200 dark:border-amber-800">
               <div className="text-center">
                 <Trophy className="w-10 h-10 text-amber-500 mx-auto mb-2" />
                 <p className="font-bold text-amber-800 text-sm">{t("course.step.courseCompleted", locale)}</p>

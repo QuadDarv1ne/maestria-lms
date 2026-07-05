@@ -11,14 +11,14 @@ import { ArrowLeft, Clock, Eye, User, Calendar } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 const categoryColors: Record<string, string> = {
-  development: "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-200",
-  testing: "bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-200",
-  databases: "bg-green-500/10 text-green-700 dark:text-green-300 border-green-200",
-  ai: "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-200",
-  "3d-modeling": "bg-pink-500/10 text-pink-700 dark:text-pink-300 border-pink-200",
-  security: "bg-red-500/10 text-red-700 dark:text-red-300 border-red-200",
-  devops: "bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-200",
-  career: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-200",
+  development: "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800",
+  testing: "bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800",
+  databases: "bg-green-500/10 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800",
+  ai: "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800",
+  "3d-modeling": "bg-pink-500/10 text-pink-700 dark:text-pink-300 border-pink-200 dark:border-pink-800",
+  security: "bg-red-500/10 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800",
+  devops: "bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800",
+  career: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800",
 };
 
 const categoryIcons: Record<string, string> = {
@@ -117,7 +117,7 @@ export function ArticlePage({ slug }: ArticlePageProps) {
   }
 
   const categoryLabel = t(`blog.category.${article.category}`, locale) || article.category;
-  const categoryColor = categoryColors[article.category] || "bg-gray-500/10 text-gray-700 border-gray-200";
+  const categoryColor = categoryColors[article.category] || "bg-gray-500/10 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700";
   const categoryIcon = categoryIcons[article.category] || "📄";
 
   const tags = article.tags?.split(",").filter(Boolean) || [];

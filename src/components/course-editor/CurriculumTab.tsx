@@ -499,7 +499,7 @@ export function CurriculumTab({
               variant="outline"
               size="sm"
               onClick={onAddModule}
-              className="text-blue-700 border-blue-200 hover:bg-blue-50"
+              className="text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/30"
             >
               <Plus className="w-4 h-4 mr-1" />
               {t("courseEditor.addModule", locale)}

@@ -189,7 +189,7 @@ export function AdminUsers(props: AdminTabProps) {
                       </Select>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={`text-[10px] ${u.twoFactorEnabled ? 'border-green-300 text-green-700' : 'border-gray-300 text-gray-500'}`}>
+                      <Badge variant="outline" className={`text-[10px] ${u.twoFactorEnabled ? 'border-green-300 text-green-700 dark:border-green-700 dark:text-green-400' : 'border-gray-300 text-gray-500 dark:border-gray-600 dark:text-gray-500'}`}>
                         {u.twoFactorEnabled ? t("adminPage.user2faOn", locale) : t("adminPage.user2faOff", locale)}
                       </Badge>
                     </TableCell>

@@ -1208,7 +1208,7 @@ export function StepViewerPage({
                       {assignmentSubmitted ? t("course.step.sent", locale) : t("course.step.submitAnswer", locale)}
                     </Button>
                     {assignmentSubmitted && (
-                      <Badge className="bg-blue-100 text-blue-700 border-0">
+                      <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-0">
                         {t("course.step.awaitingReview", locale)}
                       </Badge>
                     )}

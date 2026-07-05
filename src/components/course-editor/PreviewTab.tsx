@@ -45,10 +45,10 @@ export function PreviewTab({
 
   return (
     <div className="space-y-4">
-      <Card className="border-amber-200 bg-amber-50">
+      <Card className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30">
         <CardContent className="p-4 flex items-center gap-3">
-          <Eye className="w-5 h-5 text-amber-600 flex-shrink-0" />
-          <p className="text-sm text-amber-800">
+          <Eye className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+          <p className="text-sm text-amber-800 dark:text-amber-300">
             {t("courseEditor.previewBanner", locale)}
           </p>
         </CardContent>
@@ -235,7 +235,7 @@ export function PreviewTab({
                                 </div>
                                 <div className="flex items-center gap-2">
                                   {lesson.isFree && (
-                                    <Badge variant="outline" className="text-[10px] text-green-600 border-green-300">
+                                    <Badge variant="outline" className="text-[10px] text-green-600 dark:text-green-400 border-green-300 dark:border-green-700">
                                       {t("courseCard.free", locale)}
                                     </Badge>
                                   )}
@@ -289,7 +289,7 @@ export function PreviewTab({
           </Button>
           <Button
             variant="outline"
-            className="border-blue-200 text-blue-700 hover:bg-blue-50"
+            className="border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30"
             onClick={() => onSave(false)}
             disabled={saving}
           >

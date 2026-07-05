@@ -405,7 +405,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                         {course.enrollmentProgress === 100 && course.hasCertificate && (
                           <Button
                             variant="outline"
-                            className="w-full border-amber-500 text-amber-700 hover:bg-amber-50"
+                            className="w-full border-amber-500 dark:border-amber-600 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30"
                             onClick={() => router.push(`/certificate/${courseId}`)}
                           >
                             <FileCheck className="w-4 h-4 mr-2" />
@@ -631,7 +631,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                                 {lesson.isFree && (
                                   <Badge
                                     variant="outline"
-                                    className="text-[10px] text-green-600 border-green-300"
+                                    className="text-[10px] text-green-600 dark:text-green-400 border-green-300 dark:border-green-700"
                                   >
                                     {t("course.free", locale)}
                                   </Badge>

@@ -77,7 +77,7 @@ export function StepQuiz({ step, locale }: StepComponentProps) {
               {quizScore >= 60 ? <CheckCircle2 className="w-5 h-5 text-green-600" /> : <HelpCircle className="w-5 h-5 text-red-600" />}
               <span className="font-medium text-sm">{t("course.step.result", locale)}: {quizScore}%</span>
             </div>
-            <Badge className={quizScore >= 60 ? "bg-green-100 text-green-700 border-0" : "bg-red-100 text-red-700 border-0"}>
+            <Badge className={quizScore >= 60 ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-0"}>
               {quizScore >= 60 ? t("course.step.passed", locale) : t("course.step.failed", locale)}
             </Badge>
           </CardContent>
@@ -108,7 +108,7 @@ export function StepQuiz({ step, locale }: StepComponentProps) {
                 <span className="font-medium text-sm">{t("course.step.question", locale)} {aIdx + 1}</span>
               </div>
               {isSubmitted && (
-                <Badge className={`${isCorrect ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"} border-0 text-xs`}>
+                <Badge className={`${isCorrect ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"} border-0 text-xs`}>
                   {isCorrect ? t("course.step.correct", locale) : t("course.step.incorrect", locale)}
                 </Badge>
               )}
