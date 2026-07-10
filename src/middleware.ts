@@ -88,10 +88,10 @@ function applySecurityHeaders(response: NextResponse, pathname: string): void {
   if (pathname.startsWith("/api/")) {
     const isFullyPublic = pathname.startsWith("/api/health") || pathname === "/api/auth/csrf"
       || pathname === "/api/auth/providers" || pathname.startsWith("/api/auth/callback");
-    const isSessionEndpoint = pathname === "/api/auth/session" || pathname === "/api/auth/signout";
+    // Session/signout require credentials — must use explicit origin (not *) per CORS spec
     response.headers.set(
       "Access-Control-Allow-Origin",
-      (isFullyPublic || isSessionEndpoint) ? "*" : env.siteUrl,
+      isFullyPublic ? "*" : env.siteUrl,
     );
     response.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
     response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
@@ -134,15 +134,15 @@ function applySecurityHeaders(response: NextResponse, pathname: string): void {
   if (cdnOrigin) connectSources.push(cdnOrigin);
   if (s3Origin) connectSources.push(s3Origin);
 
-  // NOTE: 'unsafe-inline' is required in production for the inline theme-detection script
-  // in layout.tsx. To remove it, extract the script to a file and use a hash here.
+  // NOTE: 'unsafe-inline' removed — only inline script is the theme-init in layout.tsx,
+  // allowed via SHA256 hash. JSON-LD (type=application/ld+json) is not subject to script-src.
   response.headers.set(
     "Content-Security-Policy",
     [
       "default-src 'self'",
       env.isProduction
-        ? `script-src 'self' 'unsafe-inline'`
-        : `script-src 'self' 'unsafe-inline' 'unsafe-eval'`,
+        ? `script-src 'self' 'sha256-9OKft+AY+D0tuNek9651LK+/tdhr5+FWBPAqsL039wg='`
+        : `script-src 'self' 'unsafe-eval' 'sha256-9OKft+AY+D0tuNek9651LK+/tdhr5+FWBPAqsL039wg='`,
       "style-src 'self' 'unsafe-inline' https:",
       `img-src ${imgSources.join(" ")}`,
       "font-src 'self' https: data:",

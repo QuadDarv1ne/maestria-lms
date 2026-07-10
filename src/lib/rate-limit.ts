@@ -55,6 +55,7 @@ function isValidPublicIp(ip: string): boolean {
   if (normalizedIp.startsWith("::ffff:7f")) return false;
   if (normalizedIp.startsWith("::ffff:10.")) return false;
   if (normalizedIp.startsWith("::ffff:192.168.")) return false;
+  if (normalizedIp.startsWith("::ffff:a9fe.")) return false;
 
   const ipv4MappedMatch = /^::ffff:(\d{1,3})\.(\d{1,3})/.exec(normalizedIp);
   if (ipv4MappedMatch) {
@@ -70,7 +71,7 @@ function isValidPublicIp(ip: string): boolean {
   return /^([0-9a-f]{0,4}:){2,7}[0-9a-f]{0,4}$/.test(normalizedIp);
 }
 
-// In-memory fallback store with LRU eviction
+// In-memory fallback store with FIFO eviction
 interface MemoryEntry {
   count: number;
   resetAt: number;
@@ -168,7 +169,7 @@ function checkMemoryLimit(
   }
   const store = memoryStores.get(routeId) as Map<string, MemoryEntry>;
 
-  // LRU eviction if store is too large
+  // FIFO eviction if store is too large
   if (store.size >= MAX_MEMORY_ENTRIES) {
     const firstKey = store.keys().next().value;
     if (firstKey) store.delete(firstKey);

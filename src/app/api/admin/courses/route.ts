@@ -439,50 +439,71 @@ export async function PUT(request: NextRequest) {
         }
       }
 
-      // Cache existing module data before transaction (needed for lesson diff)
-      const existingModuleData = new Map<string, (typeof existingModules)[number]>();
-      for (const [id, mod] of existingModuleMap) {
-        if (incomingModuleIds.has(id)) {
-          existingModuleData.set(id, mod);
-        }
+      // Pre-fetch all assignments for existing lessons (eliminates N+1 in transaction)
+      const existingLessonIds = existingModules.flatMap((m) => m.lessons.map((l) => l.id));
+      const existingAssignments = existingLessonIds.length > 0
+        ? await db.assignment.findMany({ where: { lessonId: { in: existingLessonIds } } })
+        : [];
+      const assignmentsByLesson = new Map<string, typeof existingAssignments>();
+      for (const a of existingAssignments) {
+        const list = assignmentsByLesson.get(a.lessonId) ?? [];
+        list.push(a);
+        assignmentsByLesson.set(a.lessonId, list);
       }
 
       await db.$transaction(async (tx) => {
+        // Batch-update existing modules in parallel
+        const moduleUpdates: Promise<unknown>[] = [];
+        const moduleLessonData: { existingId: string; mod: ModuleInput; mIdx: number }[] = [];
+        const newModules: { mod: ModuleInput; mIdx: number }[] = [];
+
         for (let mIdx = 0; mIdx < (modules as ModuleInput[]).length; mIdx++) {
           const mod = (modules as ModuleInput[])[mIdx];
           const existingId = mod.id && existingModuleMap.has(mod.id) ? mod.id : null;
 
           if (existingId) {
-            await tx.module.update({
-              where: { id: existingId },
-              data: {
-                title: mod.title || `Модуль ${mIdx + 1}`,
-                description: mod.description || null,
-                sortOrder: mod.sortOrder ?? mIdx + 1,
-              },
-            });
+            moduleUpdates.push(
+              tx.module.update({
+                where: { id: existingId },
+                data: {
+                  title: mod.title || `Модуль ${mIdx + 1}`,
+                  description: mod.description || null,
+                  sortOrder: mod.sortOrder ?? mIdx + 1,
+                },
+              })
+            );
+            moduleLessonData.push({ existingId, mod, mIdx });
+          } else {
+            newModules.push({ mod, mIdx });
+          }
+        }
+        await Promise.all(moduleUpdates);
 
-            const existingMod = existingModuleData.get(existingId);
-            if (!existingMod) continue;
+        // Process lessons for existing modules (in parallel per module)
+        const lessonOps: Promise<unknown>[] = [];
+        for (const { existingId, mod } of moduleLessonData) {
+          const existingMod = existingModuleMap.get(existingId);
+          if (!existingMod) continue;
 
-            const existingLessonMap = new Map<string, (typeof existingMod.lessons)[number]>();
-            for (const lesson of existingMod.lessons) {
-              existingLessonMap.set(lesson.id, lesson);
+          const existingLessonMap = new Map<string, (typeof existingMod.lessons)[number]>();
+          for (const lesson of existingMod.lessons) {
+            existingLessonMap.set(lesson.id, lesson);
+          }
+
+          const incomingLessonIds = new Set<string>();
+          for (const lesson of mod.lessons || []) {
+            if (lesson.id && existingLessonMap.has(lesson.id)) {
+              incomingLessonIds.add(lesson.id);
             }
+          }
 
-            const incomingLessonIds = new Set<string>();
-            for (const lesson of mod.lessons || []) {
-              if (lesson.id && existingLessonMap.has(lesson.id)) {
-                incomingLessonIds.add(lesson.id);
-              }
-            }
+          for (let lIdx = 0; lIdx < (mod.lessons || []).length; lIdx++) {
+            const lesson = (mod.lessons || [])[lIdx];
+            const existingLessonId = lesson.id && existingLessonMap.has(lesson.id) ? lesson.id : null;
 
-            for (let lIdx = 0; lIdx < (mod.lessons || []).length; lIdx++) {
-              const lesson = (mod.lessons || [])[lIdx];
-              const existingLessonId = lesson.id && existingLessonMap.has(lesson.id) ? lesson.id : null;
-
-              if (existingLessonId) {
-                await tx.lesson.update({
+            if (existingLessonId) {
+              lessonOps.push(
+                tx.lesson.update({
                   where: { id: existingLessonId },
                   data: {
                     title: lesson.title || `Урок ${lIdx + 1}`,
@@ -493,40 +514,44 @@ export async function PUT(request: NextRequest) {
                     sortOrder: lesson.sortOrder ?? lIdx + 1,
                     isFree: lesson.isFree || false,
                   },
-                });
+                })
+              );
 
-                if (lesson.assignments !== undefined) {
-                  const existingAssignments = await tx.assignment.findMany({
-                    where: { lessonId: existingLessonId },
-                  });
-                  const existingAssignmentMap = new Map(existingAssignments.map((a) => [a.id, a]));
-                  const incomingAssignmentIds = new Set<string>();
-                  for (const a of lesson.assignments || []) {
-                    if (a.id && existingAssignmentMap.has(a.id)) incomingAssignmentIds.add(a.id);
-                  }
+              if (lesson.assignments !== undefined) {
+                const existingAssignmentList = assignmentsByLesson.get(existingLessonId) ?? [];
+                const existingAssignmentMap = new Map(existingAssignmentList.map((a) => [a.id, a]));
+                const incomingAssignmentIds = new Set<string>();
+                for (const a of lesson.assignments || []) {
+                  if (a.id && existingAssignmentMap.has(a.id)) incomingAssignmentIds.add(a.id);
+                }
 
-                  for (const a of lesson.assignments || []) {
-                    const existingAId = a.id && existingAssignmentMap.has(a.id) ? a.id : null;
-                    if (existingAId) {
-                      await tx.assignment.update({
+                for (const a of lesson.assignments || []) {
+                  const existingAId = a.id && existingAssignmentMap.has(a.id) ? a.id : null;
+                  if (existingAId) {
+                    lessonOps.push(
+                      tx.assignment.update({
                         where: { id: existingAId },
                         data: assignmentUpdateData(a),
-                      });
-                    } else {
-                      await tx.assignment.create({
+                      })
+                    );
+                  } else {
+                    lessonOps.push(
+                      tx.assignment.create({
                         data: assignmentCreateData(a, existingLessonId),
-                      });
-                    }
-                  }
-
-                  for (const [aId] of existingAssignmentMap) {
-                    if (!incomingAssignmentIds.has(aId)) {
-                      await tx.assignment.delete({ where: { id: aId } });
-                    }
+                      })
+                    );
                   }
                 }
-              } else {
-                const newLesson = await tx.lesson.create({
+
+                for (const [aId] of existingAssignmentMap) {
+                  if (!incomingAssignmentIds.has(aId)) {
+                    lessonOps.push(tx.assignment.delete({ where: { id: aId } }));
+                  }
+                }
+              }
+            } else {
+              lessonOps.push(
+                tx.lesson.create({
                   data: {
                     moduleId: existingId,
                     title: lesson.title || `Урок ${lIdx + 1}`,
@@ -537,59 +562,72 @@ export async function PUT(request: NextRequest) {
                     sortOrder: lesson.sortOrder ?? lIdx + 1,
                     isFree: lesson.isFree || false,
                   },
-                });
-
-                if (lesson.assignments && lesson.assignments.length > 0) {
-                  for (const a of lesson.assignments) {
-                    await tx.assignment.create({
-                      data: assignmentCreateData(a, newLesson.id),
-                    });
+                }).then((newLesson) => {
+                  if (lesson.assignments && lesson.assignments.length > 0) {
+                    return Promise.all(
+                      lesson.assignments.map((a) =>
+                        tx.assignment.create({ data: assignmentCreateData(a, newLesson.id) })
+                      )
+                    );
                   }
-                }
-              }
+                })
+              );
             }
+          }
 
-            for (const [lessonId, _existingLesson] of existingLessonMap) {
-              if (!incomingLessonIds.has(lessonId)) {
-                await tx.lesson.delete({ where: { id: lessonId } });
-              }
-            }
-          } else {
-            const newModule = await tx.module.create({
-              data: {
-                courseId: courseId as string,
-                title: mod.title || `Модуль ${mIdx + 1}`,
-                description: mod.description || null,
-                sortOrder: mod.sortOrder ?? mIdx + 1,
-              },
-            });
-
-            for (let lIdx = 0; lIdx < (mod.lessons || []).length; lIdx++) {
-              const lesson = (mod.lessons || [])[lIdx];
-              const newLesson = await tx.lesson.create({
-                data: {
-                  moduleId: newModule.id,
-                  title: lesson.title || `Урок ${lIdx + 1}`,
-                  type: lesson.type || "text",
-                  content: lesson.content ? sanitizeContent(lesson.content) : null,
-                  videoUrl: lesson.videoUrl || null,
-                  duration: Number(lesson.duration) || 0,
-                  sortOrder: lesson.sortOrder ?? lIdx + 1,
-                  isFree: lesson.isFree || false,
-                },
-              });
-
-              if (lesson.assignments && lesson.assignments.length > 0) {
-                for (const a of lesson.assignments) {
-                  await tx.assignment.create({
-                    data: assignmentCreateData(a, newLesson.id),
-                  });
-                }
-              }
+          // Delete removed lessons
+          for (const [lessonId] of existingLessonMap) {
+            if (!incomingLessonIds.has(lessonId)) {
+              lessonOps.push(tx.lesson.delete({ where: { id: lessonId } }));
             }
           }
         }
+        await Promise.all(lessonOps);
 
+        // Create new modules (must be sequential to get IDs, but lessons within can be parallel)
+        for (const { mod, mIdx } of newModules) {
+          const newModule = await tx.module.create({
+            data: {
+              courseId: courseId as string,
+              title: mod.title || `Модуль ${mIdx + 1}`,
+              description: mod.description || null,
+              sortOrder: mod.sortOrder ?? mIdx + 1,
+            },
+          });
+
+          if (mod.lessons && mod.lessons.length > 0) {
+            const newLessons = await Promise.all(
+              mod.lessons.map((lesson, lIdx) =>
+                tx.lesson.create({
+                  data: {
+                    moduleId: newModule.id,
+                    title: lesson.title || `Урок ${lIdx + 1}`,
+                    type: lesson.type || "text",
+                    content: lesson.content ? sanitizeContent(lesson.content) : null,
+                    videoUrl: lesson.videoUrl || null,
+                    duration: Number(lesson.duration) || 0,
+                    sortOrder: lesson.sortOrder ?? lIdx + 1,
+                    isFree: lesson.isFree || false,
+                  },
+                })
+              )
+            );
+            const assignmentCreates: Promise<unknown>[] = [];
+            for (let i = 0; i < newLessons.length; i++) {
+              const lesson = mod.lessons[i];
+              if (lesson.assignments && lesson.assignments.length > 0) {
+                for (const a of lesson.assignments) {
+                  assignmentCreates.push(
+                    tx.assignment.create({ data: assignmentCreateData(a, newLessons[i].id) })
+                  );
+                }
+              }
+            }
+            await Promise.all(assignmentCreates);
+          }
+        }
+
+        // Delete removed modules
         for (const [moduleId] of existingModuleMap) {
           if (!incomingModuleIds.has(moduleId)) {
             await tx.module.delete({ where: { id: moduleId } });

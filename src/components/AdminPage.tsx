@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
@@ -65,8 +65,8 @@ export function AdminPage() {
     }
   }, [user, router, locale]);
 
-  const handleUserSearch = (value: string) => { setUserSearch(value); setUserPage(1); };
-  const handleRoleFilter = (value: string) => { setUserRoleFilter(value); setUserPage(1); };
+  const handleUserSearch = useCallback((value: string) => { setUserSearch(value); setUserPage(1); }, []);
+  const handleRoleFilter = useCallback((value: string) => { setUserRoleFilter(value); setUserPage(1); }, []);
 
   const { data: coursesData, isLoading: coursesLoading } = useAdminCourses();
   const { data: usersData, isLoading: usersLoading } = useAdminUsers();
@@ -77,23 +77,23 @@ export function AdminPage() {
   const courses = useMemo(() => coursesData?.courses ?? [], [coursesData?.courses]);
   const users = useMemo(() => usersData?.users ?? [], [usersData?.users]);
 
-  const handleUserRoleChange = async (userId: string, role: UserRole) => {
+  const handleUserRoleChange = useCallback(async (userId: string, role: UserRole) => {
     try {
       await updateRole.mutateAsync({ userId, role });
       toast.success(t("adminPage.roleUpdated", locale));
     } catch {
       toast.error(t("adminPage.roleUpdateError", locale));
     }
-  };
+  }, [updateRole, locale]);
 
-  const handleUserStatusChange = async (userId: string, isActive: boolean) => {
+  const handleUserStatusChange = useCallback(async (userId: string, isActive: boolean) => {
     try {
       await toggleStatus.mutateAsync({ userId, isActive });
       toast.success(t(isActive ? "adminPage.userUnblocked" : "adminPage.userBlocked", locale));
     } catch {
       toast.error(t("adminPage.statusUpdateError", locale));
     }
-  };
+  }, [toggleStatus, locale]);
 
   const handleRefresh = () => {
     queryClient.invalidateQueries({ queryKey: ["admin"] });

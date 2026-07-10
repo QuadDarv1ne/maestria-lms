@@ -4,8 +4,8 @@ import { log } from "./logger";
 
 /**
  * Feature Flags utility with layered evaluation:
- * 1. Environment variable override
- * 2. Database/admin settings
+ * 1. Server-side admin overrides (in-memory Map)
+ * 2. Environment variable override (build-time)
  * 3. URL query parameter (for testing)
  * 4. localStorage (for client-side testing)
  * 5. Default value from config
@@ -13,6 +13,9 @@ import { log } from "./logger";
 
 // Client-side flag cache
 const flagCache = new Map<string, boolean>();
+
+// Server-side admin overrides (replaces process.env mutation)
+const serverFlagOverrides = new Map<string, boolean>();
 
 function isClient(): boolean {
   return typeof window !== "undefined";
@@ -51,7 +54,7 @@ function getFromEnvVar(key: string): boolean | null {
 
 /**
  * Evaluate a feature flag with layered priority.
- * Priority: env > url > localStorage > default
+ * Priority: server override > env > url > localStorage > default
  */
 export function isFeatureEnabled(key: FeatureFlagKey): boolean {
   // Check cache first (client-side)
@@ -63,6 +66,11 @@ export function isFeatureEnabled(key: FeatureFlagKey): boolean {
   if (!flagDef) {
     log.warn(`Feature flag "${key}" not found in configuration`);
     return false;
+  }
+
+  // 0. Server-side admin override (set via admin API)
+  if (!isClient() && serverFlagOverrides.has(key)) {
+    return serverFlagOverrides.get(key) as boolean;
   }
 
   // 1. Environment variable override
@@ -153,6 +161,24 @@ export function useFeatureFlag(key: FeatureFlagKey): boolean {
 }
 
 /**
+ * Server-side: set a feature flag override (in-memory, per-process).
+ * Used by admin API instead of mutating process.env.
+ */
+export function setServerFeatureFlag(key: FeatureFlagKey, value: boolean): void {
+  serverFlagOverrides.set(key, value);
+  // Clear client cache if any (relevant for SSR)
+  flagCache.delete(key);
+}
+
+/**
+ * Server-side: clear all admin overrides.
+ */
+export function clearServerFeatureFlags(): void {
+  serverFlagOverrides.clear();
+  flagCache.clear();
+}
+
+/**
  * Simple string hash function for rollout percentage calculation.
  */
 function simpleHash(str: string): number {
@@ -163,16 +189,4 @@ function simpleHash(str: string): number {
     hash |= 0; // Convert to 32-bit integer
   }
   return Math.abs(hash);
-}
-
-/**
- * Server-side: fetch flags from database/admin settings.
- * Returns evaluated flags for the current request context.
- */
-export async function getServerFeatureFlags(): Promise<Record<string, boolean>> {
-  const flags: Record<string, boolean> = {};
-  for (const key of Object.keys(FEATURE_FLAGS)) {
-    flags[key] = isFeatureEnabled(key as FeatureFlagKey);
-  }
-  return flags;
 }

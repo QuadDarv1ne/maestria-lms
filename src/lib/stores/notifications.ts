@@ -79,7 +79,8 @@ export const createNotificationsSlice: StateCreator<NotificationsSlice, [], [], 
   },
 
   markAllNotificationsRead: async () => {
-    const updated = get().notifications.map((n) => ({ ...n, read: true }));
+    const previous = get().notifications;
+    const updated = previous.map((n) => ({ ...n, read: true }));
     save("maestria-notifications", updated);
     set({ notifications: updated });
 
@@ -89,11 +90,17 @@ export const createNotificationsSlice: StateCreator<NotificationsSlice, [], [], 
         headers: { "Content-Type": "application/json" },
       });
       if (!res.ok) {
+        // Rollback on server failure
+        save("maestria-notifications", previous);
+        set({ notifications: previous });
         log.warn("Server failed to mark all notifications as read", {
           status: res.status,
         });
       }
     } catch (err: unknown) {
+      // Rollback on network error
+      save("maestria-notifications", previous);
+      set({ notifications: previous });
       log.warn("Failed to sync mark-all read status to server", {
         error: err instanceof Error ? err.message : String(err),
       });

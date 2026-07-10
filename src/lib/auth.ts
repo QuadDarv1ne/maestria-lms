@@ -37,6 +37,21 @@ async function verifyPassword(password: string, hash: string): Promise<boolean> 
   return bcrypt.compare(password, hash);
 }
 
+// Short-lived cache for JWT callback DB lookups — avoids a query per request
+// while still catching role/deactivation changes within 5 minutes.
+const jwtUserCache = new Map<string, { role: string; isActive: boolean; expiresAt: number }>();
+const JWT_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const JWT_CACHE_MAX = 500;
+
+function jwtCacheSet(id: string, data: { role: string; isActive: boolean }) {
+  if (jwtUserCache.size >= JWT_CACHE_MAX) {
+    // Evict oldest entry
+    const firstKey = jwtUserCache.keys().next().value;
+    if (firstKey) jwtUserCache.delete(firstKey);
+  }
+  jwtUserCache.set(id, { ...data, expiresAt: Date.now() + JWT_CACHE_TTL });
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -101,22 +116,39 @@ export const authOptions: NextAuthOptions = {
         extendedToken.role = (user as ExtendedUser).role;
         extendedToken.id = user.id;
       }
-      // Refresh role from DB to catch demotions/deactivations
+      // Refresh role from DB to catch demotions/deactivations (cached 5 min)
       if (extendedToken.id) {
-        const dbUser = await db.user.findUnique({
-          where: { id: extendedToken.id },
-          select: { role: true, isActive: true },
-        });
-        if (dbUser) {
-          extendedToken.role = dbUser.role;
+        const now = Date.now();
+        const cached = jwtUserCache.get(extendedToken.id);
+        let dbUser: { role: string; isActive: boolean } | null = null;
+
+        if (cached && cached.expiresAt > now) {
+          dbUser = cached;
+        } else {
+          const fresh = await db.user.findUnique({
+            where: { id: extendedToken.id },
+            select: { role: true, isActive: true },
+          });
+          if (fresh) {
+            dbUser = fresh;
+            jwtCacheSet(extendedToken.id, fresh);
+          } else {
+            jwtUserCache.delete(extendedToken.id);
+          }
         }
+
+        if (!dbUser || !dbUser.isActive) {
+          jwtUserCache.delete(extendedToken.id);
+          return {} as ExtendedJWT;
+        }
+        extendedToken.role = dbUser.role;
       }
       return extendedToken;
     },
     async session({ session, token }): Promise<ExtendedSession> {
+      const extendedToken = token as ExtendedJWT;
       const extendedSession = session as ExtendedSession;
       if (extendedSession.user) {
-        const extendedToken = token as ExtendedJWT;
         extendedSession.user.role = extendedToken.role ?? "";
         extendedSession.user.id = extendedToken.id ?? "";
       }

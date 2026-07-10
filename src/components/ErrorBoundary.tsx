@@ -10,10 +10,6 @@ import { AlertTriangle, Home, RefreshCw, RotateCcw } from "lucide-react";
 
 let currentLocale: Locale = "ru";
 
-export function syncErrorBoundaryLocale() {
-  currentLocale = useAppStore.getState().locale;
-}
-
 interface ErrorBoundaryProps {
   children: ReactNode;
   fallback?: ReactNode;

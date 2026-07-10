@@ -68,6 +68,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Файл не выбран" }, { status: 400 });
     }
 
+    // Early rejection based on client-reported size
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
         { error: "Файл слишком большой (макс. 100 МБ)" },
@@ -84,6 +85,14 @@ export async function POST(req: NextRequest) {
 
     const key = makeFileKey(folder, file.name);
     const buffer = Buffer.from(await file.arrayBuffer());
+
+    // Verify actual size matches client-reported size (defense against tampered Content-Length)
+    if (buffer.byteLength > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: "Файл слишком большой (макс. 100 МБ)" },
+        { status: 400 }
+      );
+    }
 
     await s3Client.send(
       new PutObjectCommand({

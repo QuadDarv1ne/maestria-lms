@@ -154,10 +154,16 @@ export async function flushAll(): Promise<void> {
   const redis = getRedisClient();
   if (redis) {
     try {
-      const keys = await redis.keys("cache:*");
-      if (keys.length > 0) {
-        await redis.del(...keys);
-      }
+      // Use SCAN instead of KEYS to avoid blocking Redis
+      let cursor = "0";
+      const batchSize = 100;
+      do {
+        const [nextCursor, keys] = await redis.scan(cursor, "MATCH", "cache:*", "COUNT", batchSize);
+        cursor = nextCursor;
+        if (keys.length > 0) {
+          await redis.del(...keys);
+        }
+      } while (cursor !== "0");
     } catch (error: unknown) {
       log.warn("Redis cache flush failed", {
         error: error instanceof Error ? error.message : String(error),

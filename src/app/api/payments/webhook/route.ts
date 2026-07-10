@@ -6,7 +6,7 @@ import { log } from "@/lib/logger";
 import { env } from "@/lib/env";
 import { z } from "zod";
 import { verifyWebhookSignature } from "@/lib/webhook-verify";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 

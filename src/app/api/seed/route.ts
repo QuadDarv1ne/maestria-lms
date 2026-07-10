@@ -826,8 +826,6 @@ export async function POST() {
       categories: categories.length,
       courses: courses.length,
       users: 4, // admin + 3 teachers
-      ...(!seedAdminPassword && { adminPassword }),
-      ...(!seedTeacherPassword && { teacherPassword }),
     },
   }, { status: 201 });
   } catch (error: unknown) {

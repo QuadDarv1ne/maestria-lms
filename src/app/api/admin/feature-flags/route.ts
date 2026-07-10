@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession, requireAdmin } from "@/lib/auth";
 import { FEATURE_FLAGS } from "@/lib/feature-flags-config";
-import { getAllFeatureFlags } from "@/lib/feature-flags";
+import { getAllFeatureFlags, setServerFeatureFlag } from "@/lib/feature-flags";
 import { handleApiError } from "@/lib/api-errors";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { z } from "zod";
@@ -67,15 +67,14 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: `Unknown feature flag: ${key}` }, { status: 404 });
     }
 
-    // For server-side: set environment variable (requires restart to take effect)
-    // For client-side: this endpoint returns the new value, client sets localStorage
-    process.env[`FEATURE_FLAG_${key.toUpperCase()}`] = String(enabled);
+    // Set server-side override in memory (per-process, no process.env mutation)
+    setServerFeatureFlag(key as keyof typeof FEATURE_FLAGS, enabled);
 
     return NextResponse.json({
       message: `Feature flag ${key} updated`,
       key,
       enabled,
-      note: "Server-side change requires restart. Client will use localStorage override.",
+      note: "Override is per-process. Client will use localStorage override.",
     });
   } catch (error: unknown) {
     return handleApiError(error, { route: "admin/feature-flags" });

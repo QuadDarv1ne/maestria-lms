@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { log } from "@/lib/logger";
 import { env } from "@/lib/env";
 import { APP_VERSION } from "@/lib/constants";
+import { getAuthSession } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
@@ -76,6 +77,14 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const detailed = searchParams.get("detailed") === "true";
+
+  // Detailed health info requires admin auth
+  if (detailed) {
+    const session = await getAuthSession();
+    if (!session?.user || session.user.role !== "admin") {
+      return NextResponse.json({ error: "Admin access required for detailed health" }, { status: 403 });
+    }
+  }
 
   const [dbCheck, redisCheck] = await Promise.all([
     checkDatabase(),
