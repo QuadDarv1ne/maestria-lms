@@ -29,6 +29,7 @@ import {
   Heart,
   GraduationCap,
 } from "lucide-react";
+import { CONTACT } from "@/lib/constants";
 
 export function AboutPage() {
   const router = useRouter();
@@ -176,11 +177,11 @@ onClick={() => router.push("?dialog=login")}
                       maksimqwe42@mail.ru
                     </a>
                     <a
-                      href="tel:+79150480249"
+                      href={`tel:${CONTACT.phoneTel}`}
                       className="flex items-center gap-2 hover:text-white transition-colors"
                     >
                       <Phone className="w-4 h-4" />
-                      +7 (915) 048-02-49
+                      {CONTACT.phone}
                     </a>
                   </div>
                 </div>
@@ -382,8 +383,8 @@ onClick={() => router.push("?dialog=login")}
               icon: <Phone className="w-7 h-7 text-violet-600" />,
               bg: "bg-violet-50",
               label: tr("about.contactPhone"),
-              value: "+7 (915) 048-02-49",
-              href: "tel:+79150480249",
+              value: CONTACT.phone,
+              href: `tel:${CONTACT.phoneTel}`,
             },
             {
               icon: <MapPin className="w-7 h-7 text-amber-600" />,

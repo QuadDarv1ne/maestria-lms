@@ -4,6 +4,7 @@ import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { DocumentPageLayout } from "@/components/DocumentPageLayout";
 import { ShieldCheck } from "lucide-react";
+import { CONTACT } from "@/lib/constants";
 
 export function PersonalDataConsentPage() {
   const locale = useAppStore((s) => s.locale);
@@ -111,7 +112,7 @@ export function PersonalDataConsentPage() {
             <li><strong>{t("legal.company", locale)}</strong> Maestro7IT</li>
             <li><strong>{t("legal.head", locale)}</strong> {t("legal.headName", locale)}</li>
             <li><strong>Email:</strong> maksimqwe42@mail.ru</li>
-            <li><strong>{t("legal.phone", locale)}</strong> +7 (915) 048-02-49</li>
+            <li><strong>{t("legal.phone", locale)}</strong> {CONTACT.phone}</li>
             <li><strong>{t("legal.address", locale)}</strong> {t("legal.addressValue", locale)}</li>
           </ul>
           <p>7.2. {t("pdc.s7_2", locale)}</p>

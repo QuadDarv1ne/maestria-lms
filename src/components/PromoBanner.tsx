@@ -4,6 +4,7 @@ import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import Image from "next/image";
 import { Phone, Mail, Globe, ExternalLink } from "lucide-react";
+import { CONTACT } from "@/lib/constants";
 
 export function PromoBanner() {
   const locale = useAppStore((s) => s.locale);
@@ -55,21 +56,21 @@ export function PromoBanner() {
               <ExternalLink className="w-4 h-4 ml-auto opacity-60 group-hover:opacity-100 transition-opacity" />
             </a>
             <a
-              href="mailto:contact@maestro7it.com"
+              href={`mailto:${CONTACT.email}`}
               className="flex items-center gap-3 p-3 rounded-lg bg-white/10 hover:bg-white/20 transition-colors group"
             >
               <Mail className="w-5 h-5 flex-shrink-0" />
               <span className="text-sm font-medium group-hover:underline">
-                contact@maestro7it.com
+                {CONTACT.email}
               </span>
             </a>
             <a
-              href="tel:+79150480249"
+              href={`tel:${CONTACT.phoneTel}`}
               className="flex items-center gap-3 p-3 rounded-lg bg-white/10 hover:bg-white/20 transition-colors group"
             >
               <Phone className="w-5 h-5 flex-shrink-0" />
               <span className="text-sm font-medium group-hover:underline">
-                +7 (915) 048-02-49
+                {CONTACT.phone}
               </span>
             </a>
           </div>

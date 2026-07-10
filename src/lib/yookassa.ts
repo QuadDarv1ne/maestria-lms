@@ -50,15 +50,21 @@ async function yooKassaRequest<T>(
     throw new Error("YooKassa credentials not configured");
   }
 
-  const res = await fetch(`${YOOKASSA_API_URL}${path}`, {
-    method,
-    headers: {
-      "Authorization": auth,
-      "Content-Type": "application/json",
-      "Idempotence-Key": createIdempotencyKey(body),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${YOOKASSA_API_URL}${path}`, {
+      method,
+      headers: {
+        "Authorization": auth,
+        "Content-Type": "application/json",
+        "Idempotence-Key": createIdempotencyKey(body),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch (err) {
+    log.error("YooKassa network error", { path, method, error: String(err) });
+    throw new Error(`YooKassa: network error — ${err instanceof Error ? err.message : String(err)}`);
+  }
 
   if (!res.ok) {
     const errorBody: YooKassaErrorResponse = await res.json().catch(() => ({

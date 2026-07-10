@@ -23,6 +23,14 @@ import {
 
 export const APP_VERSION = "3.2.1";
 
+export const CONTACT = {
+  phone: "+7 (915) 048-02-49",
+  phoneTel: "+79150480249",
+  email: "contact@maestro7it.com",
+  website: "https://maestro7it.com",
+  ownerName: "Дуплей Максим Игоревич",
+} as const;
+
 export const levelLabels: Record<string, string> = {
   beginner: "common.levelBeginner",
   intermediate: "common.levelIntermediate",

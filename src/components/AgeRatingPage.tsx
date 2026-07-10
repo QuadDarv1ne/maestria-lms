@@ -4,6 +4,7 @@ import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { DocumentPageLayout } from "@/components/DocumentPageLayout";
 import { Baby } from "lucide-react";
+import { CONTACT } from "@/lib/constants";
 
 export function AgeRatingPage() {
   const locale = useAppStore((s) => s.locale);
@@ -81,7 +82,7 @@ export function AgeRatingPage() {
           <ul>
             <li><strong>{t("legal.company", locale)}</strong> Maestro7IT</li>
             <li><strong>Email:</strong> maksimqwe42@mail.ru</li>
-            <li><strong>{t("legal.phone", locale)}</strong> +7 (915) 048-02-49</li>
+            <li><strong>{t("legal.phone", locale)}</strong> {CONTACT.phone}</li>
           </ul>
         </div>
       </section>

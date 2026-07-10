@@ -24,6 +24,7 @@ import {
   Mail,
   Phone,
 } from "lucide-react";
+import { CONTACT } from "@/lib/constants";
 
 interface FAQItem {
   id: string;
@@ -206,10 +207,10 @@ export function HelpPage() {
                 {t("help.emailUs", locale)}
               </Button>
             </a>
-            <a href="tel:+79150480249">
+            <a href={`tel:${CONTACT.phoneTel}`}>
               <Button variant="outline">
                 <Phone className="w-4 h-4 mr-2" />
-                +7 (915) 048-02-49
+                {CONTACT.phone}
               </Button>
             </a>
           </div>

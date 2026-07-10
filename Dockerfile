@@ -19,6 +19,9 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Generate Prisma Client types (needed for TypeScript compilation)
+RUN npx prisma generate
+
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 

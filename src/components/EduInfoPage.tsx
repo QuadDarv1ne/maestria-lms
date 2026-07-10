@@ -5,6 +5,7 @@ import { t } from "@/lib/i18n";
 import { Card, CardContent } from "@/components/ui/card";
 import { DocumentPageLayout } from "@/components/DocumentPageLayout";
 import { School } from "lucide-react";
+import { CONTACT } from "@/lib/constants";
 
 export function EduInfoPage() {
   const locale = useAppStore((s) => s.locale);
@@ -42,7 +43,7 @@ export function EduInfoPage() {
               <tr className="border-b border-border"><td className="py-2 pr-4 font-medium text-foreground">{t("legal.head", locale)}</td><td className="py-2">{t("legal.headName", locale)}</td></tr>
               <tr className="border-b border-border"><td className="py-2 pr-4 font-medium text-foreground">{t("eduinfo.yearFound", locale)}</td><td className="py-2">2024</td></tr>
               <tr className="border-b border-border"><td className="py-2 pr-4 font-medium text-foreground">{t("legal.address", locale)}</td><td className="py-2">{t("legal.addressValue", locale)}</td></tr>
-              <tr className="border-b border-border"><td className="py-2 pr-4 font-medium text-foreground">{t("legal.phone", locale)}</td><td className="py-2">+7 (915) 048-02-49</td></tr>
+              <tr className="border-b border-border"><td className="py-2 pr-4 font-medium text-foreground">{t("legal.phone", locale)}</td><td className="py-2">{CONTACT.phone}</td></tr>
               <tr className="border-b border-border"><td className="py-2 pr-4 font-medium text-foreground">Email</td><td className="py-2">maksimqwe42@mail.ru</td></tr>
               <tr><td className="py-2 pr-4 font-medium text-foreground">{t("eduinfo.website", locale)}</td><td className="py-2">Maestria</td></tr>
             </tbody>

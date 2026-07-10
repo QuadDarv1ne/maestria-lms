@@ -44,11 +44,12 @@ export function AdminFeatureFlags({ locale }: { locale: Locale }) {
   async function toggleFlag(key: string, enabled: boolean) {
     try {
       // Update server (for logging)
-      await fetch("/api/admin/feature-flags", {
+      const res = await fetch("/api/admin/feature-flags", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ key, enabled }),
       });
+      if (!res.ok) throw new Error("Server update failed");
 
       // Update client immediately via localStorage
       setFeatureFlag(key as Parameters<typeof setFeatureFlag>[0], enabled);

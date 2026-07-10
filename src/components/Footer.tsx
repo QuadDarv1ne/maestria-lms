@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import type { Locale } from "@/lib/store";
-import { APP_VERSION } from "@/lib/constants";
+import { APP_VERSION, CONTACT } from "@/lib/constants";
 
 export const Footer = React.memo(function Footer() {
   const locale = useAppStore((s) => s.locale);
@@ -42,7 +42,7 @@ export const Footer = React.memo(function Footer() {
             </p>
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
               <Crown className="w-4 h-4 text-amber-500" />
-              <span>{t("footer.manager", locale)}: <span className="font-medium text-foreground">Дуплей Максим Игоревич</span></span>
+              <span>{t("footer.manager", locale)}: <span className="font-medium text-foreground">{CONTACT.ownerName}</span></span>
             </div>
             {/* VK Video и Rutube */}
             <div className="flex items-center gap-2">
@@ -187,8 +187,8 @@ export const Footer = React.memo(function Footer() {
               </li>
               <li className="flex items-center gap-2">
                 <Phone className="w-4 h-4 shrink-0" />
-                <a href="tel:+79150480249" className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded" aria-label={t("footer.contacts", locale) + ': phone'}>
-                  +7 (915) 048-02-49
+                <a href={`tel:${CONTACT.phoneTel}`} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded" aria-label={t("footer.contacts", locale) + ': phone'}>
+                  {CONTACT.phone}
                 </a>
               </li>
               <li className="flex items-center gap-2">
