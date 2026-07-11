@@ -9,9 +9,6 @@ const hasCredentials = !!(s3AccessKey && s3SecretKey);
 
 /**
  * S3 client configured for the project's object storage.
- * Endpoint: s3c3.001.gpucloud.ru
- * CDN for delivery: https://ui3adtb308.a.trbcdn.net
- *
  * Returns null when credentials are not configured — use isS3Available()
  * to check before calling upload helpers.
  */
