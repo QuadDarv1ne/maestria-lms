@@ -9,9 +9,8 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN npm install --force
-RUN npm install --save-optional lightningcss-linux-x64-musl
-RUN npm rebuild
+# Remove platform-mismatched lockfile so npm resolves optional deps correctly for Alpine (musl)
+RUN rm -f package-lock.json && npm install
 
 # Rebuild the source code only when needed
 FROM base AS builder
