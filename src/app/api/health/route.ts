@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 
 export async function GET() {
   try {
-  const checks = {
+    const checks = {
     status: "healthy" as "healthy" | "unhealthy",
     timestamp: new Date().toISOString(),
     version: APP_VERSION,

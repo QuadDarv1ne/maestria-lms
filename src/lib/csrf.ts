@@ -1,27 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { env } from "@/lib/env";
 
 const SAFE_METHODS = ["GET", "HEAD", "OPTIONS"];
-const CSRF_COOKIE_NAME = "csrf-token";
-
-function generateToken(): string {
-  const bytes = new Uint8Array(32);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-export function getCsrfCookie(): { name: string; value: string; serialize: string } {
-  const token = generateToken();
-  const isProd = env.isProduction;
-  return {
-    name: CSRF_COOKIE_NAME,
-    value: token,
-    serialize: `${CSRF_COOKIE_NAME}=${token}; Path=/; SameSite=Strict; Max-Age=86400${isProd ? "; Secure" : ""}`,
-  };
-}
 
 export function validateCsrf(request: NextRequest): boolean {
   if (SAFE_METHODS.includes(request.method)) {

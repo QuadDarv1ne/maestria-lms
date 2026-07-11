@@ -33,16 +33,18 @@ async function readSettings(): Promise<typeof DEFAULT_SETTINGS> {
   return DEFAULT_SETTINGS;
 }
 
-async function writeSettings(settings: typeof DEFAULT_SETTINGS) {
+async function writeSettings(settings: typeof DEFAULT_SETTINGS): Promise<boolean> {
   const redis = getRedisClient();
   if (redis) {
     try {
       await redis.setex(SETTINGS_KEY, SETTINGS_TTL, JSON.stringify(settings));
-      return;
+      return true;
     } catch (e) {
       log.error("Failed to write settings to Redis", { error: e });
+      return false;
     }
   }
+  return false;
 }
 
 export async function GET(request: NextRequest) {
@@ -86,7 +88,14 @@ export async function PATCH(request: NextRequest) {
 
     const current = await readSettings();
     const updated = { ...current, ...validation.data };
-    await writeSettings(updated);
+    const persisted = await writeSettings(updated);
+
+    if (!persisted) {
+      return NextResponse.json(
+        { error: "Failed to save settings" },
+        { status: 503 }
+      );
+    }
 
     return NextResponse.json(updated);
   } catch (error: unknown) {
