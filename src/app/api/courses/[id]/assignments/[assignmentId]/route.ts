@@ -149,7 +149,7 @@ export async function POST(
           }
         }
       } catch {
-        log.warn("Failed to parse assignment answer for grading", { assignmentId: assignment.id, type: assignment.type });
+        log.error("Failed to parse assignment answer for grading", { assignmentId: assignment.id, type: assignment.type });
       }
     } else if (assignment.type === "matching") {
       // Auto-grading для matching
@@ -179,7 +179,7 @@ export async function POST(
           }
         }
       } catch {
-        log.warn("Failed to parse assignment answer for grading", { assignmentId: assignment.id, type: assignment.type });
+        log.error("Failed to parse assignment answer for grading", { assignmentId: assignment.id, type: assignment.type });
       }
     } else if (assignment.type === "ordering") {
       // Auto-grading для ordering
@@ -208,7 +208,7 @@ export async function POST(
           }
         }
       } catch {
-        log.warn("Failed to parse assignment answer for grading", { assignmentId: assignment.id, type: assignment.type });
+        log.error("Failed to parse assignment answer for grading", { assignmentId: assignment.id, type: assignment.type });
       }
     } else if (assignment.type === "drag_drop") {
       try {
@@ -230,7 +230,7 @@ export async function POST(
           }
         }
       } catch {
-        log.warn("Failed to parse assignment answer for grading", { assignmentId: assignment.id, type: assignment.type });
+        log.error("Failed to parse assignment answer for grading", { assignmentId: assignment.id, type: assignment.type });
       }
     }
 

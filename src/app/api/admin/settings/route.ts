@@ -4,6 +4,7 @@ import { handleApiError } from "@/lib/api-errors";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { z } from "zod";
 import { getRedisClient } from "@/lib/redis";
+import { log } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -25,8 +26,8 @@ async function readSettings(): Promise<typeof DEFAULT_SETTINGS> {
     try {
       const data = await redis.get(SETTINGS_KEY);
       if (data) return JSON.parse(data) as typeof DEFAULT_SETTINGS;
-    } catch {
-      // Fall through to defaults
+    } catch (e) {
+      log.error("Failed to read settings from Redis", { error: e });
     }
   }
   return DEFAULT_SETTINGS;
@@ -38,8 +39,8 @@ async function writeSettings(settings: typeof DEFAULT_SETTINGS) {
     try {
       await redis.setex(SETTINGS_KEY, SETTINGS_TTL, JSON.stringify(settings));
       return;
-    } catch {
-      // Fall through silently
+    } catch (e) {
+      log.error("Failed to write settings to Redis", { error: e });
     }
   }
 }
