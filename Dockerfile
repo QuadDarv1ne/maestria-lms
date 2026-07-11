@@ -8,12 +8,11 @@ FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-COPY package.json bun.lock* ./
-RUN npm install -g bun && bun install --frozen-lockfile
+COPY package.json package-lock.json* ./
+RUN npm install
 
 # Rebuild the source code only when needed
 FROM base AS builder
-RUN npm install -g bun
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
@@ -25,7 +24,7 @@ RUN npx prisma generate
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-RUN bun run build
+RUN npm run build
 
 # Production image, copy all the files and run next
 FROM base AS runner
