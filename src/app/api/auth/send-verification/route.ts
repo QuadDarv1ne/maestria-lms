@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const baseUrl = env.nextAuthUrl || "http://localhost:3000";
+    const baseUrl = env.siteUrl;
     const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${token}`;
 
     await sendEmail({

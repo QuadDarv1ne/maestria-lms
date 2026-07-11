@@ -30,8 +30,12 @@ export async function POST(request: NextRequest) {
   }
 
   // Defense-in-depth: только администраторы могут запускать seed
-  const session = await getAuthSession();
-  if (!session?.user || session.user.role !== "admin") {
+  try {
+    const session = await getAuthSession();
+    if (!session?.user || session.user.role !== "admin") {
+      return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
+    }
+  } catch {
     return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
   }
 

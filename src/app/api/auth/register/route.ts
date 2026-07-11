@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
       return createdUser;
     });
 
-    const baseUrl = env.nextAuthUrl || "http://localhost:3000";
+    const baseUrl = env.siteUrl;
     const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${token}`;
 
     // Await email send with built-in retry — failures are logged but don't
