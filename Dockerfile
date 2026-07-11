@@ -9,7 +9,9 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN npm install
+RUN npm install --force
+RUN npm install --save-optional lightningcss-linux-x64-musl
+RUN npm rebuild
 
 # Rebuild the source code only when needed
 FROM base AS builder
