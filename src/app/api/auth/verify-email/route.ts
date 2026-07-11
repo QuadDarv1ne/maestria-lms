@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { handleApiError } from "@/lib/api-errors";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
+const checkRateLimit = rateLimit("auth", RATE_LIMITS.login);
+
 export async function GET(request: NextRequest) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return NextResponse.redirect(new URL("/?error=rate-limited", request.url));
   try {
     const { searchParams } = new URL(request.url);
     const token = searchParams.get("token");

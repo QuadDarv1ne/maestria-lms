@@ -189,7 +189,7 @@ export function AdminPage() {
           </div>
           {!sidebarCollapsed && (
             <div className="overflow-hidden">
-              <h2 className="text-sm font-bold text-sidebar-foreground truncate">Maestria Admin</h2>
+              <h2 className="text-sm font-bold text-sidebar-foreground truncate">{t("adminPage.sidebarTitle", locale)}</h2>
               <p className="text-[10px] text-sidebar-foreground/60 truncate">{t("adminPage.controlPanel", locale)}</p>
             </div>
           )}
@@ -231,7 +231,7 @@ export function AdminPage() {
                 {getInitials(user?.name, "AD")}
               </div>
               <div className="overflow-hidden">
-                <p className="text-xs font-medium truncate">{user?.name || "Admin"}</p>
+                <p className="text-xs font-medium truncate">{user?.name || t("adminPage.sidebarAdminFallback", locale)}</p>
                 <p className="text-[10px] text-muted-foreground truncate">{user?.email}</p>
               </div>
             </div>
@@ -267,14 +267,14 @@ export function AdminPage() {
   return (
     <div className="flex min-h-[calc(100vh-8rem)]">
       <aside
-        aria-label="Admin sidebar"
+        aria-label={t("adminPage.sidebarAriaLabel", locale)}
         className={`hidden lg:flex flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 shrink-0 relative ${
           sidebarCollapsed ? "w-[68px]" : "w-[260px]"
         }`}
       >
         {renderSidebar()}
         <button
-          aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-label={sidebarCollapsed ? t("adminPage.expandSidebar", locale) : t("adminPage.collapseSidebar", locale)}
           aria-expanded={!sidebarCollapsed}
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
           className="absolute top-1/2 -translate-y-1/2 z-10 w-5 h-10 bg-sidebar-accent border border-sidebar-border rounded-r-md flex items-center justify-center hover:bg-sidebar-accent/80 transition-colors -right-[10px]"
@@ -286,7 +286,7 @@ export function AdminPage() {
       {mobileSidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileSidebarOpen(false)} />
-          <aside aria-label="Admin sidebar" className="absolute left-0 top-0 bottom-0 w-[260px] bg-sidebar border-r border-sidebar-border">
+          <aside aria-label={t("adminPage.sidebarAriaLabel", locale)} className="absolute left-0 top-0 bottom-0 w-[260px] bg-sidebar border-r border-sidebar-border">
             {renderSidebar()}
           </aside>
         </div>

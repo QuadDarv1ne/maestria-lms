@@ -276,11 +276,11 @@ export function PaymentPageClient({
               <Badge variant="outline" className="gap-1.5">
                 {methodIcons[payment.paymentMethod]}
                 {payment.paymentMethod === "yookassa"
-                  ? "ЮKassa"
+                  ? t("course.paymentYookassa", locale)
                   : payment.paymentMethod === "sbp"
-                  ? "СБП"
+                  ? t("course.paymentSbp", locale)
                   : payment.paymentMethod === "tinkoff"
-                  ? "Тинькофф"
+                  ? t("course.paymentTinkoff", locale)
                   : payment.paymentMethod === "card"
                   ? t("payment.method", locale)
                   : payment.paymentMethod}

@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
       subject: "Подтверждение email — Maestria LMS",
       html: `
         <h2>Подтвердите ваш email</h2>
-        <p>Здравствуйте, ${user.name || "пользователь"}!</p>
+        <p>Здравствуйте, ${(user.name || "пользователь").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}!</p>
         <p>Для подтверждения email перейдите по ссылке:</p>
         <p><a href="${verifyUrl}">Подтвердить email</a></p>
         <p>Ссылка действительна 24 часа.</p>

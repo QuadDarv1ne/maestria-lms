@@ -113,6 +113,17 @@ export async function PATCH(
       updateData.excerpt = sanitizeContent(updateData.excerpt);
     }
 
+    // Check slug uniqueness if being changed
+    if (updateData.slug && updateData.slug !== article.slug) {
+      const existing = await db.article.findUnique({ where: { slug: updateData.slug } });
+      if (existing) {
+        return NextResponse.json(
+          { error: "Статья с таким slug уже существует" },
+          { status: 409 }
+        );
+      }
+    }
+
     const updated = await db.article.update({
       where: { id: article.id },
       data: updateData,

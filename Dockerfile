@@ -68,6 +68,6 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/ || exit 1
 
 # Graceful shutdown handling
-STOPSIGNAL SIGINT
+STOPSIGNAL SIGTERM
 
 CMD ["sh", "./start.sh"]

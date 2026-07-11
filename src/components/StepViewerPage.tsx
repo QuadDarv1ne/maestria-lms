@@ -536,7 +536,7 @@ export function StepViewerPage({
     const result = await submitAssignment(assignment.id, codeValue);
     if (result) {
       setCodeSubmitted(true);
-      setCodeOutput("// Выполнение кода...\n> Hello, World!\n> Программа завершена успешно");
+      setCodeOutput(t("course.step.executionOutput", locale));
       toast.success(t("course.step.codeSent", locale));
     }
   }, [codeValue, step, submitAssignment, locale]);

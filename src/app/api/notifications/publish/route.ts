@@ -37,12 +37,21 @@ export async function POST(req: NextRequest) {
 
     const input = validation.data;
 
-    // System notifications are admin-only
-    if (input.type === "system" && session.user.role !== "admin") {
-      return NextResponse.json(
-        { error: "Системные уведомления могут создаваться только администраторами" },
-        { status: 403 }
-      );
+    // Non-admin users can only create self-notifications of limited types
+    const ALLOWED_USER_TYPES = ["enrollment", "completion", "achievement"] as const;
+    if (session.user.role !== "admin") {
+      if (input.type === "system" || input.type === "payment" || input.type === "review") {
+        return NextResponse.json(
+          { error: "Только администраторы могут создавать системные, платёжные и review-уведомления" },
+          { status: 403 }
+        );
+      }
+      if (!ALLOWED_USER_TYPES.includes(input.type as (typeof ALLOWED_USER_TYPES)[number])) {
+        return NextResponse.json(
+          { error: `Недопустимый тип уведомления для обычного пользователя: ${input.type}` },
+          { status: 403 }
+        );
+      }
     }
 
     // Только админы могут отправлять уведомления другим пользователям

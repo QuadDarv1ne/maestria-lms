@@ -14,8 +14,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
 
   return {
-    title: article ? `${article.title} — Maestria` : "Статья — Maestria",
-    description: article?.excerpt || "Статья по информационным технологиям",
+    title: article ? `${article.title} — Maestria` : "Article — Maestria",
+    description: article?.excerpt || "Information technology article",
   };
 }
 

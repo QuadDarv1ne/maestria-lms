@@ -1,8 +1,8 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import { PaymentPageClient } from "./PaymentPageClient";
 
 export const metadata: Metadata = {
-  title: "Оплата | Maestria",
+  title: "Payment | Maestria",
   robots: "noindex, nofollow",
 };
 

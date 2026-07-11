@@ -24,6 +24,14 @@ export async function GET(request: NextRequest) {
   if (blocked) return blocked;
 
   try {
+    const session = await getAuthSession();
+    if (!session?.user || session.user.role !== "admin") {
+      return NextResponse.json(
+        { error: "Доступ запрещён" },
+        { status: 403 }
+      );
+    }
+
     const categories = await db.category.findMany({
       orderBy: { sortOrder: "asc" },
       include: {

@@ -21,7 +21,7 @@ import {
   Blocks,
 } from "lucide-react";
 
-export const APP_VERSION = "3.2.1";
+export const APP_VERSION = "3.6.0";
 
 export const CONTACT = {
   phone: "+7 (915) 048-02-49",

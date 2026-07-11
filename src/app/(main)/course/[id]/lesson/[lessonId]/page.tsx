@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { use } from "react";
 import { db } from "@/lib/db";
+import { StepViewerPage } from "@/components/StepViewerPage";
 
 export async function generateMetadata({
   params,
@@ -20,7 +21,7 @@ export async function generateMetadata({
   if (!lesson || lesson.module.courseId !== id) notFound();
 
   const title = `${lesson.title} — ${lesson.module.course.title} | Maestria`;
-  const description = `Урок "${lesson.title}" курса ${lesson.module.course.title} на платформе Maestria`;
+  const description = `Lesson "${lesson.title}" of ${lesson.module.course.title} on the Maestria platform`;
 
   return {
     title,
@@ -31,8 +32,6 @@ export async function generateMetadata({
     },
   };
 }
-
-import { StepViewerPage } from "@/components/StepViewerPage";
 
 export default function Page({
   params,

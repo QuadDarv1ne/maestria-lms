@@ -5,6 +5,7 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const checkRateLimit = rateLimit("achievements", RATE_LIMITS.default);
 

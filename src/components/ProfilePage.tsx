@@ -319,7 +319,7 @@ export function ProfilePage() {
           <p className="text-muted-foreground mb-4">{t("profile.tryReload", locale)}</p>
           <Button
             className="bg-blue-700 hover:bg-blue-800 text-white"
-            onClick={() => { setLoading(true); setError(null); window.location.reload(); }}
+            onClick={() => { setLoading(true); setError(null); router.refresh(); }}
           >
             {t("profile.retryAttempt", locale)}
           </Button>

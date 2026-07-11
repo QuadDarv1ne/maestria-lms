@@ -1,14 +1,20 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { hashPassword, getAuthSession } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-errors";
 import { env } from "@/lib/env";
 import { log } from "@/lib/logger";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
+const checkRateLimit = rateLimit("admin", RATE_LIMITS.admin);
+
 // POST: Заполнить базу данных демо-данными (только для разработки)
-export async function POST() {
+export async function POST(request: NextRequest) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
+
   // Полностью блокируем в production
   if (env.isProduction) {
     return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });

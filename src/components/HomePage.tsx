@@ -218,7 +218,7 @@ export function HomePage() {
             ) : error ? (
               <div className="text-center py-12">
                 <p className="text-muted-foreground mb-4">{t("catalog.error", locale)}</p>
-                <Button variant="outline" onClick={() => window.location.reload()}>
+                <Button variant="outline" onClick={() => router.refresh()}>
                   {t("catalog.retry", locale)}
                 </Button>
               </div>

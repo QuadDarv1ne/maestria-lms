@@ -152,14 +152,14 @@ function ResetPasswordContent() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Минимум 8 символов"
+                  placeholder={t("auth.min8Chars", locale)}
                   required
                   minLength={8}
                 />
                 {password.length > 0 && (
                   <div className="mt-2 space-y-1">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Надёжность пароля:</span>
+                      <span className="text-muted-foreground">{t("auth.passwordStrength", locale)}</span>
                       <span className={strengthColor}>{strengthLabel}</span>
                     </div>
                     <div className="flex gap-1">
@@ -179,16 +179,16 @@ function ResetPasswordContent() {
                     </div>
                     <ul className="text-xs text-muted-foreground space-y-0.5 mt-2">
                       <li className={passwordStrength.hasLength ? "text-green-600" : ""}>
-                        {passwordStrength.hasLength ? "✓" : "○"} Минимум 8 символов
+                        {passwordStrength.hasLength ? "✓" : "○"} {t("auth.min8Chars", locale)}
                       </li>
                       <li className={passwordStrength.hasUpper ? "text-green-600" : ""}>
-                        {passwordStrength.hasUpper ? "✓" : "○"} Заглавная буква
+                        {passwordStrength.hasUpper ? "✓" : "○"} {t("auth.reqUppercase", locale)}
                       </li>
                       <li className={passwordStrength.hasLower ? "text-green-600" : ""}>
-                        {passwordStrength.hasLower ? "✓" : "○"} Строчная буква
+                        {passwordStrength.hasLower ? "✓" : "○"} {t("auth.reqLowercase", locale)}
                       </li>
                       <li className={passwordStrength.hasDigit ? "text-green-600" : ""}>
-                        {passwordStrength.hasDigit ? "✓" : "○"} Цифра
+                        {passwordStrength.hasDigit ? "✓" : "○"} {t("auth.reqDigits", locale)}
                       </li>
                     </ul>
                   </div>
@@ -220,7 +220,7 @@ function ResetPasswordContent() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Загрузка...</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
       <ResetPasswordContent />
     </Suspense>
   );

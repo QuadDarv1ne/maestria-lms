@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { use } from "react";
 import { db } from "@/lib/db";
+import { CourseDetailPage } from "@/components/CourseDetailPage";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://maestria.edu";
 
@@ -29,7 +30,7 @@ export async function generateMetadata({
   if (!course) notFound();
 
   const title = `${course.title} — Maestria`;
-  const description = course.shortDesc || course.description?.slice(0, 160) || `Курс ${course.title} на платформе Maestria`;
+  const description = course.shortDesc || course.description?.slice(0, 160) || `${course.title} course on the Maestria platform`;
   const url = `${SITE_URL}/course/${course.slug || id}`;
   const ogImage = course.image || `${SITE_URL}/og/course-default.png`;
 
@@ -62,8 +63,6 @@ export async function generateMetadata({
     },
   };
 }
-
-import { CourseDetailPage } from "@/components/CourseDetailPage";
 
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);

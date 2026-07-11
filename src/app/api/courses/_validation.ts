@@ -9,7 +9,3 @@ export const coursesListQuerySchema = z.object({
   limit: z.string().regex(/^\d+$/).optional(),
   sortBy: z.enum(["popular", "new", "rating", "priceAsc", "priceDesc"]).optional(),
 });
-
-export const courseIdParamSchema = z.object({
-  id: z.string().min(1, "Course ID is required"),
-});
