@@ -1,8 +1,9 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import { addClient } from "@/lib/sse";
 import { log } from "@/lib/logger";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { handleApiError } from "@/lib/api-errors";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,10 +12,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session?.user) {
-      return new Response(JSON.stringify({ error: "Необходимо авторизоваться" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
+      return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
     }
 
     // Rate limit SSE connections to prevent connection exhaustion
@@ -69,9 +67,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: unknown) {
     log.error("SSE connection failed", { error: error instanceof Error ? error.message : String(error) });
-    return new Response(JSON.stringify({ error: "Внутренняя ошибка сервера" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return handleApiError(error, { route: "sse" });
   }
 }

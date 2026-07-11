@@ -28,12 +28,12 @@ export default function GlobalError({
             <AlertTriangle className="w-24 h-24 text-amber-500 mx-auto" />
             <h1 className="text-5xl font-bold">500</h1>
             <p className="text-muted-foreground">
-              {t("error.serverErrorDescription", locale) || "Произошла ошибка на сервере. Пожалуйста, попробуйте позже."}
+              {t("error.serverErrorDescription", locale)}
             </p>
             <div className="flex justify-center gap-4">
               <Button onClick={reset}>
                 <RefreshCw className="w-4 h-4 mr-2" />
-                {t("error.tryAgain", locale) || "Попробовать снова"}
+                {t("error.tryAgain", locale)}
               </Button>
             </div>
           </div>

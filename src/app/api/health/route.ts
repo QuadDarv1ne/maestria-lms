@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { APP_VERSION } from "@/lib/constants";
 import { getRedisClient } from "@/lib/redis";
+import { log } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
 export async function GET() {
+  try {
   const checks = {
     status: "healthy" as "healthy" | "unhealthy",
     timestamp: new Date().toISOString(),
@@ -44,5 +46,9 @@ export async function GET() {
 
   const status = checks.status === "unhealthy" ? 503 : 200;
   return NextResponse.json(checks, { status });
+  } catch (e) {
+    log.error("Health check failed", { error: e });
+    return NextResponse.json({ status: "error", service: "Maestria LMS", version: APP_VERSION }, { status: 503 });
+  }
 }
 

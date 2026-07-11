@@ -44,11 +44,11 @@ export function Breadcrumbs({ items, locale, className }: BreadcrumbsProps) {
                   href={item.href}
                   className="text-muted-foreground hover:text-foreground transition-colors rounded px-1.5 py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  {item.label || "Page"}
+                  {item.label || "—"}
                 </Link>
               ) : (
                 <span className="text-foreground font-medium" aria-current="page">
-                  {item.label || "Page"}
+                  {item.label || "—"}
                 </span>
               )}
             </li>

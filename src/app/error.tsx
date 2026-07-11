@@ -25,7 +25,7 @@ export default function ErrorPage({
           {t("error.serverErrorTitle", locale) || "500"}
         </h1>
         <p className="text-muted-foreground animate-in slide-in-from-bottom-4 duration-500 delay-300 fill-mode-both">
-          {t("error.serverErrorDescription", locale) || "Произошла ошибка на сервере. Пожалуйста, попробуйте позже."}
+          {t("error.serverErrorDescription", locale)}
         </p>
         {process.env.NODE_ENV === "development" && error && (
           <pre className="text-sm text-red-600 bg-red-50 dark:bg-red-950 p-4 rounded-lg max-w-lg mx-auto overflow-auto text-left border border-red-200 dark:border-red-900 animate-in fade-in duration-500 delay-400 fill-mode-both">
@@ -35,7 +35,7 @@ export default function ErrorPage({
         <div className="flex flex-col sm:flex-row justify-center gap-3 pt-2 animate-in slide-in-from-bottom-4 duration-500 delay-400 fill-mode-both">
           <Button onClick={reset} size="lg">
             <RefreshCw className="w-4 h-4 mr-2" />
-            {t("error.tryAgain", locale) || "Попробовать снова"}
+            {t("error.tryAgain", locale)}
           </Button>
           <Button variant="outline" size="lg" asChild>
             <Link href="/">

@@ -13,9 +13,9 @@ export default function CourseNotFound() {
     <div className="container mx-auto px-4 py-16 text-center">
       <div className="space-y-6">
         <Search className="w-24 h-24 text-muted-foreground mx-auto" />
-        <h1 className="text-5xl font-bold">{t("course.notFound", locale) || "Курс не найден"}</h1>
+        <h1 className="text-5xl font-bold">{t("course.notFound", locale)}</h1>
         <p className="text-muted-foreground max-w-md mx-auto">
-          {t("course.notFoundDesc", locale) || "Запрашиваемый курс не существует или был удалён."}
+          {t("course.notFoundDesc", locale)}
         </p>
         <div className="flex justify-center gap-4">
           <Button asChild>

@@ -6,6 +6,7 @@ import { log } from "@/lib/logger";
 import { env } from "@/lib/env";
 import { APP_VERSION } from "@/lib/constants";
 import { getAuthSession } from "@/lib/auth";
+import { handleApiError } from "@/lib/api-errors";
 
 export const runtime = "nodejs";
 
@@ -72,47 +73,51 @@ async function checkRedis(): Promise<{ status: string; latencyMs: number }> {
 
 // GET: Enhanced health check endpoint for monitoring and uptime checks
 export async function GET(request: NextRequest) {
-  const blocked = checkRateLimit(request);
-  if (blocked) return blocked;
+  try {
+    const blocked = checkRateLimit(request);
+    if (blocked) return blocked;
 
-  const { searchParams } = new URL(request.url);
-  const detailed = searchParams.get("detailed") === "true";
+    const { searchParams } = new URL(request.url);
+    const detailed = searchParams.get("detailed") === "true";
 
-  // Detailed health info requires admin auth
-  if (detailed) {
-    const session = await getAuthSession();
-    if (!session?.user || session.user.role !== "admin") {
-      return NextResponse.json({ error: "Admin access required for detailed health" }, { status: 403 });
+    // Detailed health info requires admin auth
+    if (detailed) {
+      const session = await getAuthSession();
+      if (!session?.user || session.user.role !== "admin") {
+        return NextResponse.json({ error: "Admin access required for detailed health" }, { status: 403 });
+      }
     }
+
+    const [dbCheck, redisCheck] = await Promise.all([
+      checkDatabase(),
+      detailed ? checkRedis() : { status: "skipped", latencyMs: 0 },
+    ]);
+
+    const overallStatus =
+      dbCheck.status === "connected" && (redisCheck.status === "connected" || redisCheck.status === "not configured" || redisCheck.status === "skipped")
+        ? "ok"
+        : "degraded";
+
+    const response: Record<string, unknown> = {
+      status: overallStatus,
+      service: "Maestria LMS",
+      version: APP_VERSION,
+      uptime: getUptime(),
+      timestamp: new Date().toISOString(),
+      database: dbCheck,
+    };
+
+    if (detailed) {
+      response.redis = redisCheck;
+      response.memory = getMemoryUsage();
+      response.nodeVersion = process.version;
+      response.platform = process.platform;
+    }
+
+    const statusToCode = overallStatus === "ok" ? 200 : 503;
+
+    return NextResponse.json(response, { status: statusToCode });
+  } catch (e) {
+    return handleApiError(e, { route: "health" });
   }
-
-  const [dbCheck, redisCheck] = await Promise.all([
-    checkDatabase(),
-    detailed ? checkRedis() : { status: "skipped", latencyMs: 0 },
-  ]);
-
-  const overallStatus =
-    dbCheck.status === "connected" && (redisCheck.status === "connected" || redisCheck.status === "not configured" || redisCheck.status === "skipped")
-      ? "ok"
-      : "degraded";
-
-  const response: Record<string, unknown> = {
-    status: overallStatus,
-    service: "Maestria LMS",
-    version: APP_VERSION,
-    uptime: getUptime(),
-    timestamp: new Date().toISOString(),
-    database: dbCheck,
-  };
-
-  if (detailed) {
-    response.redis = redisCheck;
-    response.memory = getMemoryUsage();
-    response.nodeVersion = process.version;
-    response.platform = process.platform;
-  }
-
-  const statusToCode = overallStatus === "ok" ? 200 : 503;
-
-  return NextResponse.json(response, { status: statusToCode });
 }
