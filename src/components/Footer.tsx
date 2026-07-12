@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Fragment, useMemo } from "react";
+import { memo, Fragment, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import {
@@ -15,7 +15,7 @@ import Link from "next/link";
 import type { Locale } from "@/lib/store";
 import { APP_VERSION, CONTACT } from "@/lib/constants";
 
-export const Footer = React.memo(function Footer() {
+export const Footer = memo(function Footer() {
   const locale = useAppStore((s) => s.locale);
   const setLocale = useAppStore((s) => s.setLocale);
 
