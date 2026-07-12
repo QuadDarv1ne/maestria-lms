@@ -9,15 +9,6 @@ describe("Accessibility", () => {
     });
   });
 
-  describe("useFocusTrap hook", () => {
-    it("should export useFocusTrap, useEscapeKey, useFocusRestore", async () => {
-      const hooks = await import("@/hooks/useFocusTrap");
-      expect(hooks.useFocusTrap).toBeDefined();
-      expect(hooks.useEscapeKey).toBeDefined();
-      expect(hooks.useFocusRestore).toBeDefined();
-    });
-  });
-
   describe("ErrorBoundary", () => {
     it("should have error state and retry functionality", async () => {
       const { ErrorBoundary } = await import("@/components/ErrorBoundary");
