@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,37 +11,31 @@ import type { StepComponentProps } from "./StepTypes";
 import { shuffleArray } from "./StepTypes";
 
 export function StepDragDrop({ step, locale, submittingAssignment, onSubmitAssignment }: StepComponentProps) {
-  const [items, setItems] = useState<Array<{ id: string; text: string; group: string }>>([]);
-  const [groups, setGroups] = useState<string[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
-  useEffect(() => {
-    setSubmitted(false);
-    setAnswers({});
-    setSelectedItemId(null);
+  const { items, groups } = useMemo(() => {
     const assignment = step?.assignments?.[0];
     const options = assignment?.options;
-    if (!options) {
-      setItems([]);
-      setGroups([]);
-      return;
-    }
+    if (!options) return { items: [] as Array<{ id: string; text: string; group: string }>, groups: [] as string[] };
     try {
       const parsed: Array<{ id: string; text: string; group: string }> = JSON.parse(options);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        setItems(shuffleArray([...parsed]));
-        setGroups([...new Set(parsed.map((i) => i.group))]);
-      } else {
-        setItems([]);
-        setGroups([]);
+        return { items: shuffleArray([...parsed]), groups: [...new Set(parsed.map((i) => i.group))] };
       }
-    } catch {
-      setItems([]);
-      setGroups([]);
-    }
-  }, [step?.id, step?.assignments]);
+    } catch { /* ignore */ }
+    return { items: [] as Array<{ id: string; text: string; group: string }>, groups: [] as string[] };
+  }, [step?.assignments]);
+
+  // Reset local state when step changes (React-render-time reset pattern)
+  const [prevStepId, setPrevStepId] = useState(step?.id);
+  if (step?.id !== prevStepId) {
+    setAnswers({});
+    setSubmitted(false);
+    setSelectedItemId(null);
+    setPrevStepId(step?.id);
+  }
 
   const handleSubmit = useCallback(async () => {
     if (!items.length) {

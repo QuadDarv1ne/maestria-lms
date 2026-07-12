@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,11 +14,13 @@ export function StepMatching({ step, locale, submittingAssignment, onSubmitAssig
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
 
-  let pairs: Array<{ left: string; right: string }> = [];
-  if (step.assignments?.[0]?.options) {
-    try { pairs = JSON.parse(step.assignments[0].options); } catch { pairs = []; }
-  }
-  const rightOptions = shuffleArray(pairs.map(p => p.right));
+  const assignments = step.assignments;
+  const pairs = useMemo<Array<{ left: string; right: string }>>(() => {
+    if (!assignments?.[0]?.options) return [];
+    try { return JSON.parse(assignments[0].options); } catch { return []; }
+  }, [assignments]);
+
+  const rightOptions = useMemo(() => shuffleArray(pairs.map(p => p.right)), [pairs]);
 
   const handleSubmit = useCallback(async () => {
     const allAnswered = pairs.every((p) => answers[p.left]);

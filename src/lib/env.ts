@@ -22,11 +22,7 @@ function getRequiredEnv(key: string): string {
 export const env = {
   get siteUrl(): string {
     return cached("siteUrl", () => {
-      const url = process.env.NEXT_PUBLIC_SITE_URL;
-      if (this.isProduction && !url) {
-        throw new Error("Missing required environment variable: NEXT_PUBLIC_SITE_URL");
-      }
-      return url ?? "http://localhost:3000";
+      return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
     });
   },
 

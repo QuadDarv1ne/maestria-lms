@@ -22,7 +22,6 @@ import { toast } from "sonner";
 
 import { StepSidebar } from "@/components/step-viewer/StepSidebar";
 import type { StepData, CourseStructure, ModuleStructure, LessonStructure } from "@/components/step-viewer/StepTypes";
-import type { Locale } from "@/lib/store";
 
 const LazyStepVideo = dynamic(() => import("@/components/step-viewer/StepVideo").then(m => m.StepVideo), { ssr: false });
 const LazyStepText = dynamic(() => import("@/components/step-viewer/StepText").then(m => m.StepText), { ssr: false });

@@ -22,6 +22,8 @@ COPY . .
 # Generate Prisma Client types (needed for TypeScript compilation)
 RUN npx prisma generate
 
+ARG NEXT_PUBLIC_SITE_URL=http://localhost:3000
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
@@ -31,6 +33,8 @@ RUN npm run build
 FROM base AS runner
 WORKDIR /app
 
+ARG NEXT_PUBLIC_SITE_URL=http://localhost:3000
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 

@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { t } from "@/lib/i18n";
 import type { StepComponentProps } from "./StepTypes";
 
-export function StepFileUpload({ step, locale, submittingAssignment, onSubmitAssignment }: StepComponentProps) {
+export function StepFileUpload({ step, locale, onSubmitAssignment }: StepComponentProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploaded, setUploaded] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);

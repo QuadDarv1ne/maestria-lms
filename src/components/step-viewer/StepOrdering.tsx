@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,25 +14,28 @@ export function StepOrdering({ step, locale, submittingAssignment, onSubmitAssig
   const [items, setItems] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState(false);
 
-  useEffect(() => {
-    const assignment = step.assignments?.[0];
+  // Derive initial items from step props
+  const initialItems = useMemo(() => {
+    const assignment = step?.assignments?.[0];
     const options = assignment?.options;
-    if (!options) {
-      setItems([]);
-      return;
-    }
+    if (!options) return [];
     try {
       const parsed: string[] = JSON.parse(options);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        setItems(shuffleArray(parsed));
-      } else {
-        setItems([]);
-      }
+      return Array.isArray(parsed) && parsed.length > 0 ? shuffleArray(parsed) : [];
     } catch {
-      setItems([]);
+      return [];
     }
+  }, [step?.assignments]);
+
+  // Reset local state when step changes (React-render-time reset pattern)
+  const [prevStepId, setPrevStepId] = useState(step?.id);
+  const [initialized, setInitialized] = useState(false);
+  if (step?.id !== prevStepId || (!initialized && initialItems.length > 0)) {
+    setItems(initialItems);
     setSubmitted(false);
-  }, [step?.id, step?.assignments]);
+    setPrevStepId(step?.id);
+    setInitialized(true);
+  }
 
   const moveItem = useCallback((index: number, direction: "up" | "down") => {
     setItems((prev) => {
