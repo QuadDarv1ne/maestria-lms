@@ -1,46 +1,40 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowUpDown, CheckCircle2, Send, X } from "lucide-react";
+import { toast } from "sonner";
 import { t } from "@/lib/i18n";
-import type { Locale } from "@/lib/store";
-import type { StepData } from "./StepTypes";
+import type { StepComponentProps } from "./StepTypes";
+import { shuffleArray } from "./StepTypes";
 
-interface StepMatchingProps {
-  step: StepData;
-  locale: Locale;
-  matchingAnswers: Record<string, string>;
-  setMatchingAnswers: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  matchingSubmitted: boolean;
-  handleMatchingSubmit: () => void;
-  submittingAssignment: boolean;
-}
+export function StepMatching({ step, locale, submittingAssignment, onSubmitAssignment }: StepComponentProps) {
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [submitted, setSubmitted] = useState(false);
 
-function shuffleArray<T>(arr: T[]): T[] {
-  const result = [...arr];
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [result[i], result[j]] = [result[j], result[i]];
-  }
-  return result;
-}
-
-export function StepMatching({
-  step,
-  locale,
-  matchingAnswers,
-  setMatchingAnswers,
-  matchingSubmitted,
-  handleMatchingSubmit,
-  submittingAssignment,
-}: StepMatchingProps) {
   let pairs: Array<{ left: string; right: string }> = [];
   if (step.assignments?.[0]?.options) {
     try { pairs = JSON.parse(step.assignments[0].options); } catch { pairs = []; }
   }
   const rightOptions = shuffleArray(pairs.map(p => p.right));
+
+  const handleSubmit = useCallback(async () => {
+    const allAnswered = pairs.every((p) => answers[p.left]);
+    if (!allAnswered) {
+      toast.error(t("course.step.matchAllPairs", locale));
+      return;
+    }
+    const assignment = step.assignments?.[0];
+    if (!assignment) return;
+    const answerPairs = pairs.map((p) => ({ left: p.left, right: answers[p.left] }));
+    const result = await onSubmitAssignment(assignment.id, answerPairs);
+    if (result) {
+      setSubmitted(true);
+      toast.success(t("course.step.answerSent", locale));
+    }
+  }, [answers, pairs, step, onSubmitAssignment, locale]);
 
   return (
     <div className="space-y-4 mb-6">
@@ -70,17 +64,17 @@ export function StepMatching({
                     <span className="text-muted-foreground">→</span>
                     <select
                       className="flex-1 p-2 border rounded-lg text-sm"
-                      value={matchingAnswers[pair.left] || ""}
-                      onChange={(e) => setMatchingAnswers((prev) => ({ ...prev, [pair.left]: e.target.value }))}
-                      disabled={matchingSubmitted}
+                      value={answers[pair.left] || ""}
+                      onChange={(e) => setAnswers((prev) => ({ ...prev, [pair.left]: e.target.value }))}
+                      disabled={submitted}
                     >
                       <option value="">{t("course.step.selectMatch", locale)}</option>
                       {rightOptions.map((opt) => (
                         <option key={opt} value={opt}>{opt}</option>
                       ))}
                     </select>
-                    {matchingSubmitted && (
-                      matchingAnswers[pair.left] === pair.right ? (
+                    {submitted && (
+                      answers[pair.left] === pair.right ? (
                         <CheckCircle2 className="w-5 h-5 text-green-600" />
                       ) : (
                         <X className="w-5 h-5 text-red-600" />
@@ -90,8 +84,8 @@ export function StepMatching({
                 ))}
               </div>
               <div className="flex items-center gap-2 mt-4">
-                {!matchingSubmitted ? (
-                  <Button className="bg-teal-600 hover:bg-teal-700 text-white" onClick={handleMatchingSubmit} disabled={matchingSubmitted || submittingAssignment}>
+                {!submitted ? (
+                  <Button className="bg-teal-600 hover:bg-teal-700 text-white" onClick={handleSubmit} disabled={submitted || submittingAssignment}>
                     <Send className="w-4 h-4 mr-2" />
                     {t("course.step.submitAnswer", locale)}
                   </Button>

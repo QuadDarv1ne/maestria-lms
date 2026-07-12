@@ -1,37 +1,81 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Upload, Send, FileText, CheckCircle2, X } from "lucide-react";
+import { toast } from "sonner";
 import { t } from "@/lib/i18n";
-import type { Locale } from "@/lib/store";
-import type { StepData } from "./StepTypes";
+import type { StepComponentProps } from "./StepTypes";
 
-interface StepFileUploadProps {
-  step: StepData;
-  locale: Locale;
-  fileUploaded: boolean;
-  selectedFile: File | null;
-  setSelectedFile: React.Dispatch<React.SetStateAction<File | null>>;
-  handleFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleFileSubmit: () => void;
-  uploadProgress: number;
-  submittingAssignment: boolean;
-}
+export function StepFileUpload({ step, locale, submittingAssignment, onSubmitAssignment }: StepComponentProps) {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploaded, setUploaded] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploading, setUploading] = useState(false);
 
-export function StepFileUpload({
-  step,
-  locale,
-  fileUploaded,
-  selectedFile,
-  setSelectedFile,
-  handleFileSelect,
-  handleFileSubmit,
-  uploadProgress,
-  submittingAssignment,
-}: StepFileUploadProps) {
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(t("course.step.fileTooLarge", locale));
+        return;
+      }
+      setSelectedFile(file);
+    }
+  }, [locale]);
+
+  const handleSubmit = useCallback(async () => {
+    if (!selectedFile) {
+      toast.error(t("course.step.selectFileFirst", locale));
+      return;
+    }
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+    formData.append("folder", "submissions");
+    setUploading(true);
+    setUploadProgress(0);
+    try {
+      const xhr = new XMLHttpRequest();
+      xhr.upload.addEventListener("progress", (evt) => {
+        if (evt.lengthComputable) {
+          setUploadProgress(Math.round((evt.loaded / evt.total) * 100));
+        }
+      });
+      await new Promise<void>((resolve, reject) => {
+        xhr.addEventListener("load", () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve();
+          } else {
+            try {
+              const data = JSON.parse(xhr.responseText);
+              reject(new Error(data.error || t("course.step.errorLoad", locale)));
+            } catch {
+              reject(new Error(t("course.step.errorLoad", locale)));
+            }
+          }
+        });
+        xhr.addEventListener("error", () => reject(new Error(t("course.step.errorLoad", locale))));
+        xhr.open("POST", "/api/upload");
+        xhr.send(formData);
+      });
+
+      const assignment = step.assignments?.[0];
+      if (assignment) {
+        await onSubmitAssignment(assignment.id, { fileName: selectedFile.name, uploaded: true });
+      }
+      setUploaded(true);
+      toast.success(t("course.step.fileSent", locale));
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t("course.step.errorLoad", locale));
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+    }
+  }, [selectedFile, step, onSubmitAssignment, locale]);
+
   return (
     <div className="space-y-4 mb-6">
       {step.content && (
@@ -47,7 +91,7 @@ export function StepFileUpload({
             <Upload className="w-4 h-4" />
             <span className="font-medium">{t("course.step.fileUpload", locale)}</span>
           </div>
-          {!fileUploaded ? (
+          {!uploaded ? (
             <div className="space-y-4">
               <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-blue-400 dark:hover:border-blue-500 transition-colors">
                 <Upload className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
@@ -70,14 +114,14 @@ export function StepFileUpload({
                   </Button>
                 </div>
               )}
-              {submittingAssignment && (
+              {uploading && (
                 <div className="space-y-1">
                   <Progress value={uploadProgress} className="h-2" />
                   <p className="text-xs text-muted-foreground text-right">{uploadProgress}%</p>
                 </div>
               )}
-              <Button className="bg-slate-600 hover:bg-slate-700 text-white" onClick={handleFileSubmit} disabled={!selectedFile || submittingAssignment}>
-                {submittingAssignment ? <><span className="animate-spin mr-2">⏳</span>{uploadProgress}%</> : <><Send className="w-4 h-4 mr-2" />{t("course.step.submitFile", locale)}</>}
+              <Button className="bg-slate-600 hover:bg-slate-700 text-white" onClick={handleSubmit} disabled={!selectedFile || uploading}>
+                {uploading ? <><span className="animate-spin mr-2">⏳</span>{uploadProgress}%</> : <><Send className="w-4 h-4 mr-2" />{t("course.step.submitFile", locale)}</>}
               </Button>
             </div>
           ) : (

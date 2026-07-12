@@ -47,6 +47,32 @@ export interface StepComponentProps {
   onStepComplete: () => void;
 }
 
+export interface CourseStructure {
+  id: string;
+  title: string;
+  modules: ModuleStructure[];
+  totalLessons: number;
+  completedLessons: number;
+  progress: number;
+}
+
+export interface ModuleStructure {
+  id: string;
+  title: string;
+  sortOrder: number;
+  lessons: LessonStructure[];
+}
+
+export interface LessonStructure {
+  id: string;
+  title: string;
+  type: string;
+  duration: number;
+  isFree: boolean;
+  sortOrder: number;
+  completed: boolean;
+}
+
 export function shuffleArray<T>(arr: T[]): T[] {
   const result = [...arr];
   for (let i = result.length - 1; i > 0; i--) {
