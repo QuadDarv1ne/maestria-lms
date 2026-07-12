@@ -4,7 +4,7 @@ import { use } from "react";
 import { db } from "@/lib/db";
 import { CourseDetailPage } from "@/components/CourseDetailPage";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://maestria.edu";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 export async function generateMetadata({
   params,

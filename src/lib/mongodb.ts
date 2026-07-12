@@ -5,10 +5,6 @@ import { env } from "@/lib/env"
 const MONGODB_URI = env.databaseUrl || "mongodb://localhost:27017/maestria_lms"
 const DB_NAME = "maestria_lms"
 
-if (!MONGODB_URI) {
-  throw new Error("Please define the DATABASE_URL environment variable")
-}
-
 const options: MongoClientOptions = {
   maxPoolSize: 10,
   minPoolSize: 1,

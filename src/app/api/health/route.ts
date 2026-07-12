@@ -23,7 +23,8 @@ export async function GET() {
     await db.$queryRaw`SELECT 1`;
     checks.services.database.status = "healthy";
     checks.services.database.responseTime = Date.now() - dbStart;
-  } catch {
+  } catch (error: unknown) {
+    log.warn("Health check: database unreachable", { error: error instanceof Error ? error.message : String(error) });
     checks.services.database.status = "unhealthy";
     checks.services.database.responseTime = Date.now() - dbStart;
     checks.status = "unhealthy";
@@ -39,7 +40,8 @@ export async function GET() {
       checks.services.cache.status = "unavailable";
     }
     checks.services.cache.responseTime = Date.now() - cacheStart;
-  } catch {
+  } catch (error: unknown) {
+    log.warn("Health check: Redis unreachable", { error: error instanceof Error ? error.message : String(error) });
     checks.services.cache.status = "unhealthy";
     checks.services.cache.responseTime = Date.now() - cacheStart;
   }

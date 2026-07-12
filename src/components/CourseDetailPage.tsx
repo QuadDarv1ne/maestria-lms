@@ -272,7 +272,6 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
               src={course.image}
               alt={course.title}
               className="absolute inset-0 w-full h-full object-cover opacity-30"
-              identifier={course.id}
               loading="eager"
             />
             <div className="absolute inset-0 bg-gradient-to-br from-blue-900/80 to-violet-900/80" />

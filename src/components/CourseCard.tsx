@@ -70,7 +70,6 @@ export const CourseCard = React.memo(function CourseCard({ course, onClick }: Co
               src={course.image}
               alt={course.title}
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-              identifier={course.id}
               loading="lazy"
             />
           ) : course.category?.icon ? (

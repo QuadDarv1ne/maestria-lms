@@ -116,6 +116,7 @@ function applySecurityHeaders(response: NextResponse, pathname: string): void {
     "https://freeimage.host",
     "https://iili.io",
     "https://*.freeimage.host",
+    "https://*.trbcdn.net",
     "https://img.youtube.com",
     "https://i.ytimg.com",
     "https://placehold.co",

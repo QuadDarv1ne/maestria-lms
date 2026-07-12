@@ -1,19 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import Redis from "ioredis";
 import { rateLimit } from "@/lib/rate-limit";
 import { db } from "@/lib/db";
 import { log } from "@/lib/logger";
-import { env } from "@/lib/env";
 import { APP_VERSION } from "@/lib/constants";
 import { getAuthSession } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-errors";
+import { getRedisClient } from "@/lib/redis";
 
 export const runtime = "nodejs";
 
 const checkRateLimit = rateLimit("health", { windowMs: 60000, maxRequests: 30 });
 
 const startTime = Date.now();
-let healthRedisClient: Redis | null = null;
 
 function getUptime(): string {
   const elapsed = Date.now() - startTime;
@@ -51,22 +49,16 @@ async function checkDatabase(): Promise<{ status: string; latencyMs: number }> {
 
 async function checkRedis(): Promise<{ status: string; latencyMs: number }> {
   const start = Date.now();
-  const redisUrl = env.redisUrl;
-  if (!redisUrl) {
+  const redis = getRedisClient();
+  if (!redis) {
     return { status: "not configured", latencyMs: 0 };
   }
 
   try {
-    if (!healthRedisClient) {
-      healthRedisClient = new Redis(redisUrl, { connectTimeout: 2000, maxRetriesPerRequest: 1, lazyConnect: true });
-    }
-    await healthRedisClient.ping();
+    await redis.ping();
     return { status: "connected", latencyMs: Date.now() - start };
-  } catch {
-    if (healthRedisClient) {
-      try { healthRedisClient.quit(); } catch { /* ignore */ }
-      healthRedisClient = null;
-    }
+  } catch (error: unknown) {
+    log.warn("Health check: Redis unreachable", { error: error instanceof Error ? error.message : String(error) });
     return { status: "unreachable", latencyMs: Date.now() - start };
   }
 }

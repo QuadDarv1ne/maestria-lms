@@ -32,9 +32,7 @@ export function resolveCourseImageUrl(url: string | null | undefined): string | 
 
 /**
  * Returns the local fallback path for a course image when CDN fails.
- * Generates a deterministic placeholder based on course slug/id.
  */
-export function getLocalFallbackImage(identifier: string | null): string {
-  if (!identifier) return "/courses/placeholder.svg";
-  return `/courses/placeholder.svg`;
+export function getLocalFallbackImage(): string {
+  return "/courses/placeholder.svg";
 }
