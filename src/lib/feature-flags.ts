@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { FEATURE_FLAGS, FeatureFlagKey } from "./feature-flags-config";
 import { log } from "./logger";
 
@@ -151,13 +150,6 @@ export function clearFeatureFlags(): void {
     localStorage.removeItem(key);
     flagCache.delete(key.replace("feature-flag:", ""));
   }
-}
-
-/**
- * React hook for feature flags (client-side only).
- */
-export function useFeatureFlag(key: FeatureFlagKey): boolean {
-  return useMemo(() => isFeatureEnabled(key), [key]);
 }
 
 /**
