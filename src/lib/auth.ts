@@ -181,7 +181,7 @@ export const authOptions: NextAuthOptions = {
 // Skip during build phase (build may run without full env, production server must have it)
 if (
   env.isProduction &&
-  !process.env.INIT_CWD?.includes("node_modules")
+  process.env.NEXT_PHASE !== "phase-production-build"
 ) {
   const secret = env.nextAuthSecret;
   if (!secret || secret.trim() === "") {

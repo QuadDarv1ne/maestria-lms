@@ -30,8 +30,8 @@ export const env = {
     return cached("databaseUrl", () => getRequiredEnv("DATABASE_URL"));
   },
 
-  get nextAuthSecret(): string {
-    return cached("nextAuthSecret", () => getRequiredEnv("NEXTAUTH_SECRET"));
+  get nextAuthSecret(): string | undefined {
+    return cached("nextAuthSecret", () => process.env.NEXTAUTH_SECRET);
   },
 
   get nextAuthUrl(): string | undefined {
