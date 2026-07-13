@@ -63,8 +63,9 @@ echo "=== PULLING LATEST MAIN ==="
 git pull origin main 2>&1 || echo "Pull may need authentication"
 
 echo ""
-echo "=== PUSHING ==="
-git push origin main 2>&1 || echo "Push may need authentication"
+echo "=== PUSHING TO ALL REMOTES ==="
+git push origin main 2>&1 || echo "Push to origin may need authentication"
+git push amvera main 2>&1 || echo "Push to amvera may need authentication"
 
 echo ""
 echo "=== FINAL STATUS ==="

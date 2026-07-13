@@ -5,6 +5,7 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
+import { formatDate } from "@/lib/utils";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -66,7 +67,7 @@ export async function POST(
     // Проверяем дату начала курса
     if (course.startDate && new Date() < new Date(course.startDate)) {
       return NextResponse.json(
-        { error: `Запись на курс откроется ${new Date(course.startDate).toLocaleDateString("ru-RU")}` },
+        { error: `Запись на курс откроется ${formatDate(course.startDate)}` },
         { status: 400 }
       );
     }
