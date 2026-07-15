@@ -90,6 +90,14 @@ export const env = {
     return cached("yooKassaSecretKey", () => process.env.YOOKASSA_SECRET_KEY);
   },
 
+  get seedAdminPassword(): string | undefined {
+    return cached("seedAdminPassword", () => process.env.SEED_ADMIN_PASSWORD);
+  },
+
+  get seedTeacherPassword(): string | undefined {
+    return cached("seedTeacherPassword", () => process.env.SEED_TEACHER_PASSWORD);
+  },
+
   get allowSeedData(): boolean {
     return cached("allowSeedData", () => process.env.ALLOW_SEED_DATA === "true");
   },

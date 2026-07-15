@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { use } from "react";
 import { db } from "@/lib/db";
+import { env } from "@/lib/env";
 import { CourseDetailPage } from "@/components/CourseDetailPage";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+const SITE_URL = env.siteUrl;
 
 export async function generateMetadata({
   params,

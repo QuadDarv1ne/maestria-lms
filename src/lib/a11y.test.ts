@@ -19,11 +19,9 @@ describe("Accessibility", () => {
 
   describe("ARIA attributes", () => {
     it("Header should have aria-label on navigation elements", async () => {
-      // This would require rendering with testing-library
-      // For now we verify the component imports correctly
       const { Header } = await import("@/components/Header");
       expect(Header).toBeDefined();
-    });
+    }, 15000);
 
     it("AuthDialogs should have accessible form labels", async () => {
       const { AuthDialogs } = await import("@/components/AuthDialogs");

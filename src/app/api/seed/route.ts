@@ -141,8 +141,8 @@ export async function POST(request: NextRequest) {
   ]);
 
   // ============ ДЕМО-ПОЛЬЗОВАТЕЛИ ============
-  const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD;
-  const seedTeacherPassword = process.env.SEED_TEACHER_PASSWORD;
+  const seedAdminPassword = env.seedAdminPassword;
+  const seedTeacherPassword = env.seedTeacherPassword;
   const adminPassword = seedAdminPassword || crypto.randomUUID().slice(0, 12);
   const teacherPassword = seedTeacherPassword || crypto.randomUUID().slice(0, 12);
 
