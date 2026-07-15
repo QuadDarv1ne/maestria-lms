@@ -27,8 +27,11 @@ export const CONTACT = {
   phone: "+7 (915) 048-02-49",
   phoneTel: "+79150480249",
   email: "contact@maestro7it.com",
+  personalEmail: "maksimqwe42@mail.ru",
   website: "https://maestro7it.com",
   ownerName: "Дуплей Максим Игоревич",
+  vkVideoUrl: "https://live.vkvideo.ru/quadd4rv1n7",
+  rutubeUrl: "https://rutube.ru/channel/4218729/",
 } as const;
 
 export const levelLabels: Record<string, string> = {

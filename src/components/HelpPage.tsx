@@ -201,7 +201,7 @@ export function HelpPage() {
           <h2 className="text-xl font-bold mb-2">{t("help.contactTitle", locale)}</h2>
           <p className="text-muted-foreground mb-6 max-w-md mx-auto">{t("help.contactDesc", locale)}</p>
           <div className="flex flex-wrap justify-center gap-3">
-            <a href="mailto:maksimqwe42@mail.ru" className="inline-flex items-center gap-2">
+            <a href={`mailto:${CONTACT.personalEmail}`} className="inline-flex items-center gap-2">
               <Button className="bg-blue-700 hover:bg-blue-800 text-white">
                 <Mail className="w-4 h-4 mr-2" />
                 {t("help.emailUs", locale)}

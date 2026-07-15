@@ -81,7 +81,7 @@ export function AgeRatingPage() {
         <div className="prose text-sm space-y-3 text-muted-foreground">
           <ul>
             <li><strong>{t("legal.company", locale)}</strong> Maestro7IT</li>
-            <li><strong>Email:</strong> maksimqwe42@mail.ru</li>
+            <li><strong>Email:</strong> {CONTACT.personalEmail}</li>
             <li><strong>{t("legal.phone", locale)}</strong> {CONTACT.phone}</li>
           </ul>
         </div>

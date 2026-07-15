@@ -81,7 +81,7 @@ export function RefundPage() {
         <div className="prose text-sm space-y-3 text-muted-foreground">
           <p>6.1. {t("refund.s6_1", locale)}</p>
           <ul>
-            <li><strong>Email:</strong> maksimqwe42@mail.ru</li>
+            <li><strong>Email:</strong> {CONTACT.personalEmail}</li>
             <li><strong>{t("legal.phone", locale)}</strong> {CONTACT.phone}</li>
             <li><strong>{t("legal.address", locale)}</strong> {t("legal.addressValue", locale)}</li>
           </ul>

@@ -170,11 +170,11 @@ onClick={() => router.push("?dialog=login")}
                   </p>
                   <div className="flex flex-col sm:flex-row gap-3 text-sm text-blue-100">
                     <a
-                      href="mailto:maksimqwe42@mail.ru"
+                      href={`mailto:${CONTACT.personalEmail}`}
                       className="flex items-center gap-2 hover:text-white transition-colors"
                     >
                       <Mail className="w-4 h-4" />
-                      maksimqwe42@mail.ru
+                      {CONTACT.personalEmail}
                     </a>
                     <a
                       href={`tel:${CONTACT.phoneTel}`}
@@ -376,8 +376,8 @@ onClick={() => router.push("?dialog=login")}
               icon: <Mail className="w-7 h-7 text-blue-700" />,
               bg: "bg-blue-50",
               label: tr("about.contactEmail"),
-              value: "maksimqwe42@mail.ru",
-              href: "mailto:maksimqwe42@mail.ru",
+              value: CONTACT.personalEmail,
+              href: `mailto:${CONTACT.personalEmail}`,
             },
             {
               icon: <Phone className="w-7 h-7 text-violet-600" />,

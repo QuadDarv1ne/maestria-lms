@@ -227,7 +227,6 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     other: {
       "article:publisher": "Maestro7IT",
-      "al:ios:app_store_id": "1234567890",
       "al:android:package": "com.maestro7it.maestria",
       "al:ios:app_name": "Maestria",
       "al:android:app_name": "Maestria",
