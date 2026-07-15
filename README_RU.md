@@ -4,7 +4,7 @@
   <img src="https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript" alt="TypeScript">
   <img src="https://img.shields.io/badge/Tailwind_CSS-4-06b6d4?style=flat-square&logo=tailwindcss" alt="Tailwind CSS">
   <img src="https://img.shields.io/badge/License-CC_BY--SA_4.0-green?style=flat-square" alt="License">
-  <img src="https://img.shields.io/badge/version-3.1.0-blueviolet?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.6.0-blueviolet?style=flat-square" alt="Version">
 </p>
 
 <h1 align="center">🎓 Maestria — Образовательная платформа нового поколения</h1>
