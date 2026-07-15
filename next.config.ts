@@ -58,7 +58,6 @@ const nextConfig: NextConfig = {
     ];
   },
   productionBrowserSourceMaps: false,
-  // Удаление строк логов в продакшене
   compiler: {
     removeConsole: process.env.NODE_ENV === "production"
       ? { exclude: ["error", "warn"] }

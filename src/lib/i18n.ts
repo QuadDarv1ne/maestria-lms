@@ -63,10 +63,6 @@ export function t(key: string, locale?: Locale): string {
   return key;
 }
 
-export async function ensureLocaleLoaded(locale: Locale): Promise<void> {
-  await loadLocale(locale);
-}
-
 export function useLocale() {
   const locale = useAppStore((s) => s.locale);
   const setLocale = useAppStore((s) => s.setLocale);

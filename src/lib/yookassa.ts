@@ -127,25 +127,6 @@ export async function createPayment(
   };
 }
 
-export interface PaymentStatusResult {
-  status: string;
-  paid: boolean;
-}
-
-export async function getPaymentStatus(
-  yooKassaId: string
-): Promise<PaymentStatusResult> {
-  const response = await yooKassaRequest<YooKassaPaymentResponse>(
-    "GET",
-    `/payments/${yooKassaId}`
-  );
-
-  return {
-    status: response.status,
-    paid: response.status === "succeeded",
-  };
-}
-
 export function isYooKassaConfigured(): boolean {
   return !!(env.yooKassaShopId && env.yooKassaSecretKey);
 }

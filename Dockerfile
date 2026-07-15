@@ -3,14 +3,17 @@
 
 FROM node:20-alpine AS base
 
+# Install bun
+RUN apk add --no-cache libc6-compat unzip && \
+    curl -fsSL https://bun.sh/install | bash -s -- bun-v1.3.11
+ENV PATH="/root/.bun/bin:$PATH"
+
 # Install dependencies only when needed
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-COPY package.json package-lock.json* ./
-# Remove platform-mismatched lockfile so npm resolves optional deps correctly for Alpine (musl)
-RUN rm -f package-lock.json && npm install
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -27,7 +30,7 @@ ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-RUN npm run build
+RUN bun run build
 
 # Production image, copy all the files and run next
 FROM base AS runner

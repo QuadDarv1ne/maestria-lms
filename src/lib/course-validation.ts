@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const assignmentSchema = z.object({
+const assignmentSchema = z.object({
   id: z.string().optional(),
   title: z.string().max(500).optional(),
   description: z.string().optional(),
@@ -11,7 +11,7 @@ export const assignmentSchema = z.object({
   maxAttempts: z.union([z.string(), z.number()]).optional(),
 });
 
-export const lessonSchema = z.object({
+const lessonSchema = z.object({
   id: z.string().optional(),
   title: z.string().min(1).max(200).optional(),
   type: z.enum(["text", "video", "coding", "quiz", "assignment", "matching", "ordering", "essay", "file_upload", "drag_drop"]).optional().default("text"),
@@ -34,7 +34,7 @@ export const lessonSchema = z.object({
   assignments: z.array(assignmentSchema).optional(),
 });
 
-export const moduleSchema = z.object({
+const moduleSchema = z.object({
   id: z.string().optional(),
   title: z.string().min(1).max(200).optional(),
   description: z.string().optional(),

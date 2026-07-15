@@ -51,7 +51,7 @@ function writeLog(entry: LogEntry): void {
   }
 }
 
-export function logger(
+function logger(
   level: LogLevel,
   message: string,
   context?: Record<string, unknown>,

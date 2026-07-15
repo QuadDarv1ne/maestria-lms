@@ -119,7 +119,7 @@ export const env = {
   },
 };
 
-export type EnvKey = keyof typeof env;
+
 
 /**
  * Clear the env cache. Only needed in tests that modify process.env.

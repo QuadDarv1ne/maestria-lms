@@ -21,9 +21,9 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: 1.3.11
 
-      - run: bun install
+      - run: bun install --frozen-lockfile
 
       - name: Generate Prisma client
         run: bunx prisma generate
@@ -45,9 +45,9 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: 1.3.11
 
-      - run: bun install
+      - run: bun install --frozen-lockfile
 
       - name: Generate Prisma client
         run: bunx prisma generate
@@ -59,7 +59,7 @@ jobs:
         run: bunx vitest run
 
       - name: Check coverage thresholds
-        run: bunx vitest run --coverage
+        run: bunx vitest run --coverage --coverage.thresholds.autoUpdate
 
   build-docker:
     runs-on: ubuntu-latest

@@ -85,22 +85,6 @@ export async function cacheSet(
   return true;
 }
 
-export async function cacheDelete(key: string): Promise<boolean> {
-  const redis = getRedisClient();
-
-  if (redis) {
-    try {
-      await redis.del(`cache:${key}`);
-      return true;
-    } catch (err) {
-      log.warn("cacheDelete failed", { key, error: err instanceof Error ? err.message : String(err) });
-    }
-  }
-
-  memoryCache.delete(key);
-  return true;
-}
-
 export async function cacheInvalidateByTag(tag: string): Promise<boolean> {
   const redis = getRedisClient();
 
