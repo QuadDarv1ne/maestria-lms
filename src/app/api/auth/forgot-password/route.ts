@@ -9,6 +9,7 @@ import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
 import { sendEmail } from "@/lib/email";
 import { passwordStrengthSchema } from "@/lib/password-strength";
+import { MS, APP_NAME } from "@/lib/constants";
 
 export const runtime = "nodejs";
 
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
     // Создаём токен верификации
     const token = randomUUID();
     const tokenHash = createHash("sha256").update(token).digest("hex");
-    const expires = new Date(Date.now() + 3600000); // 1 час
+    const expires = new Date(Date.now() + MS.HOUR);
 
     await db.verificationToken.create({
       data: {
@@ -98,7 +99,7 @@ export async function POST(request: NextRequest) {
     // do not cause a 500 response (which would enable user enumeration).
     const emailSent = await sendEmail({
       to: email,
-      subject: "Сброс пароля — Maestria LMS",
+      subject: "Сброс пароля — " + APP_NAME,
       html: `
         <p>Здравствуйте!</p>
         <p>Вы запросили сброс пароля для аккаунта Maestria LMS.</p>

@@ -9,6 +9,7 @@ import { sendEmail } from "@/lib/email";
 
 import { z } from "zod";
 import { passwordStrengthSchema } from "@/lib/password-strength";
+import { MS } from "@/lib/constants";
 
 export const runtime = "nodejs";
 
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
 
     // Generate verification token
     const token = crypto.getRandomValues(new Uint8Array(32)).reduce((s, b) => s + b.toString(16).padStart(2, "0"), "");
-    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const expires = new Date(Date.now() + MS.DAY);
 
     // Create user and verification token atomically
     const user = await db.$transaction(async (tx) => {

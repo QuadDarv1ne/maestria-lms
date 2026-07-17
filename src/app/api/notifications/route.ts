@@ -3,10 +3,17 @@ import { db } from "@/lib/db";
 import { getAuthSession, requireAuth, type ExtendedSession } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
+import { MS } from "@/lib/constants";
+import { z } from "zod";
 
 export const runtime = "nodejs";
 
 const checkRateLimit = rateLimit("notifications", RATE_LIMITS.default);
+
+const notificationsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+});
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,8 +26,10 @@ export async function GET(request: NextRequest) {
 
     const authSession = session as ExtendedSession;
     const url = new URL(request.url);
-    const limit = Math.min(Number(url.searchParams.get("limit")) || 50, 100);
-    const offset = Number(url.searchParams.get("offset")) || 0;
+    const { limit, offset } = notificationsQuerySchema.parse({
+      limit: url.searchParams.get("limit"),
+      offset: url.searchParams.get("offset"),
+    });
 
     const [notifications, total, unreadCount] = await Promise.all([
       db.notification.findMany({
@@ -62,7 +71,7 @@ export async function DELETE(request: NextRequest) {
     const authError = requireAuth(session);
     if (authError) return authError;
 
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(Date.now() - MS.THIRTY_DAYS);
 
     const authSession = session as ExtendedSession;
     const result = await db.notification.deleteMany({

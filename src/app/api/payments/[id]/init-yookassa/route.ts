@@ -47,7 +47,14 @@ export async function POST(
       return NextResponse.json({ error: "Неверный метод оплаты" }, { status: 400 });
     }
 
-    const existingData = payment.paymentData ? JSON.parse(payment.paymentData) : null;
+    let existingData: Record<string, unknown> | null = null;
+    if (payment.paymentData) {
+      try {
+        existingData = JSON.parse(payment.paymentData);
+      } catch {
+        log.warn("Corrupted paymentData in DB", { paymentId: id });
+      }
+    }
     if (existingData?.yooKassaId) {
       return NextResponse.json({
         confirmationUrl: existingData.confirmationUrl,

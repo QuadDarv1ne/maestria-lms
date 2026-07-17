@@ -3,10 +3,15 @@ import { db } from "@/lib/db";
 import { getAuthSession, requireAuth, type ExtendedSession } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-errors";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { z } from "zod";
 
 export const runtime = "nodejs";
 
 const checkRateLimit = rateLimit("certificates", RATE_LIMITS.default);
+
+const certQuerySchema = z.object({
+  courseId: z.string().uuid("Неверный формат courseId"),
+});
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,14 +22,18 @@ export async function GET(request: NextRequest) {
     if (authError) return authError;
 
     const url = new URL(request.url);
-    const courseId = url.searchParams.get("courseId");
+    const parsed = certQuerySchema.safeParse({
+      courseId: url.searchParams.get("courseId"),
+    });
 
-    if (!courseId) {
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "Необходимо указать courseId" },
+        { error: parsed.error.issues[0]?.message || "Неверный параметр" },
         { status: 400 }
       );
     }
+
+    const { courseId } = parsed.data;
 
     const authSession = session as ExtendedSession;
     const certificate = await db.certificate.findUnique({

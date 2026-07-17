@@ -23,6 +23,16 @@ import {
 
 export const APP_VERSION = "3.6.0";
 
+export const APP_NAME = "Maestria LMS";
+
+export const CERTIFICATE_PREFIX = "MAE";
+
+export const MS = {
+  HOUR: 3600000,
+  DAY: 86400000,
+  THIRTY_DAYS: 2592000000,
+} as const;
+
 export const CONTACT = {
   phone: "+7 (915) 048-02-49",
   phoneTel: "+79150480249",

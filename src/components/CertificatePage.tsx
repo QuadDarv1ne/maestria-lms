@@ -86,7 +86,7 @@ export function CertificatePage({ courseId }: { courseId: string }) {
     if (!user) return "";
     const h = `${courseId}${user.id}`.split("").reduce((a, c) => ((a << 5) - a + c.charCodeAt(0)) | 0, 0);
     const hash = Math.abs(h).toString(16).toUpperCase().padStart(8, "0");
-    return `MAE-${new Date().getFullYear()}-${hash.slice(0, 4)}-${hash.slice(4, 8)}`;
+    return `MAE-${new Date().getFullYear()}-${hash.slice(0, 8)}`;
   }
 
   /* derived state */

@@ -6,6 +6,7 @@ import { sendEmail } from "@/lib/email";
 import { handleApiError } from "@/lib/api-errors";
 import { env } from "@/lib/env";
 import { randomBytes } from "node:crypto";
+import { MS, APP_NAME } from "@/lib/constants";
 
 export const runtime = "nodejs";
 
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     // Generate verification token
     const token = randomBytes(32).toString("hex");
-    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const expires = new Date(Date.now() + MS.DAY);
 
     await db.verificationToken.create({
       data: {
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     await sendEmail({
       to: user.email,
-      subject: "Подтверждение email — Maestria LMS",
+      subject: "Подтверждение email — " + APP_NAME,
       html: `
         <h2>Подтвердите ваш email</h2>
         <p>Здравствуйте, ${(user.name || "пользователь").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}!</p>

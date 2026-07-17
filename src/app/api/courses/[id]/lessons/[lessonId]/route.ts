@@ -6,6 +6,7 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
+import { CERTIFICATE_PREFIX } from "@/lib/constants";
 
 export const runtime = "nodejs";
 
@@ -311,7 +312,7 @@ export async function POST(
             if (!existingCert) {
               const year = new Date().getFullYear();
               const uniqueSuffix = crypto.randomUUID().slice(0, 8).toUpperCase();
-              const certNumber = `MAE-${year}-${uniqueSuffix}`;
+              const certNumber = `${CERTIFICATE_PREFIX}-${year}-${uniqueSuffix}`;
               await tx.certificate.create({
                 data: {
                   userId,

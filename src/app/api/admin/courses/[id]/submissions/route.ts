@@ -4,10 +4,16 @@ import { getAuthSession } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { parsePagination } from "@/lib/utils";
+import { z } from "zod";
 
 export const runtime = "nodejs";
 
 const checkRateLimit = rateLimit("grading", RATE_LIMITS.admin);
+
+const submissionsQuerySchema = z.object({
+  status: z.enum(["pending", "approved", "rejected"]).optional(),
+  assignmentId: z.string().uuid().optional(),
+});
 
 // GET: Get all submissions for a course (teacher only)
 export async function GET(
@@ -57,8 +63,11 @@ export async function GET(
 
     const { searchParams } = new URL(request.url);
     const { page, limit, skip } = parsePagination(searchParams, { defaultLimit: 20, maxLimit: 100 });
-    const status = searchParams.get("status");
-    const assignmentId = searchParams.get("assignmentId");
+    const queryParsed = submissionsQuerySchema.safeParse({
+      status: searchParams.get("status"),
+      assignmentId: searchParams.get("assignmentId"),
+    });
+    const { status, assignmentId } = queryParsed.success ? queryParsed.data : { status: undefined, assignmentId: undefined };
 
     const where = {
       assignment: {

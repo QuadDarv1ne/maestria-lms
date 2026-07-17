@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-errors";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { MS } from "@/lib/constants";
 
 export const runtime = "nodejs";
 
@@ -53,7 +54,7 @@ export async function GET(request: NextRequest) {
     });
 
     const now = new Date();
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(now.getTime() - MS.THIRTY_DAYS);
 
     let totalStudents = 0;
     let totalCompleted = 0;
