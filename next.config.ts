@@ -34,18 +34,9 @@ const nextConfig: NextConfig = {
   },
   // Compression
   compress: true,
-  // Headers для кэширования
+  // Headers для кэширования ( статические assets )
   async headers() {
     return [
-      {
-        source: "/_next/static/:path*",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-        ],
-      },
       {
         source: "/:path*.{js,css,woff2}",
         headers: [

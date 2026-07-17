@@ -8,7 +8,7 @@ export type DatabaseProvider = 'postgresql' | 'mysql' | 'sqlite' | 'mongodb'
  * Defaults to 'sqlite' if not set
  */
 export function getDatabaseProvider(): DatabaseProvider {
-  const provider = process.env.DATABASE_PROVIDER?.toLowerCase()
+  const provider = env.databaseProvider.toLowerCase()
 
   if (!provider || !['postgresql', 'mysql', 'sqlite', 'mongodb'].includes(provider)) {
     return 'sqlite'

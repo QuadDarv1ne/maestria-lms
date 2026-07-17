@@ -123,7 +123,7 @@ export function AdminSettings(_props: AdminTabProps) {
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             {[
-              { label: t("adminPage.infoVersion", locale), value: "v3.1.0" },
+              { label: t("adminPage.infoVersion", locale), value: "v3.6.0" },
               { label: "Next.js", value: "16.1.1" },
               { label: "React", value: "19.0.0" },
               { label: t("adminPage.infoDatabase", locale), value: t("admin.database", locale), special: true },

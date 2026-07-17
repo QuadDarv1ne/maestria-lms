@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 
 const SAFE_METHODS = ["GET", "HEAD", "OPTIONS"];
 
-export function validateCsrf(request: NextRequest): boolean {
+function validateCsrf(request: NextRequest): boolean {
   if (SAFE_METHODS.includes(request.method)) {
     return true;
   }

@@ -102,6 +102,10 @@ export const env = {
     return cached("allowSeedData", () => process.env.ALLOW_SEED_DATA === "true");
   },
 
+  get databaseProvider(): string {
+    return cached("databaseProvider", () => process.env.DATABASE_PROVIDER ?? "sqlite");
+  },
+
   get nodeEnv(): string {
     return cached("nodeEnv", () => process.env.NODE_ENV || "development");
   },

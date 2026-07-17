@@ -14,7 +14,7 @@ const checkProfileGetRateLimit = rateLimit("profileGet", RATE_LIMITS.profile);
 const updateProfileSchema = z.object({
   name: z.string().min(2, "Имя должно быть не менее 2 символов").max(50).optional(),
   bio: z.string().max(500, "Биография слишком длинная").optional(),
-  phone: z.string().max(20).optional(),
+  phone: z.string().max(20).regex(/^[\d\s+\-()]*$/, "Неверный формат телефона").optional(),
   image: z.string().url("Неверный URL изображения").optional().or(z.literal("")),
 });
 

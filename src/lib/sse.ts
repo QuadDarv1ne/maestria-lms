@@ -2,6 +2,7 @@ import { log } from "@/lib/logger";
 import type { NotificationItem } from "./stores/notifications";
 
 const clients = new Map<string, Set<ReadableStreamDefaultController>>();
+const MAX_CONNECTIONS_PER_USER = 5;
 
 // Periodic cleanup of empty client sets (every 5 minutes)
 let cleanupInterval: ReturnType<typeof setInterval> | null = null;
@@ -48,6 +49,17 @@ export function addClient(userId: string, controller: ReadableStreamDefaultContr
     userClients = new Set();
     clients.set(userId, userClients);
   }
+
+  // Enforce max connections per user to prevent resource exhaustion
+  if (userClients.size >= MAX_CONNECTIONS_PER_USER) {
+    // Close the oldest connection to make room
+    const oldest = userClients.values().next().value;
+    if (oldest) {
+      try { oldest.close(); } catch { /* already closed */ }
+      userClients.delete(oldest);
+    }
+  }
+
   userClients.add(controller);
 
   return () => {

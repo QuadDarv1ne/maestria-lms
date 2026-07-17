@@ -163,14 +163,6 @@ export function setServerFeatureFlag(key: FeatureFlagKey, value: boolean): void 
 }
 
 /**
- * Server-side: clear all admin overrides.
- */
-export function clearServerFeatureFlags(): void {
-  serverFlagOverrides.clear();
-  flagCache.clear();
-}
-
-/**
  * Simple string hash function for rollout percentage calculation.
  */
 function simpleHash(str: string): number {

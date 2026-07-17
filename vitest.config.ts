@@ -21,7 +21,7 @@ export default defineConfig({
         'src/components/**',
         'src/data/**',
         'src/hooks/**',
-        'src/middleware.ts',
+        'src/proxy.ts',
         'src/lib/auth*',
         'src/lib/db*',
         'src/lib/env*',

@@ -10,6 +10,9 @@ export const runtime = "nodejs";
 
 const checkRateLimit = rateLimit("article", RATE_LIMITS.default);
 
+const VIEW_DEDUP_COOKIE = "article_view";
+const VIEW_DEDUP_TTL = 30; // seconds — prevent refresh-based inflation
+
 const articleUpdateSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   slug: z.string().min(1).max(200).optional(),
@@ -56,12 +59,27 @@ export async function GET(
       }
     }
 
-    // Increment views only for published articles
+    // Increment views only for published articles, with cookie-based dedup
     if (article.isPublished) {
-      await db.article.update({
-        where: { id: article.id },
-        data: { views: { increment: 1 } },
+      const viewCookie = request.cookies.get(VIEW_DEDUP_COOKIE);
+      const lastView = viewCookie ? parseInt(viewCookie.value, 10) : 0;
+      const now = Math.floor(Date.now() / 1000);
+
+      if (now - lastView > VIEW_DEDUP_TTL) {
+        await db.article.update({
+          where: { id: article.id },
+          data: { views: { increment: 1 } },
+        });
+      }
+
+      const response = NextResponse.json(article, { status: 200 });
+      response.cookies.set(VIEW_DEDUP_COOKIE, String(now), {
+        httpOnly: true,
+        sameSite: "lax",
+        maxAge: VIEW_DEDUP_TTL,
+        path: "/",
       });
+      return response;
     }
 
     return NextResponse.json(article, { status: 200 });

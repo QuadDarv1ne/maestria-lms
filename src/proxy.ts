@@ -16,7 +16,7 @@ const PROTECTED_ROUTES = {
   "/course-editor": ["admin" as const, "teacher" as const],
 } as const;
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const matchedRoute = Object.entries(PROTECTED_ROUTES).find(
