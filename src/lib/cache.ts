@@ -16,15 +16,17 @@ export async function cacheGet<T>(key: string): Promise<T | null> {
   const redis = getRedisClient();
 
   if (redis) {
+    let data: string | null = null;
     try {
-      const data = await redis.get(`cache:${key}`);
+      data = await redis.get(`cache:${key}`);
       if (data) {
         return JSON.parse(data) as T;
       }
       return null;
     } catch (error: unknown) {
-      log.warn("Redis cache get failed", {
+      log.warn("Redis cache get failed (possibly corrupted data)", {
         key,
+        dataPreview: typeof data === "string" ? data.substring(0, 120) : undefined,
         error: error instanceof Error ? error.message : String(error),
       });
     }

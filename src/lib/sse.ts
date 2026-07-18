@@ -21,6 +21,13 @@ function startCleanup() {
 
 startCleanup();
 
+export function stopCleanup() {
+  if (cleanupInterval) {
+    clearInterval(cleanupInterval);
+    cleanupInterval = null;
+  }
+}
+
 function broadcastToClients(userId: string, data: string) {
   const userClients = clients.get(userId);
   if (!userClients) return;
