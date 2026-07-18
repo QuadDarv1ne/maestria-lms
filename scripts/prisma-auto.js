@@ -10,7 +10,7 @@
  *  - Skips Prisma entirely for MongoDB
  */
 
-const { execSync } = require('child_process')
+const { execFileSync } = require('child_process')
 const fs = require('fs')
 const path = require('path')
 
@@ -58,9 +58,9 @@ try {
 
   // Execute the original Prisma command
   const args = process.argv.slice(2)
-  const command = `npx prisma ${args.join(' ')}`
 
-  execSync(command, {
+  const { execFileSync } = require('child_process')
+  execFileSync("npx", ["prisma", ...args], {
     stdio: 'inherit',
     cwd: ROOT,
     env: { ...process.env }

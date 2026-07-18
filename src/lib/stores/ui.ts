@@ -20,7 +20,8 @@ function validateLocale(value: string): Locale {
 
 function setLocaleCookie(locale: string): void {
   if (typeof document === "undefined") return;
-  document.cookie = `maestria-locale=${locale}; Path=/; SameSite=Lax; Max-Age=31536000`;
+  const secure = typeof window !== "undefined" && window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `maestria-locale=${locale}; Path=/; SameSite=Lax; Max-Age=31536000${secure}`;
 }
 
 export interface UISlice {

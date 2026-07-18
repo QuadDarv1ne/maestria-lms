@@ -14,31 +14,18 @@ function gracefulShutdown(signal) {
 
   console.log(`\n${signal} received. Starting graceful shutdown...`);
 
-  // Give in-flight requests time to complete
+  // Stop accepting new connections — let in-flight requests drain.
+  // The timeout is a safety net for stuck connections.
   const shutdownTimeout = setTimeout(() => {
     console.log("Shutdown timeout reached. Forcing exit.");
     process.exit(1);
   }, 10000);
-
-  // Close database connections, cleanup, etc.
-  process.on("SIGTERM", () => {
-    clearTimeout(shutdownTimeout);
-    process.exit(0);
-  });
-
-  process.on("SIGINT", () => {
-    clearTimeout(shutdownTimeout);
-    process.exit(0);
-  });
-
-  // Trigger shutdown
-  process.emit("SIGTERM");
+  shutdownTimeout.unref();
 }
 
 process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
 process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
-// Unhandled rejection handler
 process.on("unhandledRejection", (reason) => {
   console.error("Unhandled Promise Rejection:", reason);
 });

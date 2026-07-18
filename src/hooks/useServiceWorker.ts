@@ -11,6 +11,7 @@ export function useServiceWorker() {
     }
 
     let updateInterval: ReturnType<typeof setInterval> | undefined;
+    const cleanupFns: (() => void)[] = [];
 
     const registerSWAsync = async () => {
       try {
@@ -23,16 +24,21 @@ export function useServiceWorker() {
           await newRegistration.update();
         }, 6 * 60 * 60 * 1000);
 
-        registration.addEventListener("updatefound", () => {
+        const handleUpdateFound = () => {
           const newWorker = registration.installing;
           if (!newWorker) return;
 
-          newWorker.addEventListener("statechange", () => {
+          const handleStateChange = () => {
             if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
               log.debug("New content available, please refresh.");
             }
-          });
-        });
+          };
+          newWorker.addEventListener("statechange", handleStateChange);
+          cleanupFns.push(() => newWorker.removeEventListener("statechange", handleStateChange));
+        };
+
+        registration.addEventListener("updatefound", handleUpdateFound);
+        cleanupFns.push(() => registration.removeEventListener("updatefound", handleUpdateFound));
       } catch (error) {
         log.error("Service Worker registration failed:", { error: error instanceof Error ? error.message : String(error) });
       }
@@ -51,6 +57,7 @@ export function useServiceWorker() {
     return () => {
       if (updateInterval) clearInterval(updateInterval);
       navigator.serviceWorker.removeEventListener("message", handleMessage);
+      cleanupFns.forEach((fn) => fn());
     };
   }, []);
 }

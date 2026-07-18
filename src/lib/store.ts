@@ -42,6 +42,7 @@ export const useAppStore = create<AppStore>()((set, get, api) => {
         currentLessonId: null,
         favorites: [],
         notifications: [],
+        courseFilters: { category: "", search: "", level: "", sortBy: "popular", freeOnly: false },
       });
     },
   };
