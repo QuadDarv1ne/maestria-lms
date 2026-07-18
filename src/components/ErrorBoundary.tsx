@@ -8,7 +8,7 @@ import type { Locale } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Home, RefreshCw, RotateCcw } from "lucide-react";
 
-let currentLocale: Locale = "ru";
+let currentLocale: Locale = useAppStore.getState().locale;
 
 interface ErrorBoundaryProps {
   children: ReactNode;

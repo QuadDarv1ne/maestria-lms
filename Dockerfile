@@ -2,15 +2,16 @@
 # Multi-stage build with minimal runtime image
 
 FROM node:20-alpine AS base
-
-# Install bun
-RUN apk add --no-cache libc6-compat unzip && \
-    curl -fsSL https://bun.sh/install | bash -s -- bun-v1.3.11
-ENV PATH="/root/.bun/bin:$PATH"
+RUN apk add --no-cache libc6-compat
 
 # Install dependencies only when needed
 FROM base AS deps
 WORKDIR /app
+
+# Install bun for dependency management
+RUN apk add --no-cache unzip && \
+    curl -fsSL https://bun.sh/install | bash -s -- bun-v1.3.11
+ENV PATH="/root/.bun/bin:$PATH"
 
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
@@ -18,6 +19,11 @@ RUN bun install --frozen-lockfile
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
+
+# Install bun for build
+RUN apk add --no-cache unzip && \
+    curl -fsSL https://bun.sh/install | bash -s -- bun-v1.3.11
+ENV PATH="/root/.bun/bin:$PATH"
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -32,8 +38,8 @@ ENV NODE_ENV=production
 
 RUN bun run build
 
-# Production image, copy all the files and run next
-FROM base AS runner
+# Production image — no bun, no dev tools
+FROM node:20-alpine AS runner
 WORKDIR /app
 
 ARG NEXT_PUBLIC_SITE_URL=http://localhost:3000
@@ -41,7 +47,8 @@ ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN addgroup --system --gid 1001 nodejs && \
+RUN apk add --no-cache wget && \
+    addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
 COPY --from=builder /app/public ./public

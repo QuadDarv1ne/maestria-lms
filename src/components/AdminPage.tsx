@@ -15,7 +15,6 @@ import { toast } from "sonner";
 import {
   demoReports,
 } from "@/data/demo-data";
-import type { ReportItem } from "@/data/demo-data";
 import { useAdminCourses, useAdminUsers, useUpdateUserRole, useToggleUserStatus } from "@/hooks/useAdmin";
 import { useQueryClient } from "@tanstack/react-query";
 import type { UserRole } from "@/hooks/useAdmin";
@@ -49,7 +48,7 @@ export function AdminPage() {
     t("common.daySun", locale),
   ], [locale]);
   const queryClient = useQueryClient();
-  const [reports] = useState<ReportItem[]>(demoReports);
+  const reports = demoReports;
   const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);

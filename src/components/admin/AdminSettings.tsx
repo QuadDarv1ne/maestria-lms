@@ -17,8 +17,7 @@ interface SystemSettings {
   twoFARequired: boolean;
 }
 
-export function AdminSettings(_props: AdminTabProps) {
-  const locale = _props.locale;
+export function AdminSettings({ locale }: AdminTabProps) {
   const [settings, setSettings] = useState<SystemSettings>({
     maintenanceMode: false,
     registrationDisabled: false,
