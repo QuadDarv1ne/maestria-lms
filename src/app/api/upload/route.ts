@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { getAuthSession } from "@/lib/auth";
+import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { s3Client, S3_BUCKET, toCdnUrl, makeFileKey, isS3Available } from "@/lib/s3";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
@@ -26,9 +26,7 @@ export async function POST(req: NextRequest) {
     const blocked = checkRateLimit(req);
     if (blocked) return blocked;
     const session = await getAuthSession();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
-    }
+    if (!requireAuth(session)) return authErrorResponse();
 
     // Разрешаем загрузку всем авторизованным пользователям (студентам — для file_upload заданий)
     const allowedRoles = ["admin", "teacher", "student"];

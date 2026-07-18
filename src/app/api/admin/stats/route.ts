@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, getDatabaseProvider } from "@/lib/db";
-import { getAuthSession, requireAdmin } from "@/lib/auth";
+import { getAuthSession, requireAdmin, adminErrorResponse } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 
@@ -13,8 +13,7 @@ export async function GET(request: NextRequest) {
   if (blocked) return blocked;
   try {
     const session = await getAuthSession();
-    const adminError = requireAdmin(session);
-    if (adminError) return adminError;
+    if (!requireAdmin(session)) return adminErrorResponse();
 
     const now = new Date();
     const oneDayAgo = new Date(now);

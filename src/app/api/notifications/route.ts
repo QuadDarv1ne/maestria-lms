@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getAuthSession, requireAuth, type ExtendedSession } from "@/lib/auth";
+import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { MS } from "@/lib/constants";
@@ -21,10 +21,8 @@ export async function GET(request: NextRequest) {
     if (blocked) return blocked;
 
     const session = await getAuthSession();
-    const authError = requireAuth(session);
-    if (authError) return authError;
+    if (!requireAuth(session)) return authErrorResponse();
 
-    const authSession = session as ExtendedSession;
     const url = new URL(request.url);
     const { limit, offset } = notificationsQuerySchema.parse({
       limit: url.searchParams.get("limit"),
@@ -33,14 +31,14 @@ export async function GET(request: NextRequest) {
 
     const [notifications, total, unreadCount] = await Promise.all([
       db.notification.findMany({
-        where: { userId: authSession.user.id },
+        where: { userId: session.user.id },
         orderBy: { createdAt: "desc" },
         take: limit,
         skip: offset,
       }),
-      db.notification.count({ where: { userId: authSession.user.id } }),
+      db.notification.count({ where: { userId: session.user.id } }),
       db.notification.count({
-        where: { userId: authSession.user.id, read: false },
+        where: { userId: session.user.id, read: false },
       }),
     ]);
 
@@ -68,15 +66,13 @@ export async function DELETE(request: NextRequest) {
     if (blocked) return blocked;
 
     const session = await getAuthSession();
-    const authError = requireAuth(session);
-    if (authError) return authError;
+    if (!requireAuth(session)) return authErrorResponse();
 
     const thirtyDaysAgo = new Date(Date.now() - MS.THIRTY_DAYS);
 
-    const authSession = session as ExtendedSession;
     const result = await db.notification.deleteMany({
       where: {
-        userId: authSession.user.id,
+        userId: session.user.id,
         read: true,
         createdAt: { lt: thirtyDaysAgo },
       },

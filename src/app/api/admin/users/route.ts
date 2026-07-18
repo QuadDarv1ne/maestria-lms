@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { Prisma } from "@prisma/client";
-import { getAuthSession, requireAdmin, type ExtendedSession } from "@/lib/auth";
+import { getAuthSession, requireAdmin, adminErrorResponse } from "@/lib/auth";
 import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
@@ -24,8 +24,7 @@ export async function GET(request: NextRequest) {
   if (blocked) return blocked;
   try {
     const session = await getAuthSession();
-    const adminError = requireAdmin(session);
-    if (adminError) return adminError;
+    if (!requireAdmin(session)) return adminErrorResponse();
 
     const { searchParams } = new URL(request.url);
     const { page, limit, skip } = parsePagination(searchParams, { defaultLimit: 20, maxLimit: 100 });
@@ -89,10 +88,7 @@ export async function PUT(request: NextRequest) {
 
   try {
     const session = await getAuthSession();
-    const adminError = requireAdmin(session);
-    if (adminError) return adminError;
-
-    const authenticatedSession = session as ExtendedSession;
+    if (!requireAdmin(session)) return adminErrorResponse();
 
     const body = await request.json();
     const validation = updateUserSchema.safeParse(body);
@@ -107,7 +103,7 @@ export async function PUT(request: NextRequest) {
     const { userId, ...updateData } = validation.data;
 
     // Проверяем, не пытается ли админ заблокировать сам себя
-    if (userId === authenticatedSession.user.id) {
+    if (userId === session.user.id) {
       if (updateData.isActive === false) {
         return NextResponse.json(
           { error: "Нельзя заблокировать самого себя" },

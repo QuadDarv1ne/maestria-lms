@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { Prisma } from "@prisma/client";
-import { getAuthSession } from "@/lib/auth";
+import { getAuthSession, requireAuth, requireAdmin, authErrorResponse, adminErrorResponse } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { parsePagination } from "@/lib/utils";
@@ -46,12 +46,7 @@ export async function GET(request: NextRequest) {
   if (blocked) return blocked;
   try {
     const session = await getAuthSession();
-    if (!session?.user || session.user.role !== "admin") {
-      return NextResponse.json(
-        { error: "Доступ запрещён. Требуются права администратора" },
-        { status: 403 }
-      );
-    }
+    if (!requireAdmin(session)) return adminErrorResponse();
 
     const { searchParams } = new URL(request.url);
     const { page, limit, skip } = parsePagination(searchParams, { defaultLimit: 20, maxLimit: 100 });
@@ -114,12 +109,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const session = await getAuthSession();
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Необходимо авторизоваться" },
-        { status: 401 }
-      );
-    }
+    if (!requireAuth(session)) return authErrorResponse();
 
     const userRole = session.user.role;
     if (userRole !== "admin" && userRole !== "teacher") {
@@ -275,12 +265,7 @@ export async function PUT(request: NextRequest) {
 
   try {
     const session = await getAuthSession();
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Необходимо авторизоваться" },
-        { status: 401 }
-      );
-    }
+    if (!requireAuth(session)) return authErrorResponse();
 
     const userRole = session.user.role;
     if (userRole !== "admin" && userRole !== "teacher") {
@@ -678,12 +663,7 @@ export async function DELETE(request: NextRequest) {
 
   try {
     const session = await getAuthSession();
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Необходимо авторизоваться" },
-        { status: 401 }
-      );
-    }
+    if (!requireAuth(session)) return authErrorResponse();
 
     const userRole = session.user.role;
     if (userRole !== "admin" && userRole !== "teacher") {

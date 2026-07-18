@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { handleApiError } from "@/lib/api-errors";
-import { getAuthSession, requireAdmin } from "@/lib/auth";
+import { getAuthSession, requireAdmin, adminErrorResponse } from "@/lib/auth";
 import { rateLimitAsync, RATE_LIMITS } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -18,12 +18,8 @@ export async function GET(request: Request) {
       return rateLimitResponse;
     }
 
-    // Require admin authentication
     const session = await getAuthSession();
-    const adminError = requireAdmin(session);
-    if (adminError) {
-      return adminError;
-    }
+    if (!requireAdmin(session)) return adminErrorResponse();
 
     const [
       userCount,

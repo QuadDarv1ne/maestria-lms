@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getAuthSession } from "@/lib/auth";
+import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 
@@ -18,12 +18,7 @@ export async function GET(request: Request) {
     if (blocked) return blocked;
 
     const session = await getAuthSession();
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Необходимо авторизоваться" },
-        { status: 401 }
-      );
-    }
+    if (!requireAuth(session)) return authErrorResponse();
 
     const userId = session.user.id;
 

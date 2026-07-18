@@ -3,7 +3,7 @@ import { db, Prisma } from "@/lib/db";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { parsePagination } from "@/lib/utils";
-import { getAuthSession, requireAuth, type ExtendedSession } from "@/lib/auth";
+import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { z } from "zod";
 import { sanitizeContent } from "@/lib/sanitize";
 import { cacheGet, cacheSet, cacheInvalidateByTag, generateCacheKey, createCacheHeaders } from "@/lib/cache";
@@ -169,11 +169,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const session = await getAuthSession();
-    const authError = requireAuth(session);
-    if (authError) return authError;
-    const authSession = session as ExtendedSession;
+    if (!requireAuth(session)) return authErrorResponse();
 
-    if (!["teacher", "admin"].includes(authSession.user.role)) {
+    if (!["teacher", "admin"].includes(session.user.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -201,7 +199,7 @@ export async function POST(request: NextRequest) {
         readTime: readTime ?? 5,
         isPublished: isPublished ?? false,
         isFeatured: isFeatured ?? false,
-        authorId: authSession.user.id,
+        authorId: session.user.id,
       },
     });
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getAuthSession, requireAuth } from "@/lib/auth";
+import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
 import { handleApiError } from "@/lib/api-errors";
@@ -28,12 +28,7 @@ export async function POST(
     const { id: courseId } = await params;
 
     const session = await getAuthSession();
-
-    const authError = requireAuth(session);
-    if (authError) return authError;
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Невалидная сессия" }, { status: 401 });
-    }
+    if (!requireAuth(session)) return authErrorResponse();
 
     const userId = session.user.id;
     // Course ID may be a UUID or slug — try both

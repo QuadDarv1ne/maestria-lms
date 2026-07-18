@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession, requireAdmin } from "@/lib/auth";
+import { getAuthSession, requireAdmin, adminErrorResponse } from "@/lib/auth";
 import { FEATURE_FLAGS } from "@/lib/feature-flags-config";
 import { getAllFeatureFlags, setServerFeatureFlag } from "@/lib/feature-flags";
 import { handleApiError } from "@/lib/api-errors";
@@ -16,12 +16,7 @@ export async function GET(request: NextRequest) {
   if (blocked) return blocked;
   try {
     const session = await getAuthSession();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const adminError = requireAdmin(session);
-    if (adminError) return adminError;
+    if (!requireAdmin(session)) return adminErrorResponse();
 
     const flags = getAllFeatureFlags();
     const definitions = Object.entries(FEATURE_FLAGS).map(([key, def]) => ({
@@ -49,8 +44,7 @@ export async function PATCH(request: NextRequest) {
   if (blocked) return blocked;
   try {
     const session = await getAuthSession();
-    const authError = requireAdmin(session);
-    if (authError) return authError;
+    if (!requireAdmin(session)) return adminErrorResponse();
 
     const body = await request.json();
     const validation = updateFlagSchema.safeParse(body);

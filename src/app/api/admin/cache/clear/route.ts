@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession, requireAdmin } from "@/lib/auth";
+import { getAuthSession, requireAdmin, adminErrorResponse } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-errors";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { flushAll } from "@/lib/cache";
@@ -13,8 +13,7 @@ export async function POST(request: NextRequest) {
   if (blocked) return blocked;
   try {
     const session = await getAuthSession();
-    const adminError = requireAdmin(session);
-    if (adminError) return adminError;
+    if (!requireAdmin(session)) return adminErrorResponse();
 
     await flushAll();
 

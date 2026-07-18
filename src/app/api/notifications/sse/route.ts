@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { addClient } from "@/lib/sse";
 import { log } from "@/lib/logger";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
@@ -11,9 +11,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   try {
     const session = await getAuthSession();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
-    }
+    if (!requireAuth(session)) return authErrorResponse();
 
     // Rate limit SSE connections to prevent connection exhaustion
     const limitResponse = rateLimit("sse", RATE_LIMITS.sse)(req, session.user.id);

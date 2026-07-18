@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getAuthSession, requireAuth, type ExtendedSession } from "@/lib/auth";
+import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-errors";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { z } from "zod";
@@ -18,8 +18,7 @@ export async function GET(request: NextRequest) {
     const blocked = checkRateLimit(request);
     if (blocked) return blocked;
     const session = await getAuthSession();
-    const authError = requireAuth(session);
-    if (authError) return authError;
+    if (!requireAuth(session)) return authErrorResponse();
 
     const url = new URL(request.url);
     const parsed = certQuerySchema.safeParse({
@@ -35,11 +34,10 @@ export async function GET(request: NextRequest) {
 
     const { courseId } = parsed.data;
 
-    const authSession = session as ExtendedSession;
     const certificate = await db.certificate.findUnique({
       where: {
         userId_courseId: {
-          userId: authSession.user.id,
+          userId: session.user.id,
           courseId,
         },
       },
@@ -68,7 +66,7 @@ export async function GET(request: NextRequest) {
       issuedAt: certificate.issuedAt,
       courseTitle: certificate.course.title,
       courseSlug: certificate.course.slug,
-      userName: authSession.user.name || authSession.user.email,
+      userName: session.user.name || session.user.email,
     });
   } catch (error: unknown) {
     return handleApiError(error, { route: "certificates" });

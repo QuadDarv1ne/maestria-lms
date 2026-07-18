@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession } from "@/lib/auth";
+import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { createNotification } from "@/lib/notifications";
 import { handleApiError } from "@/lib/api-errors";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
@@ -21,9 +21,7 @@ export async function POST(req: NextRequest) {
     if (rateLimitResult) return rateLimitResult;
 
     const session = await getAuthSession();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
-    }
+    if (!requireAuth(session)) return authErrorResponse();
 
     const body = await req.json();
     const validation = publishSchema.safeParse(body);

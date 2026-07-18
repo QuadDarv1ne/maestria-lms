@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getAuthSession } from "@/lib/auth";
+import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { sendEmail } from "@/lib/email";
 import { handleApiError } from "@/lib/api-errors";
@@ -18,9 +18,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const session = await getAuthSession();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!requireAuth(session)) return authErrorResponse();
 
     const user = await db.user.findUnique({
       where: { id: session.user.id },

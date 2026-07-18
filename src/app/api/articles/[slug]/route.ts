@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
-import { getAuthSession, requireAuth, type ExtendedSession } from "@/lib/auth";
+import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { z } from "zod";
 import { sanitizeContent } from "@/lib/sanitize";
 
@@ -97,11 +97,9 @@ export async function PATCH(
 
   try {
     const session = await getAuthSession();
-    const authError = requireAuth(session);
-    if (authError) return authError;
-    const authSession = session as ExtendedSession;
+    if (!requireAuth(session)) return authErrorResponse();
 
-    if (!["teacher", "admin"].includes(authSession.user.role)) {
+    if (!["teacher", "admin"].includes(session.user.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -112,7 +110,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Article not found" }, { status: 404 });
     }
 
-    if (article.authorId !== authSession.user.id && authSession.user.role !== "admin") {
+    if (article.authorId !== session.user.id && session.user.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -162,11 +160,9 @@ export async function DELETE(
 
   try {
     const session = await getAuthSession();
-    const authError = requireAuth(session);
-    if (authError) return authError;
-    const authSession = session as ExtendedSession;
+    if (!requireAuth(session)) return authErrorResponse();
 
-    if (authSession.user.role !== "admin") {
+    if (session.user.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

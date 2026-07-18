@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getAuthSession } from "@/lib/auth";
+import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { z } from "zod";
 import { authenticator } from "otplib";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
@@ -48,9 +48,7 @@ export async function POST(request: NextRequest) {
   if (blocked) return blocked;
   try {
     const session = await getAuthSession();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
-    }
+    if (!requireAuth(session)) return authErrorResponse();
 
     const body = await request.json();
     const validation = enable2FASchema.safeParse(body);
@@ -99,9 +97,7 @@ export async function PUT(request: NextRequest) {
   if (blocked) return blocked;
   try {
     const session = await getAuthSession();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
-    }
+    if (!requireAuth(session)) return authErrorResponse();
 
     const body = await request.json();
     const validation = verify2FASchema.safeParse(body);
@@ -161,9 +157,7 @@ export async function DELETE(request: NextRequest) {
   if (blocked) return blocked;
   try {
     const session = await getAuthSession();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
-    }
+    if (!requireAuth(session)) return authErrorResponse();
 
     const body = await request.json();
     const validation = disable2FASchema.safeParse(body);

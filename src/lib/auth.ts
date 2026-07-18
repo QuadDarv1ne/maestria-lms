@@ -200,28 +200,32 @@ export async function getAuthSession(): Promise<ExtendedSession | null> {
 }
 
 /**
- * Helper to check if user is authenticated.
- * Returns error response if not authorized.
+ * Type-predicate: checks if user is authenticated.
+ * After a truthy return, session.user is guaranteed to exist.
  */
-export function requireAuth(session: ExtendedSession | null) {
-  if (!session?.user) {
-    return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
-  }
-  return null;
+export function requireAuth(session: ExtendedSession | null): session is ExtendedSession {
+  return !!session?.user;
 }
 
 /**
- * Helper to check if user is authenticated and has admin role.
- * Returns error response if not authorized.
+ * Type-predicate: checks if user is authenticated and has admin role.
+ * After a truthy return, session.user is guaranteed to exist with admin role.
  */
-export function requireAdmin(session: ExtendedSession | null) {
-  if (!session?.user || session.user.role !== "admin") {
-    return NextResponse.json(
-      { error: "Доступ запрещён. Требуются права администратора" },
-      { status: 403 }
-    );
-  }
-  return null;
+export function requireAdmin(session: ExtendedSession | null): session is ExtendedSession {
+  return !!session?.user && session.user.role === "admin";
+}
+
+/** 401 error response for unauthenticated users */
+export function authErrorResponse() {
+  return NextResponse.json({ error: "Необходимо авторизоваться" }, { status: 401 });
+}
+
+/** 403 error response for non-admin users */
+export function adminErrorResponse() {
+  return NextResponse.json(
+    { error: "Доступ запрещён. Требуются права администратора" },
+    { status: 403 }
+  );
 }
 
 export { hashPassword };
