@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, Prisma } from "@/lib/db";
-import { getAuthSession } from "@/lib/auth";
+import { getAuthSession, requireAdmin, adminErrorResponse } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { z } from "zod";
@@ -17,12 +17,7 @@ export async function GET(request: NextRequest) {
   if (blocked) return blocked;
   try {
     const session = await getAuthSession();
-    if (!session?.user || session.user.role !== "admin") {
-      return NextResponse.json(
-        { error: "Доступ запрещён. Требуются права администратора" },
-        { status: 403 }
-      );
-    }
+    if (!requireAdmin(session)) return adminErrorResponse();
 
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId");

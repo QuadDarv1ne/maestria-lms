@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { hashPassword, getAuthSession } from "@/lib/auth";
+import { hashPassword, getAuthSession, requireAdmin, adminErrorResponse } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-errors";
 import { env } from "@/lib/env";
 import { log } from "@/lib/logger";
@@ -32,9 +32,7 @@ export async function POST(request: NextRequest) {
   // Defense-in-depth: только администраторы могут запускать seed
   try {
     const session = await getAuthSession();
-    if (!session?.user || session.user.role !== "admin") {
-      return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
-    }
+    if (!requireAdmin(session)) return adminErrorResponse();
   } catch {
     return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
   }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getAuthSession } from "@/lib/auth";
+import { getAuthSession, requireAdmin, adminErrorResponse } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { z } from "zod";
@@ -25,12 +25,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const session = await getAuthSession();
-    if (!session?.user || session.user.role !== "admin") {
-      return NextResponse.json(
-        { error: "Доступ запрещён" },
-        { status: 403 }
-      );
-    }
+    if (!requireAdmin(session)) return adminErrorResponse();
 
     const categories = await db.category.findMany({
       orderBy: { sortOrder: "asc" },
@@ -59,12 +54,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const session = await getAuthSession();
-    if (!session?.user || session.user.role !== "admin") {
-      return NextResponse.json(
-        { error: "Доступ запрещён. Требуются права администратора" },
-        { status: 403 }
-      );
-    }
+    if (!requireAdmin(session)) return adminErrorResponse();
 
     const body = await request.json();
     const validation = categorySchema.safeParse(body);
@@ -119,12 +109,7 @@ export async function PUT(request: NextRequest) {
 
   try {
     const session = await getAuthSession();
-    if (!session?.user || session.user.role !== "admin") {
-      return NextResponse.json(
-        { error: "Доступ запрещён. Требуются права администратора" },
-        { status: 403 }
-      );
-    }
+    if (!requireAdmin(session)) return adminErrorResponse();
 
     const { searchParams } = new URL(request.url);
     const categoryId = searchParams.get("id");
@@ -205,12 +190,7 @@ export async function DELETE(request: NextRequest) {
 
   try {
     const session = await getAuthSession();
-    if (!session?.user || session.user.role !== "admin") {
-      return NextResponse.json(
-        { error: "Доступ запрещён. Требуются права администратора" },
-        { status: 403 }
-      );
-    }
+    if (!requireAdmin(session)) return adminErrorResponse();
 
     const { searchParams } = new URL(request.url);
     const categoryId = searchParams.get("id");

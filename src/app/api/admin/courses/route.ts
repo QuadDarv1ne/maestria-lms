@@ -647,11 +647,11 @@ export async function PUT(request: NextRequest) {
   } catch (error: unknown) {
     return handleApiError(error, { route: "admin/courses PUT" });
   } finally {
-    // Invalidate course cache after update
+    // Fire-and-forget: don't delay error responses if cache ops fail
     if (courseId) {
-      await cacheInvalidateByTag(`course:${courseId}`);
-      await cacheInvalidateByTag("courses");
-      await cacheInvalidateByTag("catalog");
+      cacheInvalidateByTag(`course:${courseId}`).catch(() => {});
+      cacheInvalidateByTag("courses").catch(() => {});
+      cacheInvalidateByTag("catalog").catch(() => {});
     }
   }
 }
@@ -705,10 +705,10 @@ export async function DELETE(request: NextRequest) {
       where: { id: courseId },
     });
 
-    // Invalidate course cache after deletion
-    await cacheInvalidateByTag(`course:${courseId}`);
-    await cacheInvalidateByTag("courses");
-    await cacheInvalidateByTag("catalog");
+    // Fire-and-forget cache invalidation
+    cacheInvalidateByTag(`course:${courseId}`).catch(() => {});
+    cacheInvalidateByTag("courses").catch(() => {});
+    cacheInvalidateByTag("catalog").catch(() => {});
 
     return NextResponse.json(
       { message: "Курс удалён" },
