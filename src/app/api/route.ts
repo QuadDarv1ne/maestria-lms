@@ -3,7 +3,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { db } from "@/lib/db";
 import { log } from "@/lib/logger";
 import { APP_VERSION } from "@/lib/constants";
-import { getAuthSession } from "@/lib/auth";
+import { getAuthSession, requireAdmin } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-errors";
 import { getRedisClient } from "@/lib/redis";
 
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
     // Detailed health info requires admin auth
     if (detailed) {
       const session = await getAuthSession();
-      if (!session?.user || session.user.role !== "admin") {
+      if (!requireAdmin(session)) {
         return NextResponse.json({ error: "Admin access required for detailed health" }, { status: 403 });
       }
     }

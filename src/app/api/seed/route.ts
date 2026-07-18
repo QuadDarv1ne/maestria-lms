@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
   // Полностью блокируем в production
   if (env.isProduction) {
-    return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
+    return adminErrorResponse();
   }
 
   // Дополнительная защита: требуем заголовок X-Seed-Data для предотвращения случайных вызовов
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     const session = await getAuthSession();
     if (!requireAdmin(session)) return adminErrorResponse();
   } catch {
-    return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
+    return adminErrorResponse();
   }
 
   try {

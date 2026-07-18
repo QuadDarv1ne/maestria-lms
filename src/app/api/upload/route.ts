@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     // Разрешаем загрузку всем авторизованным пользователям (студентам — для file_upload заданий)
     const allowedRoles = ["admin", "teacher", "student"];
     if (!allowedRoles.includes(session.user.role)) {
-      return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
+      return NextResponse.json({ error: "Доступ запрещён. Доступно для администраторов, преподавателей и студентов" }, { status: 403 });
     }
 
     if (!isS3Available()) {

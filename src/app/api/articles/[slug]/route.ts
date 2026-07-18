@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
-import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
+import { getAuthSession, requireAuth, authErrorResponse, requireAdmin, adminErrorResponse } from "@/lib/auth";
 import { z } from "zod";
 import { sanitizeContent } from "@/lib/sanitize";
 
@@ -162,9 +162,7 @@ export async function DELETE(
     const session = await getAuthSession();
     if (!requireAuth(session)) return authErrorResponse();
 
-    if (session.user.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    if (!requireAdmin(session)) return adminErrorResponse();
 
     const { slug } = await params;
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
+import { getAuthSession, requireAuth, authErrorResponse, requireAdmin, adminErrorResponse } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
@@ -24,8 +24,8 @@ export async function POST(
 
     if (env.isDevelopment) {
       // In development, any authenticated user can simulate
-    } else if (session.user.role !== "admin") {
-      return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
+    } else if (!requireAdmin(session)) {
+      return adminErrorResponse();
     }
 
     const payment = await db.payment.findUnique({ where: { id } });

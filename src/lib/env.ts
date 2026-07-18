@@ -121,6 +121,10 @@ export const env = {
   get isTest(): boolean {
     return cached("isTest", () => this.nodeEnv === "test");
   },
+
+  get nextPhase(): string | undefined {
+    return cached("nextPhase", () => process.env.NEXT_PHASE);
+  },
 };
 
 

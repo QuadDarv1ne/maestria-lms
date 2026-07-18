@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
+import { getAuthSession, requireAuth, authErrorResponse, requireAdmin, adminErrorResponse } from "@/lib/auth";
 import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
@@ -125,20 +125,8 @@ export async function PUT(
     const session = await getAuthSession();
     if (!requireAuth(session)) return authErrorResponse();
 
-    const userRole = session.user.role;
-
     // Только администраторы могут менять статус платежа
-    if (userRole !== "admin") {
-      log.warn("Non-admin attempted to update payment status", {
-        paymentId: id,
-        userId: session.user.id,
-        userRole,
-      });
-      return NextResponse.json(
-        { error: "Доступ запрещён" },
-        { status: 403 }
-      );
-    }
+    if (!requireAdmin(session)) return adminErrorResponse();
 
     const payment = await db.payment.findUnique({
       where: { id },
