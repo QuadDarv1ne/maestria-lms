@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useAppStore } from "@/lib/store";
+import { log } from "@/lib/logger";
 import { t } from "@/lib/i18n";
 import { formatNumber } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -69,7 +70,8 @@ export function PaymentPageClient({
       setPayment(data.payment);
       setError(null);
       return data.payment;
-    } catch {
+    } catch (e: unknown) {
+      log.error("Payment fetch failed", { paymentId, error: e instanceof Error ? e.message : String(e) });
       setError(t("payment.loadError", locale));
       return null;
     } finally {
@@ -126,7 +128,8 @@ export function PaymentPageClient({
       if (data.confirmationUrl) {
         window.location.href = data.confirmationUrl;
       }
-    } catch {
+    } catch (e: unknown) {
+      log.error("YooKassa init failed", { paymentId, error: e instanceof Error ? e.message : String(e) });
       toast.error(t("payment.initError", locale));
     } finally {
       setInitiating(false);
@@ -147,7 +150,8 @@ export function PaymentPageClient({
       } else {
         toast.error(data.error || t("payment.simulateError", locale));
       }
-    } catch {
+    } catch (e: unknown) {
+      log.error("Payment simulate-complete failed", { paymentId, error: e instanceof Error ? e.message : String(e) });
       toast.error(t("payment.simulateError", locale));
     } finally {
       setInitiating(false);

@@ -49,13 +49,13 @@ export async function GET(
     });
 
     if (!article) {
-      return NextResponse.json({ error: "Article not found" }, { status: 404 });
+      return NextResponse.json({ error: "Статья не найдена" }, { status: 404 });
     }
 
     if (!article.isPublished) {
       const session = await getAuthSession();
       if (!session?.user || (session.user.role !== "admin" && session.user.role !== "teacher")) {
-        return NextResponse.json({ error: "Article not found" }, { status: 404 });
+        return NextResponse.json({ error: "Статья не найдена" }, { status: 404 });
       }
     }
 
@@ -100,25 +100,25 @@ export async function PATCH(
     if (!requireAuth(session)) return authErrorResponse();
 
     if (!["teacher", "admin"].includes(session.user.role)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
     }
 
     const { slug } = await params;
     const article = await db.article.findUnique({ where: { slug } });
 
     if (!article) {
-      return NextResponse.json({ error: "Article not found" }, { status: 404 });
+      return NextResponse.json({ error: "Статья не найдена" }, { status: 404 });
     }
 
     if (article.authorId !== session.user.id && session.user.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
     }
 
     const body = await request.json();
     const validation = articleUpdateSchema.safeParse(body);
 
     if (!validation.success) {
-      return NextResponse.json({ error: validation.error.issues[0]?.message || "Invalid input" }, { status: 400 });
+      return NextResponse.json({ error: validation.error.issues[0]?.message || "Ошибка валидации" }, { status: 400 });
     }
 
     const updateData = { ...validation.data };

@@ -5,8 +5,9 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { sendEmail } from "@/lib/email";
 import { handleApiError } from "@/lib/api-errors";
 import { env } from "@/lib/env";
-import { randomBytes } from "node:crypto";
-import { MS, APP_NAME } from "@/lib/constants";
+import { randomBytes, createHash } from "node:crypto";
+import { MS } from "@/lib/constants";
+import { verifyEmailEmail } from "@/lib/emails";
 
 export const runtime = "nodejs";
 
@@ -26,11 +27,11 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
     }
 
     if (user.emailVerified) {
-      return NextResponse.json({ error: "Email already verified" }, { status: 400 });
+      return NextResponse.json({ error: "Email уже подтверждён" }, { status: 400 });
     }
 
     const normalizedEmail = user.email.toLowerCase();
@@ -40,8 +41,9 @@ export async function POST(request: NextRequest) {
       where: { identifier: `email-verify:${normalizedEmail}` },
     });
 
-    // Generate verification token
-    const token = randomBytes(32).toString("hex");
+    // Generate verification token (store hash in DB, send raw token in email)
+    const rawToken = randomBytes(32).toString("hex");
+    const token = createHash("sha256").update(rawToken).digest("hex");
     const expires = new Date(Date.now() + MS.DAY);
 
     await db.verificationToken.create({
@@ -53,22 +55,14 @@ export async function POST(request: NextRequest) {
     });
 
     const baseUrl = env.siteUrl;
-    const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${token}`;
+    const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${rawToken}`;
 
     await sendEmail({
       to: user.email,
-      subject: "Подтверждение email — " + APP_NAME,
-      html: `
-        <h2>Подтвердите ваш email</h2>
-        <p>Здравствуйте, ${(user.name || "пользователь").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}!</p>
-        <p>Для подтверждения email перейдите по ссылке:</p>
-        <p><a href="${verifyUrl}">Подтвердить email</a></p>
-        <p>Ссылка действительна 24 часа.</p>
-      `,
-      text: `Здравствуйте! Для подтверждения email перейдите по ссылке: ${verifyUrl}`,
+      ...verifyEmailEmail(user.name || "пользователь", verifyUrl),
     });
 
-    return NextResponse.json({ message: "Verification email sent" });
+    return NextResponse.json({ message: "Письмо с подтверждением отправлено" });
   } catch (error: unknown) {
     return handleApiError(error, { route: "auth/send-verification" });
   }

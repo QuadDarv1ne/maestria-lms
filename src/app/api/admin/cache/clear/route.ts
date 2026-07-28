@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     await flushAll();
 
     return NextResponse.json({
-      message: "Cache cleared successfully",
+      message: "Кэш очищен",
     });
   } catch (error: unknown) {
     return handleApiError(error, { route: "POST /api/admin/cache/clear" });

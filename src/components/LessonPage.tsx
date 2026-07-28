@@ -148,7 +148,8 @@ export function LessonPage({
         const error = await res.json().catch(() => null);
         toast.error(error?.error || t("course.step.errorProgress", locale));
       }
-    } catch {
+    } catch (e: unknown) {
+      log.error("Failed to complete step", { courseId, lessonId, error: e instanceof Error ? e.message : String(e) });
       toast.error(t("course.step.errorProgress", locale));
     } finally {
       setCompleting(false);
@@ -177,7 +178,8 @@ export function LessonPage({
       }
       toast.error(t("course.step.errorProgress", locale));
       return null;
-    } catch {
+    } catch (e: unknown) {
+      log.error("Failed to submit assignment", { courseId, lessonId, error: e instanceof Error ? e.message : String(e) });
       toast.error(t("course.step.errorProgress", locale));
       return null;
     } finally {

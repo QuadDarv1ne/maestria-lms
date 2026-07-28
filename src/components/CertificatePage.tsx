@@ -71,8 +71,11 @@ export function CertificatePage({ courseId }: { courseId: string }) {
           const certData = await certRes.json();
           if (!cancelled) setCertificate(certData);
         }
-      } catch {
-        if (!cancelled) setError(t("cert.loadError", locale));
+      } catch (e: unknown) {
+        if (!cancelled) {
+          log.error("Failed to load certificate data", { courseId, error: e instanceof Error ? e.message : String(e) });
+          setError(t("cert.loadError", locale));
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }

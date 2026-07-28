@@ -87,11 +87,11 @@ export function StepDragDrop({ step, locale, submittingAssignment, onSubmitAssig
                   </div>
                 </div>
               )}
-              {groups.map((group) => {
+              {groups.map((group, gi) => {
                 const itemsInGroup = items.filter((item) => answers[item.id] === group);
                 const correctItemsInGroup = items.filter((item) => item.group === group && answers[item.id] === group);
                 return (
-                  <div key={group} className={`border-2 border-dashed rounded-lg p-4 min-h-[60px] ${selectedItemId && !submitted ? "border-purple-400 bg-purple-50/50 dark:bg-purple-950/20 cursor-pointer hover:border-purple-500" : ""}`} onClick={() => { if (!submitted && selectedItemId) { setAnswers((prev) => ({ ...prev, [selectedItemId]: group })); setSelectedItemId(null); } }}>
+                  <div key={`${group}-${gi}`} className={`border-2 border-dashed rounded-lg p-4 min-h-[60px] ${selectedItemId && !submitted ? "border-purple-400 bg-purple-50/50 dark:bg-purple-950/20 cursor-pointer hover:border-purple-500" : ""}`} onClick={() => { if (!submitted && selectedItemId) { setAnswers((prev) => ({ ...prev, [selectedItemId]: group })); setSelectedItemId(null); } }}>
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-sm font-semibold text-purple-700 dark:text-purple-400">{group}</p>
                       {submitted && (

@@ -251,7 +251,7 @@ export function BasicTab({
               )}
             </div>
             <Input
-              placeholder="https://example.com/course-cover.jpg"
+              placeholder={t("courseEditor.imageUrlPlaceholder", locale)}
               value={form.image}
               onChange={(e) => onUpdateField("image", e.target.value)}
               className="text-xs"

@@ -9,6 +9,7 @@ import { Flag, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { setFeatureFlag, clearFeatureFlags } from "@/lib/feature-flags";
 import { t } from "@/lib/i18n";
+import { log } from "@/lib/logger";
 import type { Locale } from "@/lib/stores/ui";
 
 interface FlagDefinition {
@@ -30,7 +31,8 @@ export function AdminFeatureFlags({ locale }: { locale: Locale }) {
       if (!res.ok) throw new Error(t("admin.feature_flags.fetch_failed", locale));
       const data = await res.json();
       setFlags(data.flags);
-    } catch {
+    } catch (e: unknown) {
+      log.error("Failed to fetch feature flags", { error: e instanceof Error ? e.message : String(e) });
       toast.error(t("admin.feature_flags.load_failed", locale));
     } finally {
       setLoading(false);
@@ -60,7 +62,8 @@ export function AdminFeatureFlags({ locale }: { locale: Locale }) {
       );
 
       toast.success(`${key} ${enabled ? t("admin.settings.enabled", locale) : t("admin.settings.disabled", locale)}`);
-    } catch {
+    } catch (e: unknown) {
+      log.error("Failed to toggle feature flag", { key, enabled, error: e instanceof Error ? e.message : String(e) });
       toast.error(t("admin.feature_flags.update_failed", locale));
     }
   }

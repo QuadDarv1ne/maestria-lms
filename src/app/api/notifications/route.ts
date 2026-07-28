@@ -70,6 +70,12 @@ export async function DELETE(request: NextRequest) {
 
     const thirtyDaysAgo = new Date(Date.now() - MS.THIRTY_DAYS);
 
+    // Clean up stale verification tokens (password reset, email verify) older than 24h
+    // This runs opportunistically on notification cleanup to avoid a dedicated cron job
+    const staleTokenCleanup = db.verificationToken.deleteMany({
+      where: { expires: { lt: new Date(Date.now() - MS.DAY) } },
+    }).catch(() => {});
+
     const result = await db.notification.deleteMany({
       where: {
         userId: session.user.id,
@@ -77,6 +83,9 @@ export async function DELETE(request: NextRequest) {
         createdAt: { lt: thirtyDaysAgo },
       },
     });
+
+    // Await cleanup to keep DB tidy
+    await staleTokenCleanup;
 
     return NextResponse.json({ deleted: result.count });
   } catch (error: unknown) {

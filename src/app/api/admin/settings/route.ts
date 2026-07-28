@@ -79,7 +79,7 @@ export async function PATCH(request: NextRequest) {
     const validation = settingsSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
-        { error: validation.error.issues[0]?.message || "Invalid input" },
+        { error: validation.error.issues[0]?.message || "Ошибка валидации" },
         { status: 400 }
       );
     }
@@ -90,7 +90,7 @@ export async function PATCH(request: NextRequest) {
 
     if (!persisted) {
       return NextResponse.json(
-        { error: "Failed to save settings" },
+        { error: "Не удалось сохранить настройки" },
         { status: 503 }
       );
     }

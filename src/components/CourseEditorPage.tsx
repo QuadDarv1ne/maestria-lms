@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useCallback } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import { log } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -323,7 +324,8 @@ export function CourseEditorPage() {
         } else {
           toast.error(data.error || t("courseEditor.saveError", locale));
         }
-      } catch {
+      } catch (e: unknown) {
+        log.error("Failed to save course", { error: e instanceof Error ? e.message : String(e) });
         toast.error(t("courseEditor.saveErrorGeneric", locale));
       } finally {
         setSaving(false);

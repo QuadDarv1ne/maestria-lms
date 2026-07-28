@@ -7,6 +7,8 @@ import { z } from "zod";
 
 export const runtime = "nodejs";
 
+const checkRateLimit = rateLimit("notifications/publish", RATE_LIMITS.default);
+
 const publishSchema = z.object({
   userId: z.string().min(1, "userId обязателен"),
   type: z.enum(["enrollment", "completion", "achievement", "review", "payment", "system"]),
@@ -17,8 +19,8 @@ const publishSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const rateLimitResult = rateLimit("notifications/publish", RATE_LIMITS.default)(req);
-    if (rateLimitResult) return rateLimitResult;
+    const blocked = checkRateLimit(req);
+    if (blocked) return blocked;
 
     const session = await getAuthSession();
     if (!requireAuth(session)) return authErrorResponse();

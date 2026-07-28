@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
+import { log } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -148,12 +149,14 @@ export function AuthDialogs() {
               );
             }
           }
-        } catch {
+        } catch (e: unknown) {
+          log.error("Session fetch failed", { error: e instanceof Error ? e.message : String(e) });
           toast.error(t("auth.sessionError", locale));
         }
         closeDialog();
       }
-    } catch {
+    } catch (e: unknown) {
+      log.error("Login failed", { error: e instanceof Error ? e.message : String(e) });
       toast.error(t("auth.loginError", locale));
     } finally {
       setLoginLoading(false);
@@ -197,7 +200,8 @@ export function AuthDialogs() {
       } else {
         toast.error(data.error || t("auth.registerError", locale));
       }
-    } catch {
+    } catch (e: unknown) {
+      log.error("Registration failed", { error: e instanceof Error ? e.message : String(e) });
       toast.error(t("auth.registerError", locale));
     } finally {
       setRegisterLoading(false);
@@ -220,7 +224,8 @@ export function AuthDialogs() {
       } else {
         toast.error(data.error || t("common.error", locale));
       }
-    } catch {
+    } catch (e: unknown) {
+      log.error("Forgot password request failed", { error: e instanceof Error ? e.message : String(e) });
       toast.error(t("auth.forgotError", locale));
     } finally {
       setForgotLoading(false);

@@ -1304,6 +1304,7 @@
   "courseEditor.authorLabel": "Maestria 平台上的课程作者",
   "courseEditor.videoUploaded": "视频已上传",
   "courseEditor.uploadError": "上传错误",
+  "courseEditor.imageUrlPlaceholder": "https://example.com/course-cover.jpg",
   "courseEditor.titleRequired": "请输入课程标题",
   "courseEditor.descriptionTooShort": "课程描述至少需要10个字符",
   "courseEditor.selectCategory": "请选择分类",

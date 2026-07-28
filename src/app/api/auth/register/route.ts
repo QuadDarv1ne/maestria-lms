@@ -6,10 +6,12 @@ import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
 import { env } from "@/lib/env";
 import { sendEmail } from "@/lib/email";
+import { verifyEmailEmail, welcomeEmail } from "@/lib/emails";
 
 import { z } from "zod";
 import { passwordStrengthSchema } from "@/lib/password-strength";
 import { MS } from "@/lib/constants";
+import { createHash, randomBytes } from "node:crypto";
 
 export const runtime = "nodejs";
 
@@ -55,8 +57,9 @@ export async function POST(request: NextRequest) {
     // Hash password
     const passwordHash = await hashPassword(password);
 
-    // Generate verification token
-    const token = crypto.getRandomValues(new Uint8Array(32)).reduce((s, b) => s + b.toString(16).padStart(2, "0"), "");
+    // Generate verification token (store hash in DB for security, like forgot-password)
+    const rawToken = randomBytes(32).toString("hex");
+    const token = createHash("sha256").update(rawToken).digest("hex");
     const expires = new Date(Date.now() + MS.DAY);
 
     // Create user and verification token atomically
@@ -90,21 +93,19 @@ export async function POST(request: NextRequest) {
     });
 
     const baseUrl = env.siteUrl;
-    const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${token}`;
+    const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${rawToken}`;
 
-    // Await email send with built-in retry — failures are logged but don't
+    // Fire-and-forget welcome email — delivery failure is logged but doesn't block response
+    sendEmail({
+      to: user.email,
+      ...welcomeEmail(user.name || "пользователь", `${baseUrl}/catalog`),
+    }).catch((err) => log.error("Welcome email could not be sent", { email: user.email, error: String(err) }));
+
+    // Await verification email with built-in retry — failures are logged but don't
     // block the registration response
     const emailSent = await sendEmail({
       to: user.email,
-      subject: "Подтверждение email — Maestria LMS",
-      html: `
-        <h2>Подтвердите ваш email</h2>
-        <p>Здравствуйте, ${(user.name || "пользователь").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}!</p>
-        <p>Для подтверждения email перейдите по ссылке:</p>
-        <p><a href="${verifyUrl}">Подтвердить email</a></p>
-        <p>Ссылка действительна 24 часа.</p>
-      `,
-      text: `Здравствуйте! Для подтверждения email перейдите по ссылке: ${verifyUrl}`,
+      ...verifyEmailEmail(user.name || "пользователь", verifyUrl),
     });
 
     if (!emailSent) {

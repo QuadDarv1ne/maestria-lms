@@ -85,7 +85,7 @@ export function StepOrdering({ step, locale, submittingAssignment, onSubmitAssig
           ) : (
             <div className="space-y-2">
               {items.map((item, idx) => (
-                <div key={item} className="flex items-center gap-2 p-3 bg-cyan-50 dark:bg-cyan-950/30 rounded-lg border border-cyan-200 dark:border-cyan-800">
+                <div key={`${item}-${idx}`} className="flex items-center gap-2 p-3 bg-cyan-50 dark:bg-cyan-950/30 rounded-lg border border-cyan-200 dark:border-cyan-800">
                   <Badge variant="secondary" className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold">
                     {idx + 1}
                   </Badge>

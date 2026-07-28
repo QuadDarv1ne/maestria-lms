@@ -80,6 +80,7 @@ model VerificationToken {
 
   @@unique([identifier, token])
   @@index([identifier])
+  @@index([expires])
 }
 
 // ============ COURSES ============
@@ -249,6 +250,7 @@ model Enrollment {
   @@index([courseId])
   @@index([status])
   @@index([userId, status])
+  @@index([userId, enrolledAt])
 }
 
 model Progress {
@@ -314,7 +316,7 @@ model Payment {
   @@index([createdAt])
 }
 
-// ============ CERTIFICATES ============
+// ============ NOTIFICATIONS ============
 
 model Notification {
   id        String   @id @default(uuid())
@@ -330,6 +332,7 @@ model Notification {
 
   @@index([userId, read])
   @@index([userId, createdAt])
+  @@index([userId, read, createdAt])
   @@index([type, createdAt])
   @@index([read, createdAt])
 }
@@ -347,6 +350,7 @@ model Certificate {
   @@unique([userId, courseId])
   @@index([userId])
   @@index([courseId])
+  @@index([issuedAt])
 }
 
 // ============ BLOG / ARTICLES ============

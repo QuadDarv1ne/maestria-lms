@@ -47,8 +47,8 @@ export interface AdminStats {
 export function useAdminCourses() {
   return useQuery<{ courses: AdminCourse[] }>({
     queryKey: ["admin", "courses"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/courses?limit=50");
+    queryFn: async ({ signal }) => {
+      const res = await fetch("/api/admin/courses?limit=50", { signal });
       if (!res.ok) {
         const error = await res.json().catch(() => ({ error: null }));
         throw new Error(error?.error || `Failed to fetch admin courses (${res.status})`);
@@ -62,8 +62,8 @@ export function useAdminCourses() {
 export function useAdminUsers() {
   return useQuery<{ users: AdminUser[] }>({
     queryKey: ["admin", "users"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/users?limit=50");
+    queryFn: async ({ signal }) => {
+      const res = await fetch("/api/admin/users?limit=50", { signal });
       if (!res.ok) {
         const error = await res.json().catch(() => ({ error: null }));
         throw new Error(error?.error || `Failed to fetch admin users (${res.status})`);
@@ -77,8 +77,8 @@ export function useAdminUsers() {
 export function useAdminStats() {
   return useQuery<AdminStats>({
     queryKey: ["admin", "stats"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/stats");
+    queryFn: async ({ signal }) => {
+      const res = await fetch("/api/admin/stats", { signal });
       if (!res.ok) {
         const error = await res.json().catch(() => ({ error: null }));
         throw new Error(error?.error || `Failed to fetch admin stats (${res.status})`);
@@ -190,8 +190,8 @@ export interface StudentStats {
 export function useStudentStats(userId: string) {
   return useQuery<StudentStats>({
     queryKey: ["admin", "student-stats", userId],
-    queryFn: async () => {
-      const res = await fetch(`/api/admin/student-stats?userId=${userId}`);
+    queryFn: async ({ signal }) => {
+      const res = await fetch(`/api/admin/student-stats?userId=${userId}`, { signal });
       if (!res.ok) {
         const error = await res.json().catch(() => ({ error: null }));
         throw new Error(error?.error || `Failed to fetch student stats (${res.status})`);

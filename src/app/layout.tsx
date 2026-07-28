@@ -5,6 +5,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "@/components/Providers";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { SkipLink } from "@/components/SkipLink";
 import { log } from "@/lib/logger";
 import { env } from "@/lib/env";
@@ -274,12 +275,14 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
         <SkipLink />
-        <Providers>
-          <div tabIndex={-1}>
-            {children}
-          </div>
-          <Toaster position="top-right" richColors />
-        </Providers>
+        <ErrorBoundary>
+          <Providers>
+            <div tabIndex={-1}>
+              {children}
+            </div>
+            <Toaster position="top-right" richColors />
+          </Providers>
+        </ErrorBoundary>
       </body>
     </html>
   );

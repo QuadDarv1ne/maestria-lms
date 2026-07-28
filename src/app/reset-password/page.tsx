@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import { log } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -97,7 +98,8 @@ function ResetPasswordContent() {
       // Clear stored token after successful reset
       sessionStorage.removeItem("reset-token");
       setSuccess(true);
-    } catch {
+    } catch (e: unknown) {
+      log.error("Password reset failed", { error: e instanceof Error ? e.message : String(e) });
       setError(t("auth.networkError", locale));
     } finally {
       setLoading(false);

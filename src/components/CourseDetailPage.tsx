@@ -117,7 +117,7 @@ interface CourseDetail {
     icon: string | null;
     color: string | null;
   };
-  modules: ModuleItem[];
+  modules?: ModuleItem[];
   reviews: ReviewItem[];
   totalLessons: number;
   totalDuration: number;
@@ -381,7 +381,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                           className="w-full bg-blue-700 hover:bg-blue-800 text-white"
                           onClick={() => {
                             let targetLessonId = "";
-                            for (const mod of course.modules) {
+                            for (const mod of course.modules ?? []) {
                               for (const les of mod.lessons || []) {
                                 if (!les.completed) {
                                   targetLessonId = les.id;
@@ -390,7 +390,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                               }
                               if (targetLessonId) break;
                             }
-                            if (!targetLessonId && course.modules[0]?.lessons?.[0]) {
+                            if (!targetLessonId && course.modules?.[0]?.lessons?.[0]) {
                               targetLessonId = course.modules[0].lessons[0].id;
                             }
                             if (targetLessonId) {
@@ -561,10 +561,10 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
             {/* Программа курса */}
             <div>
               <h2 className="text-xl font-bold mb-4">
-                {t("course.curriculum", locale)} ({course.modules.length} {t("course.modules", locale)})
+                {t("course.curriculum", locale)} ({course.modules?.length ?? 0} {t("course.modules", locale)})
               </h2>
               <Accordion type="multiple" className="space-y-2">
-                {course.modules.map((module: ModuleItem, mIdx: number) => (
+                {course.modules?.map((module: ModuleItem, mIdx: number) => (
                   <AccordionItem
                     key={module.id}
                     value={module.id}

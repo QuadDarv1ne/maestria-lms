@@ -58,6 +58,7 @@ interface TeacherStats {
 export function TeacherDashboard() {
   const router = useRouter();
   const user = useAppStore((s) => s.user);
+  const sessionReady = useAppStore((s) => s.sessionReady);
   const locale = useAppStore((s) => s.locale);
   const [courses, setCourses] = useState<TeacherCourse[]>([]);
   const [stats, setStats] = useState<TeacherStats | null>(null);
@@ -88,6 +89,7 @@ export function TeacherDashboard() {
   }, [locale, router]);
 
   useEffect(() => {
+    if (!sessionReady) return;
     if (!user || (user.role !== "teacher" && user.role !== "admin")) {
       router.push("/");
       return;
@@ -97,7 +99,7 @@ export function TeacherDashboard() {
     return () => {
       controller.abort();
     };
-  }, [user, fetchStats, router]);
+  }, [sessionReady, user, fetchStats, router]);
 
   if (!user) return null;
 

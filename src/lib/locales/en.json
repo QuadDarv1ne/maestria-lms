@@ -1304,6 +1304,7 @@
   "courseEditor.authorLabel": "Course author on the Maestria platform",
   "courseEditor.videoUploaded": "Video uploaded",
   "courseEditor.uploadError": "Upload error",
+  "courseEditor.imageUrlPlaceholder": "https://example.com/course-cover.jpg",
   "courseEditor.titleRequired": "Please enter a course title",
   "courseEditor.descriptionTooShort": "Course description must be at least 10 characters",
   "courseEditor.selectCategory": "Select a category",

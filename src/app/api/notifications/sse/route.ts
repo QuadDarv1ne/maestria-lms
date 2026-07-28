@@ -8,13 +8,15 @@ import { handleApiError } from "@/lib/api-errors";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const checkRateLimit = rateLimit("sse", RATE_LIMITS.sse);
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!requireAuth(session)) return authErrorResponse();
 
     // Rate limit SSE connections to prevent connection exhaustion
-    const limitResponse = rateLimit("sse", RATE_LIMITS.sse)(req, session.user.id);
+    const limitResponse = checkRateLimit(req, session.user.id);
     if (limitResponse) {
       return limitResponse;
     }

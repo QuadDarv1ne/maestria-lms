@@ -88,7 +88,8 @@ export function StepViewerPage({
         return null;
       }
       return data;
-    } catch {
+    } catch (e: unknown) {
+      log.error("Failed to submit assignment", { courseId, stepId: step?.id, error: e instanceof Error ? e.message : String(e) });
       toast.error(t("course.step.errorLoad", locale));
       return null;
     } finally {
@@ -130,7 +131,8 @@ export function StepViewerPage({
           }, 1200);
         }
       }
-    } catch {
+    } catch (e: unknown) {
+      log.error("Failed to complete step", { courseId, lessonId, stepId: step?.id, error: e instanceof Error ? e.message : String(e) });
       toast.error(t("course.step.errorProgress", locale));
     } finally {
       setCompleting(false);

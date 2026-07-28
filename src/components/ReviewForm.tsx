@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import { log } from "@/lib/logger";
 import type { Locale } from "@/lib/stores/ui";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -72,7 +73,8 @@ export function ReviewForm({ courseId, onReviewSubmitted }: ReviewFormProps) {
       } else {
         toast.error(data.error || t("review.error", locale));
       }
-    } catch {
+    } catch (e: unknown) {
+      log.error("Failed to submit review", { courseId, error: e instanceof Error ? e.message : String(e) });
       toast.error(t("review.error", locale));
     } finally {
       setSubmitting(false);

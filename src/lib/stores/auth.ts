@@ -10,13 +10,20 @@ export interface UserData {
 
 export interface AuthSlice {
   user: UserData | null;
+  sessionReady: boolean;
   setUser: (user: UserData | null) => void;
+  setSessionReady: () => void;
 }
 
 export const createAuthSlice: StateCreator<AuthSlice, [], [], AuthSlice> = (set) => ({
   user: null,
+  sessionReady: false,
 
   setUser: (user: UserData | null) => {
     set({ user });
+  },
+
+  setSessionReady: () => {
+    set({ sessionReady: true });
   },
 });

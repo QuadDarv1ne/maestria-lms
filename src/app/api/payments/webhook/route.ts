@@ -7,6 +7,8 @@ import { env } from "@/lib/env";
 import { z } from "zod";
 import { verifyWebhookSignature } from "@/lib/webhook-verify";
 import { rateLimit } from "@/lib/rate-limit";
+import { sendEmail } from "@/lib/email";
+import { coursePurchaseEmail } from "@/lib/emails";
 
 export const runtime = "nodejs";
 
@@ -92,15 +94,26 @@ async function completePayment(paymentId: string, transactionId: string) {
     return { alreadyCompleted: false, payment, enrollment };
   });
 
-  // Send notification outside transaction
+  // Send notification + email outside transaction
   if (!result.alreadyCompleted) {
+    const { payment } = result;
     createNotification({
-      userId: result.payment.userId,
+      userId: payment.userId,
       type: "payment",
       title: "Оплата прошла успешно",
-      message: `Оплата курса "${result.payment.course.title}" подтверждена. Добро пожаловать!`,
-      link: `/course/${result.payment.courseId}`,
+      message: `Оплата курса "${payment.course.title}" подтверждена. Добро пожаловать!`,
+      link: `/course/${payment.courseId}`,
     }).catch((err) => log.error("Failed to send payment notification", { error: err }));
+
+    const siteUrl = env.siteUrl;
+    sendEmail({
+      to: payment.user.email,
+      ...coursePurchaseEmail(
+        payment.user.name || "пользователь",
+        payment.course.title,
+        `${siteUrl}/course/${payment.courseId}`,
+      ),
+    }).catch((err) => log.error("Failed to send purchase email", { error: err }));
   }
 
   return result;

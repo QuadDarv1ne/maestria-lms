@@ -9,7 +9,8 @@ import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
 import { sendEmail } from "@/lib/email";
 import { passwordStrengthSchema } from "@/lib/password-strength";
-import { MS, APP_NAME } from "@/lib/constants";
+import { MS } from "@/lib/constants";
+import { passwordResetEmail } from "@/lib/emails";
 
 export const runtime = "nodejs";
 
@@ -99,16 +100,7 @@ export async function POST(request: NextRequest) {
     // do not cause a 500 response (which would enable user enumeration).
     const emailSent = await sendEmail({
       to: email,
-      subject: "Сброс пароля — " + APP_NAME,
-      html: `
-        <p>Здравствуйте!</p>
-        <p>Вы запросили сброс пароля для аккаунта Maestria LMS.</p>
-        <p>Перейдите по ссылке ниже для сброса пароля:</p>
-        <p><a href="${resetUrl}">Сбросить пароль</a></p>
-        <p>Ссылка действительна в течение 1 часа.</p>
-        <p>Если вы не запрашивали сброс пароля, проигнорируйте это письмо.</p>
-      `,
-      text: `Перейдите по ссылке для сброса пароля: ${resetUrl}`,
+      ...passwordResetEmail(resetUrl),
     });
 
     if (!emailSent) {

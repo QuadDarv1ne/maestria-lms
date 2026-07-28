@@ -25,7 +25,7 @@ interface YooKassaErrorResponse {
   parameter?: string;
 }
 
-const YOOKASSA_API_URL = "https://api.yookassa.ru/v3";
+const YOOKASSA_API_URL = env.yooKassaApiUrl || "https://api.yookassa.ru/v3";
 
 function getAuthHeader(): string | null {
   const shopId = env.yooKassaShopId;

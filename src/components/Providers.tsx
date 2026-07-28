@@ -41,6 +41,7 @@ function ServiceWorkerSync() {
 
 function SessionSync() {
   const setUser = useAppStore((s) => s.setUser);
+  const setSessionReady = useAppStore((s) => s.setSessionReady);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,12 +62,16 @@ function SessionSync() {
         }
       } catch (error: unknown) {
         log.debug("Session load skipped for unauthenticated user", { error: error instanceof Error ? error.message : String(error) });
+      } finally {
+        if (!cancelled) {
+          setSessionReady();
+        }
       }
     };
 
     loadSession();
     return () => { cancelled = true; };
-  }, [setUser]);
+  }, [setUser, setSessionReady]);
 
   return null;
 }

@@ -1,12 +1,8 @@
 import type { NextConfig } from "next";
 
-const securityHeaders = [
-  { key: "X-Frame-Options", value: "DENY" },
-  { key: "X-Content-Type-Options", value: "nosniff" },
-  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  { key: "X-XSS-Protection", value: "1; mode=block" },
-  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
-];
+// Security headers are set in proxy.ts middleware with fine-grained control
+// (different rules for API routes, static assets, etc.)
+// Do NOT duplicate them here — the middleware always runs after these config headers.
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -24,10 +20,6 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
-      {
-        source: "/:path*",
-        headers: securityHeaders,
-      },
       {
         source: "/:path*.{js,css,woff2}",
         headers: [

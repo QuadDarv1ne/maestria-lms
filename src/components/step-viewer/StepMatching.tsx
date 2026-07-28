@@ -71,8 +71,8 @@ export function StepMatching({ step, locale, submittingAssignment, onSubmitAssig
                       disabled={submitted}
                     >
                       <option value="">{t("course.step.selectMatch", locale)}</option>
-                      {rightOptions.map((opt) => (
-                        <option key={opt} value={opt}>{opt}</option>
+                      {rightOptions.map((opt, oi) => (
+                        <option key={`${opt}-${oi}`} value={opt}>{opt}</option>
                       ))}
                     </select>
                     {submitted && (

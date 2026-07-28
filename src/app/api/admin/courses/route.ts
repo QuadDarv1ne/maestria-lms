@@ -247,6 +247,10 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Invalidate course list caches when a new course is created
+    cacheInvalidateByTag("courses").catch(() => {});
+    cacheInvalidateByTag("catalog").catch(() => {});
+
     return NextResponse.json(
       { message: isPublished ? "Курс опубликован" : "Курс сохранён как черновик", course },
       { status: 201 }
@@ -262,6 +266,9 @@ export async function PUT(request: NextRequest) {
   if (blocked) return blocked;
 
   let courseId: string | null = null;
+  let oldSlug: string | null = null;
+  let newSlug: string | null = null;
+  let updateSucceeded = false;
 
   try {
     const session = await getAuthSession();
@@ -296,6 +303,9 @@ export async function PUT(request: NextRequest) {
         { status: 404 }
       );
     }
+
+    // Track old slug for cache invalidation when slug changes
+    oldSlug = existingCourse.slug;
 
     if (userRole !== "admin" && existingCourse.teacherId !== session.user.id) {
       return NextResponse.json(
@@ -338,6 +348,9 @@ export async function PUT(request: NextRequest) {
       prerequisites,
       language = "ru",
     } = validation.data;
+
+    // Track new slug for cache invalidation when slug changes
+    newSlug = slug;
 
     const parsedPrice = Number(price);
     const priceError = validatePrices(price, oldPrice);
@@ -640,6 +653,7 @@ export async function PUT(request: NextRequest) {
       },
     });
 
+    updateSucceeded = true;
     return NextResponse.json(
       { message: isPublished ? "Курс обновлён и опубликован" : "Курс обновлён", course: updatedCourse },
       { status: 200 }
@@ -647,9 +661,12 @@ export async function PUT(request: NextRequest) {
   } catch (error: unknown) {
     return handleApiError(error, { route: "admin/courses PUT" });
   } finally {
-    // Fire-and-forget: don't delay error responses if cache ops fail
-    if (courseId) {
+    // Only invalidate cache on successful update
+    if (updateSucceeded && courseId) {
       cacheInvalidateByTag(`course:${courseId}`).catch(() => {});
+      if (oldSlug && newSlug && oldSlug !== newSlug) {
+        cacheInvalidateByTag(`course:${oldSlug}`).catch(() => {});
+      }
       cacheInvalidateByTag("courses").catch(() => {});
       cacheInvalidateByTag("catalog").catch(() => {});
     }
@@ -705,8 +722,11 @@ export async function DELETE(request: NextRequest) {
       where: { id: courseId },
     });
 
-    // Fire-and-forget cache invalidation
+    // Fire-and-forget cache invalidation (including slug-based keys)
     cacheInvalidateByTag(`course:${courseId}`).catch(() => {});
+    if (existingCourse.slug) {
+      cacheInvalidateByTag(`course:${existingCourse.slug}`).catch(() => {});
+    }
     cacheInvalidateByTag("courses").catch(() => {});
     cacheInvalidateByTag("catalog").catch(() => {});
 

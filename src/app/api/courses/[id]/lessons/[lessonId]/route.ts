@@ -7,6 +7,9 @@ import { createNotification } from "@/lib/notifications";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
 import { CERTIFICATE_PREFIX } from "@/lib/constants";
+import { env } from "@/lib/env";
+import { sendEmail } from "@/lib/email";
+import { certificateEmail } from "@/lib/emails";
 
 export const runtime = "nodejs";
 
@@ -318,7 +321,7 @@ export async function POST(
           }
         });
 
-        // Send notification on first-time completion (outside transaction, fire-and-forget)
+        // Send notification + certificate email on first-time completion (outside transaction, fire-and-forget)
         if (courseProgress === 100 && !wasAlreadyCompleted) {
           createNotification({
             userId,
@@ -327,6 +330,18 @@ export async function POST(
             message: `Поздравляем! Вы завершили курс "${course.title}"`,
             link: `/course/${course.id}`,
           }).catch((err) => log.error("Failed to send completion notification", { error: err }));
+
+          if (course.hasCertificate && session.user.email) {
+            const siteUrl = env.siteUrl;
+            sendEmail({
+              to: session.user.email,
+              ...certificateEmail(
+                session.user.name || "пользователь",
+                course.title,
+                `${siteUrl}/certificate/${course.id}`,
+              ),
+            }).catch((err) => log.error("Failed to send certificate email", { error: err }));
+          }
         }
       }
     }

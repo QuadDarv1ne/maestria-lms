@@ -90,6 +90,10 @@ export const env = {
     return cached("yooKassaSecretKey", () => process.env.YOOKASSA_SECRET_KEY);
   },
 
+  get yooKassaApiUrl(): string | undefined {
+    return cached("yooKassaApiUrl", () => process.env.YOOKASSA_API_URL);
+  },
+
   get seedAdminPassword(): string | undefined {
     return cached("seedAdminPassword", () => process.env.SEED_ADMIN_PASSWORD);
   },

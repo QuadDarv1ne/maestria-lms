@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import { log } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -34,6 +35,7 @@ type AdminTab = "dashboard" | "users" | "tests" | "materials" | "finance" | "cou
 
 export function AdminPage() {
   const user = useAppStore((s) => s.user);
+  const sessionReady = useAppStore((s) => s.sessionReady);
   const router = useRouter();
   const locale = useAppStore((s) => s.locale);
   const monthLabels = useMemo(() => [
@@ -58,11 +60,12 @@ export function AdminPage() {
   const userPageSize = 20;
 
   useEffect(() => {
-    if (!user || user.role !== "admin") {
+    if (!sessionReady) return;
+    if (user?.role !== "admin") {
       toast.error(t("adminPage.roleUpdateError", locale));
       router.replace("/");
     }
-  }, [user, router, locale]);
+  }, [sessionReady, user, router, locale]);
 
   const handleUserSearch = useCallback((value: string) => { setUserSearch(value); setUserPage(1); }, []);
   const handleRoleFilter = useCallback((value: string) => { setUserRoleFilter(value); setUserPage(1); }, []);
@@ -80,7 +83,8 @@ export function AdminPage() {
     try {
       await updateRole.mutateAsync({ userId, role });
       toast.success(t("adminPage.roleUpdated", locale));
-    } catch {
+    } catch (e: unknown) {
+      log.error("Failed to update user role", { userId, role, error: e instanceof Error ? e.message : String(e) });
       toast.error(t("adminPage.roleUpdateError", locale));
     }
   }, [updateRole, locale]);
@@ -89,7 +93,8 @@ export function AdminPage() {
     try {
       await toggleStatus.mutateAsync({ userId, isActive });
       toast.success(t(isActive ? "adminPage.userUnblocked" : "adminPage.userBlocked", locale));
-    } catch {
+    } catch (e: unknown) {
+      log.error("Failed to toggle user status", { userId, isActive, error: e instanceof Error ? e.message : String(e) });
       toast.error(t("adminPage.statusUpdateError", locale));
     }
   }, [toggleStatus, locale]);

@@ -1,22 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createHash } from "node:crypto";
 import { db } from "@/lib/db";
 import { handleApiError } from "@/lib/api-errors";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
-const checkRateLimit = rateLimit("auth", RATE_LIMITS.login);
+const checkRateLimit = rateLimit("verify-email", RATE_LIMITS.sendVerification);
 
 export async function GET(request: NextRequest) {
   const blocked = checkRateLimit(request);
   if (blocked) return NextResponse.redirect(new URL("/?error=rate-limited", request.url));
   try {
     const { searchParams } = new URL(request.url);
-    const token = searchParams.get("token");
+    const rawToken = searchParams.get("token");
 
-    if (!token) {
+    if (!rawToken) {
       return NextResponse.redirect(new URL("/?error=missing-token", request.url));
     }
+
+    // Hash the raw token to match the stored hash (same as forgot-password flow)
+    const token = createHash("sha256").update(rawToken).digest("hex");
 
     const verificationToken = await db.verificationToken.findUnique({
       where: { token },

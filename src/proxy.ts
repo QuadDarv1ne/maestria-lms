@@ -46,6 +46,7 @@ export async function proxy(request: NextRequest) {
 
   const csrfExcludedPaths = [
     "/api/payments/webhook",
+    "/api/seed",
     "/api/auth/callback",
     "/api/auth/session",
     "/api/auth/csrf",
@@ -136,7 +137,7 @@ function applySecurityHeaders(response: NextResponse, pathname: string): void {
       env.isProduction
         ? `script-src 'self' 'sha256-9OKft+AY+D0tuNek9651LK+/tdhr5+FWBPAqsL039wg='`
         : `script-src 'self' 'unsafe-eval' 'sha256-9OKft+AY+D0tuNek9651LK+/tdhr5+FWBPAqsL039wg='`,
-      "style-src 'self' 'unsafe-inline' https:",
+      "style-src 'self' 'unsafe-inline'",
       `img-src ${imgSources.join(" ")}`,
       "font-src 'self' https: data:",
       `connect-src ${connectSources.join(" ")}`,

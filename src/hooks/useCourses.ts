@@ -48,8 +48,8 @@ export function useCourses(filters?: {
 
   return useQuery<CoursesResponse>({
     queryKey: ["courses", qs],
-    queryFn: async () => {
-      const res = await fetch(`/api/courses${qs ? `?${qs}` : ""}`);
+    queryFn: async ({ signal }) => {
+      const res = await fetch(`/api/courses${qs ? `?${qs}` : ""}`, { signal });
       if (!res.ok) {
         const error = await res.json().catch(() => ({ error: null }));
         throw new Error(error?.error || `Failed to fetch courses (${res.status})`);
@@ -86,7 +86,6 @@ export interface CourseDetail {
   totalDuration: number;
   freeLessons: number;
   isEnrolled: boolean;
-  isCompleted: boolean;
   teacher: {
     id: string;
     name: string | null;
@@ -119,8 +118,8 @@ export interface CourseDetail {
 export function useCourse(id: string | undefined) {
   return useQuery<{ course: CourseDetail }>({
     queryKey: ["course", id],
-    queryFn: async () => {
-      const res = await fetch(`/api/courses/${id}`);
+    queryFn: async ({ signal }) => {
+      const res = await fetch(`/api/courses/${id}`, { signal });
       if (!res.ok) {
         const error = await res.json().catch(() => ({ error: null }));
         throw new Error(error?.error || `Failed to fetch course (${res.status})`);
@@ -150,8 +149,8 @@ export interface Review {
 export function useCourseReviews(courseId: string | undefined, page = 1) {
   return useQuery<{ reviews: Review[]; pagination: { page: number; total: number; totalPages: number } }>({
     queryKey: ["course-reviews", courseId, page],
-    queryFn: async () => {
-      const res = await fetch(`/api/courses/${courseId}/reviews?page=${page}&limit=10`);
+    queryFn: async ({ signal }) => {
+      const res = await fetch(`/api/courses/${courseId}/reviews?page=${page}&limit=10`, { signal });
       if (!res.ok) {
         const error = await res.json().catch(() => ({ error: null }));
         throw new Error(error?.error || `Failed to fetch reviews (${res.status})`);

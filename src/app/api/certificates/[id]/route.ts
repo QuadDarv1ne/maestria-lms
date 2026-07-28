@@ -15,10 +15,10 @@ export async function GET(
   const blocked = checkRateLimit(_request);
   if (blocked) return blocked;
 
-  const session = await getAuthSession();
-  if (!requireAuth(session)) return authErrorResponse();
-
   try {
+    const session = await getAuthSession();
+    if (!requireAuth(session)) return authErrorResponse();
+
     const { id } = await params;
 
     const certificate = await db.certificate.findUnique({

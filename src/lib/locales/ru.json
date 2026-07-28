@@ -1304,6 +1304,7 @@
   "courseEditor.authorLabel": "Автор курса на платформе Maestria",
   "courseEditor.videoUploaded": "Видео загружено",
   "courseEditor.uploadError": "Ошибка загрузки",
+  "courseEditor.imageUrlPlaceholder": "https://example.com/course-cover.jpg",
   "courseEditor.titleRequired": "Укажите название курса",
   "courseEditor.descriptionTooShort": "Описание курса должно быть не менее 10 символов",
   "courseEditor.selectCategory": "Выберите категорию",

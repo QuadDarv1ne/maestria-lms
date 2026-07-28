@@ -10,6 +10,7 @@ export function useServiceWorker() {
       return;
     }
 
+    let cancelled = false;
     let updateInterval: ReturnType<typeof setInterval> | undefined;
     const cleanupFns: (() => void)[] = [];
 
@@ -18,6 +19,8 @@ export function useServiceWorker() {
         const registration = await navigator.serviceWorker.register("/sw.js", {
           scope: "/",
         });
+
+        if (cancelled) return;
 
         updateInterval = setInterval(async () => {
           const newRegistration = await navigator.serviceWorker.ready;
@@ -55,6 +58,7 @@ export function useServiceWorker() {
     navigator.serviceWorker.addEventListener("message", handleMessage);
 
     return () => {
+      cancelled = true;
       if (updateInterval) clearInterval(updateInterval);
       navigator.serviceWorker.removeEventListener("message", handleMessage);
       cleanupFns.forEach((fn) => fn());

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { t } from "@/lib/i18n";
+import { log } from "@/lib/logger";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,7 +46,8 @@ export function AdminSettings({ locale }: AdminTabProps) {
       const updated = await res.json();
       setSettings(updated);
       toast.success(`${key}: ${updated[key] ? t("admin.settings.enabled", locale) : t("admin.settings.disabled", locale)}`);
-    } catch {
+    } catch (e: unknown) {
+      log.error("Failed to update setting", { key, error: e instanceof Error ? e.message : String(e) });
       toast.error(t("admin.settings.network_error", locale));
     } finally {
       setLoading(false);
@@ -62,7 +64,8 @@ export function AdminSettings({ locale }: AdminTabProps) {
         return;
       }
       toast.success(t("admin.settings.cache_cleared", locale));
-    } catch {
+    } catch (e: unknown) {
+      log.error("Failed to clear cache", { error: e instanceof Error ? e.message : String(e) });
       toast.error(t("admin.settings.cache_network_error", locale));
     } finally {
       setLoading(false);

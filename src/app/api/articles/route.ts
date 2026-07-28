@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
     if (!requireAuth(session)) return authErrorResponse();
 
     if (!["teacher", "admin"].includes(session.user.role)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
     }
 
     const body = await request.json();
@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
 
     if (!validation.success) {
       return NextResponse.json(
-        { error: validation.error.issues[0]?.message || "Invalid input" },
+        { error: validation.error.issues[0]?.message || "Ошибка валидации" },
         { status: 400 }
       );
     }
