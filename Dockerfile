@@ -2,15 +2,14 @@
 # Multi-stage build with minimal runtime image
 
 FROM node:20-alpine AS base
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat curl bash
 
 # Install dependencies only when needed
 FROM base AS deps
 WORKDIR /app
 
 # Install bun for dependency management
-RUN apk add --no-cache unzip && \
-    curl -fsSL https://bun.sh/install | bash -s -- bun-v1.3.11
+RUN curl -fsSL https://bun.sh/install | bash -s -- bun-v1.3.11
 ENV PATH="/root/.bun/bin:$PATH"
 
 COPY package.json bun.lock ./
@@ -20,11 +19,7 @@ RUN bun install --frozen-lockfile
 FROM base AS builder
 WORKDIR /app
 
-# Install bun for build
-RUN apk add --no-cache unzip && \
-    curl -fsSL https://bun.sh/install | bash -s -- bun-v1.3.11
-ENV PATH="/root/.bun/bin:$PATH"
-
+# Bun is already installed in base image
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
