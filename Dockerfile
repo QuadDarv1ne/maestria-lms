@@ -9,7 +9,7 @@ FROM base AS deps
 WORKDIR /app
 
 # Install bun for dependency management
-RUN curl -fsSL https://bun.sh/install | bash -s -- bun-v1.3.11
+RUN curl -fsSL https://bun.sh/install | bash -s -- bun-v1.3.14
 ENV PATH="/root/.bun/bin:$PATH"
 
 COPY package.json bun.lock ./
