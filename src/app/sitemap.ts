@@ -24,31 +24,39 @@ const STATIC_PAGES: MetadataRoute.Sitemap = [
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const courses = await db.course.findMany({
-    where: { isPublished: true, visibility: "public" },
-    select: { slug: true, updatedAt: true },
-    orderBy: { updatedAt: "desc" },
-  });
+  // Gracefully handle missing DATABASE_URL during build
+  let courseEntries: MetadataRoute.Sitemap = [];
+  let articleEntries: MetadataRoute.Sitemap = [];
 
-  const courseEntries: MetadataRoute.Sitemap = courses.map((course) => ({
-    url: `${SITE_URL}/course/${course.slug}`,
-    lastModified: course.updatedAt,
-    changeFrequency: "weekly" as const,
-    priority: 0.8,
-  }));
+  try {
+    const courses = await db.course.findMany({
+      where: { isPublished: true, visibility: "public" },
+      select: { slug: true, updatedAt: true },
+      orderBy: { updatedAt: "desc" },
+    });
 
-  const articles = await db.article.findMany({
-    where: { isPublished: true },
-    select: { slug: true, updatedAt: true },
-    orderBy: { updatedAt: "desc" },
-  });
+    courseEntries = courses.map((course) => ({
+      url: `${SITE_URL}/course/${course.slug}`,
+      lastModified: course.updatedAt,
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    }));
 
-  const articleEntries: MetadataRoute.Sitemap = articles.map((article) => ({
-    url: `${SITE_URL}/blog/${article.slug}`,
-    lastModified: article.updatedAt,
-    changeFrequency: "monthly" as const,
-    priority: 0.6,
-  }));
+    const articles = await db.article.findMany({
+      where: { isPublished: true },
+      select: { slug: true, updatedAt: true },
+      orderBy: { updatedAt: "desc" },
+    });
+
+    articleEntries = articles.map((article) => ({
+      url: `${SITE_URL}/blog/${article.slug}`,
+      lastModified: article.updatedAt,
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
+    }));
+  } catch {
+    // Database not available (e.g., during build) — return static pages only
+  }
 
   return [...STATIC_PAGES, ...courseEntries, ...articleEntries];
 }
