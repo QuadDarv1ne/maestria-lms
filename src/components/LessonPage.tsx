@@ -70,6 +70,7 @@ interface LessonData {
   progress: LessonProgress | null;
   prevStepId: string | null;
   nextStepId: string | null;
+  isEnrolled?: boolean;
 }
 
 export function LessonPage({
@@ -233,6 +234,7 @@ export function LessonPage({
     } : null,
     prevStepId: lesson.prevStepId,
     nextStepId: lesson.nextStepId,
+    isEnrolled: lesson.isEnrolled ?? false,
   };
 
   const commonProps = {

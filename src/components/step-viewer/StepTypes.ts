@@ -20,6 +20,7 @@ export interface StepData {
   progress: ProgressData | null;
   prevStepId: string | null;
   nextStepId: string | null;
+  isEnrolled: boolean;
 }
 
 export interface AssignmentData {

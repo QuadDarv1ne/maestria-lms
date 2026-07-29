@@ -294,7 +294,7 @@ export function StepViewerPage({
     );
   }
 
-  const isEnrolled = !!(step.isFree || user);
+  const isEnrolled = !!(step.isFree || step.isEnrolled);
 
   const stepProps = {
     step,

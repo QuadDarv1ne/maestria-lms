@@ -231,7 +231,7 @@ export async function PUT(
       if (courseData) {
         createNotification({
           userId: result.updated.userId,
-          type: "enrollment",
+          type: "payment",
           title: "Оплата прошла",
           message: `Вы записаны на курс "${courseData.title}"`,
           link: `/course/${result.updated.courseId}`,

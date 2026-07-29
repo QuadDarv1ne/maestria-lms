@@ -13,6 +13,8 @@ RUN curl -fsSL https://bun.sh/install | bash -s -- bun-v1.3.14
 ENV PATH="/root/.bun/bin:$PATH"
 
 COPY package.json bun.lock ./
+# Skip husky — .git is not available in Docker context
+ENV HUSKY=0
 RUN bun install --frozen-lockfile
 
 # Rebuild the source code only when needed
