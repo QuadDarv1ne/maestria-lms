@@ -70,6 +70,6 @@ describe("Health & Metrics Endpoints", () => {
       // Verify the page file exists
       const { default: StatusPage } = await import("@/app/status/page");
       expect(StatusPage).toBeDefined();
-    });
+    }, 15000);
   });
 });

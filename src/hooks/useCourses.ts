@@ -79,9 +79,9 @@ export interface CourseDetail {
   rating: number;
   reviewCount: number;
   studentCount: number;
-  tags: string[];
-  requirements: string[] | null;
-  whatYouLearn: string[] | null;
+  tags: string | null;
+  requirements: string | null;
+  whatYouLearn: string | null;
   totalLessons: number;
   totalDuration: number;
   freeLessons: number;

@@ -53,7 +53,7 @@ const eslintConfig = [...nextCoreWebVitals, ...nextTypescript, {
     "@typescript-eslint/no-non-null-assertion": "error",
   },
 }, {
-  ignores: ["node_modules/**", ".next/**", "out/**", "build/**", "next-env.d.ts", "examples/**", "skills", "eslint.config.mjs", "scripts/**", "prisma/seed.js", "check-db.js", "public/sw.js", "coverage/**"]
+  ignores: ["node_modules/**", ".next/**", "out/**", "build/**", "next-env.d.ts", "examples/**", "skills", "eslint.config.mjs", "scripts/**", "prisma/seed.js", "check-db.js", "_check_i18n.js", "public/sw.js", "coverage/**"]
 }];
 
 export default eslintConfig;

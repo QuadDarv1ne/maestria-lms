@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
       category: searchParams.get("category"),
       search: searchParams.get("search"),
       level: searchParams.get("level"),
+      freeOnly: searchParams.get("freeOnly"),
       page: searchParams.get("page"),
       limit: searchParams.get("limit"),
       sortBy: searchParams.get("sortBy"),
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const { category, search, level, sortBy: sortByParam } = validated;
+    const { category, search, level, freeOnly, sortBy: sortByParam } = validated;
     const { page, limit, skip } = parsePagination(searchParams, { defaultLimit: 12, maxLimit: 100 });
     const sortBy = sortByParam || "new";
 
@@ -82,6 +83,10 @@ export async function GET(request: NextRequest) {
 
     if (level) {
       where.level = level;
+    }
+
+    if (freeOnly === "true") {
+      where.price = 0;
     }
 
     if (search) {
