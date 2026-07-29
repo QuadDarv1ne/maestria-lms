@@ -130,13 +130,17 @@ function applySecurityHeaders(response: NextResponse, pathname: string): void {
   if (cdnOrigin) connectSources.push(cdnOrigin);
   if (s3Origin) connectSources.push(s3Origin);
 
+  // Next.js generates new inline script hashes on every build.
+  // Using 'unsafe-inline' for scripts is required because we cannot
+  // predict the hashes at build time. In production, Next.js uses
+  // nonces for its inline scripts, but the middleware runs before
+  // Next.js can set them. 'unsafe-inline' is the pragmatic choice
+  // for self-hosted Next.js deployments.
   response.headers.set(
     "Content-Security-Policy",
     [
       "default-src 'self'",
-      env.isProduction
-        ? `script-src 'self' 'sha256-9OKft+AY+D0tuNek9651LK+/tdhr5+FWBPAqsL039wg='`
-        : `script-src 'self' 'unsafe-eval' 'sha256-9OKft+AY+D0tuNek9651LK+/tdhr5+FWBPAqsL039wg='`,
+      "script-src 'self' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline'",
       `img-src ${imgSources.join(" ")}`,
       "font-src 'self' https: data:",

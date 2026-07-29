@@ -53,8 +53,9 @@ COPY --from=builder /app/public ./public
 RUN mkdir .next && chown nextjs:nodejs .next
 
 # Automatically leverage output traces for minimal image
+# Note: Static assets are already copied into .next/standalone/.next/static/
+# by scripts/copy-build-assets.js during the build step.
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Copy Prisma files for runtime (client + migrate engine)
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
