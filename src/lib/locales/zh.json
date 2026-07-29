@@ -788,6 +788,7 @@
   "notifications.type.achievement": "成就",
   "notifications.type.review": "评价",
   "notifications.type.system": "系统",
+  "notifications.type.payment": "付款",
   "notifications.time.justNow": "刚刚",
   "notifications.time.minutesAgo": "分钟前",
   "notifications.time.hoursAgo": "小时前",

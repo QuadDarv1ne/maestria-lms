@@ -787,6 +787,7 @@
   "notifications.type.achievement": "Достижение",
   "notifications.type.review": "Отзыв",
   "notifications.type.system": "Система",
+  "notifications.type.payment": "Оплата",
   "notifications.time.justNow": "только что",
   "notifications.time.minutesAgo": "мин назад",
   "notifications.time.hoursAgo": "час назад",

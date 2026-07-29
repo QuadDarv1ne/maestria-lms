@@ -160,7 +160,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
       title: t("notifications.type.enrollment", locale),
       message: t("course.enrollFree", locale),
       read: false,
-      link: `course/${courseId}`,
+      link: `/course/${courseId}`,
     }, user.id);
   };
 

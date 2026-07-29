@@ -788,6 +788,7 @@
   "notifications.type.achievement": "Achievement",
   "notifications.type.review": "Review",
   "notifications.type.system": "System",
+  "notifications.type.payment": "Payment",
   "notifications.time.justNow": "just now",
   "notifications.time.minutesAgo": "min ago",
   "notifications.time.hoursAgo": "hour ago",

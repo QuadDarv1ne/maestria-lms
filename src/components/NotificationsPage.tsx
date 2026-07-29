@@ -20,7 +20,7 @@ import {
 
 // ============ TYPE CONFIG ============
 
-type NotificationType = "enrollment" | "completion" | "achievement" | "review" | "system";
+type NotificationType = "enrollment" | "completion" | "achievement" | "review" | "payment" | "system";
 
 interface TypeConfig {
   icon: React.ElementType;
@@ -59,6 +59,13 @@ function getTypeConfig(locale: Locale): Record<NotificationType, TypeConfig> {
       iconBg: "bg-violet-100 dark:bg-violet-900/30",
       badgeColor: "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400",
       label: t("notifications.type.review", locale),
+    },
+    payment: {
+      icon: Award,
+      iconColor: "text-green-600 dark:text-green-400",
+      iconBg: "bg-green-100 dark:bg-green-900/30",
+      badgeColor: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400",
+      label: t("notifications.type.payment", locale),
     },
     system: {
       icon: Bell,

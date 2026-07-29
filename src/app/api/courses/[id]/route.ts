@@ -280,9 +280,9 @@ type CourseDetailResponse = {
     rating: number;
     reviewCount: number;
     studentCount: number;
-    tags: string[];
-    requirements: string[] | null;
-    whatYouLearn: string[] | null;
+    tags: string | null;
+    requirements: string | null;
+    whatYouLearn: string | null;
     teacher: {
       id: string;
       name: string | null;
@@ -305,7 +305,7 @@ type CourseDetailResponse = {
         id: string;
         title: string;
         type: string;
-        duration: number | null;
+        duration: number;
         sortOrder: number;
         isFree: boolean;
         completed: boolean;
