@@ -162,7 +162,7 @@ export const createNotificationsSlice: StateCreator<NotificationsSlice, [], [], 
         id: crypto.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}-${Math.random().toString(36).slice(2, 9)}`,
         createdAt: Date.now(),
       };
-      const updated = [fallback, ...get().notifications];
+      const updated = [fallback, ...get().notifications].slice(0, 200);
       save("maestria-notifications", updated);
       set({ notifications: updated });
     }
