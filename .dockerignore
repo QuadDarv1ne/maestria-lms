@@ -3,7 +3,7 @@ node_modules
 /.pnp
 /.pnp.js
 
-# Build
+# Build output
 /.next
 /out
 /public/uploads
@@ -21,7 +21,7 @@ node_modules
 .env.*
 !.env.example
 
-# Debug
+# Debug logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -40,7 +40,7 @@ Thumbs.db
 server.log
 dev-server.log
 
-# Database
+# Database files (local dev)
 *.db
 *.db-journal
 
@@ -58,14 +58,45 @@ Dockerfile
 !.env.example
 LICENSE
 
-# Scripts (keep generate-secret.js and copy-build-assets.js)
+# Scripts (keep only essential ones)
 /scripts
 !/scripts/generate-secret.js
 !/scripts/copy-build-assets.js
 
-# Data
+# Data directories
 /data
 /prisma-data
 
-# TS build
+# TypeScript build info
 tsconfig.tsbuildinfo
+
+# Screenshots (not needed in production)
+/screenshots
+
+# CI/CD configs (not needed in runtime)
+.github/
+.husky/
+
+# Docs (not needed in production)
+/docs
+
+# Prompts and AI configs (not needed in production)
+prompt/
+.claude/
+.z-ai-config
+.codeassistantignore
+
+# Local dev configs
+local-*
+dev.log
+dev.out.log
+test
+
+# MiMoCode runtime files
+.mimocode/
+
+# Rate limit store
+.rate-limit/
+
+# Vercel config
+.vercel

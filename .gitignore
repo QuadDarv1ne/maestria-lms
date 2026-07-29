@@ -66,4 +66,9 @@ prisma-data/
 package-lock.json
 
 # MiMoCode runtime files
-.mimocode/
+.mimocode/  
+# Generated Prisma Client (regenerated at build time)  
+src/generated/  
+  
+# Screenshots (not needed in repository)  
+screenshots/ 

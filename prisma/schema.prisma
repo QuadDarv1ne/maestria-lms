@@ -1,12 +1,12 @@
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 // Current provider: postgresql (default for production)
 // Change to "mysql" or "sqlite" as needed
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
 }
 
 // ============ AUTH (NextAuth.js) ============

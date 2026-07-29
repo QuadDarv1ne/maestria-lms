@@ -1,7 +1,17 @@
-import type { PrismaConfig } from "prisma";
+import { defineConfig, env } from "prisma/config";
 
-// Prisma config file — replaces deprecated package.json#prisma field.
-// Seed command: npx prisma db seed (uses prisma/seed.js)
-export default {
+// Prisma 7 does not load .env automatically.
+// We load it here so that prisma generate / migrate deploy work
+// both locally (via .env) and on Amvera (via process.env).
+import "dotenv/config";
+
+export default defineConfig({
   schema: "prisma/schema.prisma",
-} satisfies PrismaConfig;
+  migrations: {
+    path: "prisma/migrations",
+    seed: "node prisma/seed.mjs",
+  },
+  datasource: {
+    url: env("DATABASE_URL"),
+  },
+});

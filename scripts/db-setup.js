@@ -159,7 +159,6 @@ function updateSchemaProvider(provider) {
 
   const newDatasource = `datasource db {
   provider = "${provider}"
-  url      = env("DATABASE_URL")
 }`
 
   const updatedSchema = schema.replace(/datasource db \{[\s\S]*?\}/, newDatasource)

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { Prisma } from "@prisma/client";
+import { db, Prisma } from "@/lib/db";
 import { getAuthSession, requireAuth, requireAdmin, authErrorResponse, adminErrorResponse } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
