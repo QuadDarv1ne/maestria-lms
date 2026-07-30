@@ -2,12 +2,15 @@
  * Global Middleware for Maestria LMS
  *
  * Handles at the edge:
- * - Security headers (CSP, HSTS, X-Frame-Options, etc.)
  * - Locale detection and redirection
  * - Maintenance mode check
- * - Request logging (in development)
- * - Bot detection
- * - API route protection
+ * - Bot detection (logging only)
+ *
+ * NOTE: Security headers are set in next.config.ts (async headers)
+ * because Edge middleware does NOT run in standalone mode on Amvera.
+ *
+ * This middleware only handles logic that MUST run at the edge:
+ * locale redirects and maintenance mode.
  */
 
 import { NextResponse } from "next/server";
@@ -26,38 +29,6 @@ const PUBLIC_FILE_PATTERN = /\.(.*)$/;
 const API_ROUTE_PATTERN = /^\/api\//;
 const STATIC_ASSET_PATTERN = /\.(js|css|woff2?|png|jpg|jpeg|gif|svg|ico|webp|avif|json|xml|txt)$/i;
 
-// ─── Security Headers ────────────────────────────────────────────────────────
-
-const SECURITY_HEADERS: Record<string, string> = {
-  // Prevent MIME type sniffing
-  "X-Content-Type-Options": "nosniff",
-  // Prevent clickjacking
-  "X-Frame-Options": "DENY",
-  // Enable XSS filter in older browsers
-  "X-XSS-Protection": "1; mode=block",
-  // Referrer policy
-  "Referrer-Policy": "strict-origin-when-cross-origin",
-  // HTTP Strict Transport Security (1 year, include subdomains, preload)
-  "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
-  // Disable feature permissions
-  "Permissions-Policy":
-    "camera=(), microphone=(), geolocation=(), interest-cohort=()",
-  // Content Security Policy
-  "Content-Security-Policy": [
-    "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://api.dicebear.com https://mc.yandex.ru https://www.googletagmanager.com",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "img-src 'self' data: blob: https:",
-    "font-src 'self' https://fonts.gstatic.com",
-    "connect-src 'self' https: wss:",
-    "media-src 'self' https: blob:",
-    "frame-src 'self' https://www.youtube.com https://vk.com https://rutube.ru",
-    "object-src 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-  ].join("; "),
-};
-
 // ─── Locale Detection ────────────────────────────────────────────────────────
 
 /**
@@ -74,7 +45,6 @@ function getPreferredLocale(request: NextRequest): Locale {
   // 2. Check Accept-Language header
   const acceptLanguage = request.headers.get("Accept-Language");
   if (acceptLanguage) {
-    // Parse the first locale from Accept-Language
     const parsed = acceptLanguage.split(",")[0]?.split("-")[0]?.toLowerCase();
     if (parsed && VALID_LOCALES.includes(parsed as Locale)) {
       return parsed as Locale;
@@ -128,7 +98,6 @@ export function middleware(request: NextRequest) {
 
   // ── Maintenance Mode ───────────────────────────────────────────────────
   if (isMaintenanceMode() && !hasMaintenanceBypass(request)) {
-    // Allow API routes to function for logged-in admins
     if (!API_ROUTE_PATTERN.test(pathname)) {
       const url = new URL("/maintenance", request.url);
       return NextResponse.rewrite(url);
@@ -160,22 +129,12 @@ export function middleware(request: NextRequest) {
         secure: process.env.NODE_ENV === "production",
       });
 
-      // Apply security headers
-      Object.entries(SECURITY_HEADERS).forEach(([key, value]) => {
-        response.headers.set(key, value);
-      });
-
       return response;
     }
   }
 
   // ── Handle Request ─────────────────────────────────────────────────────
   const response = NextResponse.next();
-
-  // ── Apply Security Headers ─────────────────────────────────────────────
-  Object.entries(SECURITY_HEADERS).forEach(([key, value]) => {
-    response.headers.set(key, value);
-  });
 
   // ── Set Locale Cookie (if not already set) ─────────────────────────────
   if (!API_ROUTE_PATTERN.test(pathname)) {
@@ -189,23 +148,6 @@ export function middleware(request: NextRequest) {
         secure: process.env.NODE_ENV === "production",
       });
     }
-  }
-
-  // ── API Response Headers ───────────────────────────────────────────────
-  if (API_ROUTE_PATTERN.test(pathname)) {
-    response.headers.set("X-Robots-Tag", "noindex, nofollow");
-    response.headers.set("X-API-Version", "3.6.0");
-
-    // Enable response compression hints
-    // Actual compression is handled by the web server/CDN (Amvera, nginx, Cloudflare)
-    response.headers.set("Vary", "Accept-Encoding");
-    response.headers.set("X-Compression", "enabled");
-  }
-
-  // ── Compression Support for non-API routes ────────────────────────────
-  // Signal to CDN/reverse-proxy that responses can be compressed
-  if (!response.headers.has("Vary")) {
-    response.headers.set("Vary", "Accept-Encoding");
   }
 
   // ── Development Logging ────────────────────────────────────────────────
