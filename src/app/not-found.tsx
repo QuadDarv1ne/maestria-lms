@@ -10,7 +10,7 @@ export default function NotFound() {
   const locale = useAppStore((s) => s.locale);
 
   return (
-    <div className="container mx-auto px-4 py-16 md:py-24 text-center">
+    <div className="container mx-auto px-4 py-16 md:py-24 text-center" role="alert" aria-live="polite">
       <div className="max-w-md mx-auto space-y-6">
         <div className="relative animate-in slide-in-from-bottom-8 duration-600 fill-mode-both">
           <div className="text-8xl md:text-9xl font-bold bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent animate-gradient bg-[length:200%_200%]">

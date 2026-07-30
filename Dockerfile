@@ -41,33 +41,33 @@ ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-RUN --mount=type=cache,target=/app/.next/cache \
-    bun run build
+RUN bun run build
 
-# ============================================================
-# Stage 4: runner — minimal production image
-# ============================================================
-FROM base AS runner
+# Production image — no bun, no dev tools
+FROM node:20-alpine AS runner
 WORKDIR /app
 
 ARG NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-# Memory-constrained environments: limit Node heap
-ENV NODE_OPTIONS="--max-old-space-size=512"
 
-# Copy public assets
+RUN apk add --no-cache wget openssl && \
+    addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
 COPY --from=builder /app/public ./public
 
 # Set the correct permission for prerender cache
-RUN mkdir -p .next && chown nextjs:nodejs .next
+RUN mkdir .next && chown nextjs:nodejs .next
 
-# Copy standalone build output (includes traced node_modules)
+# Automatically leverage output traces for minimal image
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy Prisma runtime files
+# Copy Prisma files for runtime (client + migrate engine)
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder --chown=nextjs:nodejs /app/src/generated ./src/generated
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma

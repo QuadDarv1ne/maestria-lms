@@ -57,6 +57,9 @@ server.log
 # Skills directory
 /skills/
 
+# Prisma 7 generated client
+src/generated/
+
 # Database files
 *.db
 *.db-journal

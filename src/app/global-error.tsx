@@ -23,7 +23,7 @@ export default function GlobalError({
   return (
     <html>
       <body>
-        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="min-h-screen flex items-center justify-center bg-background p-4" role="alert" aria-live="assertive">
           <div className="text-center space-y-6 max-w-md">
             <AlertTriangle className="w-24 h-24 text-amber-500 mx-auto" />
             <h1 className="text-5xl font-bold">500</h1>

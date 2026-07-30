@@ -1,6 +1,20 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../src/generated/prisma/client';
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcryptjs';
-const db = new PrismaClient();
+
+// Detect provider and create appropriate adapter
+const databaseUrl = process.env.DATABASE_URL || 'file:./prisma/data.db';
+let adapter;
+if (databaseUrl.startsWith('postgresql') || databaseUrl.startsWith('postgres')) {
+  adapter = new PrismaPg({ connectionString: databaseUrl });
+} else {
+  // SQLite: extract file path from 'file:./path' or use as-is
+  const filePath = databaseUrl.replace(/^file:/, '');
+  adapter = new PrismaBetterSqlite3({ url: filePath || './prisma/data.db' });
+}
+
+const db = new PrismaClient({ adapter });
 
 async function main() {
   console.log('Seeding database...');
@@ -1431,3 +1445,4 @@ main()
   .finally(async () => {
     await db.$disconnect();
   });
+

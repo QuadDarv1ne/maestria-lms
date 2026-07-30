@@ -5,12 +5,14 @@ import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { parsePagination } from "@/lib/utils";
+import { validatePromoCode, redeemPromoCode } from "@/lib/promo-code";
 
 export const runtime = "nodejs";
 
 const createPaymentSchema = z.object({
   courseId: z.string().min(1, "ID курса обязателен"),
   paymentMethod: z.enum(["sbp", "yookassa", "tinkoff", "card"]),
+  promoCode: z.string().optional(),
 });
 
 const checkRateLimit = rateLimit("payments", RATE_LIMITS.payments);
@@ -36,7 +38,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { courseId, paymentMethod } = validation.data;
+    const { courseId, paymentMethod, promoCode: promoCodeInput } = validation.data;
 
     // Проверяем курс
     const course = await db.course.findUnique({
@@ -55,6 +57,25 @@ export async function POST(request: NextRequest) {
         { error: "Этот курс бесплатный — оплата не требуется" },
         { status: 400 }
       );
+    }
+
+    // Validate promo code if provided
+    let promoResult: Awaited<ReturnType<typeof validatePromoCode>> | null = null;
+    let finalAmount = course.price;
+    let discountAmount = 0;
+    let promoCodeId: string | null = null;
+
+    if (promoCodeInput) {
+      promoResult = await validatePromoCode(promoCodeInput, course.price, userId, courseId);
+      if (!promoResult.valid) {
+        return NextResponse.json(
+          { error: promoResult.error },
+          { status: 400 }
+        );
+      }
+      finalAmount = promoResult.finalPrice ?? course.price;
+      discountAmount = promoResult.discountAmount ?? 0;
+      promoCodeId = promoResult.promoCode?.id ?? null;
     }
 
     // Проверяем, не оплачен ли уже
@@ -130,12 +151,14 @@ export async function POST(request: NextRequest) {
         data: {
           userId,
           courseId,
-          amount: course.price,
+          amount: finalAmount,
           currency: course.currency,
           status: "pending",
           paymentMethod,
           paymentProvider: providerMap[paymentMethod] || paymentMethod,
           transactionId: `txn_${Date.now()}_${crypto.randomUUID()}`,
+          promoCodeId: promoCodeId,
+          discountAmount: discountAmount,
         },
       });
 
@@ -153,6 +176,11 @@ export async function POST(request: NextRequest) {
         },
       };
     });
+
+    // Redeem promo code after successful transaction
+    if (!result.existing && promoCodeId) {
+      await redeemPromoCode(promoCodeId, userId);
+    }
 
     if (result.existing) {
       return NextResponse.json(

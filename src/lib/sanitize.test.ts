@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { sanitizeContent } from "@/lib/sanitize";
+import {
+  sanitizeContent,
+  sanitizeText,
+  sanitizeSlug,
+  sanitizeEmail,
+  sanitizePhone,
+  sanitizeUrl,
+  sanitizeObject,
+} from "@/lib/sanitize";
 
 describe("sanitizeContent", () => {
   describe("XSS prevention", () => {
@@ -96,6 +104,128 @@ describe("sanitizeContent", () => {
       });
       expect(result).toContain('href="https://example.com"');
       expect(result).not.toContain("title");
+    });
+  });
+  
+  describe("sanitizeText", () => {
+    it("should strip HTML tags", () => {
+      expect(sanitizeText("<script>alert(1)</script>Hello")).toBe("Hello");
+    });
+  
+    it("should remove control characters", () => {
+      expect(sanitizeText("Hello\x00World")).toBe("HelloWorld");
+    });
+  
+    it("should truncate long input", () => {
+      const long = "a".repeat(1000);
+      expect(sanitizeText(long, 10)).toBe("a".repeat(10));
+    });
+  
+    it("should handle empty input", () => {
+      expect(sanitizeText("")).toBe("");
+    });
+  
+    it("should trim whitespace", () => {
+      expect(sanitizeText("  hello  ")).toBe("hello");
+    });
+  });
+  
+  describe("sanitizeSlug", () => {
+    it("should convert to lowercase and replace spaces", () => {
+      expect(sanitizeSlug("Hello World")).toBe("hello-world");
+    });
+  
+    it("should remove special characters", () => {
+      expect(sanitizeSlug("Hello!@#World$%^")).toBe("helloworld");
+    });
+  
+    it("should handle empty input", () => {
+      expect(sanitizeSlug("")).toBe("");
+    });
+  
+    it("should collapse multiple hyphens", () => {
+      expect(sanitizeSlug("hello---world")).toBe("hello-world");
+    });
+  
+    it("should trim leading/trailing hyphens", () => {
+      expect(sanitizeSlug("-hello-world-")).toBe("hello-world");
+    });
+  });
+  
+  describe("sanitizeEmail", () => {
+    it("should lowercase and trim", () => {
+      expect(sanitizeEmail("  USER@Example.COM  ")).toBe("user@example.com");
+    });
+  
+    it("should remove dangerous characters", () => {
+      expect(sanitizeEmail("user<>test@example.com")).toBe("usertest@example.com");
+    });
+  
+    it("should handle empty input", () => {
+      expect(sanitizeEmail("")).toBe("");
+    });
+  });
+  
+  describe("sanitizePhone", () => {
+    it("should keep digits and plus sign", () => {
+      expect(sanitizePhone("+7 (999) 123-45-67")).toBe("+7 (999) 123-45-67");
+    });
+  
+    it("should remove letters", () => {
+      expect(sanitizePhone("+7abc999def")).toBe("+7999");
+    });
+  
+    it("should handle empty input", () => {
+      expect(sanitizePhone("")).toBe("");
+    });
+  });
+  
+  describe("sanitizeUrl", () => {
+    it("should allow valid https URLs", () => {
+      expect(sanitizeUrl("https://example.com/path")).toBe("https://example.com/path");
+    });
+  
+    it("should reject javascript: URLs", () => {
+      expect(sanitizeUrl("javascript:alert(1)")).toBe("");
+    });
+  
+    it("should handle empty input", () => {
+      expect(sanitizeUrl("")).toBe("");
+    });
+  });
+  
+  describe("sanitizeObject", () => {
+    it("should sanitize text fields", () => {
+      const input = { name: "<script>alert(1)</script>John", bio: "Hello" };
+      const result = sanitizeObject(input, { textFields: ["name"] });
+      expect(result.name).toBe("John");
+      expect(result.bio).toBe("Hello");
+    });
+  
+    it("should sanitize HTML fields", () => {
+      const input = { content: "<p>Safe</p><script>alert(1)</script>" };
+      const result = sanitizeObject(input, { htmlFields: ["content"] });
+      expect(result.content).toContain("<p>Safe</p>");
+      expect(result.content).not.toContain("<script>");
+    });
+  
+    it("should skip specified fields", () => {
+      const input = { name: "<b>bold</b>", skip: "<b>keep</b>" };
+      const result = sanitizeObject(input, { textFields: ["name"], skipFields: ["skip"] });
+      expect(result.name).toBe("bold");
+      expect(result.skip).toBe("<b>keep</b>");
+    });
+  
+    it("should handle nested objects", () => {
+      const input = { user: { name: "<script>alert(1)</script>John" } };
+      const result = sanitizeObject(input, { textFields: ["name"] });
+      expect((result.user as Record<string, unknown>).name).toBe("John");
+    });
+  
+    it("should handle arrays", () => {
+      const input = { tags: ["<b>tag1</b>", "<script>alert(1)</script>"] };
+      const result = sanitizeObject(input);
+      expect(result.tags).toEqual(["tag1", "alert(1)"]);
     });
   });
 

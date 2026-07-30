@@ -16,7 +16,7 @@ export default function ErrorPage({
   const locale = useAppStore((s) => s.locale);
 
   return (
-    <div className="container mx-auto px-4 py-16 md:py-24 text-center animate-in fade-in duration-500">
+    <div className="container mx-auto px-4 py-16 md:py-24 text-center animate-in fade-in duration-500" role="alert" aria-live="assertive">
       <div className="max-w-md mx-auto space-y-6">
         <div className="w-24 h-24 rounded-full bg-red-50 dark:bg-red-950/50 flex items-center justify-center mx-auto animate-in zoom-in duration-500 fill-mode-both">
           <AlertTriangle className="w-12 h-12 text-red-500 animate-pulse" />

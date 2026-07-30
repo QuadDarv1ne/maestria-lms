@@ -1,8 +1,30 @@
-# API Documentation — Maestria LMS v3.1
+# API Documentation — Maestria LMS v3.6
 
 Base URL: `http://localhost:3000/api`
 
 All endpoints return JSON. Authentication uses NextAuth.js JWT sessions.
+
+---
+
+## Table of Contents
+
+- [Authentication](#-authentication)
+- [User Profile](#-user-profile)
+- [Courses](#-courses)
+- [Payments](#-payments)
+- [Notifications](#-notifications)
+- [Achievements](#-achievements)
+- [Certificates](#-certificates)
+- [Articles (Blog)](#-articles-blog)
+- [Upload](#-upload)
+- [Teacher Dashboard](#-teacher-dashboard)
+- [Admin API](#-admin-api)
+- [Health & Metrics](#-health--metrics)
+- [Seeding](#-seeding)
+- [Rate Limiting](#-rate-limiting)
+- [Error Codes](#-error-codes)
+- [Caching](#-caching)
+- [Security](#-security)
 
 ---
 
@@ -11,6 +33,8 @@ All endpoints return JSON. Authentication uses NextAuth.js JWT sessions.
 ### POST `/api/auth/register`
 
 Register a new user. Automatically sends email verification.
+
+**Rate limit:** 5 requests per minute
 
 **Request:**
 ```json
@@ -21,6 +45,12 @@ Register a new user. Automatically sends email verification.
 }
 ```
 
+**Password requirements:**
+- Minimum 8 characters
+- At least one uppercase letter (including Russian)
+- At least one lowercase letter (including Russian)
+- At least one digit
+
 **Response (201):**
 ```json
 {
@@ -29,7 +59,7 @@ Register a new user. Automatically sends email verification.
 }
 ```
 
-**Errors:** `400` validation, `409` email exists, `429` rate limited (3/min)
+**Errors:** `400` validation, `409` email exists, `429` rate limited
 
 ---
 
@@ -98,33 +128,81 @@ Resend email verification link (requires authentication).
 
 ---
 
-## 👤 User
+## 👤 User Profile
 
 ### GET `/api/user`
 
-Get current user profile (requires authentication).
+Get current user profile with enrollments, progress, and certificates (requires authentication).
+
+**Rate limit:** 20 requests per minute
 
 **Response:**
 ```json
 {
-  "id": "clx...",
-  "email": "user@example.com",
-  "name": "Иван Иванов",
-  "role": "student",
-  "image": null,
-  "enrollments": [...],
-  "achievements": [...]
+  "user": {
+    "id": "clx...",
+    "email": "user@example.com",
+    "name": "Иван Иванов",
+    "role": "student",
+    "image": null,
+    "bio": null,
+    "phone": null,
+    "twoFactorEnabled": false,
+    "isActive": true,
+    "emailVerified": null,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "_count": { "enrollments": 3, "reviews": 2, "certificates": 1, "teacherCourses": 0 }
+  },
+  "enrollments": [
+    {
+      "id": "clx...",
+      "status": "active",
+      "progress": 45,
+      "enrolledAt": "2024-01-15T00:00:00.000Z",
+      "course": { "id": "clx...", "title": "Python для начинающих", "image": null, "level": "beginner" }
+    }
+  ],
+  "enrollmentDetails": [
+    {
+      "id": "clx...",
+      "status": "active",
+      "progress": 45,
+      "enrolledAt": "2024-01-15T00:00:00.000Z",
+      "course": { "id": "clx...", "title": "Python для начинающих", "image": null, "level": "beginner" },
+      "totalLessons": 20,
+      "completedLessons": 9,
+      "totalTimeSpent": 5400,
+      "lastAccessed": "2024-02-01T00:00:00.000Z",
+      "avgScore": 85
+    }
+  ],
+  "certificates": [
+    {
+      "id": "clx...",
+      "certificateNumber": "MAE-00001",
+      "issuedAt": "2024-03-01T00:00:00.000Z",
+      "course": { "id": "clx...", "title": "Python для начинающих" }
+    }
+  ]
 }
 ```
 
-### PATCH `/api/user`
+### PUT `/api/user`
 
 Update current user profile.
 
+**Rate limit:** 20 requests per minute
+
 **Request:**
 ```json
-{ "name": "Новое имя", "bio": "...", "phone": "+7..." }
+{ "name": "Новое имя", "bio": "О себе...", "phone": "+79150480249", "image": "https://..." }
 ```
+
+**Validation:**
+- `name`: 2-50 characters
+- `bio`: max 500 characters
+- `phone`: max 20 characters, digits/spaces/+-() only
+- `image`: valid URL or empty string
 
 ---
 
@@ -132,18 +210,22 @@ Update current user profile.
 
 ### GET `/api/courses`
 
-List published courses with filtering and pagination.
+List published courses with filtering, sorting, and pagination.
+
+**Rate limit:** 30 requests per minute
+**Cache:** 5 minutes (Redis/memory), tags: `courses`, `catalog`
 
 **Query Parameters:**
-| Parameter | Type | Description |
-|---|---|---|
-| `category` | string | Filter by category slug |
-| `search` | string | Search by title |
-| `level` | string | Level (beginner/intermediate/advanced) |
-| `sort` | string | Sort (popular/new/rating/priceAsc/priceDesc) |
-| `free` | boolean | Free courses only |
-| `page` | number | Page (default: 1) |
-| `limit` | number | Per page (default: 12, max: 50) |
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `category` | string | — | Filter by category slug |
+| `search` | string | — | Search by title, description, shortDesc |
+| `level` | string | — | Level: `beginner`, `intermediate`, `advanced` |
+| `freeOnly` | boolean | `false` | Show only free courses |
+| `sortBy` | string | `new` | Sort: `popular`, `new`, `rating`, `priceAsc`, `priceDesc` |
+| `page` | number | `1` | Page number |
+| `limit` | number | `12` | Items per page (max: 100) |
+| `ids` | string | — | Comma-separated course IDs for batch fetch (lightweight) |
 
 **Response:**
 ```json
@@ -152,57 +234,112 @@ List published courses with filtering and pagination.
     {
       "id": "clx...",
       "title": "Python для начинающих",
-      "description": "...",
+      "slug": "python-basics",
+      "description": "Полный курс Python...",
+      "shortDesc": "Краткое описание",
+      "image": "https://...",
       "price": 0,
+      "oldPrice": null,
+      "currency": "RUB",
+      "level": "beginner",
+      "duration": "8 недель",
+      "language": "ru",
+      "isFeatured": true,
+      "hasCertificate": true,
       "rating": 4.8,
-      "isPublished": true,
-      "category": { "name": "Программирование" },
-      "teacher": { "name": "Дуплей М.И." },
-      "_count": { "enrollments": 156, "reviews": 42, "modules": 8 }
+      "reviewCount": 42,
+      "studentCount": 156,
+      "tags": "python,beginner",
+      "teacher": { "id": "clx...", "name": "Дуплей М.И.", "image": null },
+      "category": { "id": "clx...", "name": "Программирование", "slug": "programming", "icon": "🐍", "color": "#..." },
+      "totalLessons": 48,
+      "totalDuration": 360,
+      "modulesCount": 8
     }
   ],
-  "total": 34,
-  "page": 1,
-  "totalPages": 3
+  "pagination": {
+    "page": 1,
+    "limit": 12,
+    "total": 34,
+    "totalPages": 3
+  }
 }
 ```
 
+---
+
 ### GET `/api/courses/[id]`
 
-Get single course details with modules, lessons, and reviews.
+Get single course details with modules, lessons, reviews, and user progress.
+
+**Rate limit:** 30 requests per minute
+**Cache:** 5 minutes (anonymous users only), tags: `course`, `course:{id}`, `course:{slug}`
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | Course ID or slug |
 
 **Response:**
 ```json
 {
-  "id": "clx...",
-  "title": "Python для начинающих",
-  "description": "Полный курс...",
-  "price": 0,
-  "rating": 4.8,
-  "modules": [
-    {
-      "id": "clx...",
-      "title": "Введение в Python",
-      "sortOrder": 1,
-      "lessons": [
-        { "id": "clx...", "title": "Первая программа", "sortOrder": 1 }
-      ]
-    }
-  ],
-  "reviews": [...],
-  "isEnrolled": false
+  "course": {
+    "id": "clx...",
+    "title": "Python для начинающих",
+    "slug": "python-basics",
+    "description": "Полный курс...",
+    "shortDesc": "Краткое описание",
+    "image": "https://...",
+    "price": 0,
+    "oldPrice": null,
+    "currency": "RUB",
+    "level": "beginner",
+    "duration": "8 недель",
+    "language": "ru",
+    "isPublished": true,
+    "isFeatured": true,
+    "hasCertificate": true,
+    "rating": 4.8,
+    "reviewCount": 42,
+    "studentCount": 156,
+    "tags": "python,beginner",
+    "requirements": "[\"Базовые знания ПК\"]",
+    "whatYouLearn": "[\"Писать код на Python\", \"Работать с данными\"]",
+    "teacher": { "id": "clx...", "name": "Дуплей М.И.", "image": null, "bio": "..." },
+    "category": { "id": "clx...", "name": "Программирование", "slug": "programming", "icon": "🐍", "color": "#..." },
+    "modules": [
+      {
+        "id": "clx...",
+        "title": "Введение в Python",
+        "description": "Первый модуль",
+        "sortOrder": 1,
+        "lessons": [
+          { "id": "clx...", "title": "Первая программа", "type": "video", "duration": 15, "sortOrder": 1, "isFree": true, "completed": false }
+        ]
+      }
+    ],
+    "reviews": [
+      { "id": "clx...", "rating": 5, "comment": "Отличный курс!", "createdAt": "2024-01-15T00:00:00.000Z", "user": { "id": "clx...", "name": "Иван", "image": null } }
+    ],
+    "totalLessons": 48,
+    "totalDuration": 360,
+    "freeLessons": 5,
+    "isEnrolled": false,
+    "enrollmentStatus": null,
+    "enrollmentProgress": 0
+  }
 }
 ```
 
-### PATCH `/api/courses/[id]`
-
-Update course (admin/teacher only).
+**Access control:** Unpublished courses are only accessible by admin, teacher-owner, or enrolled students.
 
 ---
 
 ### POST `/api/courses/[id]/enroll`
 
 Enroll in a course (requires authentication). Free courses enroll immediately, paid courses create a payment.
+
+**Rate limit:** 10 requests per minute
 
 **Request:**
 ```json
@@ -223,11 +360,13 @@ Enroll in a course (requires authentication). Free courses enroll immediately, p
 
 ### GET `/api/courses/[id]/reviews`
 
-List course reviews.
+List course reviews with pagination.
 
 ### POST `/api/courses/[id]/reviews`
 
 Add a review (requires enrollment, auth required).
+
+**Rate limit:** 10 requests per minute
 
 **Request:**
 ```json
@@ -272,23 +411,45 @@ Submit assignment answer.
 
 Create a payment for a course (requires authentication).
 
+**Rate limit:** 20 requests per minute
+
 **Request:**
 ```json
 { "courseId": "clx...", "paymentMethod": "sbp" }
 ```
 
-**Response:**
+**Payment methods:** `sbp`, `yookassa`, `tinkoff`, `card`
+
+**Response (201):**
 ```json
-{ "message": "Платёж создан", "payment": { "id": "...", "amount": 5000, "status": "pending", "paymentMethod": "sbp" } }
+{
+  "message": "Платёж создан",
+  "payment": {
+    "id": "clx...",
+    "amount": 5000,
+    "currency": "RUB",
+    "status": "pending",
+    "paymentMethod": "sbp",
+    "paymentProvider": "СБП",
+    "transactionId": "txn_1234567890_uuid",
+    "createdAt": "2024-01-15T00:00:00.000Z"
+  }
+}
 ```
 
-**Rate limit:** 10/min
+**Race condition protection:** Uses database transactions to prevent duplicate payments from concurrent requests.
+
+---
 
 ### GET `/api/payments`
 
 List user's payments with pagination.
 
-**Query:** `page`, `limit`
+**Rate limit:** 20 requests per minute
+
+**Query:** `page` (default: 1), `limit` (default: 20, max: 50)
+
+---
 
 ### GET `/api/payments/[id]`
 
@@ -298,13 +459,16 @@ Get single payment details.
 
 ### POST `/api/payments/webhook`
 
-Receive payment provider callbacks (SBP, YooKassa, Tinkoff). No authentication required — verified via webhook signature.
+Receive payment provider callbacks (SBP, YooKassa, Tinkoff). No authentication required — verified via HMAC-SHA256 webhook signature.
+
+**Rate limit:** 100 requests per minute
 
 **Headers:**
 | Header | Description |
-|---|---|
+|--------|-------------|
 | `x-payment-provider` | Provider name (sbp, yookassa, tinkoff) |
-| `x-webhook-signature` | HMAC-SHA256 signature (optional, verified if PAYMENT_WEBHOOK_SECRET is set) |
+| `x-webhook-signature` | HMAC-SHA256 signature (verified against `PAYMENT_WEBHOOK_SECRET`) |
+| `x-signature` | Alternative signature header |
 
 **Request (YooKassa success):**
 ```json
@@ -315,14 +479,25 @@ Receive payment provider callbacks (SBP, YooKassa, Tinkoff). No authentication r
     "id": "pay_123",
     "transactionId": "txn_1234567890_uuid",
     "status": "succeeded",
-    "amount": { "value": "5000.00", "currency": "RUB" }
+    "amount": { "value": "5000.00", "currency": "RUB" },
+    "metadata": { "paymentId": "clx..." }
   }
 }
 ```
 
-**On success:** Auto-completes payment, creates enrollment, increments course studentCount, sends notification to user.
+**On success:** Auto-completes payment, creates enrollment, increments course studentCount, sends notification + email.
 
 **Response:** `{ "received": true, "status": "completed" }`
+
+---
+
+### POST `/api/payments/[id]/init-yookassa`
+
+Initialize YooKassa payment (creates payment on YooKassa side).
+
+### POST `/api/payments/[id]/simulate-complete`
+
+Simulate payment completion (development only).
 
 ---
 
@@ -332,28 +507,64 @@ Receive payment provider callbacks (SBP, YooKassa, Tinkoff). No authentication r
 
 List user notifications (requires authentication).
 
-**Query:** `unread` (boolean), `page`, `limit`
+**Rate limit:** 30 requests per minute
 
-### POST `/api/notifications/mark-all`
+**Query:** `limit` (default: 50, max: 100), `offset` (default: 0)
+
+**Response:**
+```json
+{
+  "notifications": [
+    { "id": "clx...", "type": "payment", "title": "Оплата прошла успешно", "message": "...", "read": false, "createdAt": 1705334400000, "link": "/course/..." }
+  ],
+  "total": 15,
+  "unreadCount": 3
+}
+```
+
+### PATCH `/api/notifications/[id]`
+
+Mark a single notification as read.
+
+### PATCH `/api/notifications/mark-all`
 
 Mark all notifications as read.
 
-### DELETE `/api/notifications/[id]`
+### DELETE `/api/notifications`
 
-Delete a notification.
+Delete old read notifications (older than 30 days). Also cleans up stale verification tokens.
 
 ### POST `/api/notifications/publish`
 
-Create a system notification (admin only).
+Create a notification for a user.
+
+**Rate limit:** 30 requests per minute
 
 **Request:**
 ```json
 { "userId": "...", "type": "system", "title": "Обновление", "message": "..." }
 ```
 
+**Access control:**
+- Admins can send any type to any user
+- Regular users can only send `enrollment`, `completion`, `achievement` types to themselves
+
 ### GET `/api/notifications/sse`
 
 Server-Sent Events stream for real-time notifications.
+
+**Rate limit:** 5 connections per minute per user
+
+**Headers:** `Content-Type: text/event-stream`, `Cache-Control: no-cache`
+
+**Events:**
+```
+data: {"type":"notification","notification":{...}}
+data: {"type":"unreadCount","count":3}
+data: {"type":"ping"}
+```
+
+Heartbeat every 30 seconds. Max 5 concurrent connections per user.
 
 ---
 
@@ -361,25 +572,54 @@ Server-Sent Events stream for real-time notifications.
 
 ### GET `/api/achievements`
 
-List user's achievements.
+Get achievement progress data for the current user (requires authentication).
+
+**Rate limit:** 30 requests per minute
+
+**Response:**
+```json
+{
+  "completedCodingAssignments": 5,
+  "completedLessonsCount": 42,
+  "totalUsers": 12000,
+  "userRegistrationOrder": 156
+}
+```
+
+Achievements are computed client-side using this data combined with the achievement definitions in `src/data/achievements.ts`.
+
+**Achievement categories:**
+- `learning` — Enroll in courses (1, 3, 5), explore categories (3)
+- `progress` — Complete lessons (1), reach 50% progress, complete courses (1, 3)
+- `social` — Platform has >1 user, write reviews (5)
+- `coding` — Complete coding assignments (5, 15, 30)
+- `special` — Early bird (top 100), veteran (10 enrollments), completionist (5 courses), teacher role
 
 ---
 
 ## 📜 Certificates
 
-### GET `/api/certificates`
+### GET `/api/certificates?courseId=...`
 
-List user's certificates.
+Get certificate for a specific course (requires authentication).
 
-### POST `/api/certificates`
+**Rate limit:** 30 requests per minute
 
-Generate certificate for a completed course.
-
-**Request:** `{ "courseId": "..." }`
+**Response:**
+```json
+{
+  "id": "clx...",
+  "certificateNumber": "MAE-00001",
+  "issuedAt": "2024-03-01T00:00:00.000Z",
+  "courseTitle": "Python для начинающих",
+  "courseSlug": "python-basics",
+  "userName": "Иван Иванов"
+}
+```
 
 ### GET `/api/certificates/[id]`
 
-Get certificate details.
+Get certificate details by ID (requires authentication, owner or admin only).
 
 ---
 
@@ -387,13 +627,66 @@ Get certificate details.
 
 ### GET `/api/articles`
 
-List published articles.
+List published articles with filtering and pagination.
 
-**Query:** `page`, `limit`, `category`, `search`
+**Rate limit:** 30 requests per minute
+**Cache:** 5 minutes, tags: `articles`, `blog`
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `category` | string | — | Filter by category |
+| `search` | string | — | Search by title, excerpt, content |
+| `tag` | string | — | Filter by tag |
+| `featured` | boolean | — | Featured articles only |
+| `sortBy` | string | `new` | Sort: `new`, `popular`, `featured` |
+| `page` | number | `1` | Page number |
+| `limit` | number | `12` | Items per page (max: 100) |
+
+**Article categories:** `development`, `testing`, `databases`, `ai`, `3d-modeling`, `security`, `devops`, `career`
+
+**Response:**
+```json
+{
+  "articles": [
+    {
+      "id": "clx...",
+      "title": "Введение в Python",
+      "slug": "intro-to-python",
+      "excerpt": "Краткое введение...",
+      "image": "https://...",
+      "category": "development",
+      "tags": "python,beginner",
+      "readTime": 5,
+      "views": 1200,
+      "isPublished": true,
+      "isFeatured": true,
+      "createdAt": "2024-01-15T00:00:00.000Z",
+      "updatedAt": "2024-01-20T00:00:00.000Z",
+      "author": { "id": "clx...", "name": "Дуплей М.И.", "image": null, "role": "admin" }
+    }
+  ],
+  "pagination": { "page": 1, "limit": 12, "total": 25, "totalPages": 3 }
+}
+```
 
 ### GET `/api/articles/[slug]`
 
-Get single article by slug.
+Get single article by slug with full content.
+
+**View counting:** Incremented with cookie-based deduplication (30s cooldown).
+
+### POST `/api/articles`
+
+Create a new article (teacher/admin only).
+
+### PATCH `/api/articles/[slug]`
+
+Update an article (author or admin only).
+
+### DELETE `/api/articles/[slug]`
+
+Delete an article (admin only).
 
 ---
 
@@ -401,19 +694,79 @@ Get single article by slug.
 
 ### POST `/api/upload`
 
-Upload a file to S3 storage.
+Upload a file to S3-compatible storage.
 
-**Body:** `FormData` with `file` field (max 100MB)
+**Rate limit:** 10 requests per minute
 
-**Response:** `{ "url": "https://..." }`
+**Body:** `multipart/form-data`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `file` | File | The file to upload (max 100MB) |
+| `folder` | string | Target folder (alphanumeric only, default: `uploads`) |
+
+**Allowed file types:** `image/jpeg`, `image/png`, `image/webp`, `image/gif`, `video/mp4`, `video/webm`, `application/pdf`
+
+**Security:**
+- Magic byte verification prevents MIME-type spoofing
+- Path traversal prevention on folder names
+- Server-side file size validation
+- Authentication required
+
+**Response:**
+```json
+{
+  "key": "uploads/1705334400000-a1b2c3d4.png",
+  "url": "https://cdn.example.com/uploads/1705334400000-a1b2c3d4.png",
+  "size": 102400,
+  "type": "image/png"
+}
+```
 
 ---
 
-## 🧑‍🏫 Teacher
+## 🧑‍🏫 Teacher Dashboard
 
 ### GET `/api/teacher/stats`
 
-Get teacher dashboard statistics (requires teacher role).
+Get teacher dashboard statistics (requires teacher or admin role).
+
+**Rate limit:** 30 requests per minute
+
+**Response:**
+```json
+{
+  "courses": [
+    {
+      "id": "clx...",
+      "title": "Python для начинающих",
+      "slug": "python-basics",
+      "isPublished": true,
+      "rating": 4.8,
+      "category": { "name": "Программирование", "slug": "programming" },
+      "enrolledStudents": 45,
+      "completedStudents": 12,
+      "totalEnrollments": 60,
+      "averageProgress": 65,
+      "recentEnrollments": [
+        { "userId": "clx...", "name": "Иван", "image": null, "progress": 20, "enrolledAt": "2024-01-15T00:00:00.000Z" }
+      ],
+      "moduleCount": 8,
+      "reviewCount": 15
+    }
+  ],
+  "stats": {
+    "totalCourses": 3,
+    "totalStudents": 120,
+    "totalCompleted": 30,
+    "avgCompletionRate": 25,
+    "avgProgress": 55,
+    "totalRevenue": 150000,
+    "recentStudents": 45,
+    "publishedCourses": 3
+  }
+}
+```
 
 ---
 
@@ -425,51 +778,102 @@ All admin endpoints require `admin` role.
 
 List all users with filtering and pagination.
 
-**Query:** `page`, `limit`, `search`, `role`, `status`
+**Rate limit:** 60 requests per minute
 
-### PATCH `/api/admin/users`
+**Query:** `page`, `limit` (max: 100), `search`, `role`
+
+**Response:**
+```json
+{
+  "users": [
+    {
+      "id": "clx...",
+      "email": "user@example.com",
+      "name": "Иван Иванов",
+      "image": null,
+      "role": "student",
+      "isActive": true,
+      "twoFactorEnabled": false,
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "_count": { "enrollments": 3, "teacherCourses": 0, "reviews": 2 }
+    }
+  ],
+  "pagination": { "page": 1, "limit": 20, "total": 150, "totalPages": 8 }
+}
+```
+
+### PUT `/api/admin/users`
 
 Update user role or status.
 
 **Request:**
 ```json
-{ "userId": "clx...", "role": "teacher" }
-```
-or
-```json
-{ "userId": "clx...", "isActive": false }
+{ "userId": "clx...", "role": "teacher", "isActive": true, "name": "Новое имя" }
 ```
 
-**Constraints:** Cannot change own role, cannot block self, cannot block another admin.
+**Constraints:** Cannot change own role, cannot block self.
 
 ---
 
 ### GET `/api/admin/courses`
 
-List all courses (including unpublished).
+List all courses (including unpublished) with filtering.
+
+**Query:** `page`, `limit` (max: 100), `status` (`published`/`unpublished`), `search`
 
 ### POST `/api/admin/courses`
 
-Create a new course.
+Create a new course with modules, lessons, and assignments.
 
 **Request:**
 ```json
 {
   "title": "Новый курс",
+  "slug": "new-course",
   "description": "Описание курса",
+  "shortDesc": "Краткое описание",
   "price": 1999,
+  "oldPrice": 2999,
+  "level": "beginner",
+  "duration": "8 недель",
+  "isPublished": false,
+  "isFeatured": false,
+  "hasCertificate": true,
+  "tags": "python,beginner",
+  "requirements": "[\"Базовые знания ПК\"]",
+  "whatYouLearn": "[\"Писать код на Python\"]",
   "categoryId": "clx...",
+  "language": "ru",
+  "visibility": "public",
   "modules": [
-    { "title": "Модуль 1", "lessons": [{ "title": "Урок 1", "content": "..." }] }
+    {
+      "title": "Модуль 1",
+      "description": "Введение",
+      "lessons": [
+        {
+          "title": "Урок 1",
+          "type": "video",
+          "content": "<p>HTML content</p>",
+          "videoUrl": "https://...",
+          "duration": 15,
+          "isFree": true,
+          "assignments": [
+            { "title": "Тест", "type": "quiz", "points": 10, "options": "...", "correctAnswer": "..." }
+          ]
+        }
+      ]
+    }
   ]
 }
 ```
 
-### PATCH `/api/admin/courses/[id]`
+### PUT `/api/admin/courses?id=...`
 
-Update a course.
+Update an existing course with full module/lesson/assignment sync.
 
-### DELETE `/api/admin/courses/[id]`
+**Cache invalidation:** Automatically invalidates `course:{id}`, `course:{slug}`, `courses`, `catalog` cache tags.
+
+### DELETE `/api/admin/courses?id=...`
 
 Delete a course.
 
@@ -492,7 +896,27 @@ Grade a submission.
 
 ### GET `/api/admin/stats`
 
-Get platform statistics (users, revenue, enrollments, etc).
+Get platform-wide statistics.
+
+**Response:**
+```json
+{
+  "totalUsers": 12000,
+  "totalStudents": 11500,
+  "totalTeachers": 450,
+  "totalAdmins": 5,
+  "totalCourses": 50,
+  "totalPublishedCourses": 34,
+  "totalEnrollments": 25000,
+  "totalRevenue": 5000000,
+  "totalPayments": 3000,
+  "activeToday": 1200,
+  "activeThisWeek": 4500,
+  "activeThisMonth": 8000,
+  "serverUptime": "72.3 ч",
+  "dbSize": "PostgreSQL"
+}
+```
 
 ### GET `/api/admin/student-stats/[id]`
 
@@ -502,17 +926,17 @@ Get detailed statistics for a specific student.
 
 ### GET `/api/admin/categories`
 
-List course categories.
+List all course categories.
 
 ### POST `/api/admin/categories`
 
 Create a category.
 
-### PATCH `/api/admin/categories/[id]`
+### PUT `/api/admin/categories`
 
 Update a category.
 
-### DELETE `/api/admin/categories/[id]`
+### DELETE `/api/admin/categories?id=...`
 
 Delete a category.
 
@@ -524,18 +948,91 @@ Get system settings.
 
 **Response:**
 ```json
-{ "maintenanceMode": false, "registrationDisabled": false, "moderationEnabled": false, "emailNotificationsEnabled": false }
+{
+  "maintenanceMode": false,
+  "registrationDisabled": false,
+  "moderationEnabled": false,
+  "emailNotificationsEnabled": false
+}
 ```
 
-### PATCH `/api/admin/settings`
+### PUT `/api/admin/settings`
 
 Update system settings.
 
 **Request:** `{ "maintenanceMode": true }`
 
+### GET `/api/admin/feature-flags`
+
+Get all feature flags with current evaluation.
+
+### POST `/api/admin/feature-flags`
+
+Update a feature flag override.
+
+---
+
 ### POST `/api/admin/cache/clear`
 
-Clear server cache (.next/cache).
+Clear all server cache (Redis + memory).
+
+---
+
+## 🏥 Health & Metrics
+
+### GET `/api/health`
+
+Comprehensive health check with service diagnostics.
+
+**Response:**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2024-01-15T00:00:00.000Z",
+  "version": "3.6.0",
+  "uptime": "72h 15m 30s",
+  "environment": "production",
+  "services": {
+    "database": { "status": "healthy", "responseTime": 5, "provider": "postgresql" },
+    "cache": { "status": "healthy", "responseTime": 2 },
+    "storage": { "status": "configured", "configured": true },
+    "email": { "status": "configured", "configured": true }
+  },
+  "memory": {
+    "rss": "150.2 MB",
+    "heapUsed": "85.5 MB",
+    "heapTotal": "128.0 MB"
+  }
+}
+```
+
+**Status values:** `healthy` — all services OK, `degraded` — non-critical service down (e.g., Redis), `unhealthy` — critical service down (e.g., database)
+
+### GET `/api/metrics`
+
+System metrics (admin only).
+
+**Response:**
+```json
+{
+  "system": {
+    "uptime": "4335m",
+    "nodeVersion": "v22.0.0",
+    "platform": "linux",
+    "memory": { "rss": "150MB", "heapUsed": "85MB", "heapTotal": "128MB" }
+  },
+  "data": {
+    "users": 12000,
+    "courses": 34,
+    "activeEnrollments": 15000,
+    "completedPayments": 3000,
+    "reviews": 5000,
+    "publishedArticles": 25,
+    "unreadNotifications": 450
+  },
+  "timestamp": "2024-01-15T00:00:00.000Z"
+}
+```
 
 ---
 
@@ -543,7 +1040,7 @@ Clear server cache (.next/cache).
 
 ### POST `/api/seed`
 
-Seed development data. Development only (`NODE_ENV !== "production"` and `ALLOW_SEED_DATA=true`).
+Seed development data. Only available in development with `ALLOW_SEED_DATA=true`.
 
 **Response:**
 ```json
@@ -552,53 +1049,124 @@ Seed development data. Development only (`NODE_ENV !== "production"` and `ALLOW_
 
 ---
 
-## 🏥 Health
-
-### GET `/api/`
-
-API health check.
-
-**Response:** `{ "status": "ok", "version": "3.1.0" }`
-
----
-
 ## 📊 Rate Limiting
 
-| Endpoint | Limit | Window |
-|---|---|---|
-| Login | 5 | 1 min |
-| Register | 3 | 1 min |
-| Payments POST | 10 | 1 min |
-| Enrollment | 5 | 1 min |
-| General API | 60 | 1 min |
+| Endpoint Group | Limit | Window | Backend |
+|----------------|-------|--------|---------|
+| Register | 5 | 1 min | Memory |
+| Login | 10 | 1 min | Memory |
+| Forgot Password | 3 | 1 min | Memory |
+| Reset Password | 5 | 1 min | Memory |
+| Profile | 20 | 1 min | Memory |
+| Courses (list) | 30 | 1 min | Memory |
+| Course Detail | 30 | 1 min | Memory |
+| Payments POST | 20 | 1 min | Memory |
+| Payments GET | 20 | 1 min | Memory |
+| Enrollment | 10 | 1 min | Memory |
+| Progress | 60 | 1 min | Memory |
+| Review | 10 | 1 min | Memory |
+| Upload | 10 | 1 min | Memory |
+| Admin | 60 | 1 min | Memory |
+| SSE | 5 | 1 min | Memory |
+| Webhook | 100 | 1 min | Memory |
+| 2FA | 10 | 1 min | Memory |
+| Send Verification | 3 | 1 min | Memory |
+| Default | 30 | 1 min | Memory |
 
-Responses include `X-RateLimit-Remaining` and `Retry-After` headers when rate limited.
+Rate-limited responses include headers:
+- `X-RateLimit-Limit` — Max requests per window
+- `X-RateLimit-Remaining` — Remaining requests
+- `X-RateLimit-Reset` — Unix timestamp when the window resets
+- `Retry-After` — Seconds to wait before retrying
 
 ---
 
 ## ❌ Error Codes
 
-| Code | Description |
-|---|---|
-| 400 | Invalid request parameters (Zod validation) |
-| 401 | Unauthorized |
-| 403 | Forbidden (insufficient permissions) |
-| 404 | Not Found |
-| 409 | Conflict (email exists, already enrolled) |
-| 429 | Rate Limited |
-| 500 | Internal Server Error |
+| Status | Description | Common Causes |
+|--------|-------------|---------------|
+| 400 | Bad Request | Invalid JSON, Zod validation failure, missing required fields |
+| 401 | Unauthorized | Missing/invalid session, expired token |
+| 403 | Forbidden | Insufficient role (not admin/teacher), course not accessible |
+| 404 | Not Found | Resource doesn't exist (course, user, article, etc.) |
+| 409 | Conflict | Email already exists, already enrolled, duplicate slug |
+| 429 | Rate Limited | Too many requests, check `Retry-After` header |
+| 500 | Internal Server Error | Unexpected server error, check server logs |
+| 503 | Service Unavailable | Database down, storage not configured |
 
 **Error format:**
 ```json
-{ "error": "Error message" }
+{ "error": "Human-readable error message" }
 ```
+
+**Prisma error mapping:**
+| Prisma Code | HTTP Status | Message |
+|-------------|-------------|---------|
+| P2002 | 409 | Record already exists |
+| P2003 | 400 | Related data not found |
+| P2025 | 404 | Record not found |
+| P2014 | 400 | Relation constraint violation |
 
 ---
 
-## 🔑 Authentication
+## ⚡ Caching
 
-Authenticated endpoints require a valid NextAuth session cookie. For API testing:
+The API uses a two-tier caching system:
 
-```
-Cookie: next-auth.session-token=YOUR_TOKEN
-```
+1. **Redis** (primary) — When `REDIS_URL` is configured
+2. **In-memory Map** (fallback) — Max 1000 entries, FIFO eviction
+
+**Cache tags** enable targeted invalidation:
+- `courses`, `catalog` — Course list pages
+- `course:{id}`, `course:{slug}` — Individual course pages
+- `articles`, `blog` — Article list pages
+
+**Cache headers:**
+- `X-Cache: HIT` — Served from cache
+- `X-Cache: MISS` — Computed fresh
+- `Cache-Control: public, max-age=300, stale-while-revalidate=600` — Public pages
+- `Cache-Control: private, max-age=60` — Authenticated pages
+
+**Default TTL:** 5 minutes for public data, 1 minute for authenticated data.
+
+---
+
+## 🛡️ Security
+
+### Authentication
+- JWT-based sessions via NextAuth.js
+- Session cookie: `SameSite=Strict`, `httpOnly`, `Secure` in production
+- JWT cache with 5-minute TTL for role/isActive checks
+- Automatic session invalidation on deactivation
+
+### CSRF Protection
+- Primary: `SameSite=Strict` cookie
+- Secondary: Origin header validation against Host
+
+### Input Validation
+- Zod schemas on all mutation endpoints
+- HTML sanitization via `sanitize-html` for rich content
+- Password strength validation (8+ chars, mixed case, digits)
+
+### File Upload Security
+- MIME type whitelist (images, video, PDF)
+- Magic byte verification (server-side content inspection)
+- Path traversal prevention
+- File size limits (100MB)
+
+### Webhook Security
+- HMAC-SHA256 signature verification
+- Constant-time comparison to prevent timing attacks
+- Configurable via `PAYMENT_WEBHOOK_SECRET`
+
+### Rate Limiting
+- Per-endpoint rate limits with in-memory fallback
+- IP-based + user-based tracking
+- FIFO eviction for memory limits
+- Redis support for distributed rate limiting
+
+### API Response Headers
+- `X-Request-Id` — Unique request identifier for tracing
+- `X-Response-Time` — Request duration in milliseconds
+- `X-Cache` — Cache hit/miss status
+- `X-RateLimit-*` — Rate limit status

@@ -1,0 +1,343 @@
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { handleApiError } from "@/lib/api-errors";
+import { z } from "zod";
+
+export const runtime = "nodejs";
+
+const checkRateLimit = rateLimit("progress", RATE_LIMITS.progress);
+
+const patchProgressSchema = z.object({
+  lessonId: z.string().uuid(),
+  completed: z.boolean().optional(),
+  score: z.number().int().min(0).max(100).optional().nullable(),
+  timeSpent: z.number().int().min(0).optional(),
+});
+
+// GET /api/courses/[id]/progress — Get full progress overview for a course
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: courseId } = await params;
+
+    const blocked = checkRateLimit(request);
+    if (blocked) return blocked;
+
+    const session = await getAuthSession();
+    if (!requireAuth(session)) {
+      return authErrorResponse();
+    }
+
+    const userId = session.user.id;
+
+    // Verify enrollment
+    const enrollment = await db.enrollment.findUnique({
+      where: {
+        userId_courseId: { userId, courseId },
+      },
+      select: { id: true, status: true, progress: true },
+    });
+
+    if (!enrollment) {
+      return NextResponse.json(
+        { error: "Not enrolled in this course" },
+        { status: 403 }
+      );
+    }
+
+    // Get course structure (modules + lessons)
+    const course = await db.course.findUnique({
+      where: { id: courseId },
+      include: {
+        modules: {
+          include: {
+            lessons: {
+              select: {
+                id: true,
+                title: true,
+                sortOrder: true,
+                type: true,
+              },
+              orderBy: { sortOrder: "asc" },
+            },
+          },
+          orderBy: { sortOrder: "asc" },
+        },
+      },
+    });
+
+    if (!course) {
+      return NextResponse.json(
+        { error: "Course not found" },
+        { status: 404 }
+      );
+    }
+
+    // Get all progress records for this user in this course
+    const allLessonIds = course.modules.flatMap((m) =>
+      m.lessons.map((l) => l.id)
+    );
+
+    const progressRecords = await db.progress.findMany({
+      where: {
+        userId,
+        lessonId: { in: allLessonIds },
+      },
+      select: {
+        lessonId: true,
+        completed: true,
+        score: true,
+        timeSpent: true,
+        lastAccessed: true,
+      },
+    });
+
+    // Build progress map
+    const progressMap = new Map(
+      progressRecords.map((p) => [p.lessonId, p])
+    );
+
+    // Calculate overall stats
+    const totalLessons = allLessonIds.length;
+    const completedLessons = progressRecords.filter((p) => p.completed).length;
+    const totalTimeSpent = progressRecords.reduce(
+      (sum, p) => sum + p.timeSpent,
+      0
+    );
+    const courseProgress =
+      totalLessons > 0
+        ? Math.round((completedLessons / totalLessons) * 100)
+        : 0;
+
+    // Build module-level progress
+    const modulesWithProgress = course.modules.map((module) => {
+      const moduleLessons = module.lessons.length;
+      const moduleCompleted = module.lessons.filter((l) => {
+        const p = progressMap.get(l.id);
+        return p?.completed;
+      }).length;
+      const moduleTimeSpent = module.lessons.reduce((sum, l) => {
+        const p = progressMap.get(l.id);
+        return sum + (p?.timeSpent || 0);
+      }, 0);
+
+      return {
+        id: module.id,
+        title: module.title,
+        sortOrder: module.sortOrder,
+        totalLessons: moduleLessons,
+        completedLessons: moduleCompleted,
+        progress:
+          moduleLessons > 0
+            ? Math.round((moduleCompleted / moduleLessons) * 100)
+            : 0,
+        timeSpent: moduleTimeSpent,
+        lessons: module.lessons.map((lesson) => {
+          const p = progressMap.get(lesson.id);
+          return {
+            id: lesson.id,
+            title: lesson.title,
+            sortOrder: lesson.sortOrder,
+            type: lesson.type,
+            completed: p?.completed || false,
+            score: p?.score ?? null,
+            timeSpent: p?.timeSpent || 0,
+            lastAccessed: p?.lastAccessed?.toISOString() || null,
+          };
+        }),
+      };
+    });
+
+    // Calculate streak info (consecutive days with progress)
+    const sortedDates = progressRecords
+      .filter((p): p is typeof p & { lastAccessed: Date } => p.lastAccessed !== null)
+      .map((p) => p.lastAccessed.toISOString().split("T")[0])
+      .filter((v, i, a) => a.indexOf(v) === i)
+      .sort()
+      .reverse();
+
+    let currentStreak = 0;
+    const today = new Date().toISOString().split("T")[0];
+    const yesterday = new Date(Date.now() - 86400000)
+      .toISOString()
+      .split("T")[0];
+
+    if (sortedDates[0] === today || sortedDates[0] === yesterday) {
+      currentStreak = 1;
+      for (let i = 1; i < sortedDates.length; i++) {
+        const prev = new Date(sortedDates[i - 1]);
+        const curr = new Date(sortedDates[i]);
+        const diffDays = Math.round(
+          (prev.getTime() - curr.getTime()) / 86400000
+        );
+        if (diffDays === 1) {
+          currentStreak++;
+        } else {
+          break;
+        }
+      }
+    }
+
+    return NextResponse.json({
+      courseId,
+      courseTitle: course.title,
+      enrollmentStatus: enrollment.status,
+      enrollmentProgress: enrollment.progress,
+      overall: {
+        totalLessons,
+        completedLessons,
+        courseProgress,
+        totalTimeSpent,
+        currentStreak,
+      },
+      modules: modulesWithProgress,
+    });
+  } catch (error) {
+    return handleApiError(error, { context: "GET /api/courses/[id]/progress" });
+  }
+}
+
+// PATCH /api/courses/[id]/progress — Update progress for a specific lesson
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: courseId } = await params;
+
+    const blocked = checkRateLimit(request);
+    if (blocked) return blocked;
+
+    const session = await getAuthSession();
+    if (!requireAuth(session)) {
+      return authErrorResponse();
+    }
+
+    const userId = session.user.id;
+
+    // Verify enrollment
+    const enrollment = await db.enrollment.findUnique({
+      where: {
+        userId_courseId: { userId, courseId },
+      },
+      select: { id: true, status: true },
+    });
+
+    if (!enrollment || enrollment.status !== "active") {
+      return NextResponse.json(
+        { error: "Active enrollment required" },
+        { status: 403 }
+      );
+    }
+
+    // Validate body
+    const body = await request.json();
+    const parsed = patchProgressSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        {
+          error: "Validation failed",
+          details: parsed.error.issues.map((i) => ({
+            field: i.path.join("."),
+            message: i.message,
+          })),
+        },
+        { status: 400 }
+      );
+    }
+
+    const { lessonId, completed, score, timeSpent } = parsed.data;
+
+    // Verify lesson belongs to this course
+    const lesson = await db.lesson.findUnique({
+      where: { id: lessonId },
+      select: {
+        id: true,
+        module: {
+          select: { courseId: true },
+        },
+      },
+    });
+
+    if (!lesson || lesson.module.courseId !== courseId) {
+      return NextResponse.json(
+        { error: "Lesson not found in this course" },
+        { status: 404 }
+      );
+    }
+
+    // Upsert progress
+    const progress = await db.progress.upsert({
+      where: {
+        userId_lessonId: { userId, lessonId },
+      },
+      create: {
+        userId,
+        lessonId,
+        completed: completed ?? false,
+        score: score ?? null,
+        timeSpent: timeSpent ?? 0,
+        lastAccessed: new Date(),
+      },
+      update: {
+        ...(completed !== undefined && { completed }),
+        ...(score !== undefined && { score }),
+        ...(timeSpent !== undefined && {
+          timeSpent: { increment: timeSpent },
+        }),
+        lastAccessed: new Date(),
+      },
+    });
+
+    // Recalculate course-level progress
+    const allLessonIds = (
+      await db.lesson.findMany({
+        where: { module: { courseId } },
+        select: { id: true },
+      })
+    ).map((l) => l.id);
+
+    const completedCount = await db.progress.count({
+      where: {
+        userId,
+        lessonId: { in: allLessonIds },
+        completed: true,
+      },
+    });
+
+    const courseProgress =
+      allLessonIds.length > 0
+        ? Math.round((completedCount / allLessonIds.length) * 100)
+        : 0;
+
+    // Update enrollment progress
+    await db.enrollment.update({
+      where: { id: enrollment.id },
+      data: {
+        progress: courseProgress,
+        ...(courseProgress === 100 && { completedAt: new Date() }),
+      },
+    });
+
+    return NextResponse.json({
+      progress: {
+        id: progress.id,
+        lessonId: progress.lessonId,
+        completed: progress.completed,
+        score: progress.score,
+        timeSpent: progress.timeSpent,
+        lastAccessed: progress.lastAccessed.toISOString(),
+      },
+      courseProgress,
+      courseCompleted: courseProgress === 100,
+    });
+  } catch (error) {
+    return handleApiError(error, {
+      context: "PATCH /api/courses/[id]/progress",
+    });
+  }
+}

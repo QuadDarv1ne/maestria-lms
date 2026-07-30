@@ -157,7 +157,7 @@ function updateSchemaProvider(provider) {
 
   const schema = fs.readFileSync(schemaFile, 'utf8')
 
-  const newDatasource = `datasource db {
+const newDatasource = `datasource db {
   provider = "${provider}"
 }`
 

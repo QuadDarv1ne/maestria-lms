@@ -40,6 +40,11 @@ model User {
   gradedSubmissions AssignmentSubmission[] @relation("GradedSubmissions")
   assignmentSubmissions AssignmentSubmission[]
   articles      Article[]
+
+  @@index([role])
+  @@index([isActive])
+  @@index([role, isActive])
+  @@index([createdAt])
 }
 
 model Account {
@@ -71,6 +76,7 @@ model Session {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([expires])
 }
 
 model VerificationToken {
@@ -136,6 +142,7 @@ model Course {
   reviews     Review[]
   payments    Payment[]
   certificates Certificate[]
+  promoCodes   PromoCode[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -149,6 +156,10 @@ model Course {
   @@index([isPublished, categoryId, createdAt])
   @@index([isPublished, isFeatured, rating])
   @@index([isPublished, price])
+  @@index([slug])
+  @@index([teacherId, isPublished])
+  @@index([isPublished, studentCount])
+  @@index([isPublished, language])
 }
 
 model Module {
@@ -267,6 +278,9 @@ model Progress {
 
   @@unique([userId, lessonId])
   @@index([userId, completed])
+  @@index([lessonId, completed])
+  @@index([userId, lastAccessed])
+  @@index([userId, score])
 }
 
 // ============ REVIEWS ============
@@ -300,6 +314,9 @@ model Payment {
   paymentProvider String?
   transactionId   String?
   paymentData     String?  // JSON: additional payment data
+  promoCodeId     String?
+  promoCode       PromoCode? @relation(fields: [promoCodeId], references: [id], onDelete: SetNull)
+  discountAmount  Float    @default(0) // amount discounted by promo code
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   course          Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   createdAt       DateTime @default(now())
@@ -382,4 +399,43 @@ model Article {
   // Composite indexes for common query patterns
   @@index([isPublished, category, createdAt])
   @@index([isPublished, isFeatured, views])
+}
+
+// ============ PROMO CODES ============
+
+model PromoCode {
+  id              String   @id @default(uuid())
+  code            String   @unique
+  description     String?
+  // Discount type: "percentage" or "fixed"
+  discountType    String   @default("percentage")
+  // Discount value: percentage (1-100) or fixed amount in RUB
+  discountValue   Float
+  // Minimum order amount to apply promo code (0 = no minimum)
+  minAmount       Float    @default(0)
+  // Maximum discount amount for percentage codes (null = no cap)
+  maxDiscount     Float?
+  // Usage limits
+  maxUses         Int      @default(0) // 0 = unlimited
+  usedCount       Int      @default(0)
+  maxUsesPerUser  Int      @default(1)
+  // Validity period
+  validFrom       DateTime @default(now())
+  validUntil      DateTime?
+  isActive        Boolean  @default(true)
+  // Optional: restrict to specific course (null = any course)
+  courseId        String?
+  course          Course?  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  // Track which user used the code (JSON array of userIds)
+  usedBy          String?  // JSON array of userIds
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  payments        Payment[]
+
+  @@index([code])
+  @@index([isActive])
+  @@index([courseId])
+  @@index([validUntil])
 }
