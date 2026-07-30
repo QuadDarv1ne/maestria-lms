@@ -225,7 +225,7 @@ describe("sanitizeContent", () => {
     it("should handle arrays", () => {
       const input = { tags: ["<b>tag1</b>", "<script>alert(1)</script>"] };
       const result = sanitizeObject(input);
-      expect(result.tags).toEqual(["tag1", "alert(1)"]);
+      expect(result.tags).toEqual(["tag1", ""]);
     });
   });
 

@@ -57,8 +57,15 @@ export function sanitizeContent(
  */
 export function sanitizeText(input: string, maxLength = 500): string {
   if (!input) return "";
-  // Strip HTML tags
-  const stripped = input.replace(/<[^>]*>/g, "");
+  // Strip all HTML tags and their content for script, style, iframe, object, embed
+  let stripped = input.replace(/<script[^>]*>[\s\S]*?<\/script\s*>/gi, "");
+  stripped = stripped.replace(/<style[^>]*>[\s\S]*?<\/style\s*>/gi, "");
+  stripped = stripped.replace(/<iframe[^>]*>[\s\S]*?<\/iframe\s*>/gi, "");
+  stripped = stripped.replace(/<object[^>]*>[\s\S]*?<\/object\s*>/gi, "");
+  stripped = stripped.replace(/<embed[^>]*>[\s\S]*?<\/embed\s*>/gi, "");
+  stripped = stripped.replace(/<noscript[^>]*>[\s\S]*?<\/noscript\s*>/gi, "");
+  // Strip remaining HTML tags (keep content)
+  stripped = stripped.replace(/<[^>]*>/g, "");
   // Remove control characters (except newlines and tabs)
   const cleaned = stripped.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
   // Trim whitespace
@@ -151,7 +158,7 @@ export function sanitizeObject(
         result[key] = sanitizeText(value);
       }
     } else if (Array.isArray(value)) {
-      result[key] = value.map((item) => {
+result[key] = value.map((item) => {
         if (typeof item === "string") {
           return sanitizeText(item);
         }
@@ -163,7 +170,7 @@ export function sanitizeObject(
     } else if (value && typeof value === "object" && !Array.isArray(value)) {
       result[key] = sanitizeObject(
         value as Record<string, unknown>,
-        options
+        options, // pass options to nested calls
       );
     } else {
       result[key] = value;

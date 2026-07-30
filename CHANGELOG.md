@@ -6,6 +6,28 @@
 
 ---
 
+## [Unreleased]
+
+### Добавлено
+- **Промокоды и скидки**: полная система промокодов для платных курсов
+  - Модель `PromoCode` в Prisma schema (percentage/fixed discount, max uses, per-user limits, validity period, course restriction, max discount cap)
+  - API валидации промокодов: `POST /api/payments/promo/validate`
+  - Admin API для управления промокодами: `GET/POST /api/admin/promo-codes`, `GET/PATCH/DELETE /api/admin/promo-codes/[id]`
+  - Интеграция промокодов в создание платежа (`POST /api/payments` с полем `promoCode`)
+  - Автоматический redeem промокода после успешного создания платежа
+  - Поля `promoCodeId` и `discountAmount` в модели `Payment`
+  - 20 модульных тестов для системы промокодов
+- **formatDate / formatNumber** утилиты в `src/lib/utils.ts` (с поддержкой ru/en/zh локалей)
+
+### Исправлено
+- **TypeScript**: `api-logging.ts` — ошибка типизации в catch-блоке `withApiLogging<T>` (NextResponse cast)
+- **Tests**: `api-integration.test.ts` — 31 падающий тест из-за дублирующего `vi.mock("@/lib/db")` без экспорта `db` (исправлено через `vi.hoisted()`)
+- **Security**: `sanitizeText` — теперь корректно удаляет содержимое `<script>`, `<style>`, `<iframe>`, `<object>`, `<embed>`, `<noscript>` тегов, а не только сами теги
+- **Tests**: `sanitizeObject` — опции (`textFields`, `htmlFields`, `skipFields`) теперь передаются в рекурсивные вызовы для вложенных объектов
+- **ESLint**: убраны неиспользуемые переменные в `request-validation.ts` и `api-integration.test.ts`
+
+---
+
 ## [3.6.0] — 2026-07-05
 
 ### Исправлено

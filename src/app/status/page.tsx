@@ -7,6 +7,7 @@ import type { Locale } from "@/lib/stores/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   CheckCircle,
   AlertTriangle,
@@ -61,6 +62,76 @@ function StatusBadge({ status, locale }: { status: string; locale: Locale }) {
   return <Badge className="bg-red-100 text-red-700"><XCircle className="w-3 h-3 mr-1" />{t("status.down", locale)}</Badge>;
 }
 
+function StatusPageSkeleton() {
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="flex items-center justify-between mb-8">
+        <div className="space-y-2">
+          <Skeleton className="h-9 w-64" />
+          <Skeleton className="h-5 w-48" />
+        </div>
+        <Skeleton className="h-9 w-28 rounded-md" />
+      </div>
+
+      <div className="grid gap-4 mb-8">
+        <Card>
+          <CardHeader className="pb-3">
+            <Skeleton className="h-6 w-48" />
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="space-y-1">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-5 w-32" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <Skeleton className="h-6 w-32" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-5 w-24" />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <Skeleton className="h-6 w-24" />
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-4 gap-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="space-y-1">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-5 w-20" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Skeleton className="h-7 w-40 mb-4" />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <Card key={i}>
+            <CardContent className="pt-6 text-center space-y-2">
+              <Skeleton className="h-5 w-5 mx-auto rounded" />
+              <Skeleton className="h-8 w-16 mx-auto" />
+              <Skeleton className="h-4 w-20 mx-auto" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function StatusPage() {
   const locale = useAppStore((s) => s.locale);
   const [health, setHealth] = useState<HealthStatus | null>(null);
@@ -98,11 +169,7 @@ export default function StatusPage() {
   }, [fetchData]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
-      </div>
-    );
+    return <StatusPageSkeleton />;
   }
 
   if (error) {
