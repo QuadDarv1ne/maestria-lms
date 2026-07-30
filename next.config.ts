@@ -4,6 +4,9 @@ import type { NextConfig } from "next";
 // (different rules for API routes, static assets, etc.)
 // The Edge middleware (middleware.ts) handles locale detection and maintenance mode,
 // but does NOT run in standalone mode — so critical headers MUST be here.
+//
+// NOTE: Amvera's reverse proxy may override some headers (especially Content-Security-Policy).
+// The CSP is also set via <meta> tag in the root layout for compatibility.
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -37,23 +40,6 @@ const nextConfig: NextConfig = {
           { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains; preload" },
           // Disable feature permissions
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), interest-cohort=()" },
-          // Content Security Policy — MUST include 'unsafe-inline' for Next.js inline scripts
-          {
-            key: "Content-Security-Policy",
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://api.dicebear.com https://mc.yandex.ru https://www.googletagmanager.com",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              "img-src 'self' data: blob: https:",
-              "font-src 'self' https://fonts.gstatic.com",
-              "connect-src 'self' https: wss:",
-              "media-src 'self' https: blob:",
-              "frame-src 'self' https://www.youtube.com https://vk.com https://rutube.ru",
-              "object-src 'none'",
-              "base-uri 'self'",
-              "form-action 'self'",
-            ].join("; "),
-          },
         ],
       },
       // Cache static assets aggressively
