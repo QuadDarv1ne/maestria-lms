@@ -3,9 +3,11 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock db before importing the module under test
-const mockPromoCodeFindUnique = vi.fn();
-const mockPromoCodeUpdate = vi.fn();
+// vi.mock is hoisted, so use vi.hoisted() for mock variables
+const { mockPromoCodeFindUnique, mockPromoCodeUpdate } = vi.hoisted(() => ({
+  mockPromoCodeFindUnique: vi.fn(),
+  mockPromoCodeUpdate: vi.fn(),
+}));
 
 vi.mock("@/lib/db", () => ({
   db: {

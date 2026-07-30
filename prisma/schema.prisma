@@ -439,3 +439,24 @@ model PromoCode {
   @@index([courseId])
   @@index([validUntil])
 }
+
+// ============ WEBHOOK EVENTS ============
+
+model WebhookEvent {
+  id            String    @id @default(uuid())
+  type          String
+  payload       Json
+  status        String    @default("pending") // pending, processing, completed, failed
+  attempts      Int       @default(0)
+  maxAttempts   Int       @default(5)
+  lastAttemptAt DateTime?
+  nextRetryAt   DateTime?
+  errorMessage  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, nextRetryAt])
+  @@index([type])
+  @@index([createdAt])
+}

@@ -235,8 +235,30 @@ export function rateLimit(
       return createRateLimitResponse(result);
     }
 
+    // Attach rate limit headers to the response via a custom header that middleware can read
+    // This is a no-op for the sync limiter since we can't modify the response after creation
     return null;
   };
+}
+
+// Helper to add rate limit headers to any response
+export function addRateLimitHeaders(
+  headers: Headers,
+  routeId: string,
+  request: Request,
+  userId?: string | null,
+): void {
+  const config = RATE_LIMITS[routeId as keyof typeof RATE_LIMITS] ?? RATE_LIMITS.default;
+  const { windowMs, maxRequests } = { ...defaultConfig, ...config };
+  const ip = getClientIp(request);
+  const effectiveUserId = userId ?? null;
+
+  const result = checkMemoryLimit(routeId, ip, effectiveUserId, windowMs, maxRequests);
+
+  headers.set("X-RateLimit-Limit", String(result.limit));
+  headers.set("X-RateLimit-Remaining", String(result.remaining));
+  headers.set("X-RateLimit-Reset", String(result.resetAt));
+  headers.set("X-RateLimit-Window", String(windowMs));
 }
 
 // Async rate limiter (uses Redis when available, falls back to in-memory)

@@ -195,6 +195,17 @@ export function middleware(request: NextRequest) {
   if (API_ROUTE_PATTERN.test(pathname)) {
     response.headers.set("X-Robots-Tag", "noindex, nofollow");
     response.headers.set("X-API-Version", "3.6.0");
+
+    // Enable response compression hints
+    // Actual compression is handled by the web server/CDN (Amvera, nginx, Cloudflare)
+    response.headers.set("Vary", "Accept-Encoding");
+    response.headers.set("X-Compression", "enabled");
+  }
+
+  // ── Compression Support for non-API routes ────────────────────────────
+  // Signal to CDN/reverse-proxy that responses can be compressed
+  if (!response.headers.has("Vary")) {
+    response.headers.set("Vary", "Accept-Encoding");
   }
 
   // ── Development Logging ────────────────────────────────────────────────
