@@ -128,23 +128,25 @@ async function checkRedisLimit(
   const resetAt = now + windowMs;
   const redisKey = `ratelimit:${key}`;
 
-  const pipeline = client.pipeline();
-  pipeline.incr(redisKey);
-  pipeline.pttl(redisKey);
+  // Use a single EVAL script for atomic increment + expiry
+  // Returns [count, ttl_ms] where ttl_ms is -1 if no expiry set
+  const script = `
+    local count = redis.call("INCR", KEYS[1])
+    local ttl = redis.call("PTTL", KEYS[1])
+    if ttl < 0 then
+      redis.call("PEXPIRE", KEYS[1], ARGV[1])
+    end
+    return {count, ttl}
+  `;
 
-  // Set expiry only on first request in window
-  pipeline.eval(
-    `if redis.call("pttl", KEYS[1]) < 0 then redis.call("pexpire", KEYS[1], ARGV[1]) end`,
-    1,
-    redisKey,
-    String(windowMs),
-  );
-
-  const results = await pipeline.exec();
-  if (!results || results[0][0]) {
-    throw new Error("Redis pipeline error in rate-limit check");
+  let result: [number, number];
+  try {
+    result = (await client.eval(script, 1, redisKey, String(windowMs))) as [number, number];
+  } catch (error: unknown) {
+    throw new Error(`Redis pipeline error in rate-limit check: ${error instanceof Error ? error.message : String(error)}`);
   }
-  const count = (results[0][1] as number) ?? 0;
+
+  const count = result[0] ?? 0;
   const remaining = Math.max(0, maxRequests - count);
   const limited = count > maxRequests;
 

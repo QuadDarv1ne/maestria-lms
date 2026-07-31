@@ -241,6 +241,7 @@ export async function POST(
         completed: completed ?? false,
         score: score ?? null,
         timeSpent: timeSpent ?? 0,
+        lastAccessed: new Date(),
       },
       update: {
         completed: completed ?? undefined,

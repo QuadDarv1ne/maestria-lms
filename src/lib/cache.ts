@@ -97,7 +97,8 @@ export async function cacheInvalidateByTag(tag: string): Promise<boolean> {
       if (keys.length > 0) {
         const pipeline = redis.pipeline();
         for (const key of keys) {
-          pipeline.del(`cache:${key}`);
+          // Keys stored in the tag set are already prefixed with "cache:"
+          pipeline.del(key);
         }
         pipeline.del(tagKey);
         await pipeline.exec();

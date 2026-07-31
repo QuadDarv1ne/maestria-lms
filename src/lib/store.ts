@@ -37,6 +37,7 @@ export const useAppStore = create<AppStore>()((set, get, api) => {
       }
       set({
         user: null,
+        sessionReady: false,
         sidebarOpen: false,
         currentCourseId: null,
         currentLessonId: null,

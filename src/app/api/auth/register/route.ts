@@ -49,8 +49,8 @@ export async function POST(request: NextRequest) {
 
     if (existingUser) {
       return NextResponse.json(
-        { error: "Ошибка регистрации" },
-        { status: 400 }
+        { error: "Пользователь с таким email уже существует" },
+        { status: 409 }
       );
     }
 
@@ -90,10 +90,24 @@ export async function POST(request: NextRequest) {
       });
 
       return createdUser;
+    }).catch(async (err) => {
+      // Handle unique constraint violation (race condition)
+      if (err instanceof Error && "code" in err && err.code === "P2002") {
+        throw new Error("EMAIL_ALREADY_EXISTS");
+      }
+      throw err;
     });
 
     const baseUrl = env.siteUrl;
     const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${rawToken}`;
+
+    // Handle race condition: user was created between our check and transaction
+    if (user instanceof Error && user.message === "EMAIL_ALREADY_EXISTS") {
+      return NextResponse.json(
+        { error: "Пользователь с таким email уже существует" },
+        { status: 409 }
+      );
+    }
 
     // Fire-and-forget welcome email — delivery failure is logged but doesn't block response
     sendEmail({

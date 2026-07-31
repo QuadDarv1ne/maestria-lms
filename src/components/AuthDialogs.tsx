@@ -33,7 +33,6 @@ import { t } from "@/lib/i18n";
 import { toast } from "sonner";
 
 export function AuthDialogs() {
-  const setUser = useAppStore((s) => s.setUser);
   const locale = useAppStore((s) => s.locale);
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -132,27 +131,10 @@ export function AuthDialogs() {
           toast.error(result.error || t("auth.invalidCredentials", locale));
         }
       } else if (result?.ok) {
-        try {
-          const sessionRes = await fetch("/api/auth/session");
-          if (sessionRes.ok) {
-            const sessionData = await sessionRes.json();
-            if (sessionData?.user && typeof sessionData.user === "object") {
-              const u = sessionData.user;
-              const id = typeof u.id === "string" ? u.id : "";
-              const email = typeof u.email === "string" ? u.email : "";
-              const name = typeof u.name === "string" ? u.name : null;
-              const image = typeof u.image === "string" ? u.image : null;
-              const role = typeof u.role === "string" && ["admin", "teacher", "student"].includes(u.role) ? u.role : "student";
-              setUser({ id, email, name, image, role });
-              toast.success(
-                `${t("auth.welcome", locale)}, ${name || t("auth.user", locale)}!`
-              );
-            }
-          }
-        } catch (e: unknown) {
-          log.error("Session fetch failed", { error: e instanceof Error ? e.message : String(e) });
-          toast.error(t("auth.sessionError", locale));
-        }
+        // Session will be synced automatically by SessionSync in Providers via useSession()
+        toast.success(
+          `${t("auth.welcome", locale)}, ${loginForm.email || t("auth.user", locale)}!`
+        );
         closeDialog();
       }
     } catch (e: unknown) {

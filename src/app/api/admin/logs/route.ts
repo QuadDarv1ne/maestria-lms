@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
       },
       { headers: responseHeaders },
     );
-  } catch (error) {
+  } catch (error: unknown) {
     log.error("Failed to read logs", {
       error: error instanceof Error ? error.message : String(error),
     });

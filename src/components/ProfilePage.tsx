@@ -142,9 +142,9 @@ export function ProfilePage() {
   }, [favorites, locale]);
 
   const levelLabels: Record<string, string> = {
-    beginner: t("catalog.beginner", locale),
-    intermediate: t("catalog.intermediate", locale),
-    advanced: t("catalog.advanced", locale),
+    beginner: "catalog.beginner",
+    intermediate: "catalog.intermediate",
+    advanced: "catalog.advanced",
   };
 
   useEffect(() => {

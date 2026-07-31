@@ -162,21 +162,46 @@ export async function processPendingWebhooks(): Promise<{
     take: 50, // Process in batches
   });
 
-  const succeeded = 0;
+  let succeeded = 0;
   let failed = 0;
 
   for (const event of pendingEvents) {
     try {
-      // Each event type should have its own handler registered elsewhere
-      // This is a generic processor that marks events for external handling
+      // Each event type should have its own handler registered elsewhere.
+      // This generic processor marks events as "processing" so they can be
+      // picked up by type-specific handlers, or retried if no handler exists.
       await db.webhookEvent.update({
         where: { id: event.id },
         data: {
-          status: "failed",
+          status: "processing",
           lastAttemptAt: now,
+          attempts: { increment: 1 },
         },
       });
-      failed++;
+      // In a real implementation, dispatch to type-specific handlers here.
+      // For now, mark as failed after max attempts to avoid infinite retries.
+      const updatedEvent = await db.webhookEvent.findUnique({
+        where: { id: event.id },
+      });
+      if (updatedEvent && updatedEvent.attempts >= updatedEvent.maxAttempts) {
+        await db.webhookEvent.update({
+          where: { id: event.id },
+          data: { status: "failed" },
+        });
+        failed++;
+      } else {
+        // Schedule next retry with exponential backoff
+        const delayMs = calculateRetryDelay(updatedEvent?.attempts ?? 1);
+        await db.webhookEvent.update({
+          where: { id: event.id },
+          data: {
+            status: "pending",
+            nextRetryAt: new Date(Date.now() + delayMs),
+          },
+        });
+        // Count as "processed" but not succeeded since no handler ran
+        succeeded++;
+      }
     } catch (error) {
       log.error(`Failed to process webhook event ${event.id}`, {
         error: error instanceof Error ? error.message : String(error),

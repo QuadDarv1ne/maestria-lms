@@ -46,25 +46,25 @@ export const Footer = memo(function Footer() {
             </div>
             {/* VK Video и Rutube */}
             <div className="flex items-center gap-2">
-              <a
-                href={CONTACT.vkVideoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0077FF]/10 text-[#0077FF] text-xs font-medium hover:bg-[#0077FF]/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
-              >
-                <Play className="w-3.5 h-3.5" />
-                VK Video
-              </a>
-              <a
-                href={CONTACT.rutubeUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-600/10 text-orange-600 text-xs font-medium hover:bg-orange-600/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
-              >
-                <Play className="w-3.5 h-3.5" />
-                Rutube
-              </a>
-            </div>
+                <a
+                  href={CONTACT.vkVideoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0077FF]/10 text-[#0077FF] text-xs font-medium hover:bg-[#0077FF]/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <Play className="w-3.5 h-3.5" />
+                  VK Video
+                </a>
+                <a
+                  href={CONTACT.rutubeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-600/10 text-orange-600 text-xs font-medium hover:bg-orange-600/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <Play className="w-3.5 h-3.5" />
+                  Rutube
+                </a>
+              </div>
           </div>
 
           {/* Колонка 2: Обучение */}

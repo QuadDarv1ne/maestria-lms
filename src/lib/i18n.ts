@@ -1,7 +1,14 @@
 import type { Locale } from "./store";
 import { useAppStore } from "./store";
+import ruLocale from "./locales/ru.json";
+import enLocale from "./locales/en.json";
+import zhLocale from "./locales/zh.json";
 
-const translationCache: Partial<Record<Locale, Record<string, string>>> = {};
+const translationCache: Partial<Record<Locale, Record<string, string>>> = {
+  ru: ruLocale as Record<string, string>,
+  en: enLocale as Record<string, string>,
+  zh: zhLocale as Record<string, string>,
+};
 const loadingPromises: Partial<Record<Locale, Promise<void>>> = {};
 
 async function loadLocale(locale: Locale): Promise<void> {
@@ -23,24 +30,8 @@ async function loadLocale(locale: Locale): Promise<void> {
   return loadingPromises[locale];
 }
 
-const fallbackCache: Partial<Record<Locale, Record<string, string>>> = {};
-
 function ensureLocaleLoadedSync(locale: Locale): Record<string, string> | null {
-  const cached = fallbackCache[locale];
-  if (cached) return cached;
-  const isNode = typeof process !== "undefined" && process.versions?.node;
-  if (isNode) {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const data = require(`./locales/${locale}.json`);
-      const loaded = data.default || data;
-      fallbackCache[locale] = loaded;
-      return loaded;
-    } catch {
-      return null;
-    }
-  }
-  return null;
+  return translationCache[locale] ?? null;
 }
 
 export function t(key: string, locale?: Locale): string {

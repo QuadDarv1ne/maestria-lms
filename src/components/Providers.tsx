@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { SessionProvider } from "next-auth/react";
+import { SessionProvider, useSession } from "next-auth/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useAppStore, hydrateStore } from "@/lib/store";
 import { useSSENotifications } from "@/hooks/useSSENotifications";
@@ -39,39 +39,26 @@ function ServiceWorkerSync() {
   return null;
 }
 
+/** Sync next-auth session into Zustand store */
 function SessionSync() {
+  const { data: session, status } = useSession();
   const setUser = useAppStore((s) => s.setUser);
   const setSessionReady = useAppStore((s) => s.setSessionReady);
 
   useEffect(() => {
-    let cancelled = false;
-    const loadSession = async () => {
-      try {
-        const res = await fetch("/api/auth/session");
-        if (res.ok) {
-          const session = await res.json();
-          if (session?.user && !cancelled) {
-            setUser({
-              id: session.user.id || "",
-              email: session.user.email || "",
-              name: session.user.name || null,
-              image: session.user.image || null,
-              role: session.user.role || "student",
-            });
-          }
-        }
-      } catch (error: unknown) {
-        log.debug("Session load skipped for unauthenticated user", { error: error instanceof Error ? error.message : String(error) });
-      } finally {
-        if (!cancelled) {
-          setSessionReady();
-        }
-      }
-    };
+    if (status === "loading") return;
 
-    loadSession();
-    return () => { cancelled = true; };
-  }, [setUser, setSessionReady]);
+    if (session?.user) {
+      setUser({
+        id: (session.user as { id?: string }).id || "",
+        email: session.user.email || "",
+        name: session.user.name || null,
+        image: session.user.image || null,
+        role: (session.user as { role?: string }).role || "student",
+      });
+    }
+    setSessionReady();
+  }, [session, status, setUser, setSessionReady]);
 
   return null;
 }

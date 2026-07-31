@@ -133,29 +133,29 @@ export function handleCorsPreflight(
  * });
  * ```
  */
-export function withCors<T>(
+export function withCors(
   handler: (
     request: NextRequest,
     context: { params: Promise<Record<string, string>> },
-  ) => Promise<NextResponse<T>>,
+  ) => Promise<NextResponse<unknown>>,
   options: CorsOptions = {},
 ) {
   return async (
     request: NextRequest,
     context: { params: Promise<Record<string, string>> },
-  ): Promise<NextResponse<T>> => {
+  ): Promise<NextResponse> => {
     // Handle preflight
     if (request.method === "OPTIONS") {
       const preflightResponse = handleCorsPreflight(request, options);
       if (preflightResponse) {
-        return preflightResponse as NextResponse<T>;
+        return preflightResponse;
       }
-      return NextResponse.json({ error: "Origin not allowed" }, { status: 403 }) as NextResponse<T>;
+      return NextResponse.json({ error: "Origin not allowed" }, { status: 403 });
     }
 
     // Handle actual request
     const origin = request.headers.get("origin");
     const response = await handler(request, context);
-    return applyCorsHeaders(response, origin, options) as NextResponse<T>;
+    return applyCorsHeaders(response, origin, options);
   };
 }

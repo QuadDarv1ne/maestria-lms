@@ -117,7 +117,7 @@ export function CatalogPage() {
   }, [setCourseFilters]);
 
   const handleFreeOnlyToggle = useCallback(() => {
-    setCourseFilters((prev: { freeOnly: boolean }) => ({ freeOnly: !prev.freeOnly }));
+    setCourseFilters((prev) => ({ freeOnly: !prev.freeOnly }));
     setPagination((prev) => ({ ...prev, page: 1 }));
   }, [setCourseFilters]);
 

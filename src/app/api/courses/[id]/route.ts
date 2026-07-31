@@ -10,7 +10,6 @@ export const runtime = "nodejs";
 const checkRateLimit = rateLimit("courseDetail", RATE_LIMITS.default);
 
 // GET: Детальная информация о курсе
-export const revalidate = 60;
 
 export async function GET(
   request: NextRequest,

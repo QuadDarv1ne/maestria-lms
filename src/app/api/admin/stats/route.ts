@@ -53,36 +53,25 @@ export async function GET(request: NextRequest) {
         _sum: { amount: true },
         _count: true,
       }),
-      db.user.count({
-        where: {
-          isActive: true,
-          progress: {
-            some: {
-              lastAccessed: { gte: oneDayAgo },
-            },
-          },
-        },
-      }),
-      db.user.count({
-        where: {
-          isActive: true,
-          progress: {
-            some: {
-              lastAccessed: { gte: oneWeekAgo },
-            },
-          },
-        },
-      }),
-      db.user.count({
-        where: {
-          isActive: true,
-          progress: {
-            some: {
-              lastAccessed: { gte: oneMonthAgo },
-            },
-          },
-        },
-      }),
+      // Count distinct users with progress accessed in last day
+      // Using groupBy for cross-provider compatibility (distinct in count is PG/Mongo only)
+      db.progress.groupBy({
+        by: ["userId"],
+        where: { lastAccessed: { gte: oneDayAgo } },
+        _count: { userId: true },
+      }).then((r) => r.length),
+      // Count distinct users with progress accessed in last week
+      db.progress.groupBy({
+        by: ["userId"],
+        where: { lastAccessed: { gte: oneWeekAgo } },
+        _count: { userId: true },
+      }).then((r) => r.length),
+      // Count distinct users with progress accessed in last month
+      db.progress.groupBy({
+        by: ["userId"],
+        where: { lastAccessed: { gte: oneMonthAgo } },
+        _count: { userId: true },
+      }).then((r) => r.length),
     ]);
 
     const totalUsers = userCounts.reduce((sum, g) => sum + g._count, 0);
