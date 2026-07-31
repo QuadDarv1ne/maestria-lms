@@ -32,6 +32,21 @@ export async function GET(
   try {
     const { id: courseId, lessonId } = await params;
 
+    // Resolve course ID (support both UUID and slug)
+    const course = await db.course.findFirst({
+      where: { OR: [{ id: courseId }, { slug: courseId }] },
+      select: { id: true },
+    });
+
+    if (!course) {
+      return NextResponse.json(
+        { error: "Шаг не найден" },
+        { status: 404 }
+      );
+    }
+
+    const resolvedCourseId = course.id;
+
     // Получаем урок с информацией о модуле и курсе
     const lesson = await db.lesson.findUnique({
       where: { id: lessonId },
@@ -58,7 +73,7 @@ export async function GET(
       },
     });
 
-    if (!lesson || !lesson.module || lesson.module.courseId !== courseId) {
+    if (!lesson || !lesson.module || lesson.module.courseId !== resolvedCourseId) {
       return NextResponse.json(
         { error: "Шаг не найден" },
         { status: 404 }
@@ -77,7 +92,7 @@ export async function GET(
         where: {
           userId_courseId: {
             userId,
-            courseId,
+            courseId: resolvedCourseId,
           },
         },
       });
@@ -107,7 +122,7 @@ export async function GET(
     // ====== Вычисляем глобальный prev/next шаг через все модули ======
     // Получаем все модули курса с их уроками, отсортированные
     const courseModules = await db.module.findMany({
-      where: { courseId },
+      where: { courseId: resolvedCourseId },
       orderBy: { sortOrder: "asc" },
       include: {
         lessons: {
@@ -194,20 +209,32 @@ export async function POST(
 
     const userId = session.user.id;
 
+    // Resolve course ID (support both UUID and slug)
+    const course = await db.course.findFirst({
+      where: { OR: [{ id: courseId }, { slug: courseId }] },
+      select: { id: true },
+    });
+
+    if (!course) {
+      return NextResponse.json({ error: "Шаг не найден" }, { status: 404 });
+    }
+
+    const resolvedCourseId = course.id;
+
     // Проверяем запись на курс или бесплатность урока
     const lesson = await db.lesson.findUnique({
       where: { id: lessonId },
       include: { module: { select: { courseId: true } } },
     });
 
-    if (!lesson || !lesson.module || lesson.module.courseId !== courseId) {
+    if (!lesson || !lesson.module || lesson.module.courseId !== resolvedCourseId) {
       return NextResponse.json({ error: "Шаг не найден" }, { status: 404 });
     }
 
     if (!lesson.isFree) {
       const enrollment = await db.enrollment.findUnique({
         where: {
-          userId_courseId: { userId, courseId },
+          userId_courseId: { userId, courseId: resolvedCourseId },
         },
       });
       if (!enrollment || enrollment.status !== "active") {
@@ -252,9 +279,12 @@ export async function POST(
     });
 
     // Пересчитываем общий прогресс курса
-    const course = await db.course.findUnique({
-      where: { id: courseId },
-      include: {
+    const courseData = await db.course.findUnique({
+      where: { id: resolvedCourseId },
+      select: {
+        id: true,
+        title: true,
+        hasCertificate: true,
         modules: {
           include: {
             lessons: { select: { id: true } },
@@ -263,8 +293,8 @@ export async function POST(
       },
     });
 
-    if (course) {
-      const allLessonIds = course.modules.flatMap((m) =>
+    if (courseData) {
+      const allLessonIds = courseData.modules.flatMap((m) =>
         m.lessons.map((l) => l.id)
       );
       const completedLessons = await db.progress.count({
@@ -283,7 +313,7 @@ export async function POST(
       // Обновляем enrollment
       const enrollment = await db.enrollment.findUnique({
         where: {
-          userId_courseId: { userId, courseId },
+          userId_courseId: { userId, courseId: resolvedCourseId },
         },
       });
 
@@ -301,7 +331,7 @@ export async function POST(
           });
 
           // Auto-create certificate on first-time completion (inside transaction to prevent duplicates)
-          if (courseProgress === 100 && !wasAlreadyCompleted && course.hasCertificate) {
+          if (courseProgress === 100 && !wasAlreadyCompleted && courseData.hasCertificate) {
             const existingCert = await tx.certificate.findUnique({
               where: { userId_courseId: { userId, courseId } },
               select: { id: true },
@@ -314,7 +344,7 @@ export async function POST(
               await tx.certificate.create({
                 data: {
                   userId,
-                  courseId,
+                  courseId: resolvedCourseId,
                   certificateNumber: certNumber,
                 },
               });
@@ -328,18 +358,18 @@ export async function POST(
             userId,
             type: "completion",
             title: "Курс пройден!",
-            message: `Поздравляем! Вы завершили курс "${course.title}"`,
-            link: `/course/${course.id}`,
+            message: `Поздравляем! Вы завершили курс "${courseData.title}"`,
+            link: `/course/${courseData.id}`,
           }).catch((err) => log.error("Failed to send completion notification", { error: err }));
 
-          if (course.hasCertificate && session.user.email) {
+          if (courseData.hasCertificate && session.user.email) {
             const siteUrl = env.siteUrl;
             sendEmail({
               to: session.user.email,
               ...certificateEmail(
                 session.user.name || "пользователь",
-                course.title,
-                `${siteUrl}/certificate/${course.id}`,
+                courseData.title,
+                `${siteUrl}/certificate/${courseData.id}`,
               ),
             }).catch((err) => log.error("Failed to send certificate email", { error: err }));
           }

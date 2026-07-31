@@ -33,13 +33,28 @@ export async function POST(
 
     const { id: courseId, assignmentId } = await params;
 
+    // Resolve course ID (support both UUID and slug)
+    const course = await db.course.findFirst({
+      where: { OR: [{ id: courseId }, { slug: courseId }] },
+      select: { id: true },
+    });
+
+    if (!course) {
+      return NextResponse.json(
+        { error: "Задание не найдено" },
+        { status: 404 }
+      );
+    }
+
+    const resolvedCourseId = course.id;
+
     // Проверяем что assignment существует и принадлежит курсу
     const assignment = await db.assignment.findFirst({
       where: {
         id: assignmentId,
         lesson: {
           module: {
-            courseId,
+            courseId: resolvedCourseId,
           },
         },
       },
@@ -64,7 +79,7 @@ export async function POST(
       where: {
         userId_courseId: {
           userId: session.user.id,
-          courseId,
+          courseId: resolvedCourseId,
         },
       },
     });

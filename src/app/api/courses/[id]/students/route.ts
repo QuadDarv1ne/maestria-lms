@@ -26,9 +26,9 @@ export async function GET(
   addRateLimitHeaders(responseHeaders, "default", request, userId);
 
   try {
-    // Verify course exists and check access
-    const course = await db.course.findUnique({
-      where: { id },
+    // Verify course exists and check access (support both UUID and slug)
+    const course = await db.course.findFirst({
+      where: { OR: [{ id }, { slug: id }] },
       select: { id: true, teacherId: true, title: true },
     });
 
@@ -38,6 +38,9 @@ export async function GET(
         { status: 404 },
       );
     }
+
+    // Use resolved course.id for all DB operations
+    const resolvedCourseId = course.id;
 
     // Only teacher of the course or admin can view students
     if (course.teacherId !== userId && !isAdmin) {
@@ -54,7 +57,7 @@ export async function GET(
     const search = searchParams.get("search") ?? null;
 
     // Build where clause
-    const where: Prisma.EnrollmentWhereInput = { courseId: id };
+    const where: Prisma.EnrollmentWhereInput = { courseId: resolvedCourseId };
     if (status) {
       where.status = status;
     }
