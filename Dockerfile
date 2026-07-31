@@ -63,6 +63,9 @@ RUN mkdir .next && chown nextjs:nodejs .next
 
 # Automatically leverage output traces for minimal image
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+
+# Copy CSP-aware server wrapper (handles Amvera's CSP header injection)
+COPY --from=builder --chown=nextjs:nodejs /app/server-with-csp.js ./server-with-csp.js
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Copy Prisma files for runtime (client + migrate engine)

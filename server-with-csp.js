@@ -1,16 +1,18 @@
 /**
  * Custom production server for Maestria LMS
  *
- * Wraps Next.js to inject CSP nonces into HTML responses.
+ * Wraps the Next.js standalone server to inject CSP nonces into HTML responses.
  *
  * PROBLEM: Amvera's nginx reverse proxy injects a restrictive CSP header:
  *   Content-Security-Policy: script-src 'self' 'sha256-...'
- * This blocks all Next.js inline bootstrap scripts.
+ * This blocks all Next.js inline bootstrap scripts (which have different
+ * hashes on every build), causing the entire site to render blank.
  *
  * SOLUTION: This server:
- * 1. Creates a NextServer instance
- * 2. Wraps the request handler to intercept HTML responses
- * 3. Adds nonce attributes to all <script> tags
+ * 1. Spawns the Next.js standalone server (server.js) as a child process
+ *    on an internal port
+ * 2. Acts as a reverse proxy using Node.js built-in http module
+ * 3. Intercepts HTML responses to add nonce attributes to <script> tags
  * 4. Strips Amvera's CSP header and injects <meta> CSP tag with nonce
  *
  * USAGE: node server-with-csp.js
@@ -20,9 +22,12 @@
 
 const http = require("http");
 const { randomBytes } = require("crypto");
+const { spawn } = require("child_process");
+const path = require("path");
 
 const PORT = parseInt(process.env.PORT || "3000", 10);
 const HOSTNAME = process.env.HOSTNAME || "0.0.0.0";
+const INTERNAL_PORT = PORT + 1;
 
 function generateNonce() {
   return randomBytes(16).toString("base64url");
@@ -34,29 +39,27 @@ function isHtmlResponse(contentType) {
 
 /**
  * Transform HTML to inject nonces and CSP meta tag.
- * Strips any existing CSP meta tags first, then adds our own.
  */
 function transformHtml(html, nonce) {
-  // Remove any existing CSP meta tags to avoid conflicts
+  // Remove any existing CSP meta tags
   html = html.replace(
     /<meta[^>]*http-equiv=["']Content-Security-Policy["'][^>]*>/gi,
     ""
   );
 
-  // Add nonce to all <script> tags that don't already have one
+  // Add nonce to all <script> tags without one
   html = html.replace(
     /<script\b(?![^>]*\bnonce\s*=)/gi,
     (match) => `<script nonce="${nonce}"`
   );
 
-  // Add nonce to all <style> tags that don't already have one
+  // Add nonce to all <style> tags without one
   html = html.replace(
     /<style\b(?![^>]*\bnonce\s*=)/gi,
     (match) => `<style nonce="${nonce}"`
   );
 
   // Inject CSP <meta> tag right after <head>
-  // This CSP allows everything needed for Next.js to function
   const cspMeta = [
     `<meta`,
     ` http-equiv="Content-Security-Policy"`,
@@ -76,149 +79,133 @@ function transformHtml(html, nonce) {
   ].join("");
 
   html = html.replace("<head>", `<head>${cspMeta}`);
-
   return html;
+}
+
+/**
+ * Forward a request to the internal Next.js server and return the response.
+ * Uses only Node.js built-in modules (no external dependencies).
+ */
+function forwardRequest(req, res, nonce) {
+  const startTime = Date.now();
+  const options = {
+    hostname: "127.0.0.1",
+    port: INTERNAL_PORT,
+    path: req.url,
+    method: req.method,
+    headers: { ...req.headers },
+  };
+
+  // Remove host header to avoid conflicts
+  delete options.headers.host;
+
+  const proxyReq = http.request(options, (proxyRes) => {
+    const chunks = [];
+
+    proxyRes.on("data", (chunk) => {
+      chunks.push(chunk);
+    });
+
+    proxyRes.on("end", () => {
+      const body = Buffer.concat(chunks);
+      const contentType = proxyRes.headers["content-type"] || "";
+
+      // Copy headers, stripping CSP
+      const responseHeaders = { ...proxyRes.headers };
+      delete responseHeaders["content-security-policy"];
+      delete responseHeaders["content-security-policy-report-only"];
+
+      if (isHtmlResponse(contentType)) {
+        const html = body.toString("utf-8");
+        const transformedHtml = transformHtml(html, nonce);
+        const newBody = Buffer.from(transformedHtml, "utf-8");
+        responseHeaders["content-length"] = String(newBody.length);
+
+        res.writeHead(proxyRes.statusCode, responseHeaders);
+        res.end(newBody);
+      } else {
+        res.writeHead(proxyRes.statusCode, responseHeaders);
+        res.end(body);
+      }
+
+      const duration = Date.now() - startTime;
+      console.log(`[server-with-csp] ${req.method} ${req.url} → ${proxyRes.statusCode} (${duration}ms)`);
+    });
+  });
+
+  proxyReq.on("error", (err) => {
+    console.error(`[server-with-csp] Proxy error for ${req.method} ${req.url}:`, err.message);
+    if (!res.headersSent) {
+      res.writeHead(502, { "Content-Type": "text/plain" });
+      res.end("Bad Gateway");
+    }
+  });
+
+  // Forward the request body
+  if (req.body || req.method !== "GET") {
+    const bodyChunks = [];
+    req.on("data", (chunk) => bodyChunks.push(chunk));
+    req.on("end", () => {
+      const body = Buffer.concat(bodyChunks);
+      proxyReq.end(body);
+    });
+  } else {
+    proxyReq.end();
+  }
 }
 
 async function startServer() {
   console.log("[server-with-csp] Starting Maestria LMS with CSP nonce injection...");
 
-  // Load the Next.js server module
-  // In standalone mode, server.js is a self-contained HTTP server
-  // We need to intercept its HTTP server creation
-  const next = require("next");
+  // Start the Next.js standalone server on an internal port
+  const serverJsPath = path.join(__dirname, "server.js");
+  console.log(`[server-with-csp] Spawning Next.js server: node ${serverJsPath} on port ${INTERNAL_PORT}`);
 
-  // Create Next.js app in production mode
-  const app = next({
-    dev: false,
-    hostname: HOSTNAME,
-    port: PORT,
-    dir: process.cwd(),
-    customServer: true,
+  const nextServer = spawn("node", [serverJsPath], {
+    env: {
+      ...process.env,
+      PORT: String(INTERNAL_PORT),
+      HOSTNAME: "127.0.0.1",
+    },
+    stdio: ["pipe", "inherit", "inherit"],
   });
 
-  // Get the request handler
-  const handle = app.getRequestHandler();
+  nextServer.on("error", (err) => {
+    console.error("[server-with-csp] Failed to spawn Next.js server:", err.message);
+    process.exit(1);
+  });
 
-  // Prepare the app (loads config, builds the request handler)
-  await app.prepare();
+  // Wait for the Next.js server to start
+  await new Promise((resolve) => setTimeout(resolve, 3000));
 
-  // Create HTTP server
-  const server = http.createServer(async (req, res) => {
-    const startTime = Date.now();
+  // Create the proxy server
+  const server = http.createServer((req, res) => {
     const nonce = generateNonce();
-
-    try {
-      // Store nonce for the request so Next.js can use it
-      req.nonce = nonce;
-
-      // Intercept res.writeHead and res.end to modify HTML responses
-      const originalWriteHead = res.writeHead.bind(res);
-      const originalEnd = res.end.bind(res);
-      const originalWrite = res.write.bind(res);
-
-      let bodyChunks = [];
-      let headers = {};
-      let statusCode = 200;
-      let headersSent = false;
-
-      // Override writeHead to capture headers
-      res.writeHead = function (status, statusHeaders, ...args) {
-        if (typeof status === "number") {
-          statusCode = status;
-          if (statusHeaders) {
-            headers = { ...headers, ...statusHeaders };
-          }
-        } else if (typeof status === "object") {
-          headers = { ...headers, ...status };
-        }
-        // Don't call original yet - wait until end
-        return res;
-      };
-
-      // Override setHeader to capture headers
-      const originalSetHeader = res.setHeader.bind(res);
-      res.setHeader = function (key, value) {
-        headers[key] = value;
-        return res;
-      };
-
-      // Override write to capture body chunks
-      res.write = function (chunk) {
-        if (chunk) {
-          bodyChunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-        }
-        return true;
-      };
-
-      // Override end to process the response
-      res.end = function (chunk) {
-        if (chunk) {
-          bodyChunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-        }
-
-        const contentType = headers["content-type"] || headers["Content-Type"] || "";
-        const body = Buffer.concat(bodyChunks);
-
-        if (isHtmlResponse(contentType)) {
-          // Transform HTML: inject nonces and CSP meta tag
-          const html = body.toString("utf-8");
-          const transformedHtml = transformHtml(html, nonce);
-
-          // Strip CSP header (Amvera's proxy injects it, we replace with meta tag)
-          delete headers["content-security-policy"];
-          delete headers["Content-Security-Policy"];
-          delete headers["content-security-policy-report-only"];
-          delete headers["Content-Security-Policy-Report-Only"];
-
-          // Update content-length
-          const newBody = Buffer.from(transformedHtml, "utf-8");
-          headers["content-length"] = String(newBody.length);
-
-          // Send the modified response
-          originalWriteHead(statusCode, headers);
-          originalEnd(newBody);
-        } else {
-          // Pass through non-HTML responses unchanged
-          originalWriteHead(statusCode, headers);
-          if (body.length > 0) {
-            originalEnd(body);
-          } else {
-            originalEnd();
-          }
-        }
-
-        const duration = Date.now() - startTime;
-        console.log(`[server-with-csp] ${req.method} ${req.url} → ${statusCode} (${duration}ms)`);
-      };
-
-      // Let Next.js handle the request
-      await handle(req, res);
-    } catch (err) {
-      console.error(`[server-with-csp] Error handling ${req.method} ${req.url}:`, err.message);
-      if (!res.headersSent) {
-        res.writeHead(502, { "Content-Type": "text/plain" });
-        res.end("Bad Gateway");
-      }
-    }
+    forwardRequest(req, res, nonce);
   });
 
   server.listen(PORT, HOSTNAME, () => {
-    console.log(`[server-with-csp] Server listening on http://${HOSTNAME}:${PORT}`);
+    console.log(`[server-with-csp] Proxy listening on http://${HOSTNAME}:${PORT}`);
+    console.log(`[server-with-csp] Forwarding to internal Next.js on http://127.0.0.1:${INTERNAL_PORT}`);
     console.log(`[server-with-csp] CSP nonce injection enabled`);
   });
 
   // Graceful shutdown
   const shutdown = () => {
     console.log("[server-with-csp] Shutting down...");
-    server.close(() => {
-      console.log("[server-with-csp] Server closed");
-      process.exit(0);
-    });
+    nextServer.kill("SIGTERM");
+    server.close(() => process.exit(0));
+    // Force exit after 5s
+    setTimeout(() => process.exit(1), 5000);
   };
 
   process.on("SIGTERM", shutdown);
   process.on("SIGINT", shutdown);
+
+  nextServer.on("exit", (code) => {
+    console.error(`[server-with-csp] Next.js server exited with code ${code}`);
+    process.exit(code);
+  });
 }
 
 startServer().catch((err) => {
