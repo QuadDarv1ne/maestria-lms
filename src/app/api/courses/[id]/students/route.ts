@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, Prisma } from "@/lib/db";
+import { db } from "@/lib/db";
+import type { Prisma } from "@/lib/db";
 import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { addRateLimitHeaders } from "@/lib/rate-limit";
 import { log } from "@/lib/logger";

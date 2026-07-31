@@ -10,8 +10,6 @@ export const dynamic = "force-dynamic";
 const checkRateLimit = rateLimit("achievements", RATE_LIMITS.default);
 
 // GET: Supplementary data for achievements calculation
-export const revalidate = 120;
-
 export async function GET(request: Request) {
   try {
     const blocked = checkRateLimit(request);

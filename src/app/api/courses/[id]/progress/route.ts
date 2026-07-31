@@ -34,10 +34,25 @@ export async function GET(
 
     const userId = session.user.id;
 
+    // Resolve course ID (support both UUID and slug)
+    const course = await db.course.findFirst({
+      where: { OR: [{ id: courseId }, { slug: courseId }] },
+      select: { id: true, title: true },
+    });
+
+    if (!course) {
+      return NextResponse.json(
+        { error: "Course not found" },
+        { status: 404 }
+      );
+    }
+
+    const resolvedCourseId = course.id;
+
     // Verify enrollment
     const enrollment = await db.enrollment.findUnique({
       where: {
-        userId_courseId: { userId, courseId },
+        userId_courseId: { userId, courseId: resolvedCourseId },
       },
       select: { id: true, status: true, progress: true },
     });
@@ -50,8 +65,8 @@ export async function GET(
     }
 
     // Get course structure (modules + lessons)
-    const course = await db.course.findUnique({
-      where: { id: courseId },
+    const courseWithModules = await db.course.findUnique({
+      where: { id: resolvedCourseId },
       include: {
         modules: {
           include: {
@@ -70,7 +85,7 @@ export async function GET(
       },
     });
 
-    if (!course) {
+    if (!courseWithModules) {
       return NextResponse.json(
         { error: "Course not found" },
         { status: 404 }
@@ -78,7 +93,7 @@ export async function GET(
     }
 
     // Get all progress records for this user in this course
-    const allLessonIds = course.modules.flatMap((m) =>
+    const allLessonIds = courseWithModules.modules.flatMap((m) =>
       m.lessons.map((l) => l.id)
     );
 
@@ -114,7 +129,7 @@ export async function GET(
         : 0;
 
     // Build module-level progress
-    const modulesWithProgress = course.modules.map((module) => {
+    const modulesWithProgress = courseWithModules.modules.map((module) => {
       const moduleLessons = module.lessons.length;
       const moduleCompleted = module.lessons.filter((l) => {
         const p = progressMap.get(l.id);
@@ -189,7 +204,7 @@ export async function GET(
 
     return NextResponse.json({
       courseId,
-      courseTitle: course.title,
+      courseTitle: courseWithModules.title,
       enrollmentStatus: enrollment.status,
       enrollmentProgress: enrollment.progress,
       overall: {
@@ -224,10 +239,25 @@ export async function PATCH(
 
     const userId = session.user.id;
 
+    // Resolve course ID (support both UUID and slug)
+    const course = await db.course.findFirst({
+      where: { OR: [{ id: courseId }, { slug: courseId }] },
+      select: { id: true },
+    });
+
+    if (!course) {
+      return NextResponse.json(
+        { error: "Course not found" },
+        { status: 404 }
+      );
+    }
+
+    const resolvedCourseId = course.id;
+
     // Verify enrollment
     const enrollment = await db.enrollment.findUnique({
       where: {
-        userId_courseId: { userId, courseId },
+        userId_courseId: { userId, courseId: resolvedCourseId },
       },
       select: { id: true, status: true },
     });
@@ -268,7 +298,7 @@ export async function PATCH(
       },
     });
 
-    if (!lesson || lesson.module.courseId !== courseId) {
+    if (!lesson || lesson.module.courseId !== resolvedCourseId) {
       return NextResponse.json(
         { error: "Lesson not found in this course" },
         { status: 404 }
@@ -301,7 +331,7 @@ export async function PATCH(
     // Recalculate course-level progress
     const allLessonIds = (
       await db.lesson.findMany({
-        where: { module: { courseId } },
+        where: { module: { courseId: resolvedCourseId } },
         select: { id: true },
       })
     ).map((l) => l.id);

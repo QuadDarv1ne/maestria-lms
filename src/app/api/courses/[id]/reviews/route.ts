@@ -20,8 +20,6 @@ const checkPostRateLimit = rateLimit("review", RATE_LIMITS.review);
 const checkGetRateLimit = rateLimit("reviewGet", RATE_LIMITS.default);
 
 // GET: Get paginated reviews for a course
-export const revalidate = 60;
-
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

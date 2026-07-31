@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
+import { log } from "@/lib/logger";
 import { MS } from "@/lib/constants";
 import { z } from "zod";
 
@@ -74,7 +75,11 @@ export async function DELETE(request: NextRequest) {
     // This runs opportunistically on notification cleanup to avoid a dedicated cron job
     const staleTokenCleanup = db.verificationToken.deleteMany({
       where: { expires: { lt: new Date(Date.now() - MS.DAY) } },
-    }).catch(() => {});
+    }).catch((err) => {
+      log.warn("Failed to clean up stale verification tokens", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
 
     const result = await db.notification.deleteMany({
       where: {
