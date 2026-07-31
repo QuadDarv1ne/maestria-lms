@@ -207,7 +207,7 @@ export function validateApiVersion(request: Request): NextResponse | null {
  * });
  * ```
  */
-export function withApiVersion<T>(
+export function withApiVersion(
   handler: (request: Request, version: ApiVersion) => Promise<NextResponse>,
 ): (request: Request) => Promise<NextResponse> {
   return async (request: Request) => {

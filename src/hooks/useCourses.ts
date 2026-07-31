@@ -146,11 +146,11 @@ export interface Review {
   };
 }
 
-export function useCourseReviews(courseId: string | undefined, page = 1) {
+export function useCourseReviews(courseId: string | undefined, page = 1, limit = 10) {
   return useQuery<{ reviews: Review[]; pagination: { page: number; total: number; totalPages: number } }>({
-    queryKey: ["course-reviews", courseId, page],
+    queryKey: ["course-reviews", courseId, page, limit],
     queryFn: async ({ signal }) => {
-      const res = await fetch(`/api/courses/${courseId}/reviews?page=${page}&limit=10`, { signal });
+      const res = await fetch(`/api/courses/${courseId}/reviews?page=${page}&limit=${limit}`, { signal });
       if (!res.ok) {
         const error = await res.json().catch(() => ({ error: null }));
         throw new Error(error?.error || `Failed to fetch reviews (${res.status})`);

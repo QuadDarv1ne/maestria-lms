@@ -132,7 +132,7 @@ export function StepQuiz({ step, locale }: StepComponentProps) {
 
                   return (
                     <label key={optIdx} className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${optionClass} ${isSubmitted ? "cursor-default" : "cursor-pointer"}`}>
-                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${isSelected ? isSubmitted ? isCorrectOption ? "border-green-500 bg-green-500" : "border-red-500 bg-red-500" : "border-blue-500 bg-blue-500" : "border-gray-300 dark:border-gray-600"}`}>
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${isSelected ? isSubmitted ? isCorrectOption ? "border-green-500 bg-green-500" : "border-red-500 bg-red-500" : "border-blue-500 bg-blue-500" : "border-gray-300 dark:border-gray-600"}`}>
                         {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
                       </div>
                       <span className="text-sm">{opt}</span>

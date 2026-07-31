@@ -64,7 +64,7 @@ export const CourseCard = React.memo(function CourseCard({ course, onClick }: Co
       onClick={onClick}
     >
       <CardContent className="p-0">
-        <div className="relative h-40 flex items-center justify-center overflow-hidden bg-gradient-to-br from-blue-500 to-violet-600">
+        <div className="relative h-40 flex items-center justify-center overflow-hidden bg-linear-to-br from-blue-500 to-violet-600">
           {course.image ? (
             <CourseImage
               src={course.image}

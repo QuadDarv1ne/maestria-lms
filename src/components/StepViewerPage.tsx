@@ -272,7 +272,7 @@ export function StepViewerPage({
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-violet-600 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
+          <div className="w-16 h-16 bg-linear-to-br from-blue-600 to-violet-600 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
             <GraduationCap className="w-8 h-8 text-white" />
           </div>
           <p className="text-muted-foreground">{t("common.loading", locale)}</p>
@@ -424,7 +424,7 @@ export function StepViewerPage({
                 step.prevStepId &&
                 router.push(`/course/${courseId}/lesson/${step.prevStepId}`)
               }
-              className="flex-shrink-0"
+              className="shrink-0"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               <span className="hidden sm:inline">{t("course.step.prev", locale)}</span>
@@ -457,7 +457,7 @@ export function StepViewerPage({
                 step.nextStepId &&
                 router.push(`/course/${courseId}/lesson/${step.nextStepId}`)
               }
-              className="flex-shrink-0"
+              className="shrink-0"
             >
               <span className="hidden sm:inline">{t("course.step.next", locale)}</span>
               <span className="sm:hidden">{t("course.step.continue", locale)}</span>

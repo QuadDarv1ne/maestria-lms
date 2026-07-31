@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
   try {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-    const [enrollments, recentProgress, totalLessons] = await Promise.all([
+    const [enrollments, recentProgress] = await Promise.all([
       // All enrollments with course info
       db.enrollment.findMany({
         where: { userId },
@@ -65,9 +65,6 @@ export async function GET(request: NextRequest) {
         select: { lessonId: true, lastAccessed: true, timeSpent: true },
         orderBy: { lastAccessed: "desc" },
       }),
-
-      // Total lessons count for progress calculation
-      db.lesson.count(),
     ]);
 
     // Compute stats

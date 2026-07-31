@@ -49,7 +49,7 @@ export function PromoBanner() {
               rel="noopener noreferrer"
               className="flex items-center gap-3 p-3 rounded-lg bg-white/10 hover:bg-white/20 transition-colors group"
             >
-              <Globe className="w-5 h-5 flex-shrink-0" />
+              <Globe className="w-5 h-5 shrink-0" />
               <span className="text-sm font-medium group-hover:underline">
                 {t("banner.contactProfile", locale)}
               </span>
@@ -59,7 +59,7 @@ export function PromoBanner() {
               href={`mailto:${CONTACT.email}`}
               className="flex items-center gap-3 p-3 rounded-lg bg-white/10 hover:bg-white/20 transition-colors group"
             >
-              <Mail className="w-5 h-5 flex-shrink-0" />
+              <Mail className="w-5 h-5 shrink-0" />
               <span className="text-sm font-medium group-hover:underline">
                 {CONTACT.email}
               </span>
@@ -68,7 +68,7 @@ export function PromoBanner() {
               href={`tel:${CONTACT.phoneTel}`}
               className="flex items-center gap-3 p-3 rounded-lg bg-white/10 hover:bg-white/20 transition-colors group"
             >
-              <Phone className="w-5 h-5 flex-shrink-0" />
+              <Phone className="w-5 h-5 shrink-0" />
               <span className="text-sm font-medium group-hover:underline">
                 {CONTACT.phone}
               </span>

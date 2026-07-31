@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
       { data: { unreadCount: count } },
       { headers: responseHeaders },
     );
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to fetch unread count", code: "INTERNAL_ERROR" },
       { status: 500 },

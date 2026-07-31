@@ -356,7 +356,7 @@ export function CertificatePage({ courseId }: { courseId: string }) {
             <div className="flex flex-col items-center gap-2">
               {/* Maestria logo */}
               <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-700 to-violet-600 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-lg bg-linear-to-br from-blue-700 to-violet-600 flex items-center justify-center">
                   <Award className="w-6 h-6 text-white" />
                 </div>
                 <span
@@ -428,7 +428,7 @@ export function CertificatePage({ courseId }: { courseId: string }) {
                   <div className="absolute inset-0 rounded-full border-[3px] border-amber-500/70" />
                   <div className="absolute inset-1.5 rounded-full border border-amber-400/40" />
                   {/* inner */}
-                  <div className="absolute inset-3 rounded-full bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center">
+                  <div className="absolute inset-3 rounded-full bg-linear-to-br from-amber-50 to-amber-100 flex items-center justify-center">
                     <ShieldCheck className="w-8 h-8 text-amber-600" />
                   </div>
                 </div>

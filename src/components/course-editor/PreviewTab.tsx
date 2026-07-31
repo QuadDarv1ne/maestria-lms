@@ -47,7 +47,7 @@ export function PreviewTab({
     <div className="space-y-4">
       <Card className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30">
         <CardContent className="p-4 flex items-center gap-3">
-          <Eye className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+          <Eye className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
           <p className="text-sm text-amber-800 dark:text-amber-300">
             {t("courseEditor.previewBanner", locale)}
           </p>
@@ -55,7 +55,7 @@ export function PreviewTab({
       </Card>
 
       <div className="rounded-xl overflow-hidden">
-        <section className="bg-gradient-to-br from-blue-800 to-violet-800 text-white">
+        <section className="bg-linear-to-br from-blue-800 to-violet-800 text-white">
           <div className="container mx-auto px-6 py-8">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2">
@@ -169,7 +169,7 @@ export function PreviewTab({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {form.whatYouLearn.filter(Boolean).map((item, i) => (
                       <div key={i} className="flex items-start gap-2">
-                        <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                        <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
                         <span className="text-sm">{item}</span>
                       </div>
                     ))}

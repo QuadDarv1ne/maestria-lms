@@ -152,7 +152,7 @@ export function NotificationsPage() {
         {/* Page Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-700 to-violet-600 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-linear-to-br from-blue-700 to-violet-600 rounded-lg flex items-center justify-center">
               <BellRing className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -184,7 +184,7 @@ export function NotificationsPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-700 to-violet-600 rounded-lg flex items-center justify-center">
+          <div className="w-10 h-10 bg-linear-to-br from-blue-700 to-violet-600 rounded-lg flex items-center justify-center">
             <BellRing className="w-5 h-5 text-white" />
           </div>
           <div>
@@ -233,7 +233,7 @@ export function NotificationsPage() {
                 <div className="flex items-start gap-3">
                   {/* Icon */}
                   <div
-                    className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${config.iconBg}`}
+                    className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${config.iconBg}`}
                   >
                     <Icon className={`w-5 h-5 ${config.iconColor}`} />
                   </div>
@@ -251,7 +251,7 @@ export function NotificationsPage() {
                             {notification.title}
                           </h3>
                           <Badge
-                            className={`${config.badgeColor} border-0 text-[10px] font-medium flex-shrink-0`}
+                            className={`${config.badgeColor} border-0 text-[10px] font-medium shrink-0`}
                           >
                             {config.label}
                           </Badge>
@@ -268,9 +268,9 @@ export function NotificationsPage() {
                       </div>
 
                       {/* Right side: unread dot + time */}
-                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                      <div className="flex flex-col items-end gap-1 shrink-0">
                         {isUnread && (
-                          <span className="w-2.5 h-2.5 rounded-full bg-blue-500 flex-shrink-0" />
+                          <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0" />
                         )}
                         <span className="text-xs text-muted-foreground whitespace-nowrap">
                           {formatTimeAgo(notification.createdAt, locale)}

@@ -39,7 +39,7 @@ export function AboutPage() {
   return (
     <div>
       {/* ===== 1. Hero Section ===== */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-blue-800 via-violet-700 to-indigo-900">
+      <section className="relative overflow-hidden bg-linear-to-br from-blue-800 via-violet-700 to-indigo-900">
         <div className="absolute inset-0 bg-black/10" />
         {/* Decorative circles */}
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/5 rounded-full blur-3xl" />

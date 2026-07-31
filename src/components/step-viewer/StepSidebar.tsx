@@ -100,7 +100,7 @@ export function StepSidebar({
                 <div key={module.id} className="mb-2">
                   <div className="flex items-center gap-2 px-3 py-2">
                     <div
-                      className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${
                         moduleCompleted
                           ? "bg-green-100 text-green-700"
                           : moduleStarted
@@ -146,7 +146,7 @@ export function StepSidebar({
                         }}
                         disabled={isLocked && !isActive}
                       >
-                        <div className="flex-shrink-0">
+                        <div className="shrink-0">
                           {lesson.completed ? (
                             <CheckCircle2 className="w-4 h-4 text-green-600" />
                           ) : isLocked ? (
@@ -161,7 +161,7 @@ export function StepSidebar({
                         </div>
                         <span className="flex-1 truncate">{lesson.title}</span>
                         {lesson.isFree && !lesson.completed && (
-                          <Badge variant="outline" className="text-[10px] px-1 py-0 text-green-600 dark:text-green-400 border-green-300 dark:border-green-700 flex-shrink-0">
+                          <Badge variant="outline" className="text-[10px] px-1 py-0 text-green-600 dark:text-green-400 border-green-300 dark:border-green-700 shrink-0">
                             {t("common.free", locale)}
                           </Badge>
                         )}
@@ -174,7 +174,7 @@ export function StepSidebar({
           </div>
 
           {courseStructure?.progress === 100 && (
-            <div className="p-4 m-2 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-xl border border-amber-200 dark:border-amber-800">
+            <div className="p-4 m-2 bg-linear-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-xl border border-amber-200 dark:border-amber-800">
               <div className="text-center">
                 <Trophy className="w-10 h-10 text-amber-500 mx-auto mb-2" />
                 <p className="font-bold text-amber-800 text-sm">{t("course.step.courseCompleted", locale)}</p>

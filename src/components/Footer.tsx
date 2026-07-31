@@ -32,7 +32,7 @@ export const Footer = memo(function Footer() {
           {/* Колонка 1: О платформе */}
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-violet-600 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-linear-to-br from-blue-600 to-violet-600 rounded-lg flex items-center justify-center">
                 <GraduationCap className="w-4 h-4 text-white" />
               </div>
               <span className="text-lg font-bold">Maestria</span>

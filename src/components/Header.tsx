@@ -121,7 +121,7 @@ export function Header() {
           aria-label={t("nav.home", locale)}
           className="flex items-center gap-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
-           <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-violet-600 rounded-lg flex items-center justify-center">
+           <div className="w-9 h-9 bg-linear-to-br from-blue-600 to-violet-600 rounded-lg flex items-center justify-center">
             <GraduationCap className="w-5 h-5 text-white" />
           </div>
           <div className="hidden sm:block">
@@ -345,7 +345,7 @@ export function Header() {
             <SheetContent side="left" className="w-[280px] sm:w-[320px] p-0">
               <SheetHeader className="p-4 border-b">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-violet-600 rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 bg-linear-to-br from-blue-600 to-violet-600 rounded-lg flex items-center justify-center">
                     <GraduationCap className="w-4 h-4 text-white" />
                   </div>
                   <SheetTitle className="text-left">Maestria</SheetTitle>

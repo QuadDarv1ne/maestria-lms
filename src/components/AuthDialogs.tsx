@@ -239,7 +239,7 @@ export function AuthDialogs() {
         <DialogContent className="sm:max-w-md" onOpenAutoFocus={(e) => { e.preventDefault(); document.getElementById("login-email")?.focus(); }}>
           <DialogHeader>
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-violet-600 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-linear-to-br from-blue-600 to-violet-600 rounded-lg flex items-center justify-center">
                 <GraduationCap className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -403,7 +403,7 @@ export function AuthDialogs() {
         <DialogContent className="sm:max-w-md" onOpenAutoFocus={(e) => { e.preventDefault(); document.getElementById("reg-name")?.focus(); }}>
           <DialogHeader>
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-violet-600 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-linear-to-br from-blue-600 to-violet-600 rounded-lg flex items-center justify-center">
                 <GraduationCap className="w-5 h-5 text-white" />
               </div>
               <div>

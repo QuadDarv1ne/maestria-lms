@@ -171,7 +171,7 @@ export function AdminUsers(props: AdminTabProps) {
                   <TableRow key={u.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-violet-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                        <div className="w-8 h-8 bg-linear-to-br from-blue-500 to-violet-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0">
                           {getInitials(u.name, "?")}
                         </div>
                         <span className="font-medium text-sm">{u.name || t("adminPage.userNoName", locale)}</span>

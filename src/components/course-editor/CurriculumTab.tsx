@@ -141,9 +141,9 @@ function SortableModule({
               {...attributes}
               {...listeners}
             >
-              <GripVertical className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              <GripVertical className="w-4 h-4 text-muted-foreground shrink-0" />
             </button>
-            <span className="w-7 h-7 bg-violet-100 text-violet-700 rounded-md flex items-center justify-center text-xs font-bold flex-shrink-0">
+            <span className="w-7 h-7 bg-violet-100 text-violet-700 rounded-md flex items-center justify-center text-xs font-bold shrink-0">
               {idx + 1}
             </span>
             <CollapsibleTrigger asChild>
@@ -155,7 +155,7 @@ function SortableModule({
                 onClick={(e) => e.stopPropagation()}
               />
             </CollapsibleTrigger>
-            <div className="flex items-center gap-1 flex-shrink-0">
+            <div className="flex items-center gap-1 shrink-0">
               <Button
                 variant="ghost" size="sm" className="h-7 w-7 p-0"
                 disabled={idx === 0}
@@ -297,9 +297,9 @@ function SortableLesson({
           {...attributes}
           {...listeners}
         >
-          <GripVertical className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+          <GripVertical className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
         </button>
-        <span className="text-xs font-mono text-muted-foreground flex-shrink-0">
+        <span className="text-xs font-mono text-muted-foreground shrink-0">
           {moduleIdx + 1}.{lessonIdx + 1}
         </span>
         {lessonTypeIcon(lesson.type)}

@@ -179,7 +179,7 @@ export function AchievementsPage() {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
         <div className="max-w-md mx-auto">
-          <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-violet-600 rounded-full flex items-center justify-center text-white mx-auto mb-6">
+          <div className="w-20 h-20 bg-linear-to-br from-blue-500 to-violet-600 rounded-full flex items-center justify-center text-white mx-auto mb-6">
             <Award className="w-10 h-10" />
           </div>
           <h2 className="text-2xl font-bold mb-3">{t("achievements.title", locale)}</h2>
@@ -223,7 +223,7 @@ export function AchievementsPage() {
       {/* Page Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-700 to-violet-600 rounded-lg flex items-center justify-center">
+          <div className="w-10 h-10 bg-linear-to-br from-blue-700 to-violet-600 rounded-lg flex items-center justify-center">
             <Trophy className="w-5 h-5 text-white" />
           </div>
           <div>
@@ -243,7 +243,7 @@ export function AchievementsPage() {
               <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
                 {/* Main stat */}
                 <div className="flex items-center gap-4 flex-1">
-                  <div className="relative w-20 h-20 flex-shrink-0">
+                  <div className="relative w-20 h-20 shrink-0">
                     <svg
                       className="w-20 h-20 -rotate-90"
                       viewBox="0 0 80 80"
@@ -352,7 +352,7 @@ export function AchievementsPage() {
             {/* Category header */}
             <div className="flex items-center gap-3 mb-4">
               <div
-                className={`w-8 h-8 bg-gradient-to-br ${cat.gradient} rounded-lg flex items-center justify-center`}
+                className={`w-8 h-8 bg-linear-to-br ${cat.gradient} rounded-lg flex items-center justify-center`}
               >
                 <cat.icon className="w-4 h-4 text-white" />
               </div>

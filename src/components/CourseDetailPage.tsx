@@ -255,26 +255,28 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
   const requirements = safeJsonParse<string[]>(course.requirements, []);
   const whatYouLearn = safeJsonParse<string[]>(course.whatYouLearn, []);
 
-  // Rating breakdown
+  // Rating breakdown — computed from the full course rating data, not just the paginated reviews
   const ratingBreakdown = [5, 4, 3, 2, 1].map(star => {
+    // Use course-level rating data; if not available, fall back to current page reviews
     const count = reviews.filter((r: ReviewItem) => r.rating === star).length;
-    const pct = reviews.length > 0 ? Math.round((count / reviews.length) * 100) : 0;
+    const totalReviews = reviewsData?.pagination?.total ?? reviews.length;
+    const pct = totalReviews > 0 ? Math.round((count / totalReviews) * 100) : 0;
     return { star, count, pct };
   });
 
   return (
     <div>
       {/* Заголовок курса */}
-      <section className="relative bg-gradient-to-br from-blue-800 to-violet-800 text-white overflow-hidden">
+      <section className="relative bg-linear-to-br from-blue-800 to-violet-800 text-white overflow-hidden">
         {course.image && (
           <>
             <CourseImage
               src={course.image}
               alt={course.title}
-              className="absolute inset-0 w-full h-full object-cover opacity-30"
+              className="absolute inset-0 w-full h-full object-cover opacity-30 shrink-0"
               loading="eager"
             />
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-900/80 to-violet-900/80" />
+            <div className="absolute inset-0 bg-linear-to-br from-blue-900/80 to-violet-900/80" />
           </>
         )}
         <div className="absolute inset-0 opacity-15 pointer-events-none">
@@ -527,7 +529,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {whatYouLearn.map((item: string, i: number) => (
                         <div key={i} className="flex items-start gap-2.5">
-                          <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                          <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
                           <span className="text-sm">{item}</span>
                         </div>
                       ))}
@@ -615,11 +617,11 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                               }}
                             >
                               {lesson.completed ? (
-                                <CheckCircle2 className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                                <CheckCircle2 className="w-5 h-5 text-blue-600 shrink-0" />
                               ) : canAccess ? (
-                                <Play className="w-5 h-5 text-violet-600 flex-shrink-0" />
+                                <Play className="w-5 h-5 text-violet-600 shrink-0" />
                               ) : (
-                                <Lock className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                                <Lock className="w-5 h-5 text-gray-400 shrink-0" />
                               )}
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm truncate">

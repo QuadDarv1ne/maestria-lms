@@ -94,7 +94,7 @@ export function sanitizeSlug(input: string): string {
  */
 export function sanitizeEmail(input: string): string {
   if (!input) return "";
-  return input.trim().toLowerCase().replace(/[<>()\[\]\\,;:\"\x00-\x1F\x7F]/g, "");
+  return input.trim().toLowerCase().replace(/[<>()\],;:[\x00-\x1F\x7F]/g, "");
 }
 
 /**

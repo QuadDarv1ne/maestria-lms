@@ -69,7 +69,7 @@ export const ArticleCard = React.memo(function ArticleCard({ article, onClick }:
     >
       <CardContent className="p-0">
         {/* Cover Image */}
-        <div className="relative h-48 overflow-hidden bg-gradient-to-br from-blue-500 to-violet-600">
+        <div className="relative h-48 overflow-hidden bg-linear-to-br from-blue-500 to-violet-600">
           {article.image ? (
             /* eslint-disable-next-line @next/next/no-img-element */
             <img

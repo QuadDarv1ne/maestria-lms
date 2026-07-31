@@ -155,6 +155,7 @@ export function middleware(request: NextRequest) {
     const duration = Date.now() - startTime;
     const userAgent = request.headers.get("user-agent") ?? "";
     const isBotRequest = isBot(userAgent);
+    // eslint-disable-next-line no-console
     console.log(
       `[Middleware] ${request.method} ${pathname} → ${response.status} (${duration}ms)${isBotRequest ? " [bot]" : ""}`,
     );

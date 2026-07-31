@@ -342,7 +342,7 @@ export function ProfilePage() {
           <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
             <Avatar className="w-20 h-20">
               <AvatarImage src={profile?.image || user?.image || ""} alt={profile?.name || user?.name || ""} />
-              <AvatarFallback className="bg-gradient-to-br from-blue-500 to-violet-600 text-white text-2xl font-bold">
+              <AvatarFallback className="bg-linear-to-br from-blue-500 to-violet-600 text-white text-2xl font-bold">
                 {getInitials(profile?.name || user?.name, "U")}
               </AvatarFallback>
             </Avatar>
@@ -467,7 +467,7 @@ export function ProfilePage() {
                 <div className="flex items-center gap-3">
                   <Avatar className="w-14 h-14 border-2 border-muted">
                     <AvatarImage src={editForm.image || ""} alt="Avatar preview" />
-                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-violet-600 text-white text-lg font-bold">
+                    <AvatarFallback className="bg-linear-to-br from-blue-500 to-violet-600 text-white text-lg font-bold">
                       {getInitials(editForm.name, "U")}
                     </AvatarFallback>
                   </Avatar>
@@ -666,7 +666,7 @@ export function ProfilePage() {
                   >
                     <CardContent className="p-4">
                       <div className="flex items-start gap-3">
-                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-white flex-shrink-0 ${isCompleted ? "bg-gradient-to-br from-green-500 to-emerald-600" : "bg-gradient-to-br from-blue-500 to-violet-600"}`}>
+                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-white shrink-0 ${isCompleted ? "bg-linear-to-br from-green-500 to-emerald-600" : "bg-linear-to-br from-blue-500 to-violet-600"}`}>
                           {isCompleted ? <CheckCircle2 className="w-6 h-6" /> : <BookOpen className="w-6 h-6" />}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -773,7 +773,7 @@ export function ProfilePage() {
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (!isLoading) router.push(`/course/${courseId}`); } }}
                   >
                     <CardContent className="p-4 flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-violet-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">
+                      <div className="w-10 h-10 bg-linear-to-br from-blue-500 to-violet-600 rounded-lg flex items-center justify-center text-white shrink-0">
                         <BookmarkCheck className="w-5 h-5" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -828,7 +828,7 @@ export function ProfilePage() {
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-amber-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">
+                      <div className="w-12 h-12 bg-linear-to-br from-amber-400 to-amber-600 rounded-lg flex items-center justify-center text-white shrink-0">
                         <Award className="w-6 h-6" />
                       </div>
                       <div className="flex-1 min-w-0">

@@ -30,7 +30,7 @@ function PromoCard({ course, locale }: { course: PromoCourseData; locale: Locale
       href={course.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex-shrink-0 w-[300px] sm:w-[320px]"
+      className="shrink-0 w-[300px] sm:w-[320px]"
     >
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 overflow-hidden border border-slate-100 dark:border-slate-700 group h-full" data-cursor="card">
         {/* Image */}

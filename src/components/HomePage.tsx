@@ -48,7 +48,7 @@ export function HomePage() {
 
   return (
     <div>
-      <section className="hero-section relative overflow-hidden bg-gradient-to-br from-blue-900 via-indigo-800 to-violet-900">
+      <section className="hero-section relative overflow-hidden bg-linear-to-br from-blue-900 via-indigo-800 to-violet-900">
         <div className="hero-mesh absolute inset-0 opacity-20">
           <div className="hero-blob-1 absolute top-20 left-10 w-72 h-72 bg-blue-400 rounded-full blur-[128px]" />
           <div className="hero-blob-2 absolute bottom-20 right-10 w-96 h-96 bg-violet-400 rounded-full blur-[128px]" />
@@ -283,7 +283,7 @@ export function HomePage() {
               },
             ].map((item, i) => (
               <Card key={i} className="group border-0 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden">
-                <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+                <div className={`absolute inset-0 bg-linear-to-br ${item.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
                 <CardContent className="relative p-6 text-center">
                   <div className={`w-16 h-16 ${item.iconBg} rounded-2xl mx-auto mb-4 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3`}>
                     {item.icon}

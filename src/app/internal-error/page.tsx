@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
-import { AlertTriangle, Home, RefreshCw } from "lucide-react";
+import { Home, RefreshCw } from "lucide-react";
 
 export default function InternalErrorPage() {
   const locale = useAppStore((s) => s.locale);
