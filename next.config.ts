@@ -40,6 +40,25 @@ const nextConfig: NextConfig = {
           { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains; preload" },
           // Disable feature permissions
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), interest-cohort=()" },
+          // Content Security Policy — allows Next.js inline scripts to work
+          // NOTE: Amvera's nginx may override this header. If the site is blank,
+          // check the CSP in browser devtools. If it shows a different CSP,
+          // Amvera is overriding it and you need to configure CSP in Amvera's dashboard.
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: blob: https:",
+              "font-src 'self' data:",
+              "connect-src 'self' https: wss:",
+              "frame-src 'self' https:",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+            ].join("; "),
+          },
         ],
       },
       // Cache static assets aggressively
