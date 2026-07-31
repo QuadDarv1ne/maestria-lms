@@ -37,9 +37,10 @@ export async function GET(
 
     const { id: courseId } = await params;
 
-    // Проверяем что курс принадлежит преподавателю или пользователь админ
-    const course = await db.course.findUnique({
-      where: { id: courseId },
+    // Resolve course ID (support both UUID and slug)
+    const course = await db.course.findFirst({
+      where: { OR: [{ id: courseId }, { slug: courseId }] },
+      select: { id: true, teacherId: true },
     });
 
     if (!course) {
@@ -56,6 +57,8 @@ export async function GET(
       );
     }
 
+    const resolvedCourseId = course.id;
+
     const { searchParams } = new URL(request.url);
     const { page, limit, skip } = parsePagination(searchParams, { defaultLimit: 20, maxLimit: 100 });
     const queryParsed = submissionsQuerySchema.safeParse({
@@ -68,7 +71,7 @@ export async function GET(
       assignment: {
         lesson: {
           module: {
-            courseId,
+            courseId: resolvedCourseId,
           },
         },
       },
