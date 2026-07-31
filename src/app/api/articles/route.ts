@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, Prisma } from "@/lib/db";
+import { db, Prisma, getDatabaseProvider } from "@/lib/db";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { parsePagination } from "@/lib/utils";
@@ -79,10 +79,15 @@ export async function GET(request: NextRequest) {
     }
 
     if (search) {
+      // Use case-insensitive search for PostgreSQL; SQLite handles this natively
+      const provider = getDatabaseProvider();
+      const searchFilter = provider === "postgresql"
+        ? { contains: search, mode: "insensitive" as const }
+        : { contains: search };
       where.OR = [
-        { title: { contains: search } },
-        { excerpt: { contains: search } },
-        { content: { contains: search } },
+        { title: searchFilter },
+        { excerpt: searchFilter },
+        { content: searchFilter },
       ];
     }
 

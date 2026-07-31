@@ -246,13 +246,6 @@ export default async function RootLayout({
   return (
     <html lang={locale} suppressHydrationWarning>
       <head>
-        {/* CSP meta tag — разрешает инлайн-скрипты Next.js.
-            Amvera's nginx может перезаписывать HTTP заголовок CSP,
-            поэтому дублируем политику через meta тег. */}
-        <meta
-          httpEquiv="Content-Security-Policy"
-          content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self';"
-        />
         {/* JSON-LD для поисковых систем — загружается через next/script с beforeInteractive */}
         <script
           type="application/ld+json"
