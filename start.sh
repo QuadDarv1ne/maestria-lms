@@ -27,5 +27,5 @@ until node node_modules/.bin/prisma migrate deploy; do
 done
 
 # ── Start Application ───────────────────────────
-echo "[startup] starting Next.js (standalone) on port ${PORT:-3000}..."
-exec node server.js
+echo "[startup] starting Maestria LMS with CSP nonce injection on port ${PORT:-3000}..."
+exec node server-with-csp.js
