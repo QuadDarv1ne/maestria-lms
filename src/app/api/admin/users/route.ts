@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, Prisma } from "@/lib/db";
+import { db, Prisma, getDatabaseProvider } from "@/lib/db";
 import { getAuthSession, requireAdmin, adminErrorResponse } from "@/lib/auth";
 import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
@@ -33,9 +33,14 @@ export async function GET(request: NextRequest) {
     const where: Prisma.UserWhereInput = {};
     if (role) where.role = role;
     if (search) {
+      // Use case-insensitive search for PostgreSQL; SQLite handles this natively
+      const provider = getDatabaseProvider();
+      const searchFilter = provider === "postgresql"
+        ? { contains: search, mode: "insensitive" as const }
+        : { contains: search };
       where.OR = [
-        { name: { contains: search } },
-        { email: { contains: search } },
+        { name: searchFilter },
+        { email: searchFilter },
       ];
     }
 
