@@ -50,13 +50,13 @@ function transformHtml(html, nonce) {
   // Add nonce to all <script> tags without one
   html = html.replace(
     /<script\b(?![^>]*\bnonce\s*=)/gi,
-    (match) => `<script nonce="${nonce}"`
+    (_match) => `<script nonce="${nonce}"`
   );
 
   // Add nonce to all <style> tags without one
   html = html.replace(
     /<style\b(?![^>]*\bnonce\s*=)/gi,
-    (match) => `<style nonce="${nonce}"`
+    (_match) => `<style nonce="${nonce}"`
   );
 
   // Inject CSP <meta> tag right after <head>
