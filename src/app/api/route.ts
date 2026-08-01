@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
     const statusToCode = overallStatus === "ok" ? 200 : 503;
 
     return NextResponse.json(response, { status: statusToCode });
-  } catch (e) {
+  } catch (e: unknown) {
     return handleApiError(e, { route: "health" });
   }
 }

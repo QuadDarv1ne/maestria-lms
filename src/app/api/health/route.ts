@@ -109,7 +109,7 @@ export async function GET() {
         "Cache-Control": "no-store, max-age=0",
       },
     });
-  } catch (e) {
+  } catch (e: unknown) {
     log.error("Health check failed", { error: e });
     return NextResponse.json(
       {

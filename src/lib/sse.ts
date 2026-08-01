@@ -42,7 +42,7 @@ function broadcastToClients(userId: string, data: string) {
   for (const controller of userClients) {
     try {
       controller.enqueue(encoded);
-    } catch (err) {
+    } catch (err: unknown) {
       log.warn("SSE broadcast failed, removing client", { error: err instanceof Error ? err.message : String(err) });
       failed.push(controller);
     }

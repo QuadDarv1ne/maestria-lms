@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       discountAmount: result.discountAmount,
       finalPrice: result.finalPrice,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "promo/validate POST" });
   }
 }

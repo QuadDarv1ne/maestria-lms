@@ -103,7 +103,7 @@ export async function POST(
             missingPrereqs = missingCourses.map(c => ({ id: c.id, title: c.title }));
           }
         }
-      } catch (e) {
+      } catch (e: unknown) {
         log.error("Malformed prerequisites JSON — blocking enrollment", { courseId: course.id, error: e });
         return NextResponse.json(
           { error: "Ошибка в конфигурации курса. Обратитесь к администратору." },

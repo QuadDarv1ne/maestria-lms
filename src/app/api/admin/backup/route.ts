@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       },
       { headers: responseHeaders },
     );
-  } catch (error) {
+  } catch (error: unknown) {
     log.error("Backup failed", {
       error: error instanceof Error ? error.message : String(error),
       adminId: session.user.id,

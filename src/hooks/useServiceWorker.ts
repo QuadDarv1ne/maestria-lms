@@ -42,7 +42,7 @@ export function useServiceWorker() {
 
         registration.addEventListener("updatefound", handleUpdateFound);
         cleanupFns.push(() => registration.removeEventListener("updatefound", handleUpdateFound));
-      } catch (error) {
+      } catch (error: unknown) {
         log.error("Service Worker registration failed:", { error: error instanceof Error ? error.message : String(error) });
       }
     };

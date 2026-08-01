@@ -54,7 +54,7 @@ export async function GET(
     }
 
     return NextResponse.json({ promoCode });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "admin/promo-codes/[id] GET" });
   }
 }
@@ -116,7 +116,7 @@ export async function PATCH(
     });
 
     return NextResponse.json({ promoCode });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "admin/promo-codes/[id] PATCH" });
   }
 }
@@ -161,7 +161,7 @@ export async function DELETE(
 
     await db.promoCode.delete({ where: { id } });
     return NextResponse.json({ message: "Promo code deleted" });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "admin/promo-codes/[id] DELETE" });
   }
 }

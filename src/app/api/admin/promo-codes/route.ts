@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(total / limit),
       },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "admin/promo-codes GET" });
   }
 }
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({ promoCode }, { status: 201 });
-  } catch (error) {
+  } catch (error: unknown) {
     return handleApiError(error, { route: "admin/promo-codes POST" });
   }
 }

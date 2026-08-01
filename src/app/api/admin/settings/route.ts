@@ -26,7 +26,7 @@ async function readSettings(): Promise<typeof DEFAULT_SETTINGS> {
     try {
       const data = await redis.get(SETTINGS_KEY);
       if (data) return JSON.parse(data) as typeof DEFAULT_SETTINGS;
-    } catch (e) {
+    } catch (e: unknown) {
       log.error("Failed to read settings from Redis", { error: e instanceof Error ? e.message : String(e) });
     }
   }
@@ -39,7 +39,7 @@ async function writeSettings(settings: typeof DEFAULT_SETTINGS): Promise<boolean
     try {
       await redis.setex(SETTINGS_KEY, SETTINGS_TTL, JSON.stringify(settings));
       return true;
-    } catch (e) {
+    } catch (e: unknown) {
       log.error("Failed to write settings to Redis", { error: e instanceof Error ? e.message : String(e) });
       return false;
     }

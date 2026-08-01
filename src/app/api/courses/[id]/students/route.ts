@@ -126,7 +126,7 @@ export async function GET(
       },
       { headers: responseHeaders },
     );
-  } catch (error) {
+  } catch (error: unknown) {
     log.error("Failed to fetch course students", {
       error: error instanceof Error ? error.message : String(error),
       courseId: id,

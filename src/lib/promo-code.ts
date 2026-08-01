@@ -163,7 +163,7 @@ export async function redeemPromoCode(
     });
 
     log.info("Promo code redeemed", { promoCodeId, userId });
-  } catch (error) {
+  } catch (error: unknown) {
     log.error("Failed to redeem promo code", { promoCodeId, userId, error });
   }
 }

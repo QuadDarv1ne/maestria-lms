@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       try { await db.$executeRawUnsafe(`DELETE FROM sqlite_sequence`); } catch { /* safe to ignore */ }
       await db.$executeRawUnsafe(`PRAGMA foreign_keys = ON`);
     }
-  } catch (cleanupError) {
+  } catch (cleanupError: unknown) {
     log.warn("Database cleanup before seed failed, proceeding anyway", { error: String(cleanupError) });
   }
 
