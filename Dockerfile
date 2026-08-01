@@ -18,7 +18,9 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 ENV HUSKY=0
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+    npm ci --no-audit --no-fund && \
+    npm rebuild lightningcss && \
+    node -e "const { existsSync } = require('fs'); const path = require.resolve('lightningcss'); const bin = path.replace(/node\\/index\\.js$/, 'node/lightningcss.linux-x64-musl.node'); if (!existsSync(bin)) { console.error('Missing lightningcss native binary:', bin); process.exit(1); } console.log('lightningcss native binary ok:', bin);"
 
 # ============================================================
 # Stage 3: builder — compile the Next.js app
