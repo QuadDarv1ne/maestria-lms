@@ -31,9 +31,20 @@ export const useAppStore = create<AppStore>()((set, get, api) => {
     logout: () => {
       if (typeof window !== "undefined") {
         try {
-          window.localStorage.removeItem("maestria-favorites");
-          window.localStorage.removeItem("maestria-notifications");
-        } catch { /* safe to ignore */ }
+          // Clear all Maestria-related localStorage keys
+          const keysToRemove = [
+            "maestria-theme",
+            "maestria-locale",
+            "maestria-favorites",
+            "maestria-notifications",
+            "maestria-catalog-filters",
+          ];
+          for (const key of keysToRemove) {
+            localStorage.removeItem(key);
+          }
+        } catch {
+          /* safe to ignore */
+        }
       }
       set({
         user: null,

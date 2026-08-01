@@ -1,9 +1,30 @@
 import { log } from "@/lib/logger";
 import { getRedisClient } from "@/lib/redis";
 
-// In-memory fallback cache
+// In-memory fallback cache with TTL validation
 const memoryCache = new Map<string, { data: unknown; expiresAt: number }>();
 const MAX_MEMORY_CACHE_ENTRIES = 1000;
+const MEMORY_CACHE_CLEANUP_INTERVAL = 300_000; // 5 minutes
+
+// Periodic cleanup of expired entries to prevent memory leaks
+let memoryCacheCleanupInterval: ReturnType<typeof setInterval> | null = null;
+
+function startMemoryCacheCleanup() {
+  if (memoryCacheCleanupInterval) return;
+  memoryCacheCleanupInterval = setInterval(() => {
+    const now = Date.now();
+    for (const [key, entry] of memoryCache.entries()) {
+      if (entry.expiresAt <= now) {
+        memoryCache.delete(key);
+      }
+    }
+  }, MEMORY_CACHE_CLEANUP_INTERVAL);
+  if (memoryCacheCleanupInterval && typeof memoryCacheCleanupInterval === "object" && "unref" in memoryCacheCleanupInterval) {
+    (memoryCacheCleanupInterval as NodeJS.Timeout).unref();
+  }
+}
+
+startMemoryCacheCleanup();
 
 interface CacheOptions {
   ttl?: number; // Time to live in milliseconds (default: 5 minutes)
@@ -158,6 +179,14 @@ export async function flushAll(): Promise<void> {
     }
   }
   memoryCache.clear();
+}
+
+/** Stop periodic memory cache cleanup (for testing) */
+export function stopMemoryCacheCleanup(): void {
+  if (memoryCacheCleanupInterval) {
+    clearInterval(memoryCacheCleanupInterval);
+    memoryCacheCleanupInterval = null;
+  }
 }
 
 export function createCacheHeaders(

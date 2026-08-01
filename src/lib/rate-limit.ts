@@ -220,7 +220,7 @@ function createRateLimitResponse(result: RateLimitResult): NextResponse {
 }
 
 // Sync rate limiter (uses in-memory, returns null or 429 response)
-// This maintains backward compatibility with existing API routes
+// Prefer userId-based rate limiting for authenticated users to avoid IP spoofing
 export function rateLimit(
   routeId: string,
   config: Partial<RateLimitConfig> = {},
@@ -231,14 +231,16 @@ export function rateLimit(
     const ip = getClientIp(request);
     const effectiveUserId = userId ?? null;
 
-    const result = checkMemoryLimit(routeId, ip, effectiveUserId, windowMs, maxRequests);
+    // Prefer userId-based rate limiting for authenticated users
+    // This is more accurate than IP-based and prevents IP spoofing bypasses
+    const key = effectiveUserId ? `user:${effectiveUserId}` : `ip:${ip}`;
+
+    const result = checkMemoryLimit(routeId, key, effectiveUserId, windowMs, maxRequests);
 
     if (result.limited) {
       return createRateLimitResponse(result);
     }
 
-    // Attach rate limit headers to the response via a custom header that middleware can read
-    // This is a no-op for the sync limiter since we can't modify the response after creation
     return null;
   };
 }
@@ -255,7 +257,9 @@ export function addRateLimitHeaders(
   const ip = getClientIp(request);
   const effectiveUserId = userId ?? null;
 
-  const result = checkMemoryLimit(routeId, ip, effectiveUserId, windowMs, maxRequests);
+  // Prefer userId-based rate limiting for authenticated users
+  const key = effectiveUserId ? `user:${effectiveUserId}` : `ip:${ip}`;
+  const result = checkMemoryLimit(routeId, key, effectiveUserId, windowMs, maxRequests);
 
   headers.set("X-RateLimit-Limit", String(result.limit));
   headers.set("X-RateLimit-Remaining", String(result.remaining));

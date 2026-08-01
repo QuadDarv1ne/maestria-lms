@@ -145,3 +145,63 @@ export function apiPaginatedResponse<T>(
     pagination,
   });
 }
+
+/**
+ * Creates a NextResponse for API 401 Unauthorized errors.
+ */
+export function apiUnauthorizedResponse(message: string = "Unauthorized"): NextResponse {
+  return NextResponse.json(
+    {
+      error: message,
+      code: "UNAUTHORIZED",
+    },
+    { status: 401 }
+  );
+}
+
+/**
+ * Creates a NextResponse for API 403 Forbidden errors.
+ */
+export function apiForbiddenResponse(message: string = "Forbidden"): NextResponse {
+  return NextResponse.json(
+    {
+      error: message,
+      code: "FORBIDDEN",
+    },
+    { status: 403 }
+  );
+}
+
+/**
+ * Creates a NextResponse for API 500 Internal Server Error with optional details.
+ */
+export function apiInternalError(
+  message: string = "Internal server error",
+  details?: unknown
+): NextResponse {
+  return NextResponse.json(
+    {
+      error: message,
+      code: "INTERNAL_ERROR",
+      ...(details !== undefined && { details }),
+    },
+    { status: 500 }
+  );
+}
+
+/**
+ * Creates a NextResponse for API 422 Unprocessable Entity (validation errors).
+ */
+export function apiValidationErrorResponse(
+  message: string,
+  errors: Record<string, string[]>
+): NextResponse {
+  return NextResponse.json(
+    {
+      error: message,
+      code: "VALIDATION_ERROR",
+      errors,
+    },
+    { status: 422 }
+  );
+}

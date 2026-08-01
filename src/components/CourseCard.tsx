@@ -50,18 +50,25 @@ export const CourseCard = React.memo(function CourseCard({ course, onClick }: Co
     ? Math.round((1 - course.price / course.oldPrice) * 100)
     : 0;
 
+  const handleClick = () => {
+    onClick?.();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onClick?.();
+    }
+  };
+
   return (
     <Card
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onClick?.();
-        }
-      }}
-      className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1.5 border-0 shadow-sm overflow-hidden"
-      onClick={onClick}
+      onKeyDown={handleKeyDown}
+      onClick={handleClick}
+      aria-label={`${course.title} — ${course.price === 0 ? t("common.free", locale) : `${course.price} ₽`}`}
+      className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1.5 border-0 shadow-sm overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
     >
       <CardContent className="p-0">
         <div className="relative h-40 flex items-center justify-center overflow-hidden bg-linear-to-br from-blue-500 to-violet-600">

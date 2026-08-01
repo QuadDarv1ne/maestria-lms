@@ -214,6 +214,15 @@ function applySecurityHeaders(response: NextResponse, pathname: string): void {
   // nonces for its inline scripts, but the middleware runs before
   // Next.js can set them. 'unsafe-inline' is the pragmatic choice
   // for self-hosted Next.js deployments.
+  const connectSources = [
+    "'self'",
+    "https:",
+    "http://localhost:*",
+    "wss:",
+  ];
+  if (cdnOrigin) connectSources.push(cdnOrigin);
+  if (s3Origin) connectSources.push(s3Origin);
+
   response.headers.set(
     "Content-Security-Policy",
     [
@@ -222,14 +231,14 @@ function applySecurityHeaders(response: NextResponse, pathname: string): void {
       "style-src 'self' 'unsafe-inline' https:",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data: https:",
-      `connect-src 'self' https: http://localhost:* wss: http://localhost:* ${cdnOrigin ? cdnOrigin : ''} ${s3Origin ? s3Origin : ''}`.trim(),
+      `connect-src ${connectSources.join(" ")}`.trim(),
       "media-src 'self' https:",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
       "frame-src 'self' https://www.youtube.com https://player.vimeo.com https://ok.ru",
       "frame-ancestors 'self' https://www.youtube.com",
-    ].filter(s => s.length > 0).join("; "),
+    ].join("; "),
   );
 }
 

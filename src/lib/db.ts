@@ -73,6 +73,9 @@ const provider = getDatabaseProvider();
 const databaseUrl = env.databaseUrl;
 const adapter = createAdapter(provider, databaseUrl);
 
+// Validate env on first load (production only)
+env.validate();
+
 export const db =
   globalForPrisma.prisma ??
   new PrismaClient({

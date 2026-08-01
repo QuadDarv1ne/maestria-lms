@@ -85,14 +85,20 @@ export async function sendEmail({
       return true;
     } catch (error: unknown) {
       lastError = error;
+      const isRetryable = isRetryableError(error);
 
-      if (!isRetryableError(error)) {
+      if (!isRetryable) {
         log.error("Non-retryable email send error", { to, subject, error: String(error) });
         return false;
       }
 
       if (attempt === retries) {
-        log.error("Email send failed after all retries", { to, subject, error: String(error), attempts: retries + 1 });
+        log.error("Email send failed after all retries", {
+          to,
+          subject,
+          error: String(error),
+          attempts: retries + 1,
+        });
         return false;
       }
     }

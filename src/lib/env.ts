@@ -129,6 +129,29 @@ export const env = {
   get nextPhase(): string | undefined {
     return cached("nextPhase", () => process.env.NEXT_PHASE);
   },
+
+  /**
+   * Validate required environment variables for production.
+   * Logs warnings for missing vars but doesn't throw (to avoid blocking startup).
+   */
+  validate(): void {
+    if (!this.isProduction) return;
+
+    const required = ["DATABASE_URL"];
+    const optional = ["NEXTAUTH_SECRET", "RESEND_API_KEY", "REDIS_URL"];
+
+    for (const key of required) {
+      if (!process.env[key]) {
+        log.warn(`Missing required environment variable in production: ${key}`);
+      }
+    }
+
+    for (const key of optional) {
+      if (!process.env[key]) {
+        log.debug(`Optional environment variable not set: ${key}`);
+      }
+    }
+  },
 };
 
 /**
