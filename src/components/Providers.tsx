@@ -23,7 +23,7 @@ function ThemeAndLocaleSync() {
   }, [theme, locale]);
 
   useEffect(() => {
-    loadLocale(locale).catch((err) => log.warn("Locale load failed", { error: String(err) }));
+    loadLocale(locale).catch((err: unknown) => log.warn("Locale load failed", { error: String(err) }));
   }, [locale]);
 
   return null;
