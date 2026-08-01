@@ -8,6 +8,14 @@ echo "=========================================="
 echo "[startup] Starting Maestria LMS..."
 echo "=========================================="
 
+# ── Ensure Prisma Client is generated ───────────
+# This is needed when DATABASE_URL was not available during Docker build
+# (e.g., on Amvera where build-time env vars differ from runtime env vars)
+if [ ! -d "node_modules/.prisma/client" ]; then
+  echo "[startup] Generating Prisma Client..."
+  npx prisma generate || echo "[startup] WARN: prisma generate failed — will try to use pre-built client"
+fi
+
 # ── Database Migration ──────────────────────────
 # Retry up to 5 times with exponential backoff
 MAX_RETRIES=5
