@@ -10,7 +10,7 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
 # ============================================================
-# Stage 2: deps — install production & dev dependencies
+# Stage 2: deps — install production dependencies only
 # ============================================================
 FROM base AS deps
 WORKDIR /app
@@ -20,18 +20,24 @@ COPY package.json package-lock.json ./
 ENV HUSKY=0
 ENV PYTHON=/usr/bin/python3
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --no-audit --no-fund && \
+    npm ci --omit=dev --no-audit --no-fund && \
     npm install --no-save lightningcss-linux-x64-musl --no-audit --no-fund && \
     node -e "const { existsSync } = require('fs'); const path = require.resolve('lightningcss'); const bin = path.replace(/node\/index\.js$/, 'node/lightningcss.linux-x64-musl.node'); if (!existsSync(bin)) { console.error('Missing lightningcss native binary:', bin); process.exit(1); } console.log('lightningcss native binary ok:', bin);"
 
 # ============================================================
-# Stage 3: builder — compile the Next.js app
+# Stage 3: builder — install dev deps and compile
 # ============================================================
 FROM deps AS builder
 WORKDIR /app
 
-COPY --from=deps /app/node_modules ./node_modules
+# Copy full source code (triggers dev deps install when code changes)
 COPY . .
+
+# Install dev dependencies on top of production (faster than full npm ci)
+ENV HUSKY=0
+ENV PYTHON=/usr/bin/python3
+RUN --mount=type=cache,target=/root/.npm \
+    npm install --omit=peer --no-audit --no-fund
 
 ARG NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
