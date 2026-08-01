@@ -32,6 +32,31 @@ const webhookBodySchema = z.object({
   }).passthrough().optional(),
 });
 
+// Idempotency: track processed webhooks to prevent duplicate processing
+const processedWebhooks = new Map<string, { status: string; timestamp: number }>();
+const IDEMPOTENCY_TTL = 24 * 60 * 60 * 1000; // 24 hours
+const MAX_IDEMPOTENCY_ENTRIES = 10000;
+
+// Periodic cleanup of expired idempotency entries
+let idempotencyCleanupInterval: ReturnType<typeof setInterval> | null = null;
+
+function startIdempotencyCleanup() {
+  if (idempotencyCleanupInterval) return;
+  idempotencyCleanupInterval = setInterval(() => {
+    const now = Date.now();
+    for (const [key, entry] of processedWebhooks.entries()) {
+      if (now - entry.timestamp > IDEMPOTENCY_TTL) {
+        processedWebhooks.delete(key);
+      }
+    }
+  }, 60 * 60 * 1000); // Clean up every hour
+  if (idempotencyCleanupInterval && typeof idempotencyCleanupInterval === "object" && "unref" in idempotencyCleanupInterval) {
+    (idempotencyCleanupInterval as NodeJS.Timeout).unref();
+  }
+}
+
+startIdempotencyCleanup();
+
 async function completePayment(paymentId: string, transactionId: string) {
   const result = await db.$transaction(async (tx) => {
     const payment = await tx.payment.findUnique({
@@ -165,6 +190,30 @@ export async function POST(request: NextRequest) {
     }
 
     const data = validation.data;
+
+    // Idempotency check: skip duplicate webhooks
+    // Use eventId as the idempotency key (if available), otherwise fall back to paymentId
+    const idempotencyKey = data.eventId || data.object?.paymentId || data.object?.id;
+    if (idempotencyKey) {
+      const now = Date.now();
+      const processed = processedWebhooks.get(idempotencyKey);
+      if (processed) {
+        log.info("Duplicate webhook received, skipping", {
+          idempotencyKey,
+          provider,
+          status: data.status,
+        });
+        return NextResponse.json({ received: true, status: processed.status, idempotent: true });
+      }
+
+      // Store the processed webhook
+      if (processedWebhooks.size >= MAX_IDEMPOTENCY_ENTRIES) {
+        // Evict oldest entries
+        const oldestKey = processedWebhooks.keys().next().value;
+        if (oldestKey) processedWebhooks.delete(oldestKey);
+      }
+      processedWebhooks.set(idempotencyKey, { status: data.status, timestamp: now });
+    }
 
     // Map provider-specific status values
     const statusMap: Record<string, string> = {

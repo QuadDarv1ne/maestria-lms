@@ -16,15 +16,9 @@ export async function GET(request: NextRequest) {
     if (!requireAdmin(session)) return adminErrorResponse();
 
     const now = new Date();
-    const oneDayAgo = new Date(now);
-    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
-    const oneWeekAgo = new Date(now);
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    const oneMonthAgo = new Date(now);
-    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-    if (oneMonthAgo.getMonth() === now.getMonth()) {
-      oneMonthAgo.setDate(0);
-    }
+    const oneDayAgo = new Date(now.getTime() - 86_400_000);
+    const oneWeekAgo = new Date(now.getTime() - 604_800_000);
+    const oneMonthAgo = new Date(now.getTime() - 2_592_000_000);
 
     const [
       userCounts,

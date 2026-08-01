@@ -3,6 +3,7 @@ import type { NotificationItem } from "./stores/notifications";
 
 const clients = new Map<string, Set<ReadableStreamDefaultController>>();
 const MAX_CONNECTIONS_PER_USER = 5;
+const MAX_TOTAL_CONNECTIONS = 500;
 
 // Periodic cleanup of empty client sets (every 5 minutes)
 let cleanupInterval: ReturnType<typeof setInterval> | null = null;
@@ -23,6 +24,11 @@ function startCleanup() {
 }
 
 startCleanup();
+
+/** Get current total connection count (for monitoring) */
+export function getTotalConnections(): number {
+  return Array.from(clients.values()).reduce((sum, set) => sum + set.size, 0);
+}
 
 export function stopCleanup() {
   if (cleanupInterval) {
@@ -67,6 +73,25 @@ export function addClient(userId: string, controller: ReadableStreamDefaultContr
     if (oldest) {
       try { oldest.close(); } catch { /* already closed */ }
       userClients.delete(oldest);
+    }
+  }
+
+  // Global connection limit — drop oldest user's oldest connection if at capacity
+  const totalConnections = Array.from(clients.values()).reduce((sum, set) => sum + set.size, 0);
+  if (totalConnections >= MAX_TOTAL_CONNECTIONS) {
+    // Find oldest user with active connections and remove their oldest connection
+    for (const [otherUserId, otherUserClients] of clients.entries()) {
+      if (otherUserClients.size > 0) {
+        const oldest = otherUserClients.values().next().value;
+        if (oldest) {
+          try { oldest.close(); } catch { /* already closed */ }
+          otherUserClients.delete(oldest);
+          if (otherUserClients.size === 0) {
+            clients.delete(otherUserId);
+          }
+          break;
+        }
+      }
     }
   }
 
