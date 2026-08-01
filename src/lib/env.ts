@@ -19,6 +19,12 @@ function getRequiredEnv(key: string): string {
   return value;
 }
 
+function warn(message: string): void {
+  if (typeof console !== "undefined" && typeof console.warn === "function") {
+    console.warn(message);
+  }
+}
+
 export const env = {
   get siteUrl(): string {
     return cached("siteUrl", () => {
@@ -142,13 +148,13 @@ export const env = {
 
     for (const key of required) {
       if (!process.env[key]) {
-        log.warn(`Missing required environment variable in production: ${key}`);
+        warn(`Missing required environment variable in production: ${key}`);
       }
     }
 
     for (const key of optional) {
       if (!process.env[key]) {
-        log.debug(`Optional environment variable not set: ${key}`);
+        warn(`Optional environment variable not set: ${key}`);
       }
     }
   },
