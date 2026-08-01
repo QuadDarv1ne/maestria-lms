@@ -248,8 +248,8 @@ export async function POST(request: NextRequest) {
     });
 
     // Invalidate course list caches when a new course is created
-    cacheInvalidateByTag("courses").catch((err) => log.warn("Cache invalidation failed (courses)", { error: err }));
-    cacheInvalidateByTag("catalog").catch((err) => log.warn("Cache invalidation failed (catalog)", { error: err }));
+    cacheInvalidateByTag("courses").catch((err: unknown) => log.warn("Cache invalidation failed (courses)", { error: err }));
+    cacheInvalidateByTag("catalog").catch((err: unknown) => log.warn("Cache invalidation failed (catalog)", { error: err }));
 
     return NextResponse.json(
       { message: isPublished ? "Курс опубликован" : "Курс сохранён как черновик", course },
@@ -663,12 +663,12 @@ export async function PUT(request: NextRequest) {
   } finally {
     // Only invalidate cache on successful update
     if (updateSucceeded && courseId) {
-      cacheInvalidateByTag(`course:${courseId}`).catch((err) => log.warn("Cache invalidation failed (course)", { courseId, error: err }));
+      cacheInvalidateByTag(`course:${courseId}`).catch((err: unknown) => log.warn("Cache invalidation failed (course)", { courseId, error: err }));
       if (oldSlug && newSlug && oldSlug !== newSlug) {
-        cacheInvalidateByTag(`course:${oldSlug}`).catch((err) => log.warn("Cache invalidation failed (old slug)", { slug: oldSlug, error: err }));
+        cacheInvalidateByTag(`course:${oldSlug}`).catch((err: unknown) => log.warn("Cache invalidation failed (old slug)", { slug: oldSlug, error: err }));
       }
-      cacheInvalidateByTag("courses").catch((err) => log.warn("Cache invalidation failed (courses)", { error: err }));
-      cacheInvalidateByTag("catalog").catch((err) => log.warn("Cache invalidation failed (catalog)", { error: err }));
+      cacheInvalidateByTag("courses").catch((err: unknown) => log.warn("Cache invalidation failed (courses)", { error: err }));
+      cacheInvalidateByTag("catalog").catch((err: unknown) => log.warn("Cache invalidation failed (catalog)", { error: err }));
     }
   }
 }
@@ -723,12 +723,12 @@ export async function DELETE(request: NextRequest) {
     });
 
     // Fire-and-forget cache invalidation (including slug-based keys)
-    cacheInvalidateByTag(`course:${courseId}`).catch((err) => log.warn("Cache invalidation failed (course delete)", { courseId, error: err }));
+    cacheInvalidateByTag(`course:${courseId}`).catch((err: unknown) => log.warn("Cache invalidation failed (course delete)", { courseId, error: err }));
     if (existingCourse.slug) {
-      cacheInvalidateByTag(`course:${existingCourse.slug}`).catch((err) => log.warn("Cache invalidation failed (slug)", { slug: existingCourse.slug, error: err }));
+      cacheInvalidateByTag(`course:${existingCourse.slug}`).catch((err: unknown) => log.warn("Cache invalidation failed (slug)", { slug: existingCourse.slug, error: err }));
     }
-    cacheInvalidateByTag("courses").catch((err) => log.warn("Cache invalidation failed (courses)", { error: err }));
-    cacheInvalidateByTag("catalog").catch((err) => log.warn("Cache invalidation failed (catalog)", { error: err }));
+    cacheInvalidateByTag("courses").catch((err: unknown) => log.warn("Cache invalidation failed (courses)", { error: err }));
+    cacheInvalidateByTag("catalog").catch((err: unknown) => log.warn("Cache invalidation failed (catalog)", { error: err }));
 
     return NextResponse.json(
       { message: "Курс удалён" },

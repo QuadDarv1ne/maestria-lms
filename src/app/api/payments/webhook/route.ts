@@ -103,7 +103,7 @@ async function completePayment(paymentId: string, transactionId: string) {
       title: "Оплата прошла успешно",
       message: `Оплата курса "${payment.course.title}" подтверждена. Добро пожаловать!`,
       link: `/course/${payment.courseId}`,
-    }).catch((err) => log.error("Failed to send payment notification", { error: err }));
+    }).catch((err: unknown) => log.error("Failed to send payment notification", { error: err }));
 
     const siteUrl = env.siteUrl;
     sendEmail({
@@ -113,7 +113,7 @@ async function completePayment(paymentId: string, transactionId: string) {
         payment.course.title,
         `${siteUrl}/course/${payment.courseId}`,
       ),
-    }).catch((err) => log.error("Failed to send purchase email", { error: err }));
+    }).catch((err: unknown) => log.error("Failed to send purchase email", { error: err }));
   }
 
   return result;

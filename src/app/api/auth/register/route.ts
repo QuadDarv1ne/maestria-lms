@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
     sendEmail({
       to: user.email,
       ...welcomeEmail(user.name || "пользователь", `${baseUrl}/catalog`),
-    }).catch((err) => log.error("Welcome email could not be sent", { email: user.email, error: String(err) }));
+    }).catch((err: unknown) => log.error("Welcome email could not be sent", { email: user.email, error: String(err) }));
 
     // Await verification email with built-in retry — failures are logged but don't
     // block the registration response

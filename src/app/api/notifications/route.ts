@@ -75,7 +75,7 @@ export async function DELETE(request: NextRequest) {
     // This runs opportunistically on notification cleanup to avoid a dedicated cron job
     const staleTokenCleanup = db.verificationToken.deleteMany({
       where: { expires: { lt: new Date(Date.now() - MS.DAY) } },
-    }).catch((err) => {
+    }).catch((err: unknown) => {
       log.warn("Failed to clean up stale verification tokens", {
         error: err instanceof Error ? err.message : String(err),
       });

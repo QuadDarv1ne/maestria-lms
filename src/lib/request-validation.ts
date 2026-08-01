@@ -105,7 +105,7 @@ export function withErrorHandling<T>(
   handler: () => Promise<NextResponse<T>>,
   context?: Record<string, unknown>,
 ): Promise<NextResponse<T>> {
-  return handler().catch((error) => {
+  return handler().catch((error: unknown) => {
     return handleApiError(error, context) as unknown as Promise<NextResponse<T>>;
   });
 }

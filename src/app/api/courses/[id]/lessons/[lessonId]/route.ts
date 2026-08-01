@@ -360,7 +360,7 @@ export async function POST(
             title: "Курс пройден!",
             message: `Поздравляем! Вы завершили курс "${courseData.title}"`,
             link: `/course/${courseData.id}`,
-          }).catch((err) => log.error("Failed to send completion notification", { error: err }));
+          }).catch((err: unknown) => log.error("Failed to send completion notification", { error: err }));
 
           if (courseData.hasCertificate && session.user.email) {
             const siteUrl = env.siteUrl;
@@ -371,7 +371,7 @@ export async function POST(
                 courseData.title,
                 `${siteUrl}/certificate/${courseData.id}`,
               ),
-            }).catch((err) => log.error("Failed to send certificate email", { error: err }));
+            }).catch((err: unknown) => log.error("Failed to send certificate email", { error: err }));
           }
         }
       }

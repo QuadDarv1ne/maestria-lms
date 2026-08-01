@@ -278,7 +278,7 @@ export async function POST(
         title: "Новый курс",
         message: `Вы записаны на курс "${course.title}"`,
         link: `/course/${resolvedCourseId}`,
-      }).catch((err) => log.error("Failed to send enrollment notification", { error: err }));
+      }).catch((err: unknown) => log.error("Failed to send enrollment notification", { error: err }));
     }
 
     const { status, ...responseData } = result;
