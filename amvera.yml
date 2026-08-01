@@ -5,11 +5,12 @@ meta:
 
 build:
   dockerfile: Dockerfile
-  args:
-    NEXT_PUBLIC_SITE_URL: https://maestria-lms-maestro7it.amvera.io
 
 run:
   containerPort: 3000
+  env:
+    - key: NEXT_PUBLIC_SITE_URL
+      value: https://maestria-lms-maestro7it.amvera.io
   health:
     path: /api/health
     interval: 30
