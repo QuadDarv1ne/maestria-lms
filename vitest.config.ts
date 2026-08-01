@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 
 export default defineConfig({
+  // @ts-expect-error - Plugin type mismatch between vite versions (vite v8 vs vitest v3's bundled vite)
   plugins: [react()],
   test: {
     environment: 'jsdom',

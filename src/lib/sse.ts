@@ -16,7 +16,10 @@ function startCleanup() {
       }
     }
   }, 5 * 60 * 1000);
-  cleanupInterval.unref?.(); // Don't keep Node.js alive
+  // Don't keep Node.js alive — safe for both Node.js and Bun runtimes
+  if (cleanupInterval && typeof cleanupInterval === "object" && "unref" in cleanupInterval) {
+    (cleanupInterval as NodeJS.Timeout).unref();
+  }
 }
 
 startCleanup();

@@ -546,9 +546,9 @@ describe("API Integration Tests", () => {
       expect(existing).not.toBeNull();
     });
 
-    it("should require authentication", () => {
+    it("should require authentication", async () => {
       vi.mocked(getAuthSession).mockResolvedValue(null);
-      expect(getAuthSession()).resolves.toBeNull();
+      await expect(getAuthSession()).resolves.toBeNull();
     });
   });
 
@@ -942,9 +942,9 @@ describe("API Integration Tests", () => {
   // ─── UPLOAD ─────────────────────────────────────────────────────────────────
 
   describe("Upload /api/upload", () => {
-    it("should require authentication", () => {
+    it("should require authentication", async () => {
       vi.mocked(getAuthSession).mockResolvedValue(null);
-      expect(getAuthSession()).resolves.toBeNull();
+      await expect(getAuthSession()).resolves.toBeNull();
     });
 
     it("should validate file types", () => {

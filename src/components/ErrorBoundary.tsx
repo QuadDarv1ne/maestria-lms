@@ -8,7 +8,17 @@ import type { Locale } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Home, RefreshCw, RotateCcw, Bug } from "lucide-react";
 
-let currentLocale: Locale = useAppStore.getState().locale;
+// Lazy initializer — avoids calling useAppStore.getState() at module level (SSR-safe)
+let currentLocale: Locale = "ru";
+function ensureLocale(): void {
+  if (typeof window !== "undefined") {
+    try {
+      currentLocale = useAppStore.getState().locale;
+    } catch {
+      // Store not available yet — keep default
+    }
+  }
+}
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -37,6 +47,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   constructor(props: ErrorBoundaryProps) {
     super(props);
+    // Try to get locale from store (safe during client-side rendering, noop during SSR)
+    ensureLocale();
     this.state = {
       hasError: false,
       error: null,
@@ -52,7 +64,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidMount() {
-    currentLocale = useAppStore.getState().locale;
+    ensureLocale();
     this.setState({ locale: currentLocale });
     this.unsubscribe = useAppStore.subscribe((state, prevState) => {
       if (state.locale !== prevState.locale) {

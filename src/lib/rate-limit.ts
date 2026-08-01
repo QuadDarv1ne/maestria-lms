@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import Redis from "ioredis";
+import type Redis from "ioredis";
 import { log } from "@/lib/logger";
 import { getRedisClient } from "@/lib/redis";
 

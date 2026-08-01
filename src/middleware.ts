@@ -11,6 +11,10 @@
  *
  * This middleware only handles logic that MUST run at the edge:
  * locale redirects and maintenance mode.
+ *
+ * IMPORTANT: Edge middleware runs in a different runtime (Edge Runtime),
+ * so we cannot use @/lib/logger here. We use process.env directly
+ * and avoid importing any Node.js-specific modules.
  */
 
 import { NextResponse } from "next/server";

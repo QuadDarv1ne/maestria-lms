@@ -203,7 +203,7 @@ export async function GET(
     }
 
     return NextResponse.json({
-      courseId,
+      courseId: resolvedCourseId,
       courseTitle: courseWithModules.title,
       enrollmentStatus: enrollment.status,
       enrollmentProgress: enrollment.progress,

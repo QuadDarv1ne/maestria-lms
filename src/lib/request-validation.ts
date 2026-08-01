@@ -16,7 +16,6 @@ import { handleApiError } from "@/lib/api-errors";
 export function validateBody<T>(
   body: unknown,
   schema: z.ZodSchema<T>,
-  _context?: Record<string, unknown>,
 ): { data: T } | { response: NextResponse } {
   const result = schema.safeParse(body);
   if (!result.success) {
