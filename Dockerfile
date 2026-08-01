@@ -14,15 +14,11 @@ RUN addgroup --system --gid 1001 nodejs && \
 FROM base AS deps
 WORKDIR /app
 
-# Install bun for dependency management
-RUN curl -fsSL https://bun.sh/install | bash -s -- bun-v1.3.14
-ENV PATH="/root/.bun/bin:$PATH"
-
 # Leverage Docker cache: copy only dependency manifests first
-COPY package.json bun.lock ./
+COPY package.json package-lock.json ./
 ENV HUSKY=0
-RUN --mount=type=cache,target=/root/.bun/install/cache \
-    bun install --frozen-lockfile
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --ignore-scripts 2>/dev/null || npm install --ignore-scripts
 
 # ============================================================
 # Stage 3: builder — compile the Next.js app
@@ -44,7 +40,7 @@ ENV NODE_ENV=production
 # The real database connection is configured at runtime via start.sh.
 RUN npx prisma generate
 
-RUN bun run build
+RUN npm run build
 
 # Production image — no bun, no dev tools
 FROM node:20-alpine AS runner
