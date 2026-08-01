@@ -95,7 +95,7 @@ export async function processWebhookWithRetry(
     }
 
     throw new Error("Handler returned false");
-  } catch (error) {
+  } catch (error: unknown) {
     const updatedEvent = await db.webhookEvent.findUnique({
       where: { id: eventId },
     });
@@ -202,7 +202,7 @@ export async function processPendingWebhooks(): Promise<{
         // Count as "processed" but not succeeded since no handler ran
         succeeded++;
       }
-    } catch (error) {
+    } catch (error: unknown) {
       log.error(`Failed to process webhook event ${event.id}`, {
         error: error instanceof Error ? error.message : String(error),
       });

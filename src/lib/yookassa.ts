@@ -61,7 +61,7 @@ async function yooKassaRequest<T>(
       },
       body: body ? JSON.stringify(body) : undefined,
     });
-  } catch (err) {
+  } catch (err: unknown) {
     log.error("YooKassa network error", { path, method, error: String(err) });
     throw new Error(`YooKassa: network error — ${err instanceof Error ? err.message : String(err)}`);
   }
