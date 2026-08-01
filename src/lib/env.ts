@@ -4,6 +4,8 @@
  * Values are lazily cached on first access — env vars don't change at runtime.
  */
 
+/* eslint-disable no-console */
+
 const cache = new Map<string, unknown>();
 
 function cached<T>(key: string, compute: () => T): T {
@@ -21,7 +23,7 @@ function getRequiredEnv(key: string): string {
 
 function warn(message: string): void {
   if (typeof console !== "undefined" && typeof console.warn === "function") {
-    console.warn(message);
+    console.warn(`[env] ${message}`);
   }
 }
 

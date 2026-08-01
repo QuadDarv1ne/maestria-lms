@@ -3,26 +3,28 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { clearEnvCache, env } from "./env";
 
 describe("env.validate", () => {
-  const originalEnv = process.env;
+  const originalEnv = { ...process.env };
 
   beforeEach(() => {
-    process.env = { ...originalEnv };
+    // Clear all test-related env vars
+    for (const key of Object.keys(process.env)) {
+      if (key.startsWith("NEXT_PUBLIC_") || key === "DATABASE_URL" || key === "NEXTAUTH_SECRET" || key === "RESEND_API_KEY" || key === "REDIS_URL" || key === "NODE_ENV") {
+        delete (process.env as Record<string, string | undefined>)[key];
+      }
+    }
+    // Restore non-test env vars
+    Object.assign(process.env, originalEnv);
     clearEnvCache();
-    delete process.env.NODE_ENV;
-    delete process.env.DATABASE_URL;
-    delete process.env.NEXTAUTH_SECRET;
-    delete process.env.RESEND_API_KEY;
-    delete process.env.REDIS_URL;
   });
 
   afterEach(() => {
-    process.env = originalEnv;
+    Object.assign(process.env, originalEnv);
     clearEnvCache();
     vi.restoreAllMocks();
   });
 
   it("warns for missing required environment variables in production", () => {
-    process.env.NODE_ENV = "production";
+    (process.env as Record<string, string | undefined>).NODE_ENV = "production";
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
 
     env.validate();
