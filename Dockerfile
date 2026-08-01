@@ -4,7 +4,8 @@
 # Stage 1: base — shared Alpine with common deps
 # ============================================================
 FROM node:20-alpine AS base
-RUN apk add --no-cache libc6-compat curl bash openssl python3 make g++
+RUN apk add --no-cache libc6-compat curl bash openssl python3 make g++ && \
+    ln -sf /usr/bin/python3 /usr/bin/python
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
@@ -18,7 +19,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 ENV HUSKY=0
 ENV PYTHON=/usr/bin/python3
-RUN --mount=type=cache,target=/root/.npm \
+RUN npm config set python /usr/bin/python3 && \
+    --mount=type=cache,target=/root/.npm \
     npm ci --no-audit --no-fund && \
     npm install --no-save lightningcss-linux-x64-musl --no-audit --no-fund && \
     node -e "const { existsSync } = require('fs'); const path = require.resolve('lightningcss'); const bin = path.replace(/node\/index\.js$/, 'node/lightningcss.linux-x64-musl.node'); if (!existsSync(bin)) { console.error('Missing lightningcss native binary:', bin); process.exit(1); } console.log('lightningcss native binary ok:', bin);"
