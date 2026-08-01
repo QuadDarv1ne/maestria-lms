@@ -208,33 +208,6 @@ function applySecurityHeaders(response: NextResponse, pathname: string): void {
   const cdnOrigin = safeOrigin(env.cdnUrl);
   const s3Origin = safeOrigin(env.s3Endpoint);
 
-  const imgSources = [
-    "'self'",
-    "data:",
-    "blob:",
-    "https://api.dicebear.com",
-    "https://freeimage.host",
-    "https://iili.io",
-    "https://*.freeimage.host",
-    "https://*.trbcdn.net",
-    "https://img.youtube.com",
-    "https://i.ytimg.com",
-    "https://placehold.co",
-    "https://via.placeholder.com",
-  ];
-  if (cdnOrigin) imgSources.push(cdnOrigin);
-
-  const connectSources = [
-    "'self'",
-    "ws:",
-    "wss:",
-    "https://*.pusher.com",
-    "https://*.socket.io",
-    "https://api.resend.com",
-  ];
-  if (cdnOrigin) connectSources.push(cdnOrigin);
-  if (s3Origin) connectSources.push(s3Origin);
-
   // Next.js generates new inline script hashes on every build.
   // Using 'unsafe-inline' for scripts is required because we cannot
   // predict the hashes at build time. In production, Next.js uses
@@ -245,17 +218,18 @@ function applySecurityHeaders(response: NextResponse, pathname: string): void {
     "Content-Security-Policy",
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline'",
-      "style-src 'self' 'unsafe-inline'",
-      `img-src ${imgSources.join(" ")}`,
-      "font-src 'self' https: data:",
-      `connect-src ${connectSources.join(" ")}`,
-      "frame-ancestors 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
+      "style-src 'self' 'unsafe-inline' https:",
+      "img-src 'self' data: blob: https:",
+      "font-src 'self' data: https:",
+      `connect-src 'self' https: http://localhost:* wss: http://localhost:* ${cdnOrigin ? cdnOrigin : ''} ${s3Origin ? s3Origin : ''}`.trim(),
+      "media-src 'self' https:",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
-      "upgrade-insecure-requests",
-    ].join("; "),
+      "frame-src 'self' https://www.youtube.com https://player.vimeo.com https://ok.ru",
+      "frame-ancestors 'self' https://www.youtube.com",
+    ].filter(s => s.length > 0).join("; "),
   );
 }
 
