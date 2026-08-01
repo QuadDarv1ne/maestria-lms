@@ -18,7 +18,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 ENV HUSKY=0
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --ignore-scripts 2>/dev/null || npm install --ignore-scripts
+    npm ci --no-audit --no-fund || npm install --no-audit --no-fund
 
 # ============================================================
 # Stage 3: builder — compile the Next.js app
