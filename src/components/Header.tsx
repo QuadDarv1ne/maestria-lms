@@ -234,7 +234,7 @@ export function Header() {
             >
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white px-1" aria-live="polite">
+                <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white px-1" aria-live="polite" aria-atomic="true">
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
@@ -402,9 +402,11 @@ export function Header() {
                         variant={theme === opt.value ? "default" : "outline"}
                         size="sm"
                         className="gap-1"
+                        aria-label={t(opt.labelKey, locale)}
+                        aria-pressed={theme === opt.value}
                         onClick={() => setTheme(opt.value)}
                       >
-                        <span>{opt.icon}</span>
+                        <span aria-hidden="true">{opt.icon}</span>
                       </Button>
                     ))}
                   </div>

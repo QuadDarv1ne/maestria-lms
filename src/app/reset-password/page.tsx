@@ -91,6 +91,10 @@ function ResetPasswordContent() {
       const data = await res.json();
 
       if (!res.ok) {
+        // The token was rejected as invalid/expired — drop it from sessionStorage
+        if (res.status === 400 && /токен|token/i.test(data.error ?? "")) {
+          sessionStorage.removeItem("reset-token");
+        }
         setError(data.error || t("auth.resetError", locale));
         return;
       }
@@ -141,8 +145,8 @@ function ResetPasswordContent() {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950 p-3 rounded-lg">
-                  <AlertCircle className="w-4 h-4 replaceAll" />
+                <div role="alert" className="flex items-center gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950 p-3 rounded-lg">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
                   {error}
                 </div>
               )}
@@ -164,7 +168,14 @@ function ResetPasswordContent() {
                       <span className="text-muted-foreground">{t("auth.passwordStrength", locale)}</span>
                       <span className={strengthColor}>{strengthLabel}</span>
                     </div>
-                    <div className="flex gap-1">
+                    <div
+                      role="progressbar"
+                      aria-label={t("auth.passwordStrength", locale)}
+                      aria-valuemin={0}
+                      aria-valuemax={4}
+                      aria-valuenow={passwordScore}
+                      className="flex gap-1"
+                    >
                       {[1, 2, 3, 4].map((level) => (
                         <div
                           key={level}

@@ -225,7 +225,13 @@ export async function POST(request: NextRequest) {
       refunded: "refunded",
     };
 
-    const normalizedStatus = statusMap[data.status.toLowerCase()] ?? data.status.toLowerCase();
+    const rawStatus = data.status.trim().toLowerCase();
+    const normalizedStatus = statusMap[rawStatus] ?? rawStatus;
+
+    if (normalizedStatus === "pending") {
+      // Initial state notification — nothing to process yet
+      return NextResponse.json({ received: true, status: normalizedStatus });
+    }
 
     if (normalizedStatus !== "completed") {
       // Update payment to failed/refunded status

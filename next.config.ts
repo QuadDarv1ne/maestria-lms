@@ -2,11 +2,10 @@ import type { NextConfig } from "next";
 
 // Security headers are set in next.config.ts with fine-grained control
 // (different rules for API routes, static assets, etc.)
-// The Edge middleware (middleware.ts) handles locale detection and maintenance mode,
-// but does NOT run in standalone mode — so critical headers MUST be here.
+// src/proxy.ts (Next.js 16 middleware) also applies security headers,
+// locale detection and maintenance mode on every request.
 //
 // NOTE: Amvera's reverse proxy may override some headers (especially Content-Security-Policy).
-// The CSP is also set via <meta> tag in the root layout for compatibility.
 
 const nextConfig: NextConfig = {
   output: "standalone",

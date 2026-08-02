@@ -265,6 +265,18 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
     }
   };
 
+  // Rating breakdown — real per-star counts from the reviews API.
+  // Computed before early returns: React hooks must run unconditionally.
+  const ratingBreakdown = useMemo(() => {
+    const distribution = reviewsData?.distribution;
+    const totalReviews = reviewsData?.pagination?.total ?? course?.reviewCount ?? 0;
+    return [5, 4, 3, 2, 1].map(star => {
+      const count = distribution ? (distribution[star] ?? 0) : 0;
+      const pct = totalReviews > 0 ? Math.round((count / totalReviews) * 100) : 0;
+      return { star, count, pct };
+    });
+  }, [reviewsData, course]);
+
   if (loading) {
     return <CourseDetailSkeleton />;
   }
@@ -294,20 +306,6 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
   // Memoized computations — must be called before any early return
   const requirements = safeJsonParse<string[]>(course.requirements, []);
   const whatYouLearn = safeJsonParse<string[]>(course.whatYouLearn, []);
-
-  // Rating breakdown — computed from the full course rating data
-  // Since we only have paginated reviews, we use course-level aggregate data
-  // The breakdown is estimated based on the course average rating
-  const ratingBreakdown = (() => {
-    const totalReviews = reviewsData?.pagination?.total ?? course?.reviewCount ?? 0;
-    return [5, 4, 3, 2, 1].map(star => {
-      const distance = Math.abs(star - (course?.rating ?? 0));
-      const weight = Math.max(0, 1 - distance * 0.4);
-      const count = Math.round(weight * totalReviews * 0.3);
-      const pct = totalReviews > 0 ? Math.round((count / Math.max(1, totalReviews)) * 100) : 0;
-      return { star, count, pct };
-    });
-  })();
 
   return (
     <>

@@ -49,8 +49,8 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const { page, limit, skip } = parsePagination(searchParams, { defaultLimit: 10, maxLimit: 50 });
 
-    // Fetch reviews and total count in parallel
-    const [reviews, total] = await Promise.all([
+    // Fetch reviews, total count and rating distribution in parallel
+    const [reviews, total, distributionRows] = await Promise.all([
       db.review.findMany({
         where: { courseId: resolvedCourseId },
         orderBy: { createdAt: "desc" },
@@ -69,11 +69,22 @@ export async function GET(
       db.review.count({
         where: { courseId: resolvedCourseId },
       }),
+      db.review.groupBy({
+        by: ["rating"],
+        where: { courseId: resolvedCourseId },
+        _count: { rating: true },
+      }),
     ]);
+
+    const distribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    for (const row of distributionRows) {
+      distribution[row.rating] = row._count.rating;
+    }
 
     return NextResponse.json(
       {
         reviews,
+        distribution,
         pagination: {
           page,
           limit,

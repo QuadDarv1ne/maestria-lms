@@ -2,6 +2,23 @@
 
 import { useQuery } from "@tanstack/react-query";
 
+async function fetchJson<T>(url: string, signal?: AbortSignal, timeoutMs = 30_000): Promise<T> {
+  // AbortController with a timeout as a safety net — prevents requests
+  // from hanging indefinitely if the server is slow.
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { signal: signal || controller.signal });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ error: null }));
+      throw new Error(error?.error || `Failed to fetch (${res.status})`);
+    }
+    return res.json();
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 interface CourseCard {
   id: string;
   title: string;
@@ -48,26 +65,7 @@ export function useCourses(filters?: {
 
   return useQuery<CoursesResponse>({
     queryKey: ["courses", qs],
-    queryFn: async ({ signal }) => {
-      // Create an AbortController with a timeout as a safety net
-      // This prevents requests from hanging indefinitely if the server is slow
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30_000);
-
-      try {
-        const res = await fetch(`/api/courses${qs ? `?${qs}` : ""}`, {
-          signal: signal || controller.signal,
-        });
-
-        if (!res.ok) {
-          const error = await res.json().catch(() => ({ error: null }));
-          throw new Error(error?.error || `Failed to fetch courses (${res.status})`);
-        }
-        return res.json();
-      } finally {
-        clearTimeout(timeoutId);
-      }
-    },
+    queryFn: ({ signal }) => fetchJson<CoursesResponse>(`/api/courses${qs ? `?${qs}` : ""}`, signal),
     staleTime: 30_000,
   });
 }
@@ -130,23 +128,7 @@ export interface CourseDetail {
 export function useCourse(id: string | undefined) {
   return useQuery<{ course: CourseDetail }>({
     queryKey: ["course", id],
-    queryFn: async ({ signal }) => {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30_000);
-
-      try {
-        const res = await fetch(`/api/courses/${id}`, {
-          signal: signal || controller.signal,
-        });
-        if (!res.ok) {
-          const error = await res.json().catch(() => ({ error: null }));
-          throw new Error(error?.error || `Failed to fetch course (${res.status})`);
-        }
-        return res.json();
-      } finally {
-        clearTimeout(timeoutId);
-      }
-    },
+    queryFn: ({ signal }) => fetchJson<{ course: CourseDetail }>(`/api/courses/${id}`, signal),
     enabled: !!id,
     staleTime: 60_000,
   });
@@ -167,26 +149,20 @@ export interface Review {
   };
 }
 
-export function useCourseReviews(courseId: string | undefined, page = 1, limit = 10) {
-  return useQuery<{ reviews: Review[]; pagination: { page: number; total: number; totalPages: number } }>({
-    queryKey: ["course-reviews", courseId, page, limit],
-    queryFn: async ({ signal }) => {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30_000);
+export interface ReviewsResponse {
+  reviews: Review[];
+  distribution?: Record<number, number>;
+  pagination: { page: number; total: number; totalPages: number };
+}
 
-      try {
-        const res = await fetch(`/api/courses/${courseId}/reviews?page=${page}&limit=${limit}`, {
-          signal: signal || controller.signal,
-        });
-        if (!res.ok) {
-          const error = await res.json().catch(() => ({ error: null }));
-          throw new Error(error?.error || `Failed to fetch reviews (${res.status})`);
-        }
-        return res.json();
-      } finally {
-        clearTimeout(timeoutId);
-      }
-    },
+export function useCourseReviews(courseId: string | undefined, page = 1, limit = 10) {
+  return useQuery<ReviewsResponse>({
+    queryKey: ["course-reviews", courseId, page, limit],
+    queryFn: ({ signal }) =>
+      fetchJson<ReviewsResponse>(
+        `/api/courses/${courseId}/reviews?page=${page}&limit=${limit}`,
+        signal,
+      ),
     enabled: !!courseId,
     staleTime: 30_000,
   });
