@@ -167,37 +167,32 @@ export async function GET(
       };
     });
 
-    // Calculate streak info (consecutive days with progress)
-    const sortedDates = progressRecords
-      .filter((p): p is typeof p & { lastAccessed: Date } => p.lastAccessed !== null)
-      .map((p) => p.lastAccessed.toISOString().split("T")[0])
-      .filter((v, i, a) => a.indexOf(v) === i)
-      .sort()
-      .reverse();
+    // Calculate streak info (consecutive days with progress, UTC-based)
+    const utcDateKey = (d: Date): string => d.toISOString().split("T")[0];
+
+    const activeDays = new Set(
+      progressRecords
+        .filter((p): p is typeof p & { lastAccessed: Date } => p.lastAccessed !== null)
+        .map((p) => utcDateKey(p.lastAccessed)),
+    );
+
+    const now = new Date();
+    const todayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
     let currentStreak = 0;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (sortedDates.length === 0) {
-      // No progress at all
-    } else {
-      const lastDate = new Date(sortedDates[0] + "T00:00:00");
-      lastDate.setHours(0, 0, 0, 0);
-      if (lastDate.getTime() === today.getTime() || lastDate.getTime() === yesterday.getTime()) {
-        currentStreak = 1;
-        for (let i = 1; i < sortedDates.length; i++) {
-          const curr = new Date(sortedDates[i] + "T00:00:00");
-          curr.setHours(0, 0, 0, 0);
-          const diffMs = yesterday.getTime() - curr.getTime();
-          const diffDays = diffMs / 86400000;
-          if (Math.abs(diffDays - currentStreak) < 0.001) {
-            currentStreak++;
-          } else {
-            break;
-          }
+    const cursor = new Date(todayUtc);
+    // Streak may start today or yesterday; otherwise it is broken.
+    if (!activeDays.has(utcDateKey(cursor))) {
+      cursor.setUTCDate(cursor.getUTCDate() - 1);
+    }
+    if (activeDays.has(utcDateKey(cursor))) {
+      currentStreak = 1;
+      for (;;) {
+        cursor.setUTCDate(cursor.getUTCDate() - 1);
+        if (activeDays.has(utcDateKey(cursor))) {
+          currentStreak++;
+        } else {
+          break;
         }
       }
     }
