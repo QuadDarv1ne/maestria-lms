@@ -8,15 +8,3 @@ build:
 
 run:
   containerPort: 3000
-  env:
-    - key: NEXT_PUBLIC_SITE_URL
-      value: https://maestria-lms-maestro7it.amvera.io
-  health:
-    path: /api/health
-    interval: 30
-    timeout: 10
-    initialDelay: 40
-    retries: 3
-  resources:
-    memory: 512
-    cpu: 0.5
