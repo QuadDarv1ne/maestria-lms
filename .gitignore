@@ -65,9 +65,6 @@ src/generated/
 *.db-journal
 prisma-data/
 
-# Use bun.lock as single lock file (project uses bun)
-package-lock.json
-
 # MiMoCode runtime files
 .mimocode/  
 # Generated Prisma Client (regenerated at build time)  
