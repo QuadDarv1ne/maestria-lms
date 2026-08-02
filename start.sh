@@ -11,7 +11,7 @@ echo "=========================================="
 # ── Ensure Prisma Client is generated ───────────
 # This is needed when DATABASE_URL was not available during Docker build
 # (e.g., on Amvera where build-time env vars differ from runtime env vars)
-if [ ! -d "node_modules/.prisma/client" ]; then
+if [ ! -d "src/generated/prisma" ]; then
   echo "[startup] Generating Prisma Client..."
   npx prisma generate || echo "[startup] WARN: prisma generate failed — will try to use pre-built client"
 fi
