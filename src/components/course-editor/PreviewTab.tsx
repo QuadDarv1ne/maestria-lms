@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { t } from "@/lib/i18n";
 import { lessonTypeIcon, levelLabels, levelColors, CATEGORIES } from "@/lib/constants";
-import { formatNumber, getInitials } from "@/lib/utils";
+import { formatCurrency, getInitials } from "@/lib/utils";
 import type { Locale } from "@/lib/stores/ui";
 import type { CourseFormData } from "./types";
 import type { UserData } from "@/lib/store";
@@ -127,11 +127,11 @@ export function PreviewTab({
                         <div>
                           <div className="flex items-baseline gap-2">
                             <span className="text-3xl font-bold">
-                              {formatNumber(form.price, locale)} ₽
+                              {formatCurrency(form.price, "RUB", locale)}
                             </span>
                             {form.oldPrice > form.price && (
                               <span className="text-lg text-muted-foreground line-through">
-                                {formatNumber(form.oldPrice, locale)} ₽
+                                {formatCurrency(form.oldPrice, "RUB", locale)}
                               </span>
                             )}
                           </div>

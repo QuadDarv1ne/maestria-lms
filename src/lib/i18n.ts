@@ -27,11 +27,3 @@ export function useLocale() {
 
   return { locale, setLocale };
 }
-
-/**
- * @deprecated Locales are loaded statically at module level.
- * This function is kept as a no-op for backward compatibility.
- */
-export async function loadLocale(_locale: Locale): Promise<void> {
-  // All locales are already loaded via static imports
-}

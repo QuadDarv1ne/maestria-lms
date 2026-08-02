@@ -87,7 +87,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         if (user.twoFactorEnabled && !credentials.twoFactorCode) {
-          throw new Error("ТРЕБУЕТСЯ_2FA");
+          throw new Error("REQUIRES_2FA");
         }
 
         if (user.twoFactorEnabled && credentials.twoFactorCode) {

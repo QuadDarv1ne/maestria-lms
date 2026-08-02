@@ -1,5 +1,5 @@
 import { t } from "@/lib/i18n";
-import { formatNumber } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LineChart, DonutChart } from "@/components/admin/Charts";
@@ -19,10 +19,10 @@ export function AdminFinance(props: AdminTabProps) {
       {/* Финансовые KPI */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: t("adminPage.kpiTotalRevenue", locale), value: `${formatNumber(totalRevenue, locale)} ₽`, icon: <DollarSign className="w-5 h-5 text-emerald-600" /> },
+          { label: t("adminPage.kpiTotalRevenue", locale), value: formatCurrency(totalRevenue, "RUB", locale), icon: <DollarSign className="w-5 h-5 text-emerald-600" /> },
           { label: t("adminPage.kpiPaidCourses", locale), value: courses.filter(c => c.price > 0).length, icon: <BookOpen className="w-5 h-5 text-blue-600" /> },
           { label: t("adminPage.kpiFreeCourses", locale), value: courses.filter(c => c.price === 0).length, icon: <Gift className="w-5 h-5 text-amber-600" /> },
-          { label: t("adminPage.kpiAvgCheck", locale), value: courses.filter(c => c.price > 0).length > 0 ? `${formatNumber(Math.round(courses.filter(c => c.price > 0).reduce((a, c) => a + c.price, 0) / courses.filter(c => c.price > 0).length), locale)} ₽` : "0 ₽", icon: <Wallet className="w-5 h-5 text-violet-600" /> },
+          { label: t("adminPage.kpiAvgCheck", locale), value: courses.filter(c => c.price > 0).length > 0 ? formatCurrency(Math.round(courses.filter(c => c.price > 0).reduce((a, c) => a + c.price, 0) / courses.filter(c => c.price > 0).length), "RUB", locale) : formatCurrency(0, "RUB", locale), icon: <Wallet className="w-5 h-5 text-violet-600" /> },
         ].map((stat, i) => (
           <Card key={i} className="border-0 shadow-sm" aria-label={stat.label}>
             <CardContent className="p-4">
@@ -49,8 +49,8 @@ export function AdminFinance(props: AdminTabProps) {
         <CardContent>
           <LineChart data={demoMonthlyRevenue.map(v => v / 1000)} labels={monthLabels} color="#10b981" height={220} fillOpacity={0.15} strokeWidth={3} />
           <div className="flex justify-between mt-3 text-xs text-muted-foreground">
-            <span>{t("adminPage.statTotalIncome", locale)}: <strong className="text-foreground">{(demoMonthlyRevenue.reduce((a, b) => a + b, 0) / 1000).toFixed(0)}K ₽</strong></span>
-            <span>{t("adminPage.statPeak", locale)}: <strong className="text-foreground">{`${(Math.max(...demoMonthlyRevenue) / 1000).toFixed(0)}K ₽ (${monthLabels[demoMonthlyRevenue.indexOf(Math.max(...demoMonthlyRevenue))]})`}</strong></span>
+            <span>{t("adminPage.statTotalIncome", locale)}: <strong className="text-foreground">{formatCurrency(demoMonthlyRevenue.reduce((a, b) => a + b, 0), "RUB", locale)}</strong></span>
+            <span>{t("adminPage.statPeak", locale)}: <strong className="text-foreground">{`${formatCurrency(Math.max(...demoMonthlyRevenue), "RUB", locale)} (${monthLabels[demoMonthlyRevenue.indexOf(Math.max(...demoMonthlyRevenue))]})`}</strong></span>
           </div>
         </CardContent>
       </Card>
@@ -81,7 +81,7 @@ export function AdminFinance(props: AdminTabProps) {
                     <div key={cat}>
                       <div className="flex justify-between text-sm mb-1">
                         <span className="truncate mr-2">{cat}</span>
-                        <span className="font-medium shrink-0">{formatNumber(revenue, locale)} ₽</span>
+                        <span className="font-medium shrink-0">{formatCurrency(revenue, "RUB", locale)}</span>
                       </div>
                       <div className="h-2.5 bg-muted rounded-full overflow-hidden">
                         <div className="h-full bg-gradient-to-r from-emerald-500 to-green-400 rounded-full transition-all duration-700" style={{ width: `${(revenue / maxRev) * 100}%` }} />

@@ -53,7 +53,7 @@ import {
 } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { CourseImage } from "@/components/CourseImage";
-import { formatDate, formatNumber, getInitials } from "@/lib/utils";
+import { formatDate, formatCurrency, getInitials } from "@/lib/utils";
 import { levelLabels, levelColors } from "@/lib/constants";
 import { useCourse, useCourseReviews } from "@/hooks/useCourses";
 import { useQueryClient } from "@tanstack/react-query";
@@ -528,23 +528,23 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                           <div>
                             <div className="flex items-baseline gap-2">
                               <span className="text-3xl font-bold">
-                                {formatNumber(promoCodeValid && promoFinalPrice !== null ? promoFinalPrice : course.price, locale)} ₽
+                                {formatCurrency(promoCodeValid && promoFinalPrice !== null ? promoFinalPrice : course.price, "RUB", locale)}
                               </span>
                               {promoCodeValid && promoFinalPrice !== null && promoFinalPrice < course.price ? (
                                 <span className="text-lg text-muted-foreground line-through">
-                                  {formatNumber(course.price, locale)} ₽
+                                  {formatCurrency(course.price, "RUB", locale)}
                                 </span>
                               ) : (
                                 course.oldPrice && (
                                   <span className="text-lg text-muted-foreground line-through">
-                                    {formatNumber(course.oldPrice, locale)} ₽
+                                    {formatCurrency(course.oldPrice, "RUB", locale)}
                                   </span>
                                 )
                               )}
                             </div>
                             {promoCodeValid && promoDiscount > 0 ? (
                               <Badge className="mt-1 bg-green-100 text-green-700 border-0">
-                                {t("course.promoApplied", locale)} −{formatNumber(promoDiscount, locale)} ₽
+                                {t("course.promoApplied", locale)} −{formatCurrency(promoDiscount, "RUB", locale)}
                               </Badge>
                             ) : (
                               course.oldPrice && (
@@ -622,7 +622,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                           </div>
                           {promoCodeValid === true && promoDiscount > 0 && (
                             <p className="text-xs text-green-600">
-                              {t("course.promoApplied", locale)}: −{formatNumber(promoDiscount, locale)} ₽
+                              {t("course.promoApplied", locale)}: −{formatCurrency(promoDiscount, "RUB", locale)}
                             </p>
                           )}
                           {promoCodeValid === false && promoError && (

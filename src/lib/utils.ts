@@ -18,7 +18,7 @@ export function formatDate(
 ): string {
   const d = typeof date === "string" ? new Date(date) : date;
   if (isNaN(d.getTime())) return "Invalid date";
-  return d.toLocaleDateString(localeMap[locale] || "ru-RU", options);
+  return d.toLocaleDateString(localeMap[locale] || "en-US", options);
 }
 
 export function formatNumber(
@@ -26,7 +26,20 @@ export function formatNumber(
   locale: string = "ru",
   options?: Intl.NumberFormatOptions
 ): string {
-  return value.toLocaleString(localeMap[locale] || "ru-RU", options);
+  return value.toLocaleString(localeMap[locale] || "en-US", options);
+}
+
+export function formatCurrency(
+  amount: number,
+  currency: string = "RUB",
+  locale: string = "ru",
+): string {
+  return new Intl.NumberFormat(localeMap[locale] || "en-US", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amount);
 }
 
 export function parsePagination(

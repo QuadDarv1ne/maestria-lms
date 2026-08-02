@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CourseImage } from "@/components/CourseImage";
 import { levelColors, levelLabels } from "@/lib/constants";
-import { formatNumber } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { Clock, BookOpen, Star, TrendingUp, Percent } from "lucide-react";
 
 interface CourseCardCourse {
@@ -67,7 +67,7 @@ export const CourseCard = React.memo(function CourseCard({ course, onClick }: Co
       tabIndex={0}
       onKeyDown={handleKeyDown}
       onClick={handleClick}
-      aria-label={`${course.title} — ${course.price === 0 ? t("common.free", locale) : `${course.price} ₽`}`}
+      aria-label={`${course.title} — ${course.price === 0 ? t("common.free", locale) : formatCurrency(course.price, "RUB", locale)}`}
       className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1.5 border-0 shadow-sm overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
     >
       <CardContent className="p-0">
@@ -161,11 +161,11 @@ export const CourseCard = React.memo(function CourseCard({ course, onClick }: Co
                 <div className="flex items-center gap-2">
                   {course.oldPrice && (
                     <span className="text-xs text-muted-foreground line-through">
-                      {formatNumber(course.oldPrice, locale)} ₽
+                      {formatCurrency(course.oldPrice, "RUB", locale)}
                     </span>
                   )}
                   <span className="text-sm font-bold text-foreground">
-                    {formatNumber(course.price, locale)} ₽
+                    {formatCurrency(course.price, "RUB", locale)}
                   </span>
                 </div>
               )}

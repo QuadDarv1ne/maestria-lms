@@ -21,11 +21,11 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
+
   try {
     const { id: courseId } = await params;
-
-    const blocked = checkRateLimit(request);
-    if (blocked) return blocked;
 
     const session = await getAuthSession();
     if (!requireAuth(session)) {
@@ -42,7 +42,7 @@ export async function GET(
 
     if (!course) {
       return NextResponse.json(
-        { error: "Course not found" },
+        { error: "Курс не найден" },
         { status: 404 }
       );
     }
@@ -59,7 +59,7 @@ export async function GET(
 
     if (!enrollment) {
       return NextResponse.json(
-        { error: "Not enrolled in this course" },
+        { error: "Вы не записаны на этот курс" },
         { status: 403 }
       );
     }
@@ -87,7 +87,7 @@ export async function GET(
 
     if (!courseWithModules) {
       return NextResponse.json(
-        { error: "Course not found" },
+        { error: "Курс не найден" },
         { status: 404 }
       );
     }
@@ -226,11 +226,11 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
+
   try {
     const { id: courseId } = await params;
-
-    const blocked = checkRateLimit(request);
-    if (blocked) return blocked;
 
     const session = await getAuthSession();
     if (!requireAuth(session)) {
@@ -247,7 +247,7 @@ export async function PATCH(
 
     if (!course) {
       return NextResponse.json(
-        { error: "Course not found" },
+        { error: "Курс не найден" },
         { status: 404 }
       );
     }
@@ -264,7 +264,7 @@ export async function PATCH(
 
     if (!enrollment || enrollment.status !== "active") {
       return NextResponse.json(
-        { error: "Active enrollment required" },
+        { error: "Необходима активная запись на курс" },
         { status: 403 }
       );
     }
@@ -275,7 +275,7 @@ export async function PATCH(
     if (!parsed.success) {
       return NextResponse.json(
         {
-          error: "Validation failed",
+          error: "Ошибка валидации",
           details: parsed.error.issues.map((i) => ({
             field: i.path.join("."),
             message: i.message,
@@ -300,7 +300,7 @@ export async function PATCH(
 
     if (!lesson || lesson.module.courseId !== resolvedCourseId) {
       return NextResponse.json(
-        { error: "Lesson not found in this course" },
+        { error: "Урок не найден в этом курсе" },
         { status: 404 }
       );
     }

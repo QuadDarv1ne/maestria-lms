@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { t } from "@/lib/i18n";
-import { formatDate, formatNumber } from "@/lib/utils";
+import { formatDate, formatCurrency } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -311,11 +311,11 @@ export function AdminPromoCodes(props: AdminTabProps) {
                         <Badge variant="outline">
                           {p.discountType === "percentage"
                             ? `${p.discountValue}%`
-                            : `${formatNumber(p.discountValue, locale)} ₽`}
+                            : formatCurrency(p.discountValue, "RUB", locale)}
                         </Badge>
                         {p.minAmount > 0 && (
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            {t("adminPromo.minAmount", locale)}: {formatNumber(p.minAmount, locale)} ₽
+                            {t("adminPromo.minAmount", locale)}: {formatCurrency(p.minAmount, "RUB", locale)}
                           </p>
                         )}
                       </TableCell>

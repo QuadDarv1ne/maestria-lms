@@ -124,7 +124,7 @@ export function AuthDialogs() {
       });
 
       if (result?.error) {
-        if (result.error === "ТРЕБУЕТСЯ_2FA") {
+        if (result.error === "REQUIRES_2FA") {
           setRequire2FA(true);
           toast.info(t("auth.twoFactorInfo", locale));
         } else {

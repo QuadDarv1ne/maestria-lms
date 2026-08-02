@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { log } from "@/lib/logger";
-import { formatDate, formatNumber } from "@/lib/utils";
+import { formatDate, formatCurrency } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Receipt, CreditCard, Loader2, Tag } from "lucide-react";
@@ -104,14 +104,14 @@ export function PaymentHistory() {
                 </div>
                 <div className="text-right shrink-0">
                   <div className="flex items-center justify-end gap-1.5">
-                    {p.discountAmount && p.discountAmount > 0 && (
+                    {p.discountAmount != null && p.discountAmount > 0 && (
                       <Tag className="w-3.5 h-3.5 text-amber-600" />
                     )}
-                    <span className="font-bold">{formatNumber(p.amount, locale)} ₽</span>
+                    <span className="font-bold">{formatCurrency(p.amount, p.currency, locale)}</span>
                   </div>
-                  {p.discountAmount && p.discountAmount > 0 && (
+                  {p.discountAmount != null && p.discountAmount > 0 && (
                     <p className="text-xs text-green-600">
-                      −{formatNumber(p.discountAmount, locale)} ₽
+                      −{formatCurrency(p.discountAmount, p.currency, locale)}
                     </p>
                   )}
                   <Badge className={`mt-1 text-[10px] ${statusColor}`}>

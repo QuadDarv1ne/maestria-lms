@@ -1,6 +1,34 @@
 # Maestria LMS — Worklog
 
 ---
+Task ID: 5
+Agent: Main Agent
+Task: Аудит кодовой базы — исправление безопасности, консистентности и качества
+
+Work Log:
+- Безопасность: `execSync` → `execFileSync` в backup route (защита от shell injection)
+- Rate limiting: добавлен `checkRateLimit` на POST /api/admin/backup (ранее отсутствовал)
+- Rate limiting: перемещён `checkRateLimit` перед `await params` в progress route (GET и PATCH)
+- Консистентность API: все английские error messages в courses/[id]/progress/route.ts заменены на русские (как в остальных routes): "Course not found" → "Курс не найден", "Not enrolled" → "Вы не записаны", и т.д.
+- Протокольный код: `"ТРЕБУЕТСЯ_2FA"` → `"REQUIRES_2FA"` в auth.ts и AuthDialogs.tsx (программный код, не UI-строка)
+- Удалена deprecated функция `loadLocale()` из i18n.ts + очищен вызов в Providers.tsx
+- Fallback локаль: `"ru-RU"` → `"en-US"` в formatDate/formatNumber для широкой совместимости
+- Новая утилита `formatCurrency(amount, currency, locale)` на базе `Intl.NumberFormat`
+- Все компоненты переведены с хардкода `₽` на `formatCurrency()`: PaymentHistory, CourseCard, CourseDetailPage, AdminFinance, AdminPromoCodes, PreviewTab
+- Null safety: `p.discountAmount &&` → `p.discountAmount != null &&` в PaymentHistory.tsx
+- Убран deprecated `document.execCommand("copy")` fallback в ErrorBoundary.tsx
+- Убран hardcoded русский fallback в ErrorBoundary: `|| "Проблема не устранена..."` → просто `t("error.maxRetries", locale)`
+- Очищены неиспользуемые imports (formatNumber) из 4 файлов
+- Проверено: typecheck чистый, ESLint 0 ошибок/0 warnings, 280 тестов проходят
+
+Stage Summary:
+- 1 security fix (execSync → execFileSync)
+- 2 rate limiting fixes (backup route, progress route ordering)
+- ~15 API error messages стандартизированы
+- 6 компонентов переведены на formatCurrency (убран хардкод ₽)
+- 3 deprecated/unused функции/imports удалены
+
+---
 Task ID: 4
 Agent: Main Agent
 Task: Промокоды в чекауте и админке, история платежей в профиле, email-уведомления

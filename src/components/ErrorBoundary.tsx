@@ -175,13 +175,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       .join("\n\n");
 
     navigator.clipboard.writeText(errorText).catch(() => {
-      // Fallback for older browsers
-      const textarea = document.createElement("textarea");
-      textarea.value = errorText;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
+      // Clipboard API unavailable — silently ignore
     });
   };
 
@@ -231,7 +225,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               {/* Show reload suggestion when max retries reached */}
               {isMaxRetries && (
                 <p className="w-full text-sm text-amber-600 dark:text-amber-400 mb-2">
-                  {t("error.maxRetries", locale) || "Проблема не устранена. Попробуйте перезагрузить страницу."}
+                  {t("error.maxRetries", locale)}
                 </p>
               )}
 
