@@ -69,19 +69,42 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-const provider = getDatabaseProvider();
-const databaseUrl = env.databaseUrl;
-const adapter = createAdapter(provider, databaseUrl);
+let prismaClient: PrismaClient | undefined;
+
+function getPrismaClient(): PrismaClient {
+  if (prismaClient) return prismaClient;
+  if (globalForPrisma.prisma) {
+    prismaClient = globalForPrisma.prisma;
+    return prismaClient;
+  }
+
+  const provider = getDatabaseProvider();
+  const databaseUrl = env.databaseUrl;
+  const adapter = createAdapter(provider, databaseUrl);
+
+  const client = new PrismaClient({
+    adapter,
+    log: env.isDevelopment ? ["query"] : ["error"],
+  });
+
+  prismaClient = client;
+  if (!env.isProduction) globalForPrisma.prisma = client;
+
+  return client;
+}
 
 // Validate env on first load (production only)
 env.validate();
 
-export const db =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    adapter,
-    log: env.isDevelopment ? ["query"] : ["error"],
-  });
+export const db = new Proxy({} as PrismaClient, {
+  get: (_target, prop) => {
+    const client = getPrismaClient();
+    const value = Reflect.get(client, prop, client) as unknown;
+    return typeof value === "function"
+      ? (value as (...args: unknown[]) => unknown).bind(client)
+      : value;
+  },
+}) as PrismaClient;
 
 export { Prisma };
 

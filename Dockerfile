@@ -3,7 +3,7 @@
 # ============================================================
 # Stage 1: base — shared Alpine with common deps
 # ============================================================
-FROM node:20-alpine AS base
+FROM node:22-alpine AS base
 RUN apk add --no-cache libc6-compat curl bash openssl python3 make g++ && \
     ln -sf /usr/bin/python3 /usr/bin/python
 RUN addgroup --system --gid 1001 nodejs && \
@@ -53,7 +53,7 @@ RUN npx prisma generate
 RUN npm run build
 
 # Production image — no bun, no dev tools
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 
 ARG NEXT_PUBLIC_SITE_URL=http://localhost:3000
