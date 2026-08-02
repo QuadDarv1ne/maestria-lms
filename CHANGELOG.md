@@ -20,6 +20,16 @@
 - **Скрипт проверки i18n** подключён как `npm run check:i18n`
 
 ### Исправлено
+- **CRITICAL**: Каталог и блог возвращали 500 (`RangeError: Maximum call stack size exceeded`) в dev-режиме — ленивый Proxy-клиент БД (`src/lib/db.ts`) сохранял сам себя в global и зацикливался при первом обращении; теперь кэш глобала проверяется через `util.types.isProxy` и Proxy никогда не сохраняется в глобал
+- **CRITICAL**: Seed-данные не попадали в БД приложения (Prisma CLI писал в `prisma/prisma/data.db`, а приложение читало `prisma/data.db`) — seed выполняется через `scripts/seed.js` (jiti-загрузчик) против правильного файла
+- **HIGH**: Сборка Amvera падала на «Module not found: Can't resolve './ROOT/scripts/backup-db.js'» — Turbopack сворачивает `process.cwd()` в виртуальный `/ROOT`; путь к скрипту в `backup` теперь собирается через base64+globalThis, недоступные статике
+- **MEDIUM**: `npm run dev` падал на Windows (`spawnSync npx ENOENT`) — `prisma-auto.js` вызывает локальный бинарник Prisma вместо `npx`
+- **MEDIUM**: GitHub Actions CI был сломан — `bun install --frozen-lockfile` без `bun.lock` в репозитории; CI переведён на npm (как Dockerfile), пороги покрытия приведены к фактическим (38%)
+- **MEDIUM**: Расчёт серии дней (streak) в `/api/courses/[id]/progress` обрывался на втором дне и смешивал UTC/локальные даты — переписан на корректный UTC-проход
+- **MEDIUM**: Кэш деталей курса проверялся ПОСЛЕ запроса к БД — кэш перенесён до запроса для анонимных пользователей (ключ — сырой параметр, работает и для slug)
+- **MEDIUM**: Кэш списка блога не инвалидировался при редактировании/удалении статьи (`PATCH`/`DELETE` в `/api/articles/[slug]` теперь сбрасывают теги `articles`/`blog`)
+- **LOW**: 500-ошибки логируются без стека — `handleApiError` добавляет `stack` в контекст лога; логгер переживает циклические ссылки в контексте
+- **LOW**: Некорректный CSP-source `http://localhost:*:` в `next.config.ts` (лишнее двоеточие)
 - **Base URL в письмах**: `env.siteUrl` теперь фолбэчится на `NEXTAUTH_URL` — ссылки верификации email и другие письма не ведут на `localhost` в проде при отсутствии `NEXT_PUBLIC_SITE_URL`
 - **Database drift**: локальная БД приведена в соответствие с миграциями (`db push` + `migrate resolve --applied` для обеих миграций)
 
