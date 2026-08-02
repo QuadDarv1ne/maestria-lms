@@ -4,6 +4,7 @@ import { addRateLimitHeaders, rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { log } from "@/lib/logger";
 import { execFileSync } from "child_process";
 import { env } from "@/lib/env";
+import path from "path";
 
 const checkRateLimit = rateLimit("admin", RATE_LIMITS.admin);
 
@@ -30,7 +31,14 @@ export async function POST(request: NextRequest) {
     const compress = searchParams.get("compress") === "true";
     const retain = parseInt(searchParams.get("retain") ?? "0", 10) || 0;
 
-    const backupScript = process.cwd() + "/scripts/backup-db.js";
+    // The path segments are base64-encoded so Turbopack cannot constant-fold
+    // them into a static path at build time: it treats spawn/execFile targets
+    // as module imports and fails with "server relative imports are not
+    // implemented yet" when process.cwd() folds to its virtual /ROOT.
+    const scriptDir = atob("c2NyaXB0cw=="); // "scripts"
+    const scriptFile = atob("YmFja3VwLWRiLmpz"); // "backup-db.js"
+    const cwd = (globalThis as { process?: { cwd: () => string } }).process?.cwd() ?? ".";
+    const backupScript = path.resolve(cwd, scriptDir, scriptFile);
     const args = [backupScript];
     if (compress) args.push("--compress");
     if (retain > 0) args.push("--retain", String(retain));

@@ -32,12 +32,11 @@ export async function GET(request: NextRequest) {
 
   try {
     // Try common log file locations
-    const cwd = process.cwd();
     const logPaths = [
-      cwd + "/server.log",
-      cwd + "/dev.log",
-      cwd + "/logs/app.log",
-      cwd + "/.next/server.log",
+      path.resolve(process.cwd(), "server.log"),
+      path.resolve(process.cwd(), "dev.log"),
+      path.resolve(process.cwd(), "logs", "app.log"),
+      path.resolve(process.cwd(), ".next", "server.log"),
     ];
 
     let logContent = "";

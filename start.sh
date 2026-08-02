@@ -34,6 +34,13 @@ until node node_modules/.bin/prisma migrate deploy; do
   RETRY_DELAY=$((RETRY_DELAY * 2))
 done
 
+# ── Seed empty database ─────────────────────────
+# Only seed when the database contains no courses, so a fresh deploy
+# gets demo content but existing production data is never wiped.
+if ! node scripts/seed.js --if-empty; then
+  echo "[startup] seed skipped (database already has content or seeding disabled)"
+fi
+
 # ── Start Application ───────────────────────────
 echo "[startup] starting Next.js (standalone) on port ${PORT:-3000}..."
 exec node server.js
