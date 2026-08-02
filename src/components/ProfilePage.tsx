@@ -19,10 +19,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   BookOpen, Award, Trophy, User, Activity, Clock, BookmarkCheck, Bookmark,
-  CheckCircle2, Edit3, Loader2, Lock, LogOut, MessageSquare, Save, Settings, Target,
+  CheckCircle2, Edit3, Loader2, Lock, LogOut, MessageSquare, Receipt, Save, Settings, Target,
   Upload,
 } from "lucide-react";
 import { ProfileSkeleton } from "@/components/skeletons/ProfileSkeleton";
+import { PaymentHistory } from "@/components/PaymentHistory";
 import { AchievementsPage } from "@/components/AchievementsPage";
 
 // Use translation keys version:
@@ -619,6 +620,10 @@ export function ProfilePage() {
             <Activity className="w-4 h-4 mr-2" />
             {t("profile.statisticsTab", locale)}
           </TabsTrigger>
+          <TabsTrigger value="payments">
+            <Receipt className="w-4 h-4 mr-2" />
+            {t("profile.paymentsTab", locale)}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="enrollments" className="mt-4">
@@ -849,6 +854,10 @@ export function ProfilePage() {
 
         <TabsContent value="achievements" className="mt-4">
           <AchievementsPage />
+        </TabsContent>
+
+        <TabsContent value="payments" className="mt-4">
+          <PaymentHistory />
         </TabsContent>
 
         <TabsContent value="statistics" className="mt-4">

@@ -128,10 +128,10 @@ export function reviewNotificationEmail(name: string, courseName: string, review
     html: layout("Новая оценка", `
       <h2 style="margin:0 0 16px;font-size:20px;color:#1e293b">Новая оценка</h2>
       <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">Здравствуйте, ${safeName}!</p>
-      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">Преподаватель оставил новую оценку и отзыв по курсу <strong>«${safeCourse}»</strong>.</p>
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">Студент оставил новую оценку и отзыв по вашему курсу <strong>«${safeCourse}»</strong>.</p>
       ${button(reviewUrl, "Посмотреть отзыв")}
     `),
-    text: `Здравствуйте, ${name}!\n\nПреподаватель оставил новую оценку и отзыв по курсу «${courseName}».\n\nПосмотреть отзыв: ${reviewUrl}`,
+    text: `Здравствуйте, ${name}!\n\nСтудент оставил новую оценку и отзыв по вашему курсу «${courseName}».\n\nПосмотреть отзыв: ${reviewUrl}`,
   };
 }
 

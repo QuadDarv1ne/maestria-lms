@@ -7,6 +7,7 @@ import { t } from "@/lib/i18n";
 import { sanitizeContent } from "@/lib/sanitize";
 import { log } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -137,6 +138,12 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
   const queryClient = useQueryClient();
   const [enrolling, setEnrolling] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string>("sbp");
+  const [promoCode, setPromoCode] = useState("");
+  const [promoCodeValid, setPromoCodeValid] = useState<boolean | null>(null);
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoDiscount, setPromoDiscount] = useState(0);
+  const [promoFinalPrice, setPromoFinalPrice] = useState<number | null>(null);
+  const [promoError, setPromoError] = useState<string | null>(null);
   const [reviewPage, setReviewPage] = useState(1);
 
   const { data: courseData, isLoading } = useCourse(courseId);
@@ -203,6 +210,50 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
     }, user.id);
   };
 
+  const validatePromo = async () => {
+    if (!user) {
+      router.push("?dialog=login");
+      return;
+    }
+    if (!promoCode.trim()) return;
+    setPromoLoading(true);
+    setPromoError(null);
+    try {
+      const res = await fetch("/api/payments/promo/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: promoCode, courseId }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setPromoCodeValid(true);
+        setPromoDiscount(data.discountAmount ?? 0);
+        setPromoFinalPrice(data.finalPrice ?? null);
+      } else {
+        setPromoCodeValid(false);
+        setPromoDiscount(0);
+        setPromoFinalPrice(null);
+        setPromoError(data.error || t("course.promoInvalid", locale));
+      }
+    } catch (err) {
+      log.error("Promo validation failed", { error: err instanceof Error ? err.message : String(err) });
+      setPromoCodeValid(false);
+      setPromoDiscount(0);
+      setPromoFinalPrice(null);
+      setPromoError(t("course.promoInvalid", locale));
+    } finally {
+      setPromoLoading(false);
+    }
+  };
+
+  const clearPromo = () => {
+    setPromoCode("");
+    setPromoCodeValid(null);
+    setPromoDiscount(0);
+    setPromoFinalPrice(null);
+    setPromoError(null);
+  };
+
   const handleEnroll = async () => {
     if (!user) {
       router.push("?dialog=login");
@@ -213,7 +264,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
       const res = await fetch(`/api/courses/${courseId}/enroll`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paymentMethod }),
+        body: JSON.stringify({ paymentMethod, promoCode: promoCodeValid ? promoCode : undefined }),
       });
       const data = await res.json();
 
@@ -477,24 +528,36 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                           <div>
                             <div className="flex items-baseline gap-2">
                               <span className="text-3xl font-bold">
-                                {formatNumber(course.price, locale)} ₽
+                                {formatNumber(promoCodeValid && promoFinalPrice !== null ? promoFinalPrice : course.price, locale)} ₽
                               </span>
-                              {course.oldPrice && (
+                              {promoCodeValid && promoFinalPrice !== null && promoFinalPrice < course.price ? (
                                 <span className="text-lg text-muted-foreground line-through">
-                                  {formatNumber(course.oldPrice, locale)} ₽
+                                  {formatNumber(course.price, locale)} ₽
                                 </span>
+                              ) : (
+                                course.oldPrice && (
+                                  <span className="text-lg text-muted-foreground line-through">
+                                    {formatNumber(course.oldPrice, locale)} ₽
+                                  </span>
+                                )
                               )}
                             </div>
-                            {course.oldPrice && (
-                              <Badge className="mt-1 bg-red-100 text-red-700 border-0">
-                                {t("course.discount", locale)}{" "}
-                                {Math.round(
-                                  ((course.oldPrice - course.price) /
-                                    course.oldPrice) *
-                                    100
-                                )}
-                                %
+                            {promoCodeValid && promoDiscount > 0 ? (
+                              <Badge className="mt-1 bg-green-100 text-green-700 border-0">
+                                {t("course.promoApplied", locale)} −{formatNumber(promoDiscount, locale)} ₽
                               </Badge>
+                            ) : (
+                              course.oldPrice && (
+                                <Badge className="mt-1 bg-red-100 text-red-700 border-0">
+                                  {t("course.discount", locale)}{" "}
+                                  {Math.round(
+                                    ((course.oldPrice - course.price) /
+                                      course.oldPrice) *
+                                      100
+                                  )}
+                                  %
+                                </Badge>
+                              )
                             )}
                           </div>
                         )}
@@ -528,6 +591,43 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                               </Label>
                             ))}
                           </RadioGroup>
+                        </div>
+                      )}
+
+                      {course.price > 0 && (
+                        <div className="space-y-2 mb-4">
+                          <p className="text-sm font-medium">{t("course.promoTitle", locale)}</p>
+                          <div className="flex gap-2">
+                            <Input
+                              value={promoCode}
+                              onChange={(e) => { setPromoCode(e.target.value); if (promoCodeValid) clearPromo(); }}
+                              placeholder={t("course.promoPlaceholder", locale)}
+                              disabled={promoCodeValid === true}
+                              className="flex-1"
+                            />
+                            {promoCodeValid === true ? (
+                              <Button type="button" variant="outline" onClick={clearPromo}>
+                                {t("course.promoRemove", locale)}
+                              </Button>
+                            ) : (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={validatePromo}
+                                disabled={promoLoading || !promoCode.trim()}
+                              >
+                                {promoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : t("course.promoApply", locale)}
+                              </Button>
+                            )}
+                          </div>
+                          {promoCodeValid === true && promoDiscount > 0 && (
+                            <p className="text-xs text-green-600">
+                              {t("course.promoApplied", locale)}: −{formatNumber(promoDiscount, locale)} ₽
+                            </p>
+                          )}
+                          {promoCodeValid === false && promoError && (
+                            <p className="text-xs text-red-600">{promoError}</p>
+                          )}
                         </div>
                       )}
 

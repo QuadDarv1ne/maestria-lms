@@ -3,6 +3,7 @@ import { formatNumber } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LineChart, DonutChart } from "@/components/admin/Charts";
+import { AdminPromoCodes } from "@/components/admin/AdminPromoCodes";
 import { demoMonthlyRevenue } from "@/data/demo-data";
 import type { AdminTabProps } from "./types";
 import type { AdminCourse } from "@/hooks/useAdmin";
@@ -114,6 +115,9 @@ export function AdminFinance(props: AdminTabProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Промокоды */}
+      <AdminPromoCodes {...props} />
     </div>
   );
 }

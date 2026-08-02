@@ -1,6 +1,25 @@
 # Maestria LMS — Worklog
 
 ---
+Task ID: 4
+Agent: Main Agent
+Task: Промокоды в чекауте и админке, история платежей в профиле, email-уведомления
+
+Work Log:
+- Промокод в чекауте (CourseDetailPage): поле ввода + кнопка «Применить» → POST /api/payments/promo/validate; при успехе показывается скидка и итоговая цена (оригинал зачёркнут); promoCode передаётся в /api/courses/[id]/enroll
+- enroll route: валидация промокода (validatePromoCode) до транзакции, в tx.payment.create добавлены amount со скидкой, discountAmount, promoCodeId (обе ветки: повторная запись и новая); redeemPromoCode вызывается после успешного создания платежа; в ответе amount = finalAmount
+- Управление промокодами в админке: новый клиентский компонент AdminPromoCodes.tsx встроен в AdminFinance (создание с типом скидки/сроком/лимитами/курсом, список, toggle активности, удаление с деактивацией использованных, копирование кода)
+- История платежей: новый PaymentHistory.tsx + вкладка «Платежи» в ProfilePage (GET /api/payments; статусы paid/pending/failed/refunded/cancelled, сумма, скидка, способ оплаты)
+- Email учителю при новом отзыве: courses/[id]/reviews POST → reviewNotificationEmail (только при создании, не обновлении; только если emailVerified). Исправлен текст шаблона: «Студент оставил новую оценку» вместо «Преподаватель»
+- env.siteUrl: добавлен fallback на NEXTAUTH_URL — ссылки в письмах корректны в проде без NEXT_PUBLIC_SITE_URL
+- ~70 i18n ключей добавлено (course.promo.*, adminPromo.*, profile.payment*), 3 локали синхронны
+- Проверено: typecheck чистый, ESLint 0 ошибок, 280 тестов проходят, next build успешен (была одна транзиентная ошибка копирования assets из-за лока файла — при повторе прошло)
+
+Stage Summary:
+- Промокоды полностью работают E2E: создание в админке → валидация в чекауте → применение при оплате → списание использования
+- Профиль обогащён историей платежей; учителя получают email о новых отзывах
+
+---
 Task ID: 3
 Agent: Main Agent
 Task: Продолжение улучшений — фикс drift БД, drag-drop UI на @dnd-kit, локализация остатков

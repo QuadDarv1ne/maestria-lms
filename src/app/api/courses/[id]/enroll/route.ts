@@ -6,6 +6,7 @@ import { createNotification } from "@/lib/notifications";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
 import { formatDate } from "@/lib/utils";
+import { validatePromoCode, redeemPromoCode } from "@/lib/promo-code";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -125,16 +126,39 @@ export async function POST(
     // Use resolved course.id for all DB operations (courseId param could be a slug)
     const resolvedCourseId = course.id;
 
-    // Read optional paymentMethod from request body
+    // Read optional paymentMethod and promoCode from request body
     let paymentMethod = "sbp";
+    let promoCodeInput: string | undefined;
     try {
       const body = await request.json();
       const parsed = paymentMethodSchema.safeParse(body?.paymentMethod);
       if (parsed.success) {
         paymentMethod = parsed.data;
       }
+      if (typeof body?.promoCode === "string" && body.promoCode.trim().length > 0) {
+        promoCodeInput = body.promoCode;
+      }
     } catch (err: unknown) {
       log.warn("Malformed request body for enroll, using default payment method", { error: err });
+    }
+
+    // Validate promo code if provided (paid courses only)
+    let promoResult: Awaited<ReturnType<typeof validatePromoCode>> | null = null;
+    let finalAmount = course.price;
+    let discountAmount = 0;
+    let promoCodeId: string | null = null;
+
+    if (promoCodeInput) {
+      promoResult = await validatePromoCode(promoCodeInput, course.price, userId, resolvedCourseId);
+      if (!promoResult.valid) {
+        return NextResponse.json(
+          { error: promoResult.error },
+          { status: 400 }
+        );
+      }
+      finalAmount = promoResult.finalPrice ?? course.price;
+      discountAmount = promoResult.discountAmount ?? 0;
+      promoCodeId = promoResult.promoCode?.id ?? null;
     }
 
     const result = await db.$transaction(async (tx) => {
@@ -159,7 +183,9 @@ export async function POST(
               data: {
                 userId,
                 courseId: resolvedCourseId,
-                amount: course.price,
+                amount: finalAmount,
+                discountAmount,
+                promoCodeId,
                 currency: course.currency,
                 status: "pending",
                 paymentMethod,
@@ -245,7 +271,9 @@ export async function POST(
         data: {
           userId,
           courseId: resolvedCourseId,
-          amount: course.price,
+          amount: finalAmount,
+          discountAmount,
+          promoCodeId,
           currency: course.currency,
           status: "pending",
           paymentMethod,
@@ -256,11 +284,16 @@ export async function POST(
         message: "Для записи на платный курс необходимо оплатить",
         requiresPayment: true,
         paymentId: payment.id,
-        amount: course.price,
+        amount: finalAmount,
         currency: course.currency,
         status: 200 as const,
       };
     });
+
+    // Redeem promo code after a successful payment creation
+    if ("requiresPayment" in result && result.requiresPayment && promoCodeId) {
+      await redeemPromoCode(promoCodeId, userId);
+    }
 
     // Return response based on transaction result
     if ("error" in result) {

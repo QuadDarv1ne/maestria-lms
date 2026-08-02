@@ -6,6 +6,9 @@ import { createNotification } from "@/lib/notifications";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
 import { parsePagination } from "@/lib/utils";
+import { sendEmail } from "@/lib/email";
+import { reviewNotificationEmail } from "@/lib/emails";
+import { env } from "@/lib/env";
 import { z } from "zod";
 import { sanitizeContent } from "@/lib/sanitize";
 
@@ -242,6 +245,22 @@ export async function POST(
         message: `Студент оставил отзыв на курс "${course.title}"`,
         link: `/course/${resolvedCourseId}`,
       }).catch((err: unknown) => log.error("Failed to send review notification", { error: err }));
+
+      // Send email to the teacher about the new review
+      const teacher = await db.user.findUnique({
+        where: { id: course.teacherId },
+        select: { id: true, name: true, email: true, emailVerified: true },
+      });
+      if (teacher?.email && teacher.emailVerified) {
+        sendEmail({
+          to: teacher.email,
+          ...reviewNotificationEmail(
+            teacher.name || "преподаватель",
+            course.title,
+            `${env.siteUrl}/course/${resolvedCourseId}`,
+          ),
+        }).catch((err: unknown) => log.error("Failed to send review notification email", { error: err }));
+      }
     }
 
     return NextResponse.json(
