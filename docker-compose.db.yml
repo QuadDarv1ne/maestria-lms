@@ -56,7 +56,7 @@ services:
 
   # Prisma Studio (database GUI)
   prisma-studio:
-    image: node:22-alpine
+    image: node:20-alpine
     container_name: maestria-prisma-studio
     ports:
       - "5555:5555"

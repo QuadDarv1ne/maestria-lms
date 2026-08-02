@@ -3,7 +3,7 @@
 # ============================================================
 # Stage 1: base — shared Alpine with common deps
 # ============================================================
-FROM node:22-alpine AS base
+FROM node:20-alpine AS base
 RUN apk add --no-cache libc6-compat curl bash openssl python3 make g++ && \
     ln -sf /usr/bin/python3 /usr/bin/python
 RUN addgroup --system --gid 1001 nodejs && \
@@ -19,8 +19,9 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 ENV HUSKY=0
 ENV PYTHON=/usr/bin/python3
+ENV npm_config_engine_strict=false
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --omit=dev --no-audit --no-fund
+    npm ci --omit=dev --no-audit --no-fund --engine-strict=false
 
 # ============================================================
 # Stage 3: builder — install dev deps and compile
@@ -34,8 +35,9 @@ COPY . .
 # Install dev dependencies on top of production (faster than full npm ci)
 ENV HUSKY=0
 ENV PYTHON=/usr/bin/python3
+ENV npm_config_engine_strict=false
 RUN --mount=type=cache,target=/root/.npm \
-    npm install --omit=peer --no-audit --no-fund
+    npm install --omit=peer --no-audit --no-fund --engine-strict=false
 
 ARG NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
@@ -51,7 +53,7 @@ RUN npx prisma generate
 RUN npm run build
 
 # Production image — no bun, no dev tools
-FROM node:22-alpine AS runner
+FROM node:20-alpine AS runner
 WORKDIR /app
 
 ARG NEXT_PUBLIC_SITE_URL=http://localhost:3000
