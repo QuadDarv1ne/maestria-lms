@@ -83,6 +83,12 @@
     "zod": "^4.0.2",
     "zustand": "^5.0.6"
   },
+  "optionalDependencies": {
+    "@tailwindcss/oxide-linux-x64-gnu": "4.1.18",
+    "@tailwindcss/oxide-linux-x64-musl": "4.1.18",
+    "lightningcss-linux-x64-gnu": "1.30.2",
+    "lightningcss-linux-x64-musl": "1.30.2"
+  },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "7.0.0",
