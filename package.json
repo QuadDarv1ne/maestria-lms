@@ -2,6 +2,9 @@
   "name": "maestria-lms",
   "version": "3.6.0",
   "private": true,
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "scripts": {
     "dev": "node scripts/setup.js",
     "dev:sqlite": "node scripts/setup.js --db sqlite",

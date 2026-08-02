@@ -3,7 +3,7 @@
 # ============================================================
 # Stage 1: base — shared Alpine with common deps
 # ============================================================
-FROM node:20-alpine AS base
+FROM node:22-alpine AS base
 RUN apk add --no-cache libc6-compat curl bash openssl python3 make g++ && \
     ln -sf /usr/bin/python3 /usr/bin/python
 RUN addgroup --system --gid 1001 nodejs && \
@@ -20,9 +20,7 @@ COPY package.json package-lock.json ./
 ENV HUSKY=0
 ENV PYTHON=/usr/bin/python3
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --omit=dev --no-audit --no-fund && \
-    npm install --no-save lightningcss-linux-x64-musl --no-audit --no-fund && \
-    node -e "const { existsSync } = require('fs'); const path = require.resolve('lightningcss'); const bin = path.replace(/node\/index\.js$/, 'node/lightningcss.linux-x64-musl.node'); if (!existsSync(bin)) { console.error('Missing lightningcss native binary:', bin); process.exit(1); } console.log('lightningcss native binary ok:', bin);"
+    npm ci --omit=dev --no-audit --no-fund
 
 # ============================================================
 # Stage 3: builder — install dev deps and compile
@@ -53,7 +51,7 @@ RUN npx prisma generate
 RUN npm run build
 
 # Production image — no bun, no dev tools
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 
 ARG NEXT_PUBLIC_SITE_URL=http://localhost:3000
