@@ -7,6 +7,7 @@ import bcrypt from "bcryptjs";
 import { authenticator } from "otplib";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
+import { log } from "@/lib/logger";
 import { NextResponse } from "next/server";
 
 interface ExtendedUser {
@@ -177,16 +178,16 @@ export const authOptions: NextAuthOptions = {
   secret: env.nextAuthSecret,
 };
 
-// Validate NEXTAUTH_SECRET at runtime — insecure default is dangerous in production
-// Skip during build phase (build may run without full env, production server must have it)
-if (
-  env.isProduction &&
-  env.nextPhase !== "phase-production-build"
-) {
+// Validate NEXTAUTH_SECRET at runtime — insecure default is dangerous in production.
+// Log a loud error instead of throwing at module scope: throwing here would crash
+// every route that imports this module, taking down the whole site. Without the
+// secret, auth calls fail individually with NextAuth's own clear error.
+if (env.isProduction && env.nextPhase !== "phase-production-build") {
   const secret = env.nextAuthSecret;
   if (!secret || secret.trim() === "") {
-    throw new Error(
-      "NEXTAUTH_SECRET must be set in production. Generate one with: openssl rand -base64 32"
+    log.error(
+      "NEXTAUTH_SECRET is not set in production. Authentication will be unavailable. " +
+        "Generate one with: openssl rand -base64 32 and set it in the platform environment variables.",
     );
   }
 }

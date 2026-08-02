@@ -86,28 +86,33 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // ── Locale Detection ───────────────────────────────────────────────────
+  // ── Locale Handling ────────────────────────────────────────────────────
+  // The app uses cookie-based locales (no /ru-* routes exist).
   if (!API_ROUTE_PATTERN.test(pathname)) {
     const preferredLocale = getPreferredLocale(request);
-    const hasLocalePrefix = VALID_LOCALES.some(
+
+    // Legacy locale-prefixed URLs (/ru, /en, /zh) — redirect to the
+    // unprefixed path and pin the locale from the URL in the cookie.
+    const urlLocale = VALID_LOCALES.find(
       (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`),
     );
-
-    if (!hasLocalePrefix) {
-      const url = new URL(`/${preferredLocale}${pathname === "/" ? "" : pathname}`, request.url);
+    if (urlLocale) {
+      const strippedPath = pathname.slice(urlLocale.length + 1) || "/";
+      const url = new URL(strippedPath, request.url);
       url.search = request.nextUrl.search;
 
       const response = NextResponse.redirect(url, 308);
-      response.cookies.set(LOCALE_COOKIE, preferredLocale, {
+      response.cookies.set(LOCALE_COOKIE, urlLocale, {
         path: "/",
         sameSite: "lax",
         maxAge: 31536000,
         secure: process.env.NODE_ENV === "production",
       });
+      applySecurityHeaders(response, pathname);
       return response;
     }
 
-    // Set locale cookie if not already set
+    // Set locale cookie if not already set (from Accept-Language)
     const existingLocale = request.cookies.get(LOCALE_COOKIE)?.value;
     if (!existingLocale || !VALID_LOCALES.includes(existingLocale as Locale)) {
       const response = NextResponse.next();
