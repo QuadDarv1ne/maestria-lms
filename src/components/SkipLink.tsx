@@ -9,7 +9,7 @@ export function SkipLink() {
   return (
     <a
       href="#main-content"
-      className="fixed left-4 top-4 z-[100] -translate-y-full rounded bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-lg transition-transform duration-200 focus-visible:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="fixed left-4 z-[100] -top-20 rounded bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-lg transition-all duration-200 focus-visible:top-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       {t("a11y.skipToContent", locale)}
     </a>
