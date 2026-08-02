@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { sanitizeContent } from "@/lib/sanitize";
@@ -146,6 +146,45 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
   const reviews = (reviewsData?.reviews as ReviewItem[] | undefined) ?? [];
   const loading = isLoading;
 
+  // Generate JSON-LD Course schema for SEO — before all early returns
+  const courseSchema = useMemo(() => {
+    if (!course) return null;
+    const baseOrigin = typeof window !== "undefined" ? window.location.origin : "";
+    return {
+      "@context": "https://schema.org",
+      "@type": "Course",
+      name: course.title,
+      description: course.shortDesc || course.description || "",
+      image: course.image || undefined,
+      url: `${baseOrigin}/course/${course.slug}`,
+      provider: {
+        "@type": "Organization",
+        name: "Maestria",
+        sameAs: baseOrigin,
+      },
+      teacher: course.teacher?.name
+        ? { "@type": "Person", name: course.teacher.name }
+        : undefined,
+      courseMode: course.level || "online",
+      offers: {
+        "@type": "Offer",
+        price: course.price > 0 ? String(course.price) : "0",
+        priceCurrency: course.currency || "RUB",
+        availability: "https://schema.org/InStock",
+        validFrom: new Date().toISOString(),
+      },
+      aggregateRating: course.reviewCount > 0
+        ? {
+            "@type": "AggregateRating",
+            ratingValue: String(course.rating),
+            reviewCount: String(course.reviewCount),
+            bestRating: "5",
+            worstRating: "1",
+          }
+        : undefined,
+    };
+  }, [course]);
+
   const favored = isFavorite(courseId);
 
   const invalidateCourse = () => {
@@ -271,7 +310,15 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
   })();
 
   return (
-    <div>
+    <>
+      {/* JSON-LD Course Schema for SEO */}
+      {courseSchema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(courseSchema) }}
+        />
+      )}
+      <div>
       {/* Заголовок курса */}
       <section className="relative bg-linear-to-br from-blue-800 to-violet-800 text-white overflow-hidden">
         {course.image && (
@@ -832,5 +879,6 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
         </div>
       </div>
     </div>
+    </>
   );
 }

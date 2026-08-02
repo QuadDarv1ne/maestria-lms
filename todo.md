@@ -32,6 +32,9 @@
 | Payment confirmation page | Выполнено |
 | html2canvas генерация сертификатов | Выполнено |
 | recharts + SVG-графики в админке | Выполнено |
+| JSON-LD Course Schema для SEO | Выполнено (02.08.2026) |
+| formatDate/formatNumber утилиты | Выполнено |
+| 283 модульных теста (Vitest) | Выполнено |
 
 ---
 
@@ -66,8 +69,8 @@
 - [ ] Заменить все `toLocaleDateString("ru-RU")` на `formatDate()`
 
 **SEO-доработки**
-- [ ] Динамические meta-теги для страниц курсов (Course schema в JSON-LD)
-- [ ] Open Graph-теги для шаринга курсов в соцсетях
+- [x] Динамические meta-теги для страниц курсов (Course schema в JSON-LD)
+- [x] Open Graph-теги для шаринга курсов в соцсетях
 - [ ] Динамические meta для уроков/модулей
 
 ### 1.2 Drag-and-Drop задание
