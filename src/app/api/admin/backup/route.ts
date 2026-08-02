@@ -4,7 +4,6 @@ import { addRateLimitHeaders, rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { log } from "@/lib/logger";
 import { execFileSync } from "child_process";
 import { env } from "@/lib/env";
-import path from "path";
 
 const checkRateLimit = rateLimit("admin", RATE_LIMITS.admin);
 
@@ -31,7 +30,7 @@ export async function POST(request: NextRequest) {
     const compress = searchParams.get("compress") === "true";
     const retain = parseInt(searchParams.get("retain") ?? "0", 10) || 0;
 
-    const backupScript = path.resolve(process.cwd(), "scripts", "backup-db.js");
+    const backupScript = process.cwd() + "/scripts/backup-db.js";
     const args = [backupScript];
     if (compress) args.push("--compress");
     if (retain > 0) args.push("--retain", String(retain));
