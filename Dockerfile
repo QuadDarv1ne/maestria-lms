@@ -82,6 +82,37 @@ COPY --from=builder --chown=nextjs:nodejs /app/src/generated ./src/generated
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
+# Prisma 7 CLI (@prisma/config) requires 'effect' and other top-level packages at
+# runtime — npm hoists them, so the runner must copy them explicitly.
+# effect + deps:
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/effect ./node_modules/effect
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@standard-schema ./node_modules/@standard-schema
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/fast-check ./node_modules/fast-check
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/pure-rand ./node_modules/pure-rand
+# config loading stack (prisma.config.ts):
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/c12 ./node_modules/c12
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/confbox ./node_modules/confbox
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/destr ./node_modules/destr
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/dotenv ./node_modules/dotenv
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/defu ./node_modules/defu
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/exsolve ./node_modules/exsolve
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/jiti ./node_modules/jiti
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/perfect-debounce ./node_modules/perfect-debounce
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/pkg-types ./node_modules/pkg-types
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/rc9 ./node_modules/rc9
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/std-env ./node_modules/std-env
+# misc CLI deps:
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/deepmerge-ts ./node_modules/deepmerge-ts
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/get-port-please ./node_modules/get-port-please
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/graceful-fs ./node_modules/graceful-fs
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/grammex ./node_modules/grammex
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/graphmatch ./node_modules/graphmatch
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/pathe ./node_modules/pathe
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/proper-lockfile ./node_modules/proper-lockfile
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/remeda ./node_modules/remeda
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/retry ./node_modules/retry
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/valibot ./node_modules/valibot
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/zeptomatch ./node_modules/zeptomatch
 
 # Copy startup script
 COPY --from=builder --chown=nextjs:nodejs /app/start.sh ./start.sh
