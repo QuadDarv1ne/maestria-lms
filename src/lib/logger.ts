@@ -27,7 +27,18 @@ function shouldLog(level: LogLevel): boolean {
 }
 
 function formatLogEntry(entry: LogEntry): string {
-  return JSON.stringify(entry);
+  try {
+    return JSON.stringify(entry);
+  } catch {
+    // Never let serialization failures (circular refs, BigInt, etc.)
+    // hide the log entry itself.
+    return JSON.stringify({
+      level: entry.level,
+      message: entry.message,
+      timestamp: entry.timestamp,
+      context: String(entry.context),
+    });
+  }
 }
 
 function writeLog(entry: LogEntry): void {

@@ -70,10 +70,12 @@ export function handleApiError(error: unknown, context?: Record<string, unknown>
       });
     }
     // Unknown Prisma code
+    const prismaStack = (error as unknown as { stack?: unknown }).stack;
     return apiError("Внутренняя ошибка сервера", 500, {
       ...context,
       prismaCode: error.code,
       prismaMessage: error.message,
+      ...(typeof prismaStack === "string" ? { stack: prismaStack } : {}),
     });
   }
 
@@ -86,9 +88,11 @@ export function handleApiError(error: unknown, context?: Record<string, unknown>
   // Generic errors
   const errorMessage = error instanceof Error ? error.message : String(error);
   const errorName = error instanceof Error ? error.name : "UnknownError";
+  const stack = error instanceof Error ? error.stack : undefined;
   return apiError("Внутренняя ошибка сервера", 500, {
     ...context,
     name: errorName,
     message: errorMessage,
+    ...(stack ? { stack } : {}),
   });
 }

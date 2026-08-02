@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
+import { cacheInvalidateByTag } from "@/lib/cache";
 import { getAuthSession, requireAuth, authErrorResponse, requireAdmin, adminErrorResponse } from "@/lib/auth";
 import { z } from "zod";
 import { sanitizeContent } from "@/lib/sanitize";
@@ -145,6 +146,10 @@ export async function PATCH(
       data: updateData,
     });
 
+    // Invalidate article list caches (title/excerpt/tags may have changed)
+    await cacheInvalidateByTag("articles");
+    await cacheInvalidateByTag("blog");
+
     return NextResponse.json(updated, { status: 200 });
   } catch (error: unknown) {
     return handleApiError(error, { route: "article" });
@@ -167,6 +172,10 @@ export async function DELETE(
     const { slug } = await params;
 
     await db.article.delete({ where: { slug } });
+
+    // Invalidate article list caches
+    await cacheInvalidateByTag("articles");
+    await cacheInvalidateByTag("blog");
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error: unknown) {

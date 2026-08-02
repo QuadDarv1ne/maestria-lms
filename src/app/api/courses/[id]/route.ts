@@ -23,6 +23,22 @@ export async function GET(
     // Check if user is authenticated - cache only for anonymous users
     const session = await getAuthSession();
 
+    // Anonymous users: try cache first (keyed by raw param so slugs work too)
+    const isAnonymous = !session?.user?.id;
+    if (isAnonymous) {
+      const cacheKey = generateCacheKey("course:detail", { id });
+      const cached = await cacheGet<CourseDetailResponse>(cacheKey);
+      if (cached) {
+        return NextResponse.json(cached, {
+          status: 200,
+          headers: {
+            ...createCacheHeaders(300, true, 600),
+            "X-Cache": "HIT",
+          },
+        });
+      }
+    }
+
     // Try to find by id first, then by slug
     const course = await db.course.findFirst({
       where: {
@@ -215,19 +231,9 @@ export async function GET(
       },
     };
 
-    // Cache for anonymous users (use resolved course.id for cache key, not raw slug)
-    if (!session?.user?.id) {
-      const cacheKey = generateCacheKey("course:detail", { id: course.id });
-      const cached = await cacheGet<CourseDetailResponse>(cacheKey);
-      if (cached) {
-        return NextResponse.json(cached, {
-          status: 200,
-          headers: {
-            ...createCacheHeaders(300, true, 600),
-            "X-Cache": "HIT",
-          },
-        });
-      }
+    // Cache for anonymous users (use the raw param as key so both id and slug URLs hit)
+    if (isAnonymous) {
+      const cacheKey = generateCacheKey("course:detail", { id });
 
       await cacheSet(cacheKey, responseData, {
         ttl: 5 * 60 * 1000, // 5 minutes
