@@ -136,11 +136,6 @@ export async function generateMetadata(): Promise<Metadata> {
     description: descriptions[locale],
     alternates: {
       canonical: siteUrl,
-      languages: {
-        ru: `${siteUrl}/ru`,
-        en: `${siteUrl}/en`,
-        zh: `${siteUrl}/zh`,
-      },
     },
     keywords: [
       "Maestria",
