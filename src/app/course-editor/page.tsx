@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import dynamic from "next/dynamic";
+import { t } from "@/lib/i18n";
 
 const CourseEditorPage = dynamic(() => import("@/components/CourseEditorPage").then(m => ({ default: m.CourseEditorPage })), {
   loading: () => <EditorPageFallback />,
@@ -16,10 +18,18 @@ function EditorPageFallback() {
   );
 }
 
-export const metadata: Metadata = {
-  title: "Course Editor — Maestria",
-  description: "Create and edit interactive courses on the Maestria educational platform. Content management panel.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  let locale: "ru" | "en" | "zh" = "ru";
+  try {
+    const cookieStore = await cookies();
+    const value = cookieStore.get("maestria-locale")?.value;
+    if (value === "en" || value === "zh" || value === "ru") locale = value;
+  } catch { /* static generation fallback */ }
+  return {
+    title: t("meta.editorTitle", locale),
+    description: t("meta.editorDescription", locale),
+  };
+}
 
 export default function Page() {
   return <CourseEditorPage />;

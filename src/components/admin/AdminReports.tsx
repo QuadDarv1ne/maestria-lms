@@ -7,6 +7,7 @@ import {
   CheckCircle2, XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { translateDemoText } from "@/data/demo-data";
 import type { AdminTabProps } from "./types";
 
 export function AdminReports(props: AdminTabProps) {
@@ -58,7 +59,7 @@ export function AdminReports(props: AdminTabProps) {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm">{report.userName}</TableCell>
-                    <TableCell className="text-sm max-w-[300px] truncate">{report.description}</TableCell>
+                    <TableCell className="text-sm max-w-[300px] truncate">{translateDemoText(report.description, report.params, locale)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{report.createdAt}</TableCell>
                     <TableCell>
                       {report.status === "pending" ? <Badge className="bg-red-100 text-red-700 border-0 text-xs">{t("adminPage.statReportPending", locale)}</Badge> :

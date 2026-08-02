@@ -96,13 +96,13 @@ export function AdminMaterials(props: AdminTabProps) {
               <TableBody>
                 {demoMaterialProgress.map((item, i) => (
                   <TableRow key={i}>
-                    <TableCell className="font-medium text-sm">{item.course}</TableCell>
+                    <TableCell className="font-medium text-sm">{t(item.course, locale)}</TableCell>
                     <TableCell>
                       <span className={`font-semibold ${item.readPercent >= 70 ? 'text-green-600' : item.readPercent >= 50 ? 'text-amber-600' : 'text-red-600'}`}>
                         {item.readPercent}%
                       </span>
                     </TableCell>
-                    <TableCell className="text-sm">{item.avgTime}</TableCell>
+                    <TableCell className="text-sm">{item.avgMinutes} {t("common.min", locale)}</TableCell>
                     <TableCell className="text-sm">{item.totalReaders}</TableCell>
                     <TableCell className="text-sm">{item.completed}</TableCell>
                     <TableCell>

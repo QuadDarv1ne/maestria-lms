@@ -32,7 +32,8 @@
     "prepare": "node -e \"if (process.env.HUSKY !== '0' && require('fs').existsSync(require('path').join(process.cwd(), 'node_modules', 'husky', 'bin', 'husky'))) require('child_process').execSync('husky', { stdio: 'inherit' })\"",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "check:i18n": "node scripts/check-i18n.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1048.0",

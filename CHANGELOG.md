@@ -9,22 +9,14 @@
 ## [Unreleased]
 
 ### Добавлено
-- **Промокоды и скидки**: полная система промокодов для платных курсов
-  - Модель `PromoCode` в Prisma schema (percentage/fixed discount, max uses, per-user limits, validity period, course restriction, max discount cap)
-  - API валидации промокодов: `POST /api/payments/promo/validate`
-  - Admin API для управления промокодами: `GET/POST /api/admin/promo-codes`, `GET/PATCH/DELETE /api/admin/promo-codes/[id]`
-  - Интеграция промокодов в создание платежа (`POST /api/payments` с полем `promoCode`)
-  - Автоматический redeem промокода после успешного создания платежа
-  - Поля `promoCodeId` и `discountAmount` в модели `Payment`
-  - 20 модульных тестов для системы промокодов
-- **formatDate / formatNumber** утилиты в `src/lib/utils.ts` (с поддержкой ru/en/zh локалей)
+- **Drag & Drop задание — настоящий перетаскивание в просмотрщике**: `StepDragDrop.tsx` переведён с click-based взаимодействия на `@dnd-kit/core` (PointerSensor + TouchSensor, DragOverlay, подсветка drop-зон при наведении, возврат элементов в пул перетаскиванием). Клик-фолбэк сохранён для клавиатуры/доступности. Новый i18n-ключ `course.step.removeItem`
+- **Миграция синхронизации схемы БД** `20260802000000_schema_drift_sync`: закрыт разрыв между schema.prisma и миграциями (колонка `User.pendingTwoFactorSecret`, таблицы `PromoCode` и `WebhookEvent`, поля `Payment.promoCodeId`/`discountAmount`, ~40 индексов) — `prisma migrate deploy` теперь создаёт полную схему (исправлена ошибка `The column main.User.pendingTwoFactorSecret does not exist`)
+- **Локализация демо-данных админки**: `demo-data.ts` переведён на i18n-ключи (`admin.demo.*`), убраны неиспользуемые `monthLabels`/`dayLabels`/`demoCategoryDistribution`; текст и временные метки журнала действий теперь зависят от локали
+- **Локализованные метаданные** страниц `/admin` и `/course-editor` через `generateMetadata` + cookie-локаль (ключи `meta.admin*`, `meta.editor*`)
+- **Скрипт проверки i18n** подключён как `npm run check:i18n`
 
 ### Исправлено
-- **TypeScript**: `api-logging.ts` — ошибка типизации в catch-блоке `withApiLogging<T>` (NextResponse cast)
-- **Tests**: `api-integration.test.ts` — 31 падающий тест из-за дублирующего `vi.mock("@/lib/db")` без экспорта `db` (исправлено через `vi.hoisted()`)
-- **Security**: `sanitizeText` — теперь корректно удаляет содержимое `<script>`, `<style>`, `<iframe>`, `<object>`, `<embed>`, `<noscript>` тегов, а не только сами теги
-- **Tests**: `sanitizeObject` — опции (`textFields`, `htmlFields`, `skipFields`) теперь передаются в рекурсивные вызовы для вложенных объектов
-- **ESLint**: убраны неиспользуемые переменные в `request-validation.ts` и `api-integration.test.ts`
+- **Database drift**: локальная БД приведена в соответствие с миграциями (`db push` + `migrate resolve --applied` для обеих миграций)
 
 ---
 

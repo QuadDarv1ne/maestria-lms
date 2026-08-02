@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock } from "lucide-react";
 import { activityIcon, ACTIVITY_TYPE_LABELS, ACTIVITY_TYPE_COLORS } from "@/lib/constants";
-import { demoActivityLog } from "@/data/demo-data";
+import { demoActivityLog, formatDemoTime, translateDemoText } from "@/data/demo-data";
 import type { AdminTabProps } from "./types";
 
 export function AdminLogs(props: AdminTabProps) {
@@ -29,9 +29,9 @@ export function AdminLogs(props: AdminTabProps) {
                   {activityIcon(item.type, "w-4 h-4")}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm truncate">{item.description}</p>
+                  <p className="text-sm truncate">{translateDemoText(item.description, item.params, locale)}</p>
                   <p className="text-xs text-muted-foreground">
-                    {item.userName} · {item.timestamp}
+                    {item.userName} · {formatDemoTime(item.time, locale)}
                   </p>
                 </div>
                 <Badge

@@ -99,7 +99,7 @@ export function AdminTests(props: AdminTabProps) {
               <TableBody>
                 {demoTestResults.map((test, i) => (
                   <TableRow key={i}>
-                    <TableCell className="font-medium text-sm">{test.course}</TableCell>
+                    <TableCell className="font-medium text-sm">{t(test.course, locale)}</TableCell>
                     <TableCell>
                       <span className={`font-semibold ${test.passRate >= 75 ? 'text-green-600' : test.passRate >= 60 ? 'text-amber-600' : 'text-red-600'}`}>
                         {test.passRate}%

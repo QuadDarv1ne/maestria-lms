@@ -1,6 +1,29 @@
 # Maestria LMS — Worklog
 
 ---
+Task ID: 3
+Agent: Main Agent
+Task: Продолжение улучшений — фикс drift БД, drag-drop UI на @dnd-kit, локализация остатков
+
+Work Log:
+- Исправлена критическая ошибка "The column main.User.pendingTwoFactorSecret does not exist":
+  - Причина: schema.prisma ушёл вперёд от миграций (только init-миграция); на продакшене БД создаётся через `prisma migrate deploy`, поэтому не хватало колонок/таблиц
+  - Создана миграция `20260802000000_schema_drift_sync` (migrate diff): User.pendingTwoFactorSecret, PromoCode, WebhookEvent, Payment.promoCodeId/discountAmount, ~40 индексов
+  - Проверено: свежая БД после `migrate deploy` полностью соответствует схеме; `migrate diff` = "No difference detected"
+  - Локальная БД синхронизирована: `db push` + `migrate resolve --applied` для обеих миграций (в _prisma_migrations)
+- Drag & Drop задание: StepDragDrop.tsx переписан с click-based на @dnd-kit/core (Pointer/Touch sensors, DragOverlay, подсветка зон, возврат в пул). Клик-фолбэк сохранён для a11y. Добавлен i18n ключ course.step.removeItem (ru/en/zh)
+- Локализация demo-data.ts: строки заменены на i18n-ключи admin.demo.* (отчёты, журнал, курсы), добавлены хелперы translateDemoText/formatDemoTime; убраны неиспользуемые monthLabels/dayLabels/demoCategoryDistribution
+- Компоненты админки (AdminReports/AdminLogs/AdminTests/AdminMaterials) переводят демо-данные через t()
+- Страницы /admin и /course-editor: generateMetadata с локалью из cookie (ключи meta.admin*/meta.editor*)
+- check-i18n.mjs подключён как npm run check:i18n
+- Проверено: typecheck чистый, ESLint 0 ошибок, 280 тестов проходят, next build успешен
+
+Stage Summary:
+- 1 миграция создана, drift полностью устранён (локально и для migrate deploy)
+- 1 компонент переписан на настоящий drag-and-drop
+- ~35 i18n ключей добавлено (3 локали), остатки hardcoded строк убраны
+
+---
 Task ID: 2
 Agent: Main Agent
 Task: Улучшение проекта — фикс багов, система промокодов, стабилизация тестов
