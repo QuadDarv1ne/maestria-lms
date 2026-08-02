@@ -2,6 +2,7 @@ import { PrismaClient, Prisma } from "@/generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { env } from "@/lib/env";
+import { types as nodeTypes } from "node:util";
 
 export type DatabaseProvider = "postgresql" | "mysql" | "sqlite" | "mongodb";
 
@@ -73,8 +74,10 @@ let prismaClient: PrismaClient | undefined;
 
 function getPrismaClient(): PrismaClient {
   if (prismaClient) return prismaClient;
-  if (globalForPrisma.prisma) {
-    prismaClient = globalForPrisma.prisma;
+  const cached = globalForPrisma.prisma;
+  // Never reuse the lazy proxy itself as a client (would recurse infinitely).
+  if (cached && !nodeTypes.isProxy(cached)) {
+    prismaClient = cached;
     return prismaClient;
   }
 
@@ -107,5 +110,3 @@ export const db = new Proxy({} as PrismaClient, {
 }) as PrismaClient;
 
 export { Prisma };
-
-if (!env.isProduction) globalForPrisma.prisma = db;
