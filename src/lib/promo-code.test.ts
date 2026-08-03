@@ -4,9 +4,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // vi.mock is hoisted, so use vi.hoisted() for mock variables
-const { mockPromoCodeFindUnique, mockPromoCodeUpdate } = vi.hoisted(() => ({
+const { mockPromoCodeFindUnique, mockPromoCodeUpdate, mockTxFindUnique, mockTxUpdate } = vi.hoisted(() => ({
   mockPromoCodeFindUnique: vi.fn(),
   mockPromoCodeUpdate: vi.fn(),
+  mockTxFindUnique: vi.fn(),
+  mockTxUpdate: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -15,6 +17,15 @@ vi.mock("@/lib/db", () => ({
       findUnique: mockPromoCodeFindUnique,
       update: mockPromoCodeUpdate,
     },
+    $transaction: vi.fn(async (cb: (tx: any) => Promise<void>) => {
+      const tx = {
+        promoCode: {
+          findUnique: mockTxFindUnique,
+          update: mockTxUpdate,
+        },
+      };
+      return cb(tx);
+    }),
   },
 }));
 
@@ -281,16 +292,20 @@ describe("Promo Code System", () => {
 
   describe("redeemPromoCode", () => {
     it("should increment usedCount and add userId to usedBy", async () => {
-      mockPromoCodeFindUnique.mockResolvedValue({
+      mockTxFindUnique.mockResolvedValue({
         id: "pc-1",
         usedBy: JSON.stringify(["user-A"]),
         usedCount: 1,
       });
-      mockPromoCodeUpdate.mockResolvedValue({});
+      mockTxUpdate.mockResolvedValue({});
 
       await redeemPromoCode("pc-1", "user-B");
 
-      expect(mockPromoCodeUpdate).toHaveBeenCalledWith({
+      expect(mockTxFindUnique).toHaveBeenCalledWith({
+        where: { id: "pc-1" },
+        select: { usedBy: true, usedCount: true },
+      });
+      expect(mockTxUpdate).toHaveBeenCalledWith({
         where: { id: "pc-1" },
         data: {
           usedCount: 2,
@@ -300,16 +315,20 @@ describe("Promo Code System", () => {
     });
 
     it("should handle null usedBy field", async () => {
-      mockPromoCodeFindUnique.mockResolvedValue({
+      mockTxFindUnique.mockResolvedValue({
         id: "pc-2",
         usedBy: null,
         usedCount: 0,
       });
-      mockPromoCodeUpdate.mockResolvedValue({});
+      mockTxUpdate.mockResolvedValue({});
 
       await redeemPromoCode("pc-2", "user-1");
 
-      expect(mockPromoCodeUpdate).toHaveBeenCalledWith({
+      expect(mockTxFindUnique).toHaveBeenCalledWith({
+        where: { id: "pc-2" },
+        select: { usedBy: true, usedCount: true },
+      });
+      expect(mockTxUpdate).toHaveBeenCalledWith({
         where: { id: "pc-2" },
         data: {
           usedCount: 1,
@@ -319,11 +338,28 @@ describe("Promo Code System", () => {
     });
 
     it("should handle non-existent promo code gracefully", async () => {
-      mockPromoCodeFindUnique.mockResolvedValue(null);
+      mockTxFindUnique.mockResolvedValue(null);
 
       await redeemPromoCode("nonexistent", "user-1");
 
-      expect(mockPromoCodeUpdate).not.toHaveBeenCalled();
+      expect(mockTxUpdate).not.toHaveBeenCalled();
+    });
+
+    it("should not increment if user already used the code", async () => {
+      mockTxFindUnique.mockResolvedValue({
+        id: "pc-3",
+        usedBy: JSON.stringify(["user-A"]),
+        usedCount: 1,
+      });
+      mockTxUpdate.mockResolvedValue({});
+
+      await redeemPromoCode("pc-3", "user-A");
+
+      expect(mockTxFindUnique).toHaveBeenCalledWith({
+        where: { id: "pc-3" },
+        select: { usedBy: true, usedCount: true },
+      });
+      expect(mockTxUpdate).not.toHaveBeenCalled();
     });
   });
 

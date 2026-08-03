@@ -97,6 +97,17 @@ export function StepQuiz({ step, locale }: StepComponentProps) {
         if (assignment.options) {
           try { options = JSON.parse(assignment.options); } catch { options = []; }
         }
+        // Guard: show error if no options defined for this quiz assignment
+        if (options.length === 0) {
+          return (
+            <Card key={assignment.id} className="border-0 shadow-sm">
+              <CardContent className="p-8 text-center">
+                <HelpCircle className="w-12 h-12 text-red-400/50 mx-auto mb-3" />
+                <p className="text-red-500 text-sm font-medium">{t("course.step.quizConfigError", locale)}</p>
+              </CardContent>
+            </Card>
+          );
+        }
         const isSubmitted = quizSubmitted[assignment.id];
         const isCorrect = quizResults[assignment.id];
 

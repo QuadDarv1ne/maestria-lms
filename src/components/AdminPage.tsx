@@ -289,7 +289,7 @@ export function AdminPage() {
 
       {mobileSidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileSidebarOpen(false)} />
+          <button type="button" className="absolute inset-0 bg-black/50 border-none cursor-default" aria-label="Close sidebar" onClick={() => setMobileSidebarOpen(false)} />
           <aside aria-label={t("adminPage.sidebarAriaLabel", locale)} className="absolute left-0 top-0 bottom-0 w-[260px] bg-sidebar border-r border-sidebar-border">
             {renderSidebar()}
           </aside>

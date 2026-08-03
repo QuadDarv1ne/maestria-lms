@@ -135,31 +135,41 @@ export async function validatePromoCode(
 /**
  * Mark a promo code as used by a specific user.
  * Increments the usage counter and records the user ID.
+ * Uses atomic transaction to prevent race conditions across all DB providers.
  */
 export async function redeemPromoCode(
   promoCodeId: string,
   userId: string,
 ): Promise<void> {
   try {
-    const promoCode = await db.promoCode.findUnique({
-      where: { id: promoCodeId },
-      select: { usedBy: true, usedCount: true },
-    });
+    await db.$transaction(async (tx) => {
+      const promoCode = await tx.promoCode.findUnique({
+        where: { id: promoCodeId },
+        select: { usedBy: true, usedCount: true },
+      });
 
-    if (!promoCode) {
-      log.warn("Promo code not found for redemption", { promoCodeId });
-      return;
-    }
+      if (!promoCode) {
+        log.warn("Promo code not found for redemption", { promoCodeId });
+        return;
+      }
 
-    const usedBy: string[] = promoCode.usedBy ? safeParseJsonArray(promoCode.usedBy) : [];
-    usedBy.push(userId);
+      const usedBy: string[] = promoCode.usedBy ? safeParseJsonArray(promoCode.usedBy) : [];
 
-    await db.promoCode.update({
-      where: { id: promoCodeId },
-      data: {
-        usedCount: promoCode.usedCount + 1,
-        usedBy: JSON.stringify(usedBy),
-      },
+      // Check if user already used this code
+      if (usedBy.includes(userId)) {
+        log.info("Promo code already used by this user", { promoCodeId, userId });
+        return;
+      }
+
+      usedBy.push(userId);
+
+      await tx.promoCode.update({
+        where: { id: promoCodeId },
+        data: {
+          usedCount: promoCode.usedCount + 1,
+          usedBy: JSON.stringify(usedBy),
+        },
+      });
     });
 
     log.info("Promo code redeemed", { promoCodeId, userId });

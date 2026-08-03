@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Upload, Send, FileText, CheckCircle2, X } from "lucide-react";
+import { Upload, Send, FileText, CheckCircle2, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { t } from "@/lib/i18n";
 import type { StepComponentProps } from "./StepTypes";
@@ -121,7 +121,7 @@ export function StepFileUpload({ step, locale, onSubmitAssignment }: StepCompone
                 </div>
               )}
               <Button className="bg-slate-600 hover:bg-slate-700 text-white" onClick={handleSubmit} disabled={!selectedFile || uploading}>
-                {uploading ? <><span className="animate-spin mr-2">⏳</span>{uploadProgress}%</> : <><Send className="w-4 h-4 mr-2" />{t("course.step.submitFile", locale)}</>}
+                {uploading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{uploadProgress}%</> : <><Send className="w-4 h-4 mr-2" />{t("course.step.submitFile", locale)}</>}
               </Button>
             </div>
           ) : (

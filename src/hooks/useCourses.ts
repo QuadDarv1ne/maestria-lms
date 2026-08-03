@@ -66,7 +66,8 @@ export function useCourses(filters?: {
   return useQuery<CoursesResponse>({
     queryKey: ["courses", qs],
     queryFn: ({ signal }) => fetchJson<CoursesResponse>(`/api/courses${qs ? `?${qs}` : ""}`, signal),
-    staleTime: 30_000,
+    staleTime: 10_000,
+    refetchOnWindowFocus: true,
   });
 }
 

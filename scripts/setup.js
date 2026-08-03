@@ -218,10 +218,13 @@ function startDevServer(pm, port) {
     console.log(head(`  🚀 Maestria LMS starting at ${color(`http://localhost:${startPort}`, C.green)}`));
     console.log("");
 
-    const child = spawn(pm.cmd, ["next", "dev", "--port", String(startPort)], {
+    // Run the local Next.js binary directly instead of through the package
+    // manager (`npm next dev` fails with "Unknown command: next").
+    const nextBin = path.join(ROOT, "node_modules", "next", "dist", "bin", "next");
+    const child = spawn(process.execPath, [nextBin, "dev", "--port", String(startPort)], {
       cwd: ROOT,
       stdio: ["inherit", "pipe", "pipe"],
-      shell: process.platform === "win32",
+      shell: false,
     });
 
     let hasError = false;

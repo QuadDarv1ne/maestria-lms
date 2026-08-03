@@ -1856,7 +1856,7 @@
   "auth.reqDigits": "数字",
   "auth.reqSymbols": "特殊字符",
   "auth.reqLowercase": "小写字母",
-"auth.passwordStrength": "密码强度:",
+  "auth.passwordStrength": "密码强度:",
   "auth.passwordFair": "一般",
   "auth.passwordGood": "好",
   "auth.passwordStrong": "强",
@@ -1931,5 +1931,6 @@
   "meta.adminTitle": "管理面板 — Maestria",
   "meta.adminDescription": "管理课程、用户和平台统计数据。",
   "meta.editorTitle": "课程编辑器 — Maestria",
-  "meta.editorDescription": "在 Maestria 教育平台上创建和编辑互动课程。"
+  "meta.editorDescription": "在 Maestria 教育平台上创建和编辑互动课程。",
+  "course.step.quizConfigError": "配置错误：未定义测验选项。请联系管理员。"
 }

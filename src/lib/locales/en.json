@@ -1856,7 +1856,7 @@
   "auth.reqDigits": "Digits",
   "auth.reqSymbols": "Symbols",
   "auth.reqLowercase": "Lowercase letter",
-"auth.passwordStrength": "Password strength:",
+  "auth.passwordStrength": "Password strength:",
   "auth.passwordFair": "Fair",
   "auth.passwordGood": "Good",
   "auth.passwordStrong": "Strong",
@@ -1931,5 +1931,6 @@
   "meta.adminTitle": "Admin Panel — Maestria",
   "meta.adminDescription": "Manage courses, users, and platform statistics.",
   "meta.editorTitle": "Course Editor — Maestria",
-  "meta.editorDescription": "Create and edit interactive courses on the Maestria educational platform."
+  "meta.editorDescription": "Create and edit interactive courses on the Maestria educational platform.",
+  "course.step.quizConfigError": "Configuration error: quiz options not defined. Contact administrator."
 }

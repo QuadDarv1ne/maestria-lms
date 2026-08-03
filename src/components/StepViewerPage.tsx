@@ -378,9 +378,9 @@ export function StepViewerPage({
         <div className="max-w-4xl mx-auto px-4 py-8">
           {/* Breadcrumb */}
           <div className="flex items-center gap-1 text-sm text-muted-foreground mb-4">
-            <span className="hover:text-foreground cursor-pointer" onClick={() => router.push(`/course/${courseId}`)}>
+            <button type="button" className="hover:text-foreground cursor-pointer bg-transparent border-none p-0 text-sm text-muted-foreground" onClick={() => router.push(`/course/${courseId}`)}>
               {courseStructure?.title || t("course.step.module", locale)}
-            </span>
+            </button>
             <ChevronRight className="w-3 h-3" />
             <span>{step.module?.title}</span>
             <ChevronRight className="w-3 h-3" />

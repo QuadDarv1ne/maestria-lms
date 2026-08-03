@@ -102,7 +102,13 @@ export function BlogPage() {
           params.set("search", filters.search);
         }
 
-        const res = await fetch(`/api/articles?${params}`);
+        // AbortController with timeout to prevent hanging requests
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15_000);
+
+        const res = await fetch(`/api/articles?${params}`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
         if (!res.ok) throw new Error("Failed to fetch articles");
 
         const data = await res.json();
