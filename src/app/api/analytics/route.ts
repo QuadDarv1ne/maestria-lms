@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { log } from "@/lib/logger";
-import { addRateLimitHeaders } from "@/lib/rate-limit";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+
+const checkRateLimit = rateLimit("analytics", RATE_LIMITS.default);
 
 /**
  * GET /api/analytics
@@ -20,6 +22,9 @@ import { addRateLimitHeaders } from "@/lib/rate-limit";
  * - Streak data (consecutive days with activity)
  */
 export async function GET(request: NextRequest) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
+
   const session = await getAuthSession();
   if (!requireAuth(session)) {
     return authErrorResponse();
@@ -28,9 +33,6 @@ export async function GET(request: NextRequest) {
   const userId = session.user.id;
   const { searchParams } = new URL(request.url);
   const days = Math.min(Math.max(parseInt(searchParams.get("days") ?? "30", 10) || 30, 1), 365);
-
-  const responseHeaders = new Headers();
-  addRateLimitHeaders(responseHeaders, "default", request, userId);
 
   try {
     const now = new Date();
@@ -180,38 +182,35 @@ export async function GET(request: NextRequest) {
     }
     weeklyActivity.sort((a, b) => a.week.localeCompare(b.week));
 
-    return NextResponse.json(
-      {
-        data: {
-          overview: {
-            totalEnrolled,
-            activeCourses,
-            completedCourses,
-            overallProgress,
-            totalTimeSpent,
-            lessonsCompleted,
-            averageScore,
-          },
-          assignments: {
-            submitted: assignmentsSubmitted,
-            graded: assignmentsGraded,
-            averageScore: averageAssignmentScore,
-          },
-          achievements: {
-            certificatesEarned: certificates.length,
-            reviewsWritten: reviews.length,
-          },
-          activity: {
-            timeline: activityTimeline,
-            weeklySummary: weeklyActivity,
-            currentStreak,
-            longestStreak,
-            totalActiveDays: activityMap.size,
-          },
+    return NextResponse.json({
+      data: {
+        overview: {
+          totalEnrolled,
+          activeCourses,
+          completedCourses,
+          overallProgress,
+          totalTimeSpent,
+          lessonsCompleted,
+          averageScore,
+        },
+        assignments: {
+          submitted: assignmentsSubmitted,
+          graded: assignmentsGraded,
+          averageScore: averageAssignmentScore,
+        },
+        achievements: {
+          certificatesEarned: certificates.length,
+          reviewsWritten: reviews.length,
+        },
+        activity: {
+          timeline: activityTimeline,
+          weeklySummary: weeklyActivity,
+          currentStreak,
+          longestStreak,
+          totalActiveDays: activityMap.size,
         },
       },
-      { headers: responseHeaders },
-    );
+    });
   } catch (error: unknown) {
     log.error("Failed to fetch analytics", {
       error: error instanceof Error ? error.message : String(error),

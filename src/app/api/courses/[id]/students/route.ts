@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import type { Prisma } from "@/lib/db";
 import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
-import { addRateLimitHeaders } from "@/lib/rate-limit";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { log } from "@/lib/logger";
+
+const checkRateLimit = rateLimit("course-students", RATE_LIMITS.default);
 
 /**
  * GET /api/courses/[id]/students
@@ -15,15 +17,15 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
+
   const session = await getAuthSession();
   if (!requireAuth(session)) return authErrorResponse();
 
   const { id } = await params;
   const userId = session.user.id;
   const isAdmin = session.user.role === "admin";
-
-  const responseHeaders = new Headers();
-  addRateLimitHeaders(responseHeaders, "default", request, userId);
 
   try {
     // Verify course exists and check access (support both UUID and slug)
@@ -114,8 +116,7 @@ export async function GET(
 
     const totalPages = Math.ceil(total / limit);
 
-    return NextResponse.json(
-      {
+    return NextResponse.json({
         data: students,
         pagination: {
           page,
@@ -123,9 +124,7 @@ export async function GET(
           total,
           totalPages,
         },
-      },
-      { headers: responseHeaders },
-    );
+      });
   } catch (error: unknown) {
     log.error("Failed to fetch course students", {
       error: error instanceof Error ? error.message : String(error),

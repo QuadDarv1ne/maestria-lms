@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getAuthSession, requireAuth, authErrorResponse, requireAdmin, adminErrorResponse } from "@/lib/auth";
-import { addRateLimitHeaders } from "@/lib/rate-limit";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { log } from "@/lib/logger";
+
+const checkRateLimit = rateLimit("admin-activity", RATE_LIMITS.admin);
 
 /**
  * GET /api/admin/activity
@@ -12,15 +14,15 @@ import { log } from "@/lib/logger";
  * Only accessible by admin users.
  */
 export async function GET(request: NextRequest) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
+
   const session = await getAuthSession();
   if (!requireAuth(session)) return authErrorResponse();
   if (!requireAdmin(session)) return adminErrorResponse();
 
   const { searchParams } = new URL(request.url);
   const limit = Math.min(Math.max(parseInt(searchParams.get("limit") ?? "20", 10) || 20, 1), 100);
-
-  const responseHeaders = new Headers();
-  addRateLimitHeaders(responseHeaders, "admin", request, session.user.id);
 
   try {
     const [recentEnrollments, recentPayments, recentReviews, recentUsers] = await Promise.all([
@@ -111,15 +113,12 @@ export async function GET(request: NextRequest) {
     activities.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
     const feed = activities.slice(0, limit);
 
-    return NextResponse.json(
-      {
+    return NextResponse.json({
         data: {
           activities: feed,
           total: feed.length,
         },
-      },
-      { headers: responseHeaders },
-    );
+      });
   } catch (error: unknown) {
     log.error("Failed to fetch admin activity", {
       error: error instanceof Error ? error.message : String(error),

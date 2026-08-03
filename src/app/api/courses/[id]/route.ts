@@ -119,8 +119,9 @@ export async function GET(
       const isEnrolled = await db.enrollment.findUnique({
         where: { userId_courseId: { userId: session.user.id, courseId: course.id } },
       });
+      const isActiveEnrollment = isEnrolled && isEnrolled.status !== "cancelled";
       const isOwner = course.teacherId === session.user.id;
-      if (userRole !== "admin" && userRole !== "teacher" && !isEnrolled && !isOwner) {
+      if (userRole !== "admin" && userRole !== "teacher" && !isActiveEnrollment && !isOwner) {
         return NextResponse.json(
           { error: "Курс недоступен" },
           { status: 403 }

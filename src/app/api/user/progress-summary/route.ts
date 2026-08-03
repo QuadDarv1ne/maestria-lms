@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
-import { addRateLimitHeaders } from "@/lib/rate-limit";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { log } from "@/lib/logger";
+
+const checkRateLimit = rateLimit("progress-summary", RATE_LIMITS.default);
 
 /**
  * GET /api/user/progress-summary
@@ -19,12 +21,13 @@ import { log } from "@/lib/logger";
  * - Next incomplete lesson per active course
  */
 export async function GET(request: NextRequest) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
+
   const session = await getAuthSession();
   if (!requireAuth(session)) return authErrorResponse();
 
   const userId = session.user.id;
-  const responseHeaders = new Headers();
-  addRateLimitHeaders(responseHeaders, "default", request, userId);
 
   try {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -123,8 +126,7 @@ export async function GET(request: NextRequest) {
         }),
     );
 
-    return NextResponse.json(
-      {
+    return NextResponse.json({
         data: {
           overview: {
             totalEnrolled,
@@ -138,9 +140,7 @@ export async function GET(request: NextRequest) {
           },
           nextLessons,
         },
-      },
-      { headers: responseHeaders },
-    );
+      });
   } catch (error: unknown) {
     log.error("Failed to fetch progress summary", {
       error: error instanceof Error ? error.message : String(error),

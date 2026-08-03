@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession, requireAuth, authErrorResponse, requireAdmin, adminErrorResponse } from "@/lib/auth";
-import { addRateLimitHeaders } from "@/lib/rate-limit";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { log } from "@/lib/logger";
 import fs from "fs";
 import path from "path";
+
+const checkRateLimit = rateLimit("admin-logs", RATE_LIMITS.admin);
 
 /**
  * GET /api/admin/logs
@@ -18,6 +20,9 @@ import path from "path";
  *   - lines: number (default 50, max 200)
  */
 export async function GET(request: NextRequest) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
+
   const session = await getAuthSession();
   if (!requireAuth(session)) return authErrorResponse();
   if (!requireAdmin(session)) return adminErrorResponse();
@@ -26,9 +31,6 @@ export async function GET(request: NextRequest) {
   const level = searchParams.get("level") ?? null;
   const search = searchParams.get("search") ?? null;
   const lines = Math.min(Math.max(parseInt(searchParams.get("lines") ?? "50", 10) || 50, 10), 200);
-
-  const responseHeaders = new Headers();
-  addRateLimitHeaders(responseHeaders, "admin", request, session.user.id);
 
   try {
     // Try common log file locations
@@ -44,24 +46,21 @@ export async function GET(request: NextRequest) {
 
     for (const logPath of logPaths) {
       if (fs.existsSync(logPath)) {
-        logContent = fs.readFileSync(logPath, "utf-8");
+        logContent = await fs.promises.readFile(logPath, "utf-8");
         logFile = path.basename(logPath);
         break;
       }
     }
 
     if (!logContent) {
-      return NextResponse.json(
-        {
+      return NextResponse.json({
           data: {
             entries: [],
             total: 0,
             logFile: null,
             message: "No log file found. Ensure logging is configured.",
           },
-        },
-        { headers: responseHeaders },
-      );
+        });
     }
 
     // Parse log lines
@@ -91,17 +90,14 @@ export async function GET(request: NextRequest) {
     // Limit
     const limited = entries.slice(0, lines);
 
-    return NextResponse.json(
-      {
+    return NextResponse.json({
         data: {
           entries: limited,
           total: entries.length,
           displayed: limited.length,
           logFile,
         },
-      },
-      { headers: responseHeaders },
-    );
+      });
   } catch (error: unknown) {
     log.error("Failed to read logs", {
       error: error instanceof Error ? error.message : String(error),
