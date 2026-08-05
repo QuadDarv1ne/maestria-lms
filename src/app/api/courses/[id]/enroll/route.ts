@@ -164,7 +164,17 @@ export async function POST(
       promoCodeId = promoResult.promoCode?.id ?? null;
     }
 
+    // Re-fetch course inside transaction to ensure data consistency
     const result = await db.$transaction(async (tx) => {
+      // Re-fetch course inside transaction to avoid stale data
+      const txCourse = await tx.course.findUnique({
+        where: { id: resolvedCourseId },
+      });
+      
+      if (!txCourse) {
+        return { error: "Курс не найден", status: 404 as const };
+      }
+
       // Сначала проверяем дубликат — ДО изменения studentCount
       const existingEnrollment = await tx.enrollment.findUnique({
         where: {
@@ -180,7 +190,7 @@ export async function POST(
           return { error: "Вы уже записаны на этот курс", status: 400 as const };
         }
         if (existingEnrollment.status === "cancelled") {
-          if (course.price > 0) {
+          if (txCourse.price > 0) {
             // Paid course re-enrollment requires a new payment
             const payment = await tx.payment.create({
               data: {
@@ -189,7 +199,7 @@ export async function POST(
                 amount: finalAmount,
                 discountAmount,
                 promoCodeId,
-                currency: course.currency,
+                currency: txCourse.currency,
                 status: "pending",
                 paymentMethod,
               },
@@ -201,11 +211,11 @@ export async function POST(
               status: 200 as const,
             };
           }
-          if (course.maxStudents && course.maxStudents > 0) {
+          if (txCourse.maxStudents && txCourse.maxStudents > 0) {
             const canReenroll = await tx.course.updateMany({
               where: {
                 id: resolvedCourseId,
-                studentCount: { lt: course.maxStudents },
+                studentCount: { lt: txCourse.maxStudents },
               },
               data: { studentCount: { increment: 1 } },
             });
@@ -234,12 +244,12 @@ export async function POST(
       }
 
       // Для бесплатных курсов: проверяем лимит и создаём запись
-      if (course.price === 0) {
-        if (course.maxStudents && course.maxStudents > 0) {
+      if (txCourse.price === 0) {
+        if (txCourse.maxStudents && txCourse.maxStudents > 0) {
           const incremented = await tx.course.updateMany({
             where: {
               id: resolvedCourseId,
-              studentCount: { lt: course.maxStudents },
+              studentCount: { lt: txCourse.maxStudents },
             },
             data: { studentCount: { increment: 1 } },
           });
@@ -277,7 +287,7 @@ export async function POST(
           amount: finalAmount,
           discountAmount,
           promoCodeId,
-          currency: course.currency,
+          currency: txCourse.currency,
           status: "pending",
           paymentMethod,
         },
@@ -288,7 +298,7 @@ export async function POST(
         requiresPayment: true,
         paymentId: payment.id,
         amount: finalAmount,
-        currency: course.currency,
+        currency: txCourse.currency,
         status: 200 as const,
       };
     });
@@ -306,7 +316,8 @@ export async function POST(
       );
     }
 
-    // Send server notification for successful enrollment
+    // Send server notification for successful enrollment (free courses only)
+    // course object from outside transaction still has the correct title
     if (course.price === 0) {
       await createNotification({
         userId,

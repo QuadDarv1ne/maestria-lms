@@ -44,6 +44,26 @@ const jwtUserCache = new Map<string, { role: string; isActive: boolean; expiresA
 const JWT_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 const JWT_CACHE_MAX = 500;
 
+// Periodic cleanup of expired cache entries to prevent memory leaks
+let jwtCacheCleanupInterval: ReturnType<typeof setInterval> | null = null;
+
+function startJwtCacheCleanup() {
+  if (jwtCacheCleanupInterval) return;
+  jwtCacheCleanupInterval = setInterval(() => {
+    const now = Date.now();
+    for (const [key, entry] of jwtUserCache.entries()) {
+      if (entry.expiresAt <= now) {
+        jwtUserCache.delete(key);
+      }
+    }
+  }, 60_000); // Clean up every minute
+  if (jwtCacheCleanupInterval && typeof jwtCacheCleanupInterval === "object" && "unref" in jwtCacheCleanupInterval) {
+    (jwtCacheCleanupInterval as NodeJS.Timeout).unref();
+  }
+}
+
+startJwtCacheCleanup();
+
 function jwtCacheSet(id: string, data: { role: string; isActive: boolean }) {
   if (jwtUserCache.size >= JWT_CACHE_MAX) {
     // Evict oldest entry

@@ -12,7 +12,9 @@ const DEFAULT_LOCALE: Locale = "ru";
 const LOCALE_COOKIE = "maestria-locale";
 const MAINTENANCE_COOKIE = "maestria-maintenance-bypass";
 
-const PUBLIC_FILE_PATTERN = /\.(.*)$/;
+// Match only actual file extensions — NOT paths with dots in parameters
+// e.g. /blog/2024-01-01 should NOT match, but /file.js should
+const PUBLIC_FILE_PATTERN = /\.(js|jsx|ts|tsx|css|scss|less|mjs|cjs|png|jpg|jpeg|gif|svg|ico|webp|avif|woff|woff2|eot|ttf|otf|map|json|xml|txt|md|yaml|yml)$/i;
 const API_ROUTE_PATTERN = /^\/api\//;
 const STATIC_ASSET_PATTERN = /\.(js|css|woff2?|png|jpg|jpeg|gif|svg|ico|webp|avif|json|xml|txt)$/i;
 

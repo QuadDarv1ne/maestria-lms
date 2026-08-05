@@ -27,20 +27,6 @@ export async function GET(request: NextRequest) {
       where: { teacherId },
       include: {
         category: { select: { name: true, slug: true } },
-        enrollments: {
-          take: 50,
-          include: {
-            user: {
-              select: {
-                id: true, name: true, image: true,
-              },
-            },
-          },
-        },
-        payments: {
-          where: { status: "completed" },
-          select: { amount: true },
-        },
         _count: {
           select: {
             enrollments: true,
@@ -52,6 +38,30 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
+    // Fetch enrollments and payments for each course separately
+    const coursesWithEnrollments = await Promise.all(
+      courses.map(async (course) => {
+        const enrollments = await db.enrollment.findMany({
+          where: { courseId: course.id },
+          include: {
+            user: {
+              select: {
+                id: true, name: true, image: true,
+              },
+            },
+          },
+          orderBy: { enrolledAt: "desc" },
+        });
+
+        const payments = await db.payment.findMany({
+          where: { courseId: course.id, status: "completed" },
+          select: { amount: true },
+        });
+
+        return { ...course, enrollments, payments };
+      })
+    );
+
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - MS.THIRTY_DAYS);
 
@@ -61,24 +71,25 @@ export async function GET(request: NextRequest) {
     let totalEnrollments = 0;
     const recentStudentIds = new Set<string>();
 
-    const coursesWithStats = courses.map((course) => {
-      const activeEnrollments = course.enrollments.filter(
+    const coursesWithStats = coursesWithEnrollments.map((course) => {
+      const enrollments = course.enrollments;
+      const activeEnrollments = enrollments.filter(
         (e) => e.status === "active"
       );
-      const completedEnrollments = course.enrollments.filter(
+      const completedEnrollments = enrollments.filter(
         (e) => e.status === "completed"
       );
-      const totalForCourse = course.enrollments.length;
+      const totalForCourse = enrollments.length;
 
       totalStudents += activeEnrollments.length;
       totalCompleted += completedEnrollments.length;
-      totalProgressSum += course.enrollments.reduce(
-        (sum, e) => sum + e.progress,
+      totalProgressSum += enrollments.reduce(
+        (sum: number, e: { progress: number }) => sum + e.progress,
         0
       );
       totalEnrollments += totalForCourse;
 
-      course.enrollments.forEach((e) => {
+      enrollments.forEach((e) => {
         if (
           e.enrolledAt >= thirtyDaysAgo ||
           (e.completedAt && e.completedAt >= thirtyDaysAgo)
@@ -99,13 +110,13 @@ export async function GET(request: NextRequest) {
         totalEnrollments: totalForCourse,
         averageProgress: totalForCourse > 0
           ? Math.round(
-              course.enrollments.reduce((s, e) => s + e.progress, 0) /
+              enrollments.reduce((s: number, e: { progress: number }) => s + e.progress, 0) /
                 totalForCourse
             )
           : 0,
         recentEnrollments: activeEnrollments
           .sort(
-            (a, b) =>
+            (a: { enrolledAt: Date }, b: { enrolledAt: Date }) =>
               new Date(b.enrolledAt).getTime() -
               new Date(a.enrolledAt).getTime()
           )
@@ -132,8 +143,8 @@ export async function GET(request: NextRequest) {
         ? Math.round(totalProgressSum / totalEnrollments)
         : 0;
 
-    const totalRevenue = courses.reduce(
-      (sum, c) => sum + c.payments.reduce((pSum, p) => pSum + Number(p.amount), 0),
+    const totalRevenue = coursesWithEnrollments.reduce(
+      (sum: number, c) => sum + c.payments.reduce((pSum: number, p: { amount: number }) => pSum + Number(p.amount), 0),
       0
     );
 

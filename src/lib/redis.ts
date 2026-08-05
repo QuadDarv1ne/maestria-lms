@@ -5,6 +5,7 @@ import { env } from "@/lib/env";
 let client: Redis | null = null;
 let connectionFailed = false;
 let reconnectTimeout: NodeJS.Timeout | null = null;
+let initializing = false;
 const RECONNECT_DELAY_MS = 30_000;
 
 function scheduleReconnect(): void {
@@ -27,7 +28,11 @@ export function getRedisClient(): Redis | null {
   const redisUrl = env.redisUrl;
   if (!redisUrl) return null;
 
+  // Prevent race condition: if already initializing, return null
+  if (initializing) return null;
+
   try {
+    initializing = true;
     client = new Redis(redisUrl, {
       maxRetriesPerRequest: 3,
       connectTimeout: 5000,
@@ -49,11 +54,21 @@ export function getRedisClient(): Redis | null {
         log.info("Redis connection restored");
         connectionFailed = false;
       }
+      initializing = false;
+    });
+
+    // Force connect to detect errors early
+    client.connect().catch((error) => {
+      log.warn("Redis connection failed", { error: error.message });
+      connectionFailed = true;
+      client = null;
+      scheduleReconnect();
     });
 
     return client;
   } catch {
     connectionFailed = true;
+    initializing = false;
     scheduleReconnect();
     return null;
   }

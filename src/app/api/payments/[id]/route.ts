@@ -136,6 +136,7 @@ export async function PUT(
     // Только администраторы могут менять статус платежа
     if (!requireAdmin(session)) return adminErrorResponse();
 
+    // Fetch payment outside transaction first for initial check
     const payment = await db.payment.findUnique({
       where: { id },
     });
@@ -168,6 +169,11 @@ export async function PUT(
     // только первый запрос обновит pending -> completed, остальные получат 0 записей
     const result = await db.$transaction(async (tx) => {
       let wasStatusUpdated = false;
+      // Re-fetch payment inside transaction to ensure we have current data
+      const txPayment = await tx.payment.findUnique({ where: { id } });
+      if (!txPayment) {
+        return { error: "Платёж не найден", status: 404 as const };
+      }
 
       if (status === "completed") {
         // Атомарно обновляем только если статус всё ещё "pending"
@@ -195,24 +201,24 @@ export async function PUT(
       }
 
       // Если платёж завершён успешно — записываем на курс
+      // Use txPayment (fetched inside transaction) for userId/courseId
       if (status === "completed" && wasStatusUpdated) {
-        // payment already fetched before transaction with userId/courseId
-        await ensureEnrollment(tx, payment.userId, payment.courseId);
+        await ensureEnrollment(tx, txPayment.userId, txPayment.courseId);
       }
 
       // Если платёж возвращён — отменяем запись и декрементируем studentCount
       if (status === "refunded") {
         const cancelled = await tx.enrollment.updateMany({
           where: {
-            userId: payment.userId,
-            courseId: payment.courseId,
+            userId: txPayment.userId,
+            courseId: txPayment.courseId,
             status: "active",
           },
           data: { status: "cancelled" },
         });
         if (cancelled.count > 0) {
           await tx.course.update({
-            where: { id: payment.courseId },
+            where: { id: txPayment.courseId },
             data: { studentCount: { decrement: 1 } },
           });
         }
