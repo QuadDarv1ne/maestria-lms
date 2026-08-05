@@ -1,6 +1,26 @@
 # Maestria LMS — Worklog
 
 ---
+Task ID: 7
+Agent: Main Agent
+Task: Исправление сборки (middleware/proxy конфликт), провайдер-зависимый поиск, i18n-ключи, check-i18n
+
+Work Log:
+- CRITICAL: next build падал на "Both middleware file and proxy file are detected" — src/middleware.ts (шима, добавленная в f877a23) конфликтовал с src/proxy.ts; в Next.js 16 middleware переименован в proxy, шима удалена — build успешен
+- MEDIUM: Поиск блога (src/app/(main)/blog/page.tsx) использовал mode: "insensitive" безусловно — на SQLite (дефолтный провайдер) тип StringFilter не поддерживает mode, сборка падала на типизации; исправлено по паттерну API-роутов: mode только для postgresql, иначе содержит без mode (SQLite LIKE case-insensitive нативно)
+- LOW: Добавлены отсутствующие i18n-ключи courseEditor.published / courseEditor.draft (используются в TeacherDashboard) в ru/en/zh
+- LOW: ESLint: prefer-const (src/lib/db.ts), any в типе where блога → Prisma.ArticleWhereInput
+- LOW: check-i18n.mjs: regex t() теперь допускает цифры в ключах (terms.toc1 и т.д. давали ложные "unused"), тестовые файлы исключены из сканирования
+- documents_fos_aup/ добавлена в .gitignore (сгенерированные .docx, не часть кода)
+- Проверено: typecheck чистый, ESLint 0 ошибок/0 warnings, 281 тест проходят, next build успешен, check:i18n — все ключи присутствуют
+
+Stage Summary:
+- 1 CRITICAL фикс сборки (удалена конфликтующая шима middleware.ts)
+- 1 MEDIUM фикс провайдер-зависимой фильтрации поиска
+- 2 i18n-фикса (ключи + checker)
+- 2 ESLint-фикса
+
+---
 Task ID: 6
 Agent: Main Agent
 Task: Валидация параметров API routes, rate limiting placement, i18n fixes

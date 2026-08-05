@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { db, Prisma, getDatabaseProvider } from "@/lib/db";
 import { BlogPageClient } from "@/components/BlogPageClient";
 
 interface PageProps {
@@ -16,7 +16,7 @@ export default async function BlogPage({ searchParams }: PageProps) {
   const sortBy = (params.sortBy as string) || "new";
 
   // Build where clause
-  const where: { isPublished: boolean; category?: string; OR?: any[] } = {
+  const where: Prisma.ArticleWhereInput = {
     isPublished: true,
   };
 
@@ -25,9 +25,14 @@ export default async function BlogPage({ searchParams }: PageProps) {
   }
 
   if (search) {
+    // 'mode: insensitive' is only supported by PostgreSQL; SQLite LIKE is case-insensitive natively
+    const provider = getDatabaseProvider();
+    const searchFilter = provider === "postgresql"
+      ? { contains: search, mode: "insensitive" as const }
+      : { contains: search };
     where.OR = [
-      { title: { contains: search, mode: "insensitive" as const } },
-      { excerpt: { contains: search, mode: "insensitive" as const } },
+      { title: searchFilter },
+      { excerpt: searchFilter },
     ];
   }
 

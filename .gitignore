@@ -71,4 +71,7 @@ prisma-data/
 src/generated/  
   
 # Screenshots (not needed in repository)  
-screenshots/ 
+screenshots/
+
+# Generated FOS/AUP academic documents (local, not part of the LMS codebase)
+documents_fos_aup/ 

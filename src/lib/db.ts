@@ -14,7 +14,7 @@ export type DatabaseProvider = "postgresql" | "mysql" | "sqlite" | "mongodb";
  */
 function normalizeSqliteUrl(url: string): string {
   // Remove the "file:" prefix used by Prisma
-  let filePath = url.replace(/^file:/, "");
+  const filePath = url.replace(/^file:/, "");
 
   // If it's an absolute path, return as-is
   if (path.isAbsolute(filePath)) {

@@ -17,9 +17,9 @@ function walk(dir) {
   for (const e of entries) {
     const p = path.join(dir, e.name);
     if (e.isDirectory() && !e.name.startsWith("node_modules") && !e.name.startsWith(".git")) walk(p);
-    else if (e.isFile() && (e.name.endsWith(".tsx") || e.name.endsWith(".ts"))) {
+    else if (e.isFile() && (e.name.endsWith(".tsx") || e.name.endsWith(".ts")) && !e.name.endsWith(".test.tsx") && !e.name.endsWith(".test.ts")) {
       const content = fs.readFileSync(p, "utf-8");
-      const regex = /t\((["'])([a-z_]+\.[a-zA-Z._]+)\1/g;
+      const regex = /t\((["'])([a-z_][a-zA-Z0-9_]*\.[a-zA-Z0-9._]+)\1/g;
       let m;
       while ((m = regex.exec(content)) !== null) {
         usedKeys.add(m[2]);
