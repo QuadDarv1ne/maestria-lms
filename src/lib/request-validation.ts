@@ -85,6 +85,33 @@ export type SearchInput = z.infer<typeof searchSchema>;
 export const idOrSlugSchema = z.string().min(1, "ID or slug is required");
 
 /**
+ * Strict UUID param schema.
+ * Use for route params that must be a valid UUID.
+ */
+export const uuidSchema = z.string().uuid("Некорректный формат ID");
+
+/**
+ * Validate route params with a Zod schema.
+ * Returns parsed data or a 400 NextResponse.
+ */
+export function validateParams<T>(
+  params: Record<string, string>,
+  schema: z.ZodSchema<T>,
+): { data: T } | { response: NextResponse } {
+  const result = schema.safeParse(params);
+  if (!result.success) {
+    const firstIssue = result.error.issues[0];
+    return {
+      response: NextResponse.json(
+        { error: firstIssue?.message ?? "Некорректные параметры запроса" },
+        { status: 400 },
+      ),
+    };
+  }
+  return { data: result.data };
+}
+
+/**
  * Safe JSON parse helper.
  * Parses JSON strings safely, returning undefined on failure.
  */

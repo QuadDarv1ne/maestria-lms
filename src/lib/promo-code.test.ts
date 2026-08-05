@@ -17,7 +17,7 @@ vi.mock("@/lib/db", () => ({
       findUnique: mockPromoCodeFindUnique,
       update: mockPromoCodeUpdate,
     },
-    $transaction: vi.fn(async (cb: (tx: any) => Promise<void>) => {
+    $transaction: vi.fn(async (cb: (tx: Record<string, unknown>) => Promise<void>) => {
       const tx = {
         promoCode: {
           findUnique: mockTxFindUnique,

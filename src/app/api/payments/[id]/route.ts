@@ -6,6 +6,7 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
 import { log } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-errors";
+import { validateParams, uuidSchema } from "@/lib/request-validation";
 
 export const runtime = "nodejs";
 
@@ -65,9 +66,13 @@ export async function GET(
   const blocked = checkPaymentGetRateLimit(request);
   if (blocked) return blocked;
 
-  let id: string | undefined;
+  const resolvedParams = await params;
+  const id = resolvedParams.id;
+  const paramCheck = validateParams({ id }, z.object({ id: uuidSchema }));
+  if ("response" in paramCheck) return paramCheck.response;
+
   try {
-    ({ id } = await params);
+
     const session = await getAuthSession();
     if (!requireAuth(session)) return authErrorResponse();
 
@@ -119,9 +124,12 @@ export async function PUT(
   const blocked = checkRateLimit(request);
   if (blocked) return blocked;
 
-  let id: string | undefined;
+  const resolvedParams = await params;
+  const id = resolvedParams.id;
+  const paramCheck = validateParams({ id }, z.object({ id: uuidSchema }));
+  if ("response" in paramCheck) return paramCheck.response;
+
   try {
-    ({ id } = await params);
     const session = await getAuthSession();
     if (!requireAuth(session)) return authErrorResponse();
 

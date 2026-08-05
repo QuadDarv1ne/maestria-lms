@@ -11,6 +11,7 @@ import { reviewNotificationEmail } from "@/lib/emails";
 import { env } from "@/lib/env";
 import { z } from "zod";
 import { sanitizeContent } from "@/lib/sanitize";
+import { validateParams, idOrSlugSchema } from "@/lib/request-validation";
 
 export const runtime = "nodejs";
 
@@ -31,6 +32,8 @@ export async function GET(
   if (blocked) return blocked;
   try {
     const { id: courseId } = await params;
+    const paramCheck = validateParams({ id: courseId }, z.object({ id: idOrSlugSchema }));
+    if ("response" in paramCheck) return paramCheck.response;
 
     // Check if course exists (support both ID and slug)
     const course = await db.course.findFirst({
@@ -111,6 +114,8 @@ export async function POST(
   if (blocked) return blocked;
   try {
     const { id: courseId } = await params;
+    const paramCheck = validateParams({ id: courseId }, z.object({ id: idOrSlugSchema }));
+    if ("response" in paramCheck) return paramCheck.response;
 
     // Check authentication
     const session = await getAuthSession();

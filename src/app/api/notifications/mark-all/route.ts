@@ -11,10 +11,10 @@ const checkRateLimit = rateLimit("notifications", RATE_LIMITS.default);
 
 // PATCH: Mark all notifications as read (bulk operation)
 export async function PATCH(request: NextRequest) {
-  try {
-    const blocked = checkRateLimit(request);
-    if (blocked) return blocked;
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
 
+  try {
     const session = await getAuthSession();
     if (!requireAuth(session)) return authErrorResponse();
 

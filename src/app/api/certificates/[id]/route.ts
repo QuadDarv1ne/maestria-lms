@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { db } from "@/lib/db";
 import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
+import { validateParams, uuidSchema } from "@/lib/request-validation";
 
 export const runtime = "nodejs";
 
@@ -20,6 +22,8 @@ export async function GET(
     if (!requireAuth(session)) return authErrorResponse();
 
     const { id } = await params;
+    const paramCheck = validateParams({ id }, z.object({ id: uuidSchema }));
+    if ("response" in paramCheck) return paramCheck.response;
 
     const certificate = await db.certificate.findUnique({
       where: { id },

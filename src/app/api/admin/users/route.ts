@@ -27,8 +27,15 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const { page, limit, skip } = parsePagination(searchParams, { defaultLimit: 20, maxLimit: 100 });
-    const search = searchParams.get("search");
-    const role = searchParams.get("role");
+    const rawSearch = searchParams.get("search");
+    const rawRole = searchParams.get("role");
+
+    // Validate role against allowed values
+    const allowedRoles = ["student", "teacher", "admin"];
+    const role = rawRole && allowedRoles.includes(rawRole) ? rawRole : undefined;
+
+    // Validate search length
+    const search = rawSearch && rawSearch.length <= 100 ? rawSearch : undefined;
 
     const where: Prisma.UserWhereInput = {};
     if (role) where.role = role;

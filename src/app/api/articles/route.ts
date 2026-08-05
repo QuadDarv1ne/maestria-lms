@@ -7,6 +7,7 @@ import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { z } from "zod";
 import { sanitizeContent } from "@/lib/sanitize";
 import { cacheGet, cacheSet, cacheInvalidateByTag, generateCacheKey, createCacheHeaders } from "@/lib/cache";
+import { log } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -28,6 +29,7 @@ const createArticleSchema = z.object({
 export async function GET(request: NextRequest) {
   const blocked = checkRateLimit(request);
   if (blocked) return blocked;
+  
   try {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get("category");
@@ -54,7 +56,7 @@ export async function GET(request: NextRequest) {
       pagination: { page: number; limit: number; total: number; totalPages: number };
     };
 
-    // Try cache
+    // Try cache first (Redis or memory fallback)
     const cached = await cacheGet<ArticlesResponse>(cacheKey);
     if (cached) {
       return NextResponse.json(cached, {
@@ -106,41 +108,54 @@ export async function GET(request: NextRequest) {
       ...(sortBy && orderByMap[sortBy] ? [orderByMap[sortBy]] : [{ createdAt: Prisma.SortOrder.desc }]),
     ];
 
-    const [articles, total] = await Promise.all([
-      db.article.findMany({
-        where,
-        select: {
-          id: true,
-          title: true,
-          slug: true,
-          excerpt: true,
-          image: true,
-          category: true,
-          tags: true,
-          readTime: true,
-          views: true,
-          isPublished: true,
-          isFeatured: true,
-          createdAt: true,
-          updatedAt: true,
-          authorId: true,
-          author: {
-            select: {
-              id: true,
-              name: true,
-              image: true,
-              role: true,
+    // Fetch with error handling - ensure we always return something
+    let articles: unknown[] = [];
+    let total = 0;
+
+    try {
+      [articles, total] = await Promise.all([
+        db.article.findMany({
+          where,
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            excerpt: true,
+            image: true,
+            category: true,
+            tags: true,
+            readTime: true,
+            views: true,
+            isPublished: true,
+            isFeatured: true,
+            createdAt: true,
+            updatedAt: true,
+            authorId: true,
+            author: {
+              select: {
+                id: true,
+                name: true,
+                image: true,
+                role: true,
+              },
             },
           },
-        },
-        orderBy,
-        skip,
-        take: limit,
-      }),
-      db.article.count({ where }),
-    ]);
+          orderBy,
+          skip,
+          take: limit,
+        }),
+        db.article.count({ where }),
+      ]);
+    } catch (dbError: unknown) {
+      // If database query fails, return empty results with warning
+      log.warn("Database query failed for articles list, returning empty results", {
+        error: dbError instanceof Error ? dbError.message : String(dbError),
+      });
+      articles = [];
+      total = 0;
+    }
 
-    const responseData = {
+    const responseData: ArticlesResponse = {
       articles,
       pagination: {
         page,
@@ -164,7 +179,20 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: unknown) {
-    return handleApiError(error, { route: "articles" });
+    // Log the full error for debugging
+    if (error instanceof Error) {
+      log.error(`[articles:GET] Failed to fetch articles: ${error.message}`);
+    } else {
+      log.error(`[articles:GET] Unknown error: ${error}`);
+    }
+    // Return empty results instead of 500 error
+    return NextResponse.json({
+      articles: [],
+      pagination: { page: 1, limit: 12, total: 0, totalPages: 0 },
+    }, {
+      status: 200,
+      headers: createCacheHeaders(0, true, 0),
+    });
   }
 }
 

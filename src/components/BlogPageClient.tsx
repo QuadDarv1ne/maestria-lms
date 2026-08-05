@@ -1,6 +1,6 @@
 "use client";
-import { useRouter } from "next/navigation";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
@@ -28,7 +28,7 @@ const CATEGORIES = [
   { value: "career", labelKey: "blog.category.career" },
 ];
 
-interface Article {
+export interface BlogArticle {
   id: string;
   title: string;
   slug: string;
@@ -39,7 +39,7 @@ interface Article {
   readTime: number;
   views: number;
   isFeatured: boolean;
-  createdAt: Date;
+  createdAt: string;
   author: {
     id: string;
     name: string | null;
@@ -48,18 +48,25 @@ interface Article {
   };
 }
 
-export function BlogPage() {
+export interface BlogPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface BlogPageClientProps {
+  initialArticles: BlogArticle[];
+  initialPagination: BlogPagination;
+}
+
+export function BlogPageClient({ initialArticles, initialPagination }: BlogPageClientProps) {
   const router = useRouter();
   const locale = useAppStore((s) => s.locale);
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [articles, setArticles] = useState<BlogArticle[]>(initialArticles);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 12,
-    total: 0,
-    totalPages: 0,
-  });
+  const [pagination, setPagination] = useState<BlogPagination>(initialPagination);
   const [filters, setFilters] = useState({
     category: "all",
     search: "",
@@ -81,7 +88,7 @@ export function BlogPage() {
     };
   }, [searchInput]);
 
-  // Fetch articles
+  // Fetch articles when filters change
   useEffect(() => {
     let cancelled = false;
 
@@ -102,14 +109,19 @@ export function BlogPage() {
           params.set("search", filters.search);
         }
 
-        // AbortController with timeout to prevent hanging requests
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15_000);
 
         const res = await fetch(`/api/articles?${params}`, { signal: controller.signal });
         clearTimeout(timeoutId);
 
-        if (!res.ok) throw new Error("Failed to fetch articles");
+        if (!res.ok) {
+          let errorBody: { error?: string } = {};
+          try {
+            errorBody = await res.json();
+          } catch { /* ignore */ }
+          throw new Error(errorBody.error || `API error ${res.status}: ${res.statusText}`);
+        }
 
         const data = await res.json();
         if (!cancelled) {
@@ -131,12 +143,19 @@ export function BlogPage() {
       }
     };
 
+    // Only fetch if not the initial page load (which already has data)
+    if (initialArticles.length > 0 && pagination.page === 1 && !filters.search && filters.category === "all" && filters.sortBy === "new") {
+      // Initial load - articles already loaded via SSR
+      setIsLoading(false);
+      return;
+    }
+
     fetchArticles();
 
     return () => {
       cancelled = true;
     };
-  }, [pagination.page, pagination.limit, filters.category, filters.search, filters.sortBy, locale]);
+  }, [pagination.page, pagination.limit, filters.category, filters.search, filters.sortBy, locale, initialArticles.length]);
 
   const handleCategoryChange = useCallback((value: string) => {
     setFilters((prev) => ({ ...prev, category: value }));

@@ -14,9 +14,10 @@ const certQuerySchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
+
   try {
-    const blocked = checkRateLimit(request);
-    if (blocked) return blocked;
     const session = await getAuthSession();
     if (!requireAuth(session)) return authErrorResponse();
 

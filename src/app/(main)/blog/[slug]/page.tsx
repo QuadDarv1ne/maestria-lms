@@ -21,5 +21,31 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function Page({ params }: Props) {
   const { slug } = await params;
-  return <ArticlePage slug={slug} />;
+  
+  // Fetch article data server-side for immediate display
+  const article = await db.article.findUnique({
+    where: { slug },
+    include: {
+      author: {
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          role: true,
+          bio: true,
+        },
+      },
+    },
+  });
+
+  // Transform dates to strings for client component
+  const articleData = article
+    ? {
+        ...article,
+        createdAt: article.createdAt.toISOString(),
+        updatedAt: article.updatedAt.toISOString(),
+      }
+    : null;
+
+  return <ArticlePage slug={slug} initialArticle={articleData} />;
 }

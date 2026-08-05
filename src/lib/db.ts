@@ -3,8 +3,28 @@ import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { env } from "@/lib/env";
 import { types as nodeTypes } from "node:util";
+import path from "node:path";
 
 export type DatabaseProvider = "postgresql" | "mysql" | "sqlite" | "mongodb";
+
+/**
+ * Normalize a Prisma database URL to a path suitable for better-sqlite3.
+ * Prisma uses "file:./path" or "file:../path" format, but better-sqlite3
+ * needs an absolute filesystem path.
+ */
+function normalizeSqliteUrl(url: string): string {
+  // Remove the "file:" prefix used by Prisma
+  let filePath = url.replace(/^file:/, "");
+
+  // If it's an absolute path, return as-is
+  if (path.isAbsolute(filePath)) {
+    return filePath;
+  }
+
+  // Resolve relative path against the current working directory
+  // This ensures the path is correct regardless of where the container runs from
+  return path.resolve(process.cwd(), filePath);
+}
 
 /**
  * Detect database provider from connection URL.
@@ -52,7 +72,10 @@ export function getDatabaseProvider(): DatabaseProvider {
 function createAdapter(provider: DatabaseProvider, url: string) {
   switch (provider) {
     case "sqlite":
-      return new PrismaBetterSqlite3({ url });
+      // Normalize Prisma's "file:./path" format to an absolute filesystem path
+      // that better-sqlite3 can properly resolve in the container
+      const sqlitePath = normalizeSqliteUrl(url);
+      return new PrismaBetterSqlite3({ url: sqlitePath });
     case "postgresql":
       // Amvera requires SSL for PostgreSQL connections.
       // rejectUnauthorized: false allows self-signed certificates.
@@ -61,8 +84,9 @@ function createAdapter(provider: DatabaseProvider, url: string) {
         ssl: { rejectUnauthorized: false },
       });
     default:
-      // Fallback: try SQLite adapter
-      return new PrismaBetterSqlite3({ url });
+      // Fallback: try SQLite adapter with normalized path
+      const fallbackPath = normalizeSqliteUrl(url);
+      return new PrismaBetterSqlite3({ url: fallbackPath });
   }
 }
 

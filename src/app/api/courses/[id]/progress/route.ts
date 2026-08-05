@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
+import { validateParams, idOrSlugSchema } from "@/lib/request-validation";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -26,6 +27,8 @@ export async function GET(
 
   try {
     const { id: courseId } = await params;
+    const paramCheck = validateParams({ id: courseId }, z.object({ id: idOrSlugSchema }));
+    if ("response" in paramCheck) return paramCheck.response;
 
     const session = await getAuthSession();
     if (!requireAuth(session)) {
@@ -226,6 +229,8 @@ export async function PATCH(
 
   try {
     const { id: courseId } = await params;
+    const paramCheck = validateParams({ id: courseId }, z.object({ id: idOrSlugSchema }));
+    if ("response" in paramCheck) return paramCheck.response;
 
     const session = await getAuthSession();
     if (!requireAuth(session)) {

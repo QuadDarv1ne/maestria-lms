@@ -10,6 +10,7 @@ import { CERTIFICATE_PREFIX } from "@/lib/constants";
 import { env } from "@/lib/env";
 import { sendEmail } from "@/lib/email";
 import { certificateEmail } from "@/lib/emails";
+import { validateParams, idOrSlugSchema, uuidSchema } from "@/lib/request-validation";
 
 export const runtime = "nodejs";
 
@@ -31,6 +32,11 @@ export async function GET(
   if (blocked) return blocked;
   try {
     const { id: courseId, lessonId } = await params;
+    const paramCheck = validateParams(
+      { id: courseId, lessonId },
+      z.object({ id: idOrSlugSchema, lessonId: uuidSchema }),
+    );
+    if ("response" in paramCheck) return paramCheck.response;
 
     // Resolve course ID (support both UUID and slug)
     const course = await db.course.findFirst({
@@ -204,6 +210,12 @@ export async function POST(
   if (blocked) return blocked;
   try {
     const { id: courseId, lessonId } = await params;
+    const paramCheck = validateParams(
+      { id: courseId, lessonId },
+      z.object({ id: idOrSlugSchema, lessonId: uuidSchema }),
+    );
+    if ("response" in paramCheck) return paramCheck.response;
+
     const session = await getAuthSession();
     if (!requireAuth(session)) return authErrorResponse();
 

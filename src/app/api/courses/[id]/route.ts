@@ -4,6 +4,8 @@ import { getAuthSession } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { cacheGet, cacheSet, generateCacheKey, createCacheHeaders } from "@/lib/cache";
+import { validateParams, idOrSlugSchema } from "@/lib/request-validation";
+import { z } from "zod";
 
 export const runtime = "nodejs";
 
@@ -19,6 +21,8 @@ export async function GET(
   if (blocked) return blocked;
   try {
     const { id } = await params;
+    const paramCheck = validateParams({ id }, z.object({ id: idOrSlugSchema }));
+    if ("response" in paramCheck) return paramCheck.response;
 
     // Check if user is authenticated - cache only for anonymous users
     const session = await getAuthSession();

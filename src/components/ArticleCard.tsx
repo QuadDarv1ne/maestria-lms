@@ -42,7 +42,7 @@ interface ArticleCardProps {
     readTime: number;
     views: number;
     isFeatured: boolean;
-    createdAt: Date;
+    createdAt: string;
     author: {
       id: string;
       name: string | null;

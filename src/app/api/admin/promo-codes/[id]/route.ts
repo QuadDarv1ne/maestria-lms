@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getAuthSession, requireAdmin, adminErrorResponse, authErrorResponse } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
+import { validateParams, uuidSchema } from "@/lib/request-validation";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -41,6 +42,8 @@ export async function GET(
     }
 
     const { id } = await params;
+    const paramCheck = validateParams({ id }, z.object({ id: uuidSchema }));
+    if ("response" in paramCheck) return paramCheck.response;
 
     const promoCode = await db.promoCode.findUnique({
       where: { id },
@@ -50,7 +53,7 @@ export async function GET(
     });
 
     if (!promoCode) {
-      return NextResponse.json({ error: "Promo code not found" }, { status: 404 });
+      return NextResponse.json({ error: "Промокод не найден" }, { status: 404 });
     }
 
     return NextResponse.json({ promoCode });
@@ -77,6 +80,9 @@ export async function PATCH(
     }
 
     const { id } = await params;
+    const paramCheck = validateParams({ id }, z.object({ id: uuidSchema }));
+    if ("response" in paramCheck) return paramCheck.response;
+
     const body = await request.json();
     const validation = updatePromoCodeSchema.safeParse(body);
 
@@ -139,6 +145,8 @@ export async function DELETE(
     }
 
     const { id } = await params;
+    const paramCheck = validateParams({ id }, z.object({ id: uuidSchema }));
+    if ("response" in paramCheck) return paramCheck.response;
 
     // Check if promo code has been used
     const promoCode = await db.promoCode.findUnique({

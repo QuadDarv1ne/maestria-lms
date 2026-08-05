@@ -7,6 +7,7 @@ import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
 import { formatDate } from "@/lib/utils";
 import { validatePromoCode, redeemPromoCode } from "@/lib/promo-code";
+import { validateParams, idOrSlugSchema } from "@/lib/request-validation";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -27,6 +28,8 @@ export async function POST(
 
   try {
     const { id: courseId } = await params;
+    const paramCheck = validateParams({ id: courseId }, z.object({ id: idOrSlugSchema }));
+    if ("response" in paramCheck) return paramCheck.response;
 
     const session = await getAuthSession();
     if (!requireAuth(session)) return authErrorResponse();

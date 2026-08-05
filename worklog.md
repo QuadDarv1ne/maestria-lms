@@ -1,6 +1,28 @@
 # Maestria LMS — Worklog
 
 ---
+Task ID: 6
+Agent: Main Agent
+Task: Валидация параметров API routes, rate limiting placement, i18n fixes
+
+Work Log:
+- Создан хелпер `validateParams()` в request-validation.ts для валидации route params через Zod
+- Добавлены схемы `uuidSchema` и использование `idOrSlugSchema` для валидации параметров
+- UUID-валидация добавлена в 16 dynamic API routes: payments/[id], notifications/[id], certificates/[id], admin/promo-codes/[id], admin/courses/[id]/submissions/[submissionId], courses/[id]/assignments/[assignmentId]
+- idOrSlug-валидация добавлена в routes с UUID-or-slug: courses/[id], courses/[id]/lessons/[lessonId], courses/[id]/enroll, courses/[id]/progress, courses/[id]/students, courses/[id]/reviews, articles/[slug]
+- Rate limiting перемещён из try-блока наверх handler'а в 8 routes: notifications/route.ts (GET+DELETE), notifications/[id] (PATCH+DELETE), notifications/mark-all, achievements, certificates, teacher/stats
+- Валидация query params: role в admin/users (whitelist student/teacher/admin), status в admin/courses (published/unpublished), status в courses/[id]/students (active/completed/paused/cancelled), search length limit (100 chars) во всех admin endpoints
+- ESLint: исправлен warning `any` → `Record<string, unknown>` в promo-code.test.ts
+- i18n: заменен hardcoded 'ДИ' на `tr("about.directorInitials")` в AboutPage.tsx, добавлен ключ в 3 локали (ru/en/zh)
+- Проверено: typecheck чистый, ESLint 0 ошибок/0 warnings, 281 тестов проходят, next build успешен
+
+Stage Summary:
+- 16 API routes защищены валидацией параметров (UUID/format)
+- 8 routes исправлены: rate limiting теперь срабатывает до auth
+- 3 admin endpoints защищены от произвольных значений role/status/search
+- 1 i18n fix (hardcoded строка → t() call)
+
+---
 Task ID: 5
 Agent: Main Agent
 Task: Аудит кодовой базы — исправление безопасности, консистентности и качества

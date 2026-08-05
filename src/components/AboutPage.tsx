@@ -155,7 +155,7 @@ onClick={() => router.push("?dialog=login")}
               <div className="bg-gradient-to-r from-blue-800 via-violet-700 to-indigo-900 p-6 md:p-8 flex flex-col sm:flex-row items-center gap-6">
                 <Avatar className="w-24 h-24 border-4 border-white/30 shadow-xl">
                   <AvatarFallback className="bg-amber-500 text-white text-2xl font-bold">
-                    ДИ
+                    {tr("about.directorInitials")}
                   </AvatarFallback>
                 </Avatar>
                 <div className="text-center sm:text-left">

@@ -44,8 +44,8 @@ interface Article {
   readTime: number;
   views: number;
   isFeatured: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
   author: {
     id: string;
     name: string | null;
@@ -57,16 +57,20 @@ interface Article {
 
 interface ArticlePageProps {
   slug: string;
+  initialArticle?: Article | null;
 }
 
-export function ArticlePage({ slug }: ArticlePageProps) {
+export function ArticlePage({ slug, initialArticle }: ArticlePageProps) {
   const router = useRouter();
   const locale = useAppStore((s) => s.locale);
-  const [article, setArticle] = useState<Article | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [article, setArticle] = useState<Article | null>(initialArticle ?? null);
+  const [isLoading, setIsLoading] = useState(initialArticle === undefined);
   const [error, setError] = useState<string | null>(null);
 
+  // Only fetch if no initial data was provided (fallback for direct visits)
   useEffect(() => {
+    if (initialArticle !== undefined) return;
+
     const fetchArticle = async () => {
       setIsLoading(true);
       setError(null);
@@ -82,8 +86,8 @@ export function ArticlePage({ slug }: ArticlePageProps) {
       }
     };
 
-    if (slug) fetchArticle();
-  }, [slug, locale]);
+    fetchArticle();
+  }, [slug, locale, initialArticle]);
 
   if (isLoading) {
     return (

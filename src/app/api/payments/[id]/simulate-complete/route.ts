@@ -5,6 +5,8 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
 import { env } from "@/lib/env";
+import { validateParams, uuidSchema } from "@/lib/request-validation";
+import { z } from "zod";
 
 export const runtime = "nodejs";
 
@@ -19,6 +21,9 @@ export async function POST(
 
   try {
     const { id } = await params;
+    const paramCheck = validateParams({ id }, z.object({ id: uuidSchema }));
+    if ("response" in paramCheck) return paramCheck.response;
+
     const session = await getAuthSession();
     if (!requireAuth(session)) return authErrorResponse();
 

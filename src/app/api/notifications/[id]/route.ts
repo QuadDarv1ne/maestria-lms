@@ -5,6 +5,7 @@ import { pushUnreadCount } from "@/lib/sse";
 import { handleApiError } from "@/lib/api-errors";
 import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { validateParams, uuidSchema } from "@/lib/request-validation";
 
 export const runtime = "nodejs";
 
@@ -18,14 +19,16 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const blocked = checkRateLimit(request);
-    if (blocked) return blocked;
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
 
+  try {
     const session = await getAuthSession();
     if (!requireAuth(session)) return authErrorResponse();
 
     const { id } = await params;
+    const paramCheck = validateParams({ id }, z.object({ id: uuidSchema }));
+    if ("response" in paramCheck) return paramCheck.response;
 
     const notification = await db.notification.findUnique({
       where: { id },
@@ -83,14 +86,16 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const blocked = checkRateLimit(request);
-    if (blocked) return blocked;
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
 
+  try {
     const session = await getAuthSession();
     if (!requireAuth(session)) return authErrorResponse();
 
     const { id } = await params;
+    const paramCheck = validateParams({ id }, z.object({ id: uuidSchema }));
+    if ("response" in paramCheck) return paramCheck.response;
 
     const notification = await db.notification.findUnique({
       where: { id },

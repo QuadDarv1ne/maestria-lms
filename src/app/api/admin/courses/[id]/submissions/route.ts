@@ -4,6 +4,7 @@ import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { parsePagination } from "@/lib/utils";
+import { validateParams, idOrSlugSchema } from "@/lib/request-validation";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -36,6 +37,8 @@ export async function GET(
     }
 
     const { id: courseId } = await params;
+    const paramCheck = validateParams({ id: courseId }, z.object({ id: idOrSlugSchema }));
+    if ("response" in paramCheck) return paramCheck.response;
 
     // Resolve course ID (support both UUID and slug)
     const course = await db.course.findFirst({

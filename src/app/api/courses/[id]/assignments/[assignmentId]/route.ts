@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
+import { validateParams, idOrSlugSchema, uuidSchema } from "@/lib/request-validation";
 import { z } from "zod";
 import { log } from "@/lib/logger";
 
@@ -32,6 +33,11 @@ export async function POST(
     if (!requireAuth(session)) return authErrorResponse();
 
     const { id: courseId, assignmentId } = await params;
+    const paramCheck = validateParams(
+      { id: courseId, assignmentId },
+      z.object({ id: idOrSlugSchema, assignmentId: uuidSchema }),
+    );
+    if ("response" in paramCheck) return paramCheck.response;
 
     // Resolve course ID (support both UUID and slug)
     const course = await db.course.findFirst({

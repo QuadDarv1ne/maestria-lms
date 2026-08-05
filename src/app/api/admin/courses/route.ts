@@ -50,8 +50,15 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const { page, limit, skip } = parsePagination(searchParams, { defaultLimit: 20, maxLimit: 100 });
-    const status = searchParams.get("status");
-    const search = searchParams.get("search");
+    const rawStatus = searchParams.get("status");
+    const rawSearch = searchParams.get("search");
+
+    // Validate status against allowed values
+    const allowedStatuses = ["published", "unpublished"];
+    const status = rawStatus && allowedStatuses.includes(rawStatus) ? rawStatus : undefined;
+
+    // Validate search length
+    const search = rawSearch && rawSearch.length <= 100 ? rawSearch : undefined;
 
     const where: Prisma.CourseWhereInput = {};
     if (status === "published") where.isPublished = true;

@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
-
+import { validateParams, uuidSchema, idOrSlugSchema } from "@/lib/request-validation";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -38,6 +38,11 @@ export async function GET(
     }
 
     const { id: courseId, submissionId } = await params;
+    const paramCheck = validateParams(
+      { id: courseId, submissionId },
+      z.object({ id: idOrSlugSchema, submissionId: uuidSchema }),
+    );
+    if ("response" in paramCheck) return paramCheck.response;
 
     // Проверяем что курс принадлежит преподавателю или пользователь админ
     const course = await db.course.findUnique({
@@ -143,6 +148,11 @@ export async function PUT(
     }
 
     const { id: courseId, submissionId } = await params;
+    const paramCheck = validateParams(
+      { id: courseId, submissionId },
+      z.object({ id: idOrSlugSchema, submissionId: uuidSchema }),
+    );
+    if ("response" in paramCheck) return paramCheck.response;
 
     // Проверяем что курс принадлежит преподавателю
     const course = await db.course.findUnique({

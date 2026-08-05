@@ -6,6 +6,8 @@ import { cacheInvalidateByTag } from "@/lib/cache";
 import { getAuthSession, requireAuth, authErrorResponse, requireAdmin, adminErrorResponse } from "@/lib/auth";
 import { z } from "zod";
 import { sanitizeContent } from "@/lib/sanitize";
+import { validateParams } from "@/lib/request-validation";
+import { log } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -33,6 +35,8 @@ export async function GET(
   if (blocked) return blocked;
   try {
     const { slug } = await params;
+    const paramCheck = validateParams({ slug }, z.object({ slug: z.string().min(1).max(200) }));
+    if ("response" in paramCheck) return paramCheck.response;
 
     const article = await db.article.findUnique({
       where: { slug },
@@ -67,10 +71,18 @@ export async function GET(
       const now = Math.floor(Date.now() / 1000);
 
       if (now - lastView > VIEW_DEDUP_TTL) {
-        await db.article.update({
-          where: { id: article.id },
-          data: { views: { increment: 1 } },
-        });
+        try {
+          await db.article.update({
+            where: { id: article.id },
+            data: { views: { increment: 1 } },
+          });
+        } catch (viewError: unknown) {
+          // Don't fail the request if view counting fails
+          log.warn("Failed to increment article views", {
+            articleId: article.id,
+            error: viewError instanceof Error ? viewError.message : String(viewError),
+          });
+        }
       }
 
       const response = NextResponse.json(article, { status: 200 });
@@ -105,6 +117,9 @@ export async function PATCH(
     }
 
     const { slug } = await params;
+    const paramCheck = validateParams({ slug }, z.object({ slug: z.string().min(1).max(200) }));
+    if ("response" in paramCheck) return paramCheck.response;
+
     const article = await db.article.findUnique({ where: { slug } });
 
     if (!article) {
@@ -170,6 +185,8 @@ export async function DELETE(
     if (!requireAdmin(session)) return adminErrorResponse();
 
     const { slug } = await params;
+    const paramCheck = validateParams({ slug }, z.object({ slug: z.string().min(1).max(200) }));
+    if ("response" in paramCheck) return paramCheck.response;
 
     await db.article.delete({ where: { slug } });
 

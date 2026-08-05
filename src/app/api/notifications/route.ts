@@ -17,10 +17,10 @@ const notificationsQuerySchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
-  try {
-    const blocked = checkRateLimit(request);
-    if (blocked) return blocked;
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
 
+  try {
     const session = await getAuthSession();
     if (!requireAuth(session)) return authErrorResponse();
 
@@ -62,10 +62,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  try {
-    const blocked = checkRateLimit(request);
-    if (blocked) return blocked;
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
 
+  try {
     const session = await getAuthSession();
     if (!requireAuth(session)) return authErrorResponse();
 

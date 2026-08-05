@@ -6,6 +6,8 @@ import { createPayment, isYooKassaConfigured } from "@/lib/yookassa";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
 import { env } from "@/lib/env";
+import { validateParams, uuidSchema } from "@/lib/request-validation";
+import { z } from "zod";
 
 export const runtime = "nodejs";
 
@@ -18,9 +20,12 @@ export async function POST(
   const blocked = checkRateLimit(request);
   if (blocked) return blocked;
 
-  let id: string | undefined;
+  const resolvedParams = await params;
+  const id = resolvedParams.id;
+  const paramCheck = validateParams({ id }, z.object({ id: uuidSchema }));
+  if ("response" in paramCheck) return paramCheck.response;
+
   try {
-    ({ id } = await params);
     const session = await getAuthSession();
     if (!requireAuth(session)) return authErrorResponse();
 

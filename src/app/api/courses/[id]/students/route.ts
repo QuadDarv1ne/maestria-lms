@@ -4,6 +4,8 @@ import type { Prisma } from "@/lib/db";
 import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { log } from "@/lib/logger";
+import { validateParams, idOrSlugSchema } from "@/lib/request-validation";
+import { z } from "zod";
 
 const checkRateLimit = rateLimit("course-students", RATE_LIMITS.default);
 
@@ -24,6 +26,9 @@ export async function GET(
   if (!requireAuth(session)) return authErrorResponse();
 
   const { id } = await params;
+  const paramCheck = validateParams({ id }, z.object({ id: idOrSlugSchema }));
+  if ("response" in paramCheck) return paramCheck.response;
+
   const userId = session.user.id;
   const isAdmin = session.user.role === "admin";
 
@@ -55,8 +60,15 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const page = Math.max(parseInt(searchParams.get("page") ?? "1", 10) || 1, 1);
     const limit = Math.min(Math.max(parseInt(searchParams.get("limit") ?? "20", 10) || 20, 1), 100);
-    const status = searchParams.get("status") ?? null;
-    const search = searchParams.get("search") ?? null;
+    const rawStatus = searchParams.get("status");
+    const rawSearch = searchParams.get("search");
+
+    // Validate status against allowed values
+    const allowedStatuses = ["active", "completed", "paused", "cancelled"];
+    const status = rawStatus && allowedStatuses.includes(rawStatus) ? rawStatus : null;
+
+    // Validate search length
+    const search = rawSearch && rawSearch.length <= 100 ? rawSearch : null;
 
     // Build where clause
     const where: Prisma.EnrollmentWhereInput = { courseId: resolvedCourseId };

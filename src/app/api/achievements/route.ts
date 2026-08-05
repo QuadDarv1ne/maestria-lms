@@ -11,10 +11,10 @@ const checkRateLimit = rateLimit("achievements", RATE_LIMITS.default);
 
 // GET: Supplementary data for achievements calculation
 export async function GET(request: Request) {
-  try {
-    const blocked = checkRateLimit(request);
-    if (blocked) return blocked;
+  const blocked = checkRateLimit(request);
+  if (blocked) return blocked;
 
+  try {
     const session = await getAuthSession();
     if (!requireAuth(session)) return authErrorResponse();
 
