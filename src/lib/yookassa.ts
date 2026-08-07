@@ -98,6 +98,44 @@ export interface CreatePaymentResult {
   status: string;
 }
 
+export interface CreateRefundParams {
+  /** Provider (YooKassa) payment ID */
+  paymentId: string;
+  amount: string;
+  currency?: string;
+  description?: string;
+}
+
+export interface CreateRefundResult {
+  refundId: string;
+  status: string;
+}
+
+/**
+ * Create a refund for an already-captured YooKassa payment.
+ * Throws when credentials are missing or the provider rejects the request.
+ */
+export async function createRefund(
+  params: CreateRefundParams
+): Promise<CreateRefundResult> {
+  const response = await yooKassaRequest<{
+    id: string;
+    status: string;
+  }>("POST", "/refunds", {
+    payment_id: params.paymentId,
+    amount: {
+      value: params.amount,
+      currency: params.currency || "RUB",
+    },
+    description: params.description,
+  });
+
+  return {
+    refundId: response.id,
+    status: response.status,
+  };
+}
+
 export async function createPayment(
   params: CreatePaymentParams
 ): Promise<CreatePaymentResult> {
@@ -129,4 +167,12 @@ export async function createPayment(
 
 export function isYooKassaConfigured(): boolean {
   return !!(env.yooKassaShopId && env.yooKassaSecretKey);
+}
+
+/**
+ * Currency formatting for the YooKassa API: two decimal places, dot separator.
+ * YooKassa rejects amounts like "1000.0" or "1000.000" — must be "1000.00".
+ */
+export function formatYooKassaAmount(amount: number): string {
+  return amount.toFixed(2);
 }

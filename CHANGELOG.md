@@ -8,6 +8,16 @@
 
 ## [Unreleased]
 
+### Добавлено
+- **Возвраты платежей (refunds)**: административный возврат оплаченных платежей — `POST /api/admin/payments/[id]/refund` оформляет возврат в YooKassa (когда `transactionId` содержит ID платежа провайдера и заданы ключи YooKassa) либо помечает платёж возвращённым вручную; атомарно отменяет запись, декрементирует `studentCount` и уведомляет студента. Webhook теперь обрабатывает события возврата (`refund.succeeded`/`refund.canceled`) — платёж помечается `refunded`, запись отменяется
+- **Список платежей в админке**: `GET /api/admin/payments` — пагинация, фильтры по статусу/пользователю/курсу, поиск, сводка по выручке и числу возвратов
+- **Хелперы YooKassa**: `createRefund()` (создание возврата с idempotency-key) и `formatYooKassaAmount()` (нормализация суммы `1 000.5` → `1000.50`, обязательная для API YooKassa)
+- Документация API: `GET /api/admin/payments`, `POST /api/admin/payments/[id]/refund`, refund-события webhook в `API.md`
+- Тесты: 9 тестов refund-потока (`refund-flow.test.ts`), 2 теста YooKassa-хелперов (`yookassa.test.ts`)
+
+### Исправлено
+- **MEDIUM**: письмо учителю при записи на бесплатный курс использовало `process.env.NEXT_PUBLIC_SITE_URL || ""` в ссылке — если переменная не задана, ссылка получалась пустой (`/teacher/...` без origin); теперь используется `env.siteUrl` (фолбэк на `NEXTAUTH_URL`)
+
 ### Исправлено
 - **CRITICAL**: Сборка падала на «Both middleware file and proxy file are detected» — файл `src/middleware.ts` (шима для Next.js 16) конфликтовал с `src/proxy.ts`; шима удалена, `proxy.ts` остаётся единственным файлом middleware (в Next.js 16 middleware переименован в proxy)
 - **MEDIUM**: Поиск по блогу использовал `mode: "insensitive"` без учёта провайдера БД — на SQLite (дефолт) такая фильтрация не поддерживается (типизированная ошибка сборки); теперь как в API-роутах: `mode` только для PostgreSQL, SQLite использует нативный case-insensitive LIKE

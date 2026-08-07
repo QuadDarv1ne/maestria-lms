@@ -20,6 +20,7 @@ const webhookBodySchema = z.object({
   object: z.object({
     id: z.string().optional(),
     paymentId: z.string().optional(),
+    payment_id: z.string().optional(),
     transactionId: z.string().optional(),
     status: z.string().optional(),
     metadata: z.object({
@@ -146,6 +147,95 @@ async function completePayment(paymentId: string, transactionId: string) {
 
 const checkWebhookRateLimit = rateLimit("webhook", { windowMs: 60_000, maxRequests: 100 });
 
+/**
+ * Process refund webhook events (e.g. YooKassa `refund.succeeded`).
+ * Finds the payment by the provider payment id, marks it refunded and
+ * cancels the enrollment — atomically and idempotently.
+ */
+async function processRefundWebhook(data: {
+  paymentId?: string;
+  refundId?: string;
+  status?: string;
+}) {
+  const providerPaymentId = data.paymentId;
+  if (!providerPaymentId) {
+    log.warn("Refund webhook: missing provider payment id");
+    return { received: true, message: "Missing provider payment id" };
+  }
+
+  // Find the payment by the provider's payment id (stored in transactionId
+  // after a completed capture) or fall back to our internal id.
+  const payment = await db.payment.findFirst({
+    where: { OR: [{ transactionId: providerPaymentId }, { id: providerPaymentId }] },
+  });
+
+  if (!payment) {
+    log.warn("Refund webhook: payment not found", { providerPaymentId });
+    return { received: true, message: "Payment not found" };
+  }
+
+  const refundStatus = data.status?.toLowerCase();
+  // Only finalize on a successful refund; failed/canceled refunds leave the
+  // payment as-is.
+  if (refundStatus !== "succeeded" && refundStatus !== "completed" && refundStatus !== "done") {
+    log.info("Refund webhook: non-terminal status, ignoring", {
+      paymentId: payment.id,
+      refundStatus,
+    });
+    return { received: true, status: refundStatus };
+  }
+
+  // Mark refunded + cancel enrollment + decrement studentCount atomically.
+  const result = await db.$transaction(async (tx) => {
+    const updateResult = await tx.payment.updateMany({
+      where: { id: payment.id, status: "completed" },
+      data: {
+        status: "refunded",
+        paymentData: JSON.stringify({
+          refundedAt: new Date().toISOString(),
+          refundAmount: payment.amount,
+          refundCurrency: payment.currency,
+          providerRefundId: data.refundId ?? null,
+          source: "webhook",
+        }),
+      },
+    });
+
+    if (updateResult.count === 0) {
+      return { alreadyProcessed: true };
+    }
+
+    const cancelled = await tx.enrollment.updateMany({
+      where: {
+        userId: payment.userId,
+        courseId: payment.courseId,
+        status: "active",
+      },
+      data: { status: "cancelled" },
+    });
+
+    if (cancelled.count > 0) {
+      await tx.course.update({
+        where: { id: payment.courseId },
+        data: { studentCount: { decrement: 1 } },
+      });
+    }
+
+    return { alreadyProcessed: false };
+  });
+
+  if (result.alreadyProcessed) {
+    return { received: true, status: "refunded", idempotent: true };
+  }
+
+  log.info("Webhook: payment refunded", {
+    paymentId: payment.id,
+    providerRefundId: data.refundId,
+  });
+
+  return { received: true, status: "refunded" };
+}
+
 export async function POST(request: NextRequest) {
   const blocked = checkWebhookRateLimit(request);
   if (blocked) return blocked;
@@ -213,6 +303,19 @@ export async function POST(request: NextRequest) {
         if (oldestKey) processedWebhooks.delete(oldestKey);
       }
       processedWebhooks.set(idempotencyKey, { status: data.status, timestamp: now });
+    }
+
+    // ── Refund events (e.g. YooKassa `refund.succeeded` / `refund.canceled`) ──
+    const eventType = (data.event || data.type || "").toLowerCase();
+    const isRefundEvent = eventType.startsWith("refund.");
+
+    if (isRefundEvent) {
+      const result = await processRefundWebhook({
+        paymentId: data.object?.payment_id ?? data.object?.paymentId,
+        refundId: data.object?.id ?? idempotencyKey,
+        status: data.object?.status ?? data.status,
+      });
+      return NextResponse.json(result);
     }
 
     // Map provider-specific status values

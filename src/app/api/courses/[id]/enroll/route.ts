@@ -7,6 +7,7 @@ import { sendEmail } from "@/lib/email";
 import { enrollmentNotificationEmail } from "@/lib/emails";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
+import { env } from "@/lib/env";
 import { formatDate } from "@/lib/utils";
 import { validatePromoCode, redeemPromoCode } from "@/lib/promo-code";
 import { validateParams, idOrSlugSchema } from "@/lib/request-validation";
@@ -343,7 +344,7 @@ export async function POST(
                 teacher.name || "преподаватель",
                 session.user.name || "Студент",
                 course.title,
-                `${process.env.NEXT_PUBLIC_SITE_URL || ""}/teacher/courses/${resolvedCourseId}`
+                `${env.siteUrl}/teacher/courses/${resolvedCourseId}`
               ),
             });
           }

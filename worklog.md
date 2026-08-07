@@ -1,6 +1,32 @@
 # Maestria LMS — Worklog
 
 ---
+Task ID: 8
+Agent: Main Agent
+Task: Возвраты платежей (YooKassa refunds), список платежей в админке, фикс email-ссылки
+
+Work Log:
+- FEATURE: Возвраты — POST /api/admin/payments/[id]/refund (только admin, rate limited, UUID-валидация):
+  - Возврат оформляется в YooKassa (createRefund) если transactionId — ID платежа провайдера и YooKassa настроена; при отказе провайдера платёж не меняется (502)
+  - Если YooKassa не настроена / transactionId локальный (txn_*) — локальная пометка refunded (mock/manual режим)
+  - Атомарно (updateMany where status=completed → race-condition safe): payment.status=refunded + paymentData{refundedAt, refundAmount, providerRefundId, refundedBy}, enrollment.active→cancelled, studentCount decrement
+  - createNotification пользователю (тип payment) + лог
+- FEATURE: GET /api/admin/payments — пагинация, фильтры status/userId/courseId, search (до 100 символов), сводка totalRevenue/completed/refunded
+- FEATURE: yookassa.ts — createRefund() (POST /refunds с Idempotence-Key) и formatYooKassaAmount() (1000.5 → "1000.50" — YooKassa требует ровно 2 знака)
+- FEATURE: Webhook — обработка refund-событий (event/type начинается с "refund."): processRefundWebhook находит платёж по transactionId/payment_id, при succeeded/completed помечает refunded + отменяет запись + декремент (идемпотентно, атомарно); в схему добавлено поле object.payment_id (YooKassa refund object)
+- FIX (MEDIUM): enroll route — ссылка в письме учителю собиралась из process.env.NEXT_PUBLIC_SITE_URL || "" → пустой origin при незаданной переменной; заменено на env.siteUrl (фолбэк NEXTAUTH_URL)
+- Тесты: refund-flow.test.ts (9 тестов: 401/403/404/400/409, успешный refund с провайдером, отказ провайдера 502 без изменений, manual refund, txn_ не идёт в провайдер), yookassa.test.ts (formatYooKassaAmount, isYooKassaConfigured)
+- API.md: документированы /api/admin/payments, /api/admin/payments/[id]/refund, refund-события webhook
+- Проверено: typecheck чистый, ESLint 0 ошибок, 292 теста проходят
+
+Stage Summary:
+- 2 новых admin API роута (список платежей + возврат)
+- 1 фикс email-ссылки (env.siteUrl вместо raw NEXT_PUBLIC_SITE_URL)
+- 2 функции YooKassa (createRefund, formatYooKassaAmount)
+- 1 расширение webhook (refund-события)
+- 11 новых тестов
+
+---
 Task ID: 7
 Agent: Main Agent
 Task: Исправление сборки (middleware/proxy конфликт), провайдер-зависимый поиск, i18n-ключи, check-i18n

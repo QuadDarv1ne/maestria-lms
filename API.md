@@ -489,6 +489,28 @@ Receive payment provider callbacks (SBP, YooKassa, Tinkoff). No authentication r
 
 **Response:** `{ "received": true, "status": "completed" }`
 
+**Refund events (YooKassa `refund.succeeded` / `refund.canceled`):**
+
+When the `event`/`type` field starts with `refund.`, the webhook validates the 
+payload and calls the refund handler. On a successful refund the payment is 
+marked `refunded`, the active enrollment is cancelled and the course 
+`studentCount` is decremented (atomically, idempotent).
+
+```json
+{
+  "event": "refund.succeeded",
+  "status": "succeeded",
+  "object": {
+    "id": "rt-123",
+    "payment_id": "22220000-0000-0000-0000-000000000000",
+    "status": "succeeded",
+    "amount": { "value": "5000.00", "currency": "RUB" }
+  }
+}
+```
+
+**Response:** `{ "received": true, "status": "refunded" }`
+
 ---
 
 ### POST `/api/payments/[id]/init-yookassa`
@@ -921,6 +943,57 @@ Get platform-wide statistics.
 ### GET `/api/admin/student-stats/[id]`
 
 Get detailed statistics for a specific student.
+
+---
+
+### GET `/api/admin/payments`
+
+List payments with filters and pagination (admin only).
+
+**Query params:**
+- `page`, `limit` (max 100), `status` (`pending|completed|failed|refunded|cancelled`), `userId` (UUID), `courseId`, `search`
+
+**Response:**
+```json
+{
+  "payments": [
+    {
+      "id": "uuid",
+      "amount": 5000,
+      "currency": "RUB",
+      "status": "completed",
+      "paymentMethod": "sbp",
+      "user": { "id": "uuid", "name": "Иван", "email": "ivan@example.com" },
+      "course": { "id": "uuid", "title": "Python Pro" },
+      "promoCode": { "id": "uuid", "code": "SUMMER25" }
+    }
+  ],
+  "pagination": { "page": 1, "limit": 20, "total": 42, "totalPages": 3 },
+  "summary": { "totalRevenue": 1500000, "completedPayments": 38, "refundedPayments": 2 }
+}
+```
+
+### POST `/api/admin/payments/[id]/refund`
+
+Refund a completed payment (admin only).
+
+Issues a YooKassa refund when `transactionId` holds a provider payment id and YooKassa is configured; otherwise marks the payment as refunded locally (mock/manual mode). Marking the payment refunded, the active enrollment is cancelled and the course `studentCount` is decremented atomically (race-condition safe).
+
+**Response 200:**
+```json
+{
+  "message": "Платёж возвращён",
+  "refund": {
+    "paymentId": "uuid",
+    "amount": 5000,
+    "currency": "RUB",
+    "status": "refunded",
+    "providerRefundId": "rt-123"
+  }
+}
+```
+
+**Errors:** `404` — платёж не найден; `400` — платёж не оплачен; `409` — уже возвращён; `502` — провайдер отклонил возврат.
 
 ---
 
