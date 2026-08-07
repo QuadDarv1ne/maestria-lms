@@ -8,6 +8,7 @@ export {
   lessonReminderEmail,
   achievementEmail,
   paymentNotificationEmail,
+  enrollmentNotificationEmail,
 } from "./templates";
 
 export type { EmailTemplate } from "./templates";

@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
+import { sendEmail } from "@/lib/email";
+import { enrollmentNotificationEmail } from "@/lib/emails";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
 import { formatDate } from "@/lib/utils";
@@ -326,6 +328,29 @@ export async function POST(
         message: `Вы записаны на курс "${course.title}"`,
         link: `/course/${resolvedCourseId}`,
       }).catch((err: unknown) => log.error("Failed to send enrollment notification", { error: err }));
+
+      // Notify the course teacher about the new student (email only if configured)
+      if (course.teacherId) {
+        try {
+          const teacher = await db.user.findUnique({
+            where: { id: course.teacherId },
+            select: { email: true, name: true, emailVerified: true },
+          });
+          if (teacher?.email && teacher.emailVerified) {
+            await sendEmail({
+              to: teacher.email,
+              ...enrollmentNotificationEmail(
+                teacher.name || "преподаватель",
+                session.user.name || "Студент",
+                course.title,
+                `${process.env.NEXT_PUBLIC_SITE_URL || ""}/teacher/courses/${resolvedCourseId}`
+              ),
+            });
+          }
+        } catch (err: unknown) {
+          log.error("Failed to send teacher enrollment email", { error: err });
+        }
+      }
     }
 
     const { status, ...responseData } = result;

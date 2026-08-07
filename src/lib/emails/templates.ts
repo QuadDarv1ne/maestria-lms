@@ -1,4 +1,6 @@
 import { APP_NAME } from "@/lib/constants";
+import type { Locale } from "@/lib/store";
+import { t } from "@/lib/i18n";
 
 function escapeHtml(text: string): string {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -8,10 +10,10 @@ const BRAND_COLOR = "#1e40af";
 const BG_LIGHT = "#f8fafc";
 const CARD_BG = "#ffffff";
 
-function layout(title: string, bodyHtml: string): string {
+function layout(title: string, bodyHtml: string, lang: string = "ru"): string {
   return `
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="${lang}">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title></head>
 <body style="margin:0;padding:0;background-color:${BG_LIGHT};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:40px 16px">
@@ -41,144 +43,184 @@ export interface EmailTemplate {
   text: string;
 }
 
-export function welcomeEmail(name: string, dashboardUrl: string): EmailTemplate {
+function getLocaleFromLang(lang: string): Locale {
+  if (lang === "en") return "en";
+  if (lang === "zh") return "zh";
+  return "ru";
+}
+
+export function welcomeEmail(name: string, dashboardUrl: string, lang: string = "ru"): EmailTemplate {
   const safeName = escapeHtml(name);
   const safeUrl = escapeHtml(dashboardUrl);
+  const locale = getLocaleFromLang(lang);
   return {
-    subject: `Добро пожаловать в ${APP_NAME}!`,
-    html: layout("Добро пожаловать!", `
-      <h2 style="margin:0 0 16px;font-size:20px;color:#1e293b">Здравствуйте, ${safeName}!</h2>
-      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">Благодарим вас за регистрацию на платформе ${APP_NAME}.</p>
-      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">Теперь вам доступны все курсы, тесты и интерактивные задания. Начните обучение прямо сейчас!</p>
-      ${button(safeUrl, "Перейти к обучению")}
-      <p style="margin:16px 0 0;font-size:13px;color:#94a3b8">Если вы не регистрировались на ${APP_NAME}, просто проигнорируйте это письмо.</p>
-    `),
-    text: `Здравствуйте, ${name}!\n\nБлагодарим вас за регистрацию на платформе ${APP_NAME}.\n\nТеперь вам доступны все курсы, тесты и интерактивные задания.\n\nПерейти к обучению: ${dashboardUrl}\n\nЕсли вы не регистрировались, просто проигнорируйте это письмо.`,
+    subject: t("emails.welcome.subject", locale).replace("{appName}", APP_NAME),
+    html: layout(t("emails.welcome.title", locale), `
+      <h2 style="margin:0 0 16px;font-size:20px;color:#1e293b">${t("emails.welcome.greeting", locale).replace("{name}", safeName)}!</h2>
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">${t("emails.welcome.body1", locale).replace("{appName}", APP_NAME)}</p>
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">${t("emails.welcome.body2", locale)}</p>
+      ${button(safeUrl, t("emails.welcome.cta", locale))}
+      <p style="margin:16px 0 0;font-size:13px;color:#94a3b8">${t("emails.welcome.footer", locale).replace("{appName}", APP_NAME)}</p>
+    `, lang),
+    text: `${t("emails.welcome.textGreeting", locale).replace("{name}", name)}\n\n${t("emails.welcome.textBody", locale).replace("{appName}", APP_NAME)}\n\n${t("emails.welcome.textCta", locale)}: ${dashboardUrl}\n\n${t("emails.welcome.textFooter", locale)}`,
   };
 }
 
-export function verifyEmailEmail(name: string, verifyUrl: string): EmailTemplate {
-  const safeName = escapeHtml(name || "пользователь");
+export function verifyEmailEmail(name: string, verifyUrl: string, lang: string = "ru"): EmailTemplate {
+  const safeName = escapeHtml(name || t("emails.verify.defaultName", getLocaleFromLang(lang)));
+  const locale = getLocaleFromLang(lang);
   return {
-    subject: `Подтверждение email — ${APP_NAME}`,
-    html: layout("Подтверждение email", `
-      <h2 style="margin:0 0 16px;font-size:20px;color:#1e293b">Подтвердите ваш email</h2>
-      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">Здравствуйте, ${safeName}!</p>
-      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">Для подтверждения email перейдите по ссылке ниже:</p>
-      ${button(verifyUrl, "Подтвердить email")}
-      <p style="margin:16px 0 0;font-size:13px;color:#94a3b8">Ссылка действительна 24 часа.</p>
-    `),
-    text: `Здравствуйте, ${name || "пользователь"}!\n\nДля подтверждения email перейдите по ссылке: ${verifyUrl}\n\nСсылка действительна 24 часа.`,
+    subject: t("emails.verify.subject", locale).replace("{appName}", APP_NAME),
+    html: layout(t("emails.verify.title", locale), `
+      <h2 style="margin:0 0 16px;font-size:20px;color:#1e293b">${t("emails.verify.heading", locale)}</h2>
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">${t("emails.verify.greeting", locale).replace("{name}", safeName)}</p>
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">${t("emails.verify.body", locale)}</p>
+      ${button(verifyUrl, t("emails.verify.cta", locale))}
+      <p style="margin:16px 0 0;font-size:13px;color:#94a3b8">${t("emails.verify.expiry", locale)}</p>
+    `, lang),
+    text: `${t("emails.verify.textGreeting", locale).replace("{name}", name || t("emails.verify.defaultName", locale))}\n\n${t("emails.verify.textBody", locale)}: ${verifyUrl}\n\n${t("emails.verify.textExpiry", locale)}`,
   };
 }
 
-export function passwordResetEmail(resetUrl: string): EmailTemplate {
+export function passwordResetEmail(resetUrl: string, lang: string = "ru"): EmailTemplate {
+  const locale = getLocaleFromLang(lang);
   return {
-    subject: `Сброс пароля — ${APP_NAME}`,
-    html: layout("Сброс пароля", `
-      <h2 style="margin:0 0 16px;font-size:20px;color:#1e293b">Сброс пароля</h2>
-      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">Вы запросили сброс пароля для аккаунта ${APP_NAME}.</p>
-      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">Перейдите по ссылке ниже для сброса пароля:</p>
-      ${button(resetUrl, "Сбросить пароль")}
-      <p style="margin:16px 0 0;font-size:13px;color:#94a3b8">Ссылка действительна в течение 1 часа.</p>
-      <p style="margin:4px 0 0;font-size:13px;color:#94a3b8">Если вы не запрашивали сброс пароля, проигнорируйте это письмо.</p>
-    `),
-    text: `Вы запросили сброс пароля для аккаунта ${APP_NAME}.\n\nПерейдите по ссылке для сброса: ${resetUrl}\n\nСсылка действительна в течение 1 часа.\n\nЕсли вы не запрашивали сброс пароля, проигнорируйте это письмо.`,
+    subject: t("emails.reset.subject", locale).replace("{appName}", APP_NAME),
+    html: layout(t("emails.reset.title", locale), `
+      <h2 style="margin:0 0 16px;font-size:20px;color:#1e293b">${t("emails.reset.heading", locale)}</h2>
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">${t("emails.reset.body1", locale).replace("{appName}", APP_NAME)}</p>
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">${t("emails.reset.body2", locale)}</p>
+      ${button(resetUrl, t("emails.reset.cta", locale))}
+      <p style="margin:16px 0 0;font-size:13px;color:#94a3b8">${t("emails.reset.expiry", locale)}</p>
+      <p style="margin:4px 0 0;font-size:13px;color:#94a3b8">${t("emails.reset.ignore", locale)}</p>
+    `, lang),
+    text: `${t("emails.reset.textBody", locale).replace("{appName}", APP_NAME)}\n\n${t("emails.reset.textCta", locale)}: ${resetUrl}\n\n${t("emails.reset.textExpiry", locale)}\n\n${t("emails.reset.textIgnore", locale)}`,
   };
 }
 
-export function coursePurchaseEmail(name: string, courseName: string, courseUrl: string): EmailTemplate {
+export function coursePurchaseEmail(name: string, courseName: string, courseUrl: string, lang: string = "ru"): EmailTemplate {
   const safeName = escapeHtml(name);
   const safeCourse = escapeHtml(courseName);
+  const locale = getLocaleFromLang(lang);
   return {
-    subject: `Доступ к курсу «${courseName}» открыт — ${APP_NAME}`,
-    html: layout("Доступ к курсу открыт", `
-      <h2 style="margin:0 0 16px;font-size:20px;color:#1e293b">Доступ к курсу открыт!</h2>
-      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">Здравствуйте, ${safeName}!</p>
-      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">Вам открыт доступ к курсу <strong>«${safeCourse}»</strong>.</p>
-      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">Приступайте к обучению прямо сейчас!</p>
-      ${button(courseUrl, "Начать обучение")}
-    `),
-    text: `Здравствуйте, ${name}!\n\nВам открыт доступ к курсу «${courseName}».\n\nПриступайте к обучению: ${courseUrl}`,
+    subject: t("emails.purchase.subject", locale).replace("{courseName}", safeCourse).replace("{appName}", APP_NAME),
+    html: layout(t("emails.purchase.title", locale), `
+      <h2 style="margin:0 0 16px;font-size:20px;color:#1e293b">${t("emails.purchase.heading", locale)}</h2>
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">${t("emails.purchase.greeting", locale).replace("{name}", safeName)}</p>
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">${t("emails.purchase.body1", locale).replace("{courseName}", safeCourse)}</p>
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">${t("emails.purchase.body2", locale)}</p>
+      ${button(courseUrl, t("emails.purchase.cta", locale))}
+    `, lang),
+    text: `${t("emails.purchase.textGreeting", locale).replace("{name}", name)}\n\n${t("emails.purchase.textBody", locale).replace("{courseName}", courseName)}\n\n${t("emails.purchase.textCta", locale)}: ${courseUrl}`,
   };
 }
 
-export function certificateEmail(name: string, courseName: string, certificateUrl: string): EmailTemplate {
+export function certificateEmail(name: string, courseName: string, certificateUrl: string, lang: string = "ru"): EmailTemplate {
   const safeName = escapeHtml(name);
   const safeCourse = escapeHtml(courseName);
+  const locale = getLocaleFromLang(lang);
   return {
-    subject: `Сертификат за курс «${courseName}» — ${APP_NAME}`,
-    html: layout("Сертификат получен", `
-      <h2 style="margin:0 0 16px;font-size:20px;color:#1e293b">Поздравляем с завершением курса!</h2>
-      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">Здравствуйте, ${safeName}!</p>
-      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">Вы успешно завершили курс <strong>«${safeCourse}»</strong>.</p>
-      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">Ваш сертификат доступен по ссылке ниже:</p>
-      ${button(certificateUrl, "Посмотреть сертификат")}
-      <p style="margin:16px 0 0;font-size:13px;color:#94a3b8">Сертификат также доступен в вашем профиле.</p>
-    `),
-    text: `Здравствуйте, ${name}!\n\nВы успешно завершили курс «${courseName}».\n\nВаш сертификат: ${certificateUrl}\n\nСертификат также доступен в вашем профиле.`,
+    subject: t("emails.certificate.subject", locale).replace("{courseName}", safeCourse).replace("{appName}", APP_NAME),
+    html: layout(t("emails.certificate.title", locale), `
+      <h2 style="margin:0 0 16px;font-size:20px;color:#1e293b">${t("emails.certificate.heading", locale)}</h2>
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">${t("emails.certificate.greeting", locale).replace("{name}", safeName)}</p>
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">${t("emails.certificate.body1", locale).replace("{courseName}", safeCourse)}</p>
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">${t("emails.certificate.body2", locale)}</p>
+      ${button(certificateUrl, t("emails.certificate.cta", locale))}
+      <p style="margin:16px 0 0;font-size:13px;color:#94a3b8">${t("emails.certificate.footer", locale)}</p>
+    `, lang),
+    text: `${t("emails.certificate.textGreeting", locale).replace("{name}", name)}\n\n${t("emails.certificate.textBody", locale).replace("{courseName}", courseName)}\n\n${t("emails.certificate.textCta", locale)}: ${certificateUrl}\n\n${t("emails.certificate.textFooter", locale)}`,
   };
 }
 
-export function reviewNotificationEmail(name: string, courseName: string, reviewUrl: string): EmailTemplate {
+export function reviewNotificationEmail(name: string, courseName: string, reviewUrl: string, lang: string = "ru"): EmailTemplate {
   const safeName = escapeHtml(name);
   const safeCourse = escapeHtml(courseName);
+  const locale = getLocaleFromLang(lang);
   return {
-    subject: `Новая оценка за курс «${courseName}» — ${APP_NAME}`,
-    html: layout("Новая оценка", `
-      <h2 style="margin:0 0 16px;font-size:20px;color:#1e293b">Новая оценка</h2>
-      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">Здравствуйте, ${safeName}!</p>
-      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">Студент оставил новую оценку и отзыв по вашему курсу <strong>«${safeCourse}»</strong>.</p>
-      ${button(reviewUrl, "Посмотреть отзыв")}
-    `),
-    text: `Здравствуйте, ${name}!\n\nСтудент оставил новую оценку и отзыв по вашему курсу «${courseName}».\n\nПосмотреть отзыв: ${reviewUrl}`,
+    subject: t("emails.review.subject", locale).replace("{courseName}", safeCourse).replace("{appName}", APP_NAME),
+    html: layout(t("emails.review.title", locale), `
+      <h2 style="margin:0 0 16px;font-size:20px;color:#1e293b">${t("emails.review.heading", locale)}</h2>
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">${t("emails.review.greeting", locale).replace("{name}", safeName)}</p>
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">${t("emails.review.body", locale).replace("{courseName}", safeCourse)}</p>
+      ${button(reviewUrl, t("emails.review.cta", locale))}
+    `, lang),
+    text: `${t("emails.review.textGreeting", locale).replace("{name}", name)}\n\n${t("emails.review.textBody", locale).replace("{courseName}", courseName)}\n\n${t("emails.review.textCta", locale)}: ${reviewUrl}`,
   };
 }
 
-export function lessonReminderEmail(name: string, courseName: string, courseUrl: string, lessonTitle: string): EmailTemplate {
+export function lessonReminderEmail(name: string, courseName: string, courseUrl: string, lessonTitle: string, lang: string = "ru"): EmailTemplate {
   const safeName = escapeHtml(name);
   const safeCourse = escapeHtml(courseName);
   const safeLesson = escapeHtml(lessonTitle);
+  const locale = getLocaleFromLang(lang);
   return {
-    subject: `Продолжите обучение: «${lessonTitle}» — ${APP_NAME}`,
-    html: layout("Продолжите обучение", `
-      <h2 style="margin:0 0 16px;font-size:20px;color:#1e293b">Продолжите обучение</h2>
-      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">Здравствуйте, ${safeName}!</p>
-      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">На курсе <strong>«${safeCourse}»</strong> вас ждёт урок <strong>«${safeLesson}»</strong>.</p>
-      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">Продолжайте обучение, чтобы достичь новых вершин!</p>
-      ${button(courseUrl, "Продолжить обучение")}
-    `),
-    text: `Здравствуйте, ${name}!\n\nНа курсе «${courseName}» вас ждёт урок «${lessonTitle}».\n\nПродолжайте обучение: ${courseUrl}`,
+    subject: t("emails.reminder.subject", locale).replace("{lessonTitle}", safeLesson).replace("{appName}", APP_NAME),
+    html: layout(t("emails.reminder.title", locale), `
+      <h2 style="margin:0 0 16px;font-size:20px;color:#1e293b">${t("emails.reminder.heading", locale)}</h2>
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">${t("emails.reminder.greeting", locale).replace("{name}", safeName)}</p>
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">${t("emails.reminder.body1", locale).replace("{courseName}", safeCourse).replace("{lessonTitle}", safeLesson)}</p>
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">${t("emails.reminder.body2", locale)}</p>
+      ${button(courseUrl, t("emails.reminder.cta", locale))}
+    `, lang),
+    text: `${t("emails.reminder.textGreeting", locale).replace("{name}", name)}\n\n${t("emails.reminder.textBody", locale).replace("{courseName}", courseName).replace("{lessonTitle}", lessonTitle)}\n\n${t("emails.reminder.textCta", locale)}: ${courseUrl}`,
   };
 }
 
-export function achievementEmail(name: string, achievementName: string, achievementUrl: string): EmailTemplate {
+export function achievementEmail(name: string, achievementName: string, achievementUrl: string, lang: string = "ru"): EmailTemplate {
   const safeName = escapeHtml(name);
   const safeAchievement = escapeHtml(achievementName);
+  const locale = getLocaleFromLang(lang);
   return {
-    subject: `Достижение разблокировано: «${achievementName}» — ${APP_NAME}`,
-    html: layout("Новое достижение!", `
-      <h2 style="margin:0 0 16px;font-size:20px;color:#1e293b">Новое достижение разблокировано!</h2>
-      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">Здравствуйте, ${safeName}!</p>
-      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">Вы получили достижение <strong>«${safeAchievement}»</strong>!</p>
-      ${button(achievementUrl, "Посмотреть достижения")}
-    `),
-    text: `Здравствуйте, ${name}!\n\nВы получили достижение «${achievementName}»!\n\nПосмотреть достижения: ${achievementUrl}`,
+    subject: t("emails.achievement.subject", locale).replace("{achievementName}", safeAchievement).replace("{appName}", APP_NAME),
+    html: layout(t("emails.achievement.title", locale), `
+      <h2 style="margin:0 0 16px;font-size:20px;color:#1e293b">${t("emails.achievement.heading", locale)}</h2>
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">${t("emails.achievement.greeting", locale).replace("{name}", safeName)}</p>
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">${t("emails.achievement.body", locale).replace("{achievementName}", safeAchievement)}</p>
+      ${button(achievementUrl, t("emails.achievement.cta", locale))}
+    `, lang),
+    text: `${t("emails.achievement.textGreeting", locale).replace("{name}", name)}\n\n${t("emails.achievement.textBody", locale).replace("{achievementName}", achievementName)}\n\n${t("emails.achievement.textCta", locale)}: ${achievementUrl}`,
   };
 }
 
-export function paymentNotificationEmail(name: string, courseName: string, amount: string, paymentUrl: string): EmailTemplate {
+export function paymentNotificationEmail(name: string, courseName: string, amount: string, paymentUrl: string, lang: string = "ru"): EmailTemplate {
   const safeName = escapeHtml(name);
   const safeCourse = escapeHtml(courseName);
+  const locale = getLocaleFromLang(lang);
   return {
-    subject: `Оплата курса «${courseName}» подтверждена — ${APP_NAME}`,
-    html: layout("Оплата подтверждена", `
-      <h2 style="margin:0 0 16px;font-size:20px;color:#1e293b">Оплата подтверждена</h2>
-      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">Здравствуйте, ${safeName}!</p>
-      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">Оплата курса <strong>«${safeCourse}»</strong> на сумму <strong>${escapeHtml(amount)}</strong> подтверждена.</p>
-      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">Доступ к курсу открыт. Приятного обучения!</p>
-      ${button(paymentUrl, "Перейти к курсу")}
-    `),
-    text: `Здравствуйте, ${name}!\n\nОплата курса «${courseName}» на сумму ${amount} подтверждена.\n\nДоступ к курсу открыт: ${paymentUrl}`,
+    subject: t("emails.payment.subject", locale).replace("{courseName}", safeCourse).replace("{appName}", APP_NAME),
+    html: layout(t("emails.payment.title", locale), `
+      <h2 style="margin:0 0 16px;font-size:20px;color:#1e293b">${t("emails.payment.heading", locale)}</h2>
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">${t("emails.payment.greeting", locale).replace("{name}", safeName)}</p>
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">${t("emails.payment.body", locale).replace("{courseName}", safeCourse).replace("{amount}", escapeHtml(amount))}</p>
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">${t("emails.payment.footer", locale)}</p>
+      ${button(paymentUrl, t("emails.payment.cta", locale))}
+    `, lang),
+    text: `${t("emails.payment.textGreeting", locale).replace("{name}", name)}\n\n${t("emails.payment.textBody", locale).replace("{courseName}", courseName).replace("{amount}", amount)}\n\n${t("emails.payment.textCta", locale)}: ${paymentUrl}`,
+  };
+}
+
+/** New: enrollment notification for teachers when a student enrolls in their course */
+export function enrollmentNotificationEmail(
+  teacherName: string,
+  studentName: string,
+  courseName: string,
+  courseUrl: string,
+  lang: string = "ru"
+): EmailTemplate {
+  const safeTeacher = escapeHtml(teacherName);
+  const safeStudent = escapeHtml(studentName);
+  const safeCourse = escapeHtml(courseName);
+  const safeUrl = escapeHtml(courseUrl);
+  const locale = getLocaleFromLang(lang);
+  return {
+    subject: t("emails.enrollment.subject", locale).replace("{courseName}", safeCourse).replace("{appName}", APP_NAME),
+    html: layout(t("emails.enrollment.title", locale), `
+      <h2 style="margin:0 0 16px;font-size:20px;color:#1e293b">${t("emails.enrollment.heading", locale)}</h2>
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">${t("emails.enrollment.greeting", locale).replace("{name}", safeTeacher)}</p>
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">${t("emails.enrollment.body", locale).replace("{studentName}", safeStudent).replace("{courseName}", safeCourse)}</p>
+      ${button(safeUrl, t("emails.enrollment.cta", locale))}
+    `, lang),
+    text: `${t("emails.enrollment.textGreeting", locale).replace("{name}", teacherName)}\n\n${t("emails.enrollment.textBody", locale).replace("{studentName}", studentName).replace("{courseName}", courseName)}\n\n${t("emails.enrollment.textCta", locale)}: ${courseUrl}`,
   };
 }

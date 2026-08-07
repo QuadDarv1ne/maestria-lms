@@ -8,6 +8,7 @@ const fs = require("fs");
 const path = require("path");
 
 const ifEmpty = process.argv.includes("--if-empty");
+const force = process.argv.includes("--force");
 
 // SQLite guard: when --if-empty is passed, seed only when the database has no
 // courses, so fresh deploys get demo content but production data is untouched.
@@ -16,7 +17,14 @@ if (ifEmpty) {
   try {
     const url = process.env.DATABASE_URL || "file:./prisma/data.db";
     if (!url.startsWith("sqlite") && !url.includes(".db") && !url.startsWith("file:")) {
-      console.log("[seed] --if-empty only supports SQLite — skipping check for non-SQLite providers");
+      if (!force) {
+        console.log(
+          "[seed] DANGER: --if-empty cannot safely check non-SQLite databases. " +
+          "Skipping destructive seed unless --force is passed."
+        );
+        process.exit(0);
+      }
+      console.log("[seed] --force passed — proceeding to seed non-SQLite database");
     } else {
       const filePath = url.replace(/^file:/, "").replace(/^sqlite:\/\/\//, "");
       const resolved = path.resolve(process.cwd(), filePath.startsWith("./") ? filePath : filePath);
@@ -40,7 +48,7 @@ if (ifEmpty) {
 
 (async () => {
   const jiti = await createJiti(__filename);
-  await jiti.import("./prisma/seed.mjs");
+  await jiti.import("../prisma/seed.mjs");
 })().catch((error) => {
   console.error("[seed] Failed:", error);
   process.exit(1);

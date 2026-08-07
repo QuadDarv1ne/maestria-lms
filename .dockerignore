@@ -62,6 +62,7 @@ LICENSE
 /scripts
 !/scripts/generate-secret.js
 !/scripts/copy-build-assets.js
+!/scripts/seed.js
 
 # Data directories
 /data

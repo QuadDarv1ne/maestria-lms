@@ -118,6 +118,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/node_modules/zeptomatch ./node_mo
 COPY --from=builder --chown=nextjs:nodejs /app/start.sh ./start.sh
 RUN chmod +x ./start.sh
 
+# Seed entrypoint (jiti loader for prisma/seed.mjs) — used by start.sh on first boot
+COPY --from=builder --chown=nextjs:nodejs /app/scripts/seed.js ./scripts/seed.js
+
 USER nextjs
 
 EXPOSE 3000

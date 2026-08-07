@@ -36,9 +36,14 @@ done
 
 # ── Seed empty database ─────────────────────────
 # Only seed when the database contains no courses, so a fresh deploy
-# gets demo content but existing production data is never wiped.
-if ! node scripts/seed.js --if-empty; then
-  echo "[startup] seed skipped (database already has content or seeding disabled)"
+# gets production content but existing data is never wiped.
+echo "[startup] running seed (--if-empty)..."
+node scripts/seed.js --if-empty
+seed_exit=$?
+if [ $seed_exit -ne 0 ]; then
+  echo "[startup] WARNING: seed script failed with exit code ${seed_exit} — the app will start with an EMPTY database (blog/courses will seem missing). Check the seed errors above."
+else
+  echo "[startup] seed step finished (exit 0)"
 fi
 
 # ── Start Application ───────────────────────────
