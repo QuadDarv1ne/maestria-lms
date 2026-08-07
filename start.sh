@@ -37,13 +37,14 @@ done
 # ── Seed empty database ─────────────────────────
 # Only seed when the database contains no courses, so a fresh deploy
 # gets production content but existing data is never wiped.
+# NOTE: the seed must NEVER be fatal — a seed failure must not stop the
+# server from starting (otherwise the container crash-loops on Amvera).
 echo "[startup] running seed (--if-empty)..."
-node scripts/seed.js --if-empty
-seed_exit=$?
-if [ $seed_exit -ne 0 ]; then
-  echo "[startup] WARNING: seed script failed with exit code ${seed_exit} — the app will start with an EMPTY database (blog/courses will seem missing). Check the seed errors above."
-else
+if node scripts/seed.js --if-empty; then
   echo "[startup] seed step finished (exit 0)"
+else
+  seed_exit=$?
+  echo "[startup] WARNING: seed script failed with exit code ${seed_exit} — the app will start with an EMPTY database (blog/courses will seem missing). Check the seed errors above."
 fi
 
 # ── Start Application ───────────────────────────
