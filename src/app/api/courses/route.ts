@@ -197,6 +197,7 @@ export async function GET(request: NextRequest) {
         totalLessons,
         totalDuration,
         modulesCount: course.modules.length,
+        createdAt: course.createdAt,
       };
     });
 

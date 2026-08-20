@@ -129,29 +129,6 @@ export function CatalogPage() {
 
   const hasActiveFilters = courseFilters.category || courseFilters.search || courseFilters.level || courseFilters.freeOnly || courseFilters.sortBy !== "popular";
 
-  // Client-side sorting as fallback (API may not support all sort options)
-  const sortedCourses = useMemo(() => {
-    const arr = [...courses];
-    switch (courseFilters.sortBy) {
-      case "rating":
-        arr.sort((a, b) => b.rating - a.rating);
-        break;
-      case "priceAsc":
-        arr.sort((a, b) => a.price - b.price);
-        break;
-      case "priceDesc":
-        arr.sort((a, b) => b.price - a.price);
-        break;
-      case "popular":
-        arr.sort((a, b) => b.studentCount - a.studentCount);
-        break;
-      case "new":
-        // If API doesn't return createdAt, keep original order
-        break;
-    }
-    return arr;
-  }, [courses, courseFilters.sortBy]);
-
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Заголовок и поиск */}
@@ -310,7 +287,7 @@ export function CatalogPage() {
             {t("catalog.retry", locale)}
           </Button>
         </div>
-      ) : sortedCourses.length === 0 ? (
+      ) : courses.length === 0 ? (
         <div className="text-center py-16">
           <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-6">
             <BookOpen className="w-10 h-10 text-muted-foreground/60" />
@@ -326,7 +303,7 @@ export function CatalogPage() {
       ) : (
         <ScrollReveal direction="up" delay={100}>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sortedCourses.map((course) => (
+            {courses.map((course) => (
               <CourseCard
                 key={course.id}
                 course={course}

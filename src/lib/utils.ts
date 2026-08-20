@@ -42,6 +42,22 @@ export function formatCurrency(
   }).format(amount);
 }
 
+export function formatFileSize(bytes: number, locale: string = "ru"): string {
+  if (!Number.isFinite(bytes) || bytes < 0) return "0 Б";
+  if (bytes < 1024) return `${bytes} Б`;
+  const units = ["КБ", "МБ", "ГБ", "ТБ"];
+  let value = bytes / 1024;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex++;
+  }
+  const formatted = value.toLocaleString(localeMap[locale] || "en-US", {
+    maximumFractionDigits: 1,
+  });
+  return `${formatted} ${units[unitIndex]}`;
+}
+
 export function parsePagination(
   searchParams: URLSearchParams,
   options: { defaultLimit?: number; maxLimit?: number } = {},
@@ -63,11 +79,12 @@ export function parsePagination(
  */
 export function getInitials(name: string | null | undefined, fallback = "?"): string {
   if (!name?.trim()) return fallback;
-  return name
+  const initials = name
     .split(" ")
     .filter(Boolean)
     .map((n) => n[0])
     .join("")
     .toUpperCase()
-    .slice(0, 2) || fallback;
+    .slice(0, 2);
+  return initials || fallback;
 }

@@ -1,6 +1,33 @@
 # Maestria LMS — Worklog
 
 ---
+Task ID: 9
+Agent: Main Agent
+Task: Комментарии к урокам, бейдж «Новинка», фикс сортировки каталога
+
+Work Log:
+- FEATURE: LessonComment (Prisma) — self-relation CommentReplies (ответы в 1 уровень), индексы (lessonId, createdAt), (parentId), (userId), (lessonId, userId); миграция 20260815081455_lesson_comments (SQLite)
+- FEATURE: GET/POST /api/courses/[id]/lessons/[lessonId]/comments:
+  - GET — пагинация (page/limit, max 50), плоский список по createdAt desc, с select юзера
+  - POST — auth, resolveLessonAccess (запись курса или бесплатный урок), content ≤ 2000 (MAX_COMMENT_LENGTH), parentId обязан принадлежать этому уроку, запрет ответа на ответ (parentId.parentId != null → 400), уведомление учителя курса createNotification(type: "comment"), лимит commentCreate 15/мин
+- FEATURE: PATCH/DELETE /api/courses/[id]/lessons/[lessonId]/comments/[commentId] — редактирование (автор/учитель курса/admin, isEdited=true) и удаление (каскадно с ответами); комментарий обязан принадлежать уроку из URL (иначе 404), чужие комментарии → 403
+- FEATURE: _access.ts (resolveLessonAccess — курс по id/slug, урок должен быть этого курса, запись проверяется для платных) и _validation.ts (MAX_COMMENT_LENGTH, commentContentSchema) в папке роута
+- FEATURE: UI LessonComments.tsx (client) — дерево комментариев, ответы, редактирование, двухшаговое удаление, скелетоны, счётчик символов; встроен в StepViewerPage после нижней навигации (проп isEnrolled убран — доступ проверяет сервер)
+- FEATURE: Тип уведомления "comment" — lib/notifications.ts, lib/stores/notifications.ts, NotificationsPage.tsx (MessageCircle, cyan), publish route (enum + запрет для не-админов)
+- FEATURE: Бейдж «Новинка» (каталог) — createdAt в GET /api/courses (coursesWithStats) + CourseCard (NEW_COURSE_CUTOFF = 30 дней, вынесено из рендера — фикс react-hooks/purity), ключ catalog.new в ru/en/zh
+- FIX (MEDIUM): CatalogPage.tsx — клиентская повторная сортировка ломала серверный порядок при пагинации; убрана
+- Тесты: lesson-comments.test.ts (16 тестов: 401/403/404/400, GET пагинация, POST успех + уведомление учителя, parentId чужого урока 400, ответ на ответ 400, PATCH 403 чужой + isEdited, DELETE владелец/403/404). ВАЖНО: zod 4.3.5 uuid() требует RFC 9562 variant (4-я группа 8/a/b) — тестовые константы с "c"/"d" невалидны, исправлены
+- API.md: документированы 4 комментариев-роута; schema.prisma — тип "comment" в комментарии модели Notification
+- Проверено: typecheck чистый, ESLint 0 ошибок, check:i18n, 308 тестов проходят
+
+Stage Summary:
+- 2 новых API роута (comments + comments/[commentId]) с общим _access.ts/_validation.ts
+- 1 миграция Prisma (LessonComment)
+- 1 UI-компонент комментариев + интеграция в просмотр урока
+- Бейдж «Новинка» + createdAt в каталог, фикс клиентской сортировки
+- 16 новых тестов (итого 308)
+
+---
 Task ID: 8
 Agent: Main Agent
 Task: Возвраты платежей (YooKassa refunds), список платежей в админке, фикс email-ссылки

@@ -65,7 +65,7 @@ export function AdminPage() {
       toast.error(t("adminPage.roleUpdateError", locale));
       router.replace("/");
     }
-  }, [sessionReady, user, router, locale]);
+  }, [sessionReady, user?.role, locale, router]);
 
   const handleUserSearch = useCallback((value: string) => { setUserSearch(value); setUserPage(1); }, []);
   const handleRoleFilter = useCallback((value: string) => { setUserRoleFilter(value); setUserPage(1); }, []);

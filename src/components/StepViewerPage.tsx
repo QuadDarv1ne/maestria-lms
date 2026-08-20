@@ -9,6 +9,8 @@ import { log } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { LessonComments } from "@/components/LessonComments";
+import { LessonAttachments } from "@/components/LessonAttachments";
 import {
   ArrowLeft,
   ArrowRight,
@@ -464,6 +466,18 @@ export function StepViewerPage({
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
+
+          {/* Lesson files */}
+          <LessonAttachments
+            courseId={courseId}
+            lessonId={lessonId}
+          />
+
+          {/* Lesson discussion */}
+          <LessonComments
+            courseId={courseId}
+            lessonId={lessonId}
+          />
 
           {/* Step position indicator */}
           {currentStepIndex >= 0 && flatSteps.length > 0 && (

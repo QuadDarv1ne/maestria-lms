@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { pushNotification } from "@/lib/sse";
 
-export type NotificationType = "enrollment" | "completion" | "achievement" | "review" | "payment" | "system";
+export type NotificationType = "enrollment" | "completion" | "achievement" | "review" | "payment" | "comment" | "system";
 
 export interface CreateNotificationInput {
   userId: string;

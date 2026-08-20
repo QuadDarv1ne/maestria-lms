@@ -11,7 +11,7 @@ const checkRateLimit = rateLimit("notifications/publish", RATE_LIMITS.default);
 
 const publishSchema = z.object({
   userId: z.string().min(1, "userId обязателен"),
-  type: z.enum(["enrollment", "completion", "achievement", "review", "payment", "system"]),
+  type: z.enum(["enrollment", "completion", "achievement", "review", "payment", "comment", "system"]),
   title: z.string().min(1, "title обязателен"),
   message: z.string().min(1, "message обязателен"),
   link: z.string().optional(),
@@ -40,9 +40,9 @@ export async function POST(req: NextRequest) {
     // Non-admin users can only create self-notifications of limited types
     const ALLOWED_USER_TYPES = ["enrollment", "completion", "achievement"] as const;
     if (session.user.role !== "admin") {
-      if (input.type === "system" || input.type === "payment" || input.type === "review") {
+      if (input.type === "system" || input.type === "payment" || input.type === "review" || input.type === "comment") {
         return NextResponse.json(
-          { error: "Только администраторы могут создавать системные, платёжные и review-уведомления" },
+          { error: "Только администраторы могут создавать системные, платёжные, review- и comment-уведомления" },
           { status: 403 }
         );
       }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cn, parsePagination, formatDate, formatNumber, getInitials } from '@/lib/utils';
+import { cn, parsePagination, formatDate, formatNumber, formatFileSize, getInitials } from '@/lib/utils';
 
 describe('cn', () => {
   it('merges class names', () => {
@@ -84,6 +84,29 @@ describe('formatNumber', () => {
 
   it('formats number in Chinese locale', () => {
     expect(formatNumber(1000000, 'zh')).toBe('1,000,000');
+  });
+});
+
+describe('formatFileSize', () => {
+  it('formats bytes', () => {
+    expect(formatFileSize(512)).toBe('512 Б');
+  });
+
+  it('formats kilobytes', () => {
+    expect(formatFileSize(2048)).toBe('2 КБ');
+  });
+
+  it('formats megabytes', () => {
+    expect(formatFileSize(5 * 1024 * 1024)).toBe('5 МБ');
+  });
+
+  it('formats gigabytes', () => {
+    expect(formatFileSize(3 * 1024 * 1024 * 1024)).toBe('3 ГБ');
+  });
+
+  it('handles invalid input', () => {
+    expect(formatFileSize(-1)).toBe('0 Б');
+    expect(formatFileSize(NaN)).toBe('0 Б');
   });
 });
 

@@ -16,11 +16,12 @@ import {
   Bell,
   CheckCheck,
   BellRing,
+  MessageCircle,
 } from "lucide-react";
 
 // ============ TYPE CONFIG ============
 
-type NotificationType = "enrollment" | "completion" | "achievement" | "review" | "payment" | "system";
+type NotificationType = "enrollment" | "completion" | "achievement" | "review" | "payment" | "comment" | "system";
 
 interface TypeConfig {
   icon: React.ElementType;
@@ -59,6 +60,13 @@ function getTypeConfig(locale: Locale): Record<NotificationType, TypeConfig> {
       iconBg: "bg-violet-100 dark:bg-violet-900/30",
       badgeColor: "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400",
       label: t("notifications.type.review", locale),
+    },
+    comment: {
+      icon: MessageCircle,
+      iconColor: "text-cyan-600 dark:text-cyan-400",
+      iconBg: "bg-cyan-100 dark:bg-cyan-900/30",
+      badgeColor: "bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400",
+      label: t("notifications.type.comment", locale),
     },
     payment: {
       icon: Award,

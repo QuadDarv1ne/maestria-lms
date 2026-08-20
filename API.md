@@ -390,6 +390,61 @@ Get lesson content + user progress (requires enrollment for paid courses).
 
 ---
 
+### GET `/api/courses/[id]/lessons/[lessonId]/comments`
+
+List lesson comments with pagination (access: same as lesson — enrollment required for paid courses; the lesson itself must belong to the course).
+
+**Query params:** `page` (default 1), `limit` (default 20, max 50)
+
+**Response (200):**
+```json
+{
+  "comments": [
+    {
+      "id": "clx...",
+      "content": "Отличный урок!",
+      "isEdited": false,
+      "createdAt": "2024-01-15T00:00:00.000Z",
+      "parentId": null,
+      "user": { "id": "clx...", "name": "Иван", "image": null, "role": "student" }
+    }
+  ],
+  "pagination": { "page": 1, "limit": 20, "total": 1, "totalPages": 1 }
+}
+```
+
+### POST `/api/courses/[id]/lessons/[lessonId]/comments`
+
+Create a lesson comment (requires authentication + access to the lesson).
+
+**Rate limit:** 15 requests per minute
+
+**Request:**
+```json
+{ "content": "Спасибо за урок!", "parentId": null }
+```
+
+**Rules:** `content` required, max 2000 chars. `parentId` (optional) must reference a comment in the same lesson; replies are limited to one level (cannot reply to a reply). The course teacher receives a `comment`-type notification.
+
+**Response (201):** the created comment object.
+
+---
+
+### PATCH `/api/courses/[id]/lessons/[lessonId]/comments/[commentId]`
+
+Edit a comment (owner, course teacher, or admin). Sets `isEdited: true`.
+
+**Request:**
+```json
+{ "content": "Обновлённый текст" }
+```
+
+### DELETE `/api/courses/[id]/lessons/[lessonId]/comments/[commentId]`
+
+Delete a comment (owner, course teacher, or admin). Deletes its replies as well.
+
+---
+
 ### GET `/api/courses/[id]/assignments/[assignmentId]`
 
 Get assignment details.

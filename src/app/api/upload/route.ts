@@ -1,46 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
-import { s3Client, S3_BUCKET, toCdnUrl, makeFileKey, isS3Available } from "@/lib/s3";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
+import { uploadFileToS3, UploadError } from "@/lib/file-upload";
 
 export const runtime = "nodejs";
-
-const ALLOWED_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-  "video/mp4",
-  "video/webm",
-  "application/pdf",
-];
-
-const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
-
-// Magic byte signatures keyed by MIME type (first N bytes of the file content).
-// Provides defence against MIME-type spoofing.
-const MAGIC_BYTES: Record<string, Uint8Array[]> = {
-  "image/jpeg": [new Uint8Array([0xFF, 0xD8, 0xFF])],
-  "image/png": [new Uint8Array([0x89, 0x50, 0x4E, 0x47])],
-  "image/webp": [new Uint8Array([0x52, 0x49, 0x46, 0x46])],
-  "image/gif": [new Uint8Array([0x47, 0x49, 0x46, 0x38])],
-  "video/mp4": [
-    new Uint8Array([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70]),
-    new Uint8Array([0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70]),
-  ],
-  "video/webm": [new Uint8Array([0x1A, 0x45, 0xDF, 0xA3])],
-  "application/pdf": [new Uint8Array([0x25, 0x50, 0x44, 0x46])],
-};
-
-function verifyMagicBytes(buffer: Buffer, mimeType: string): boolean {
-  const signatures = MAGIC_BYTES[mimeType];
-  if (!signatures) return false;
-  return signatures.some((sig) =>
-    sig.every((byte, i) => buffer[i] === byte)
-  );
-}
 
 const checkRateLimit = rateLimit("upload", RATE_LIMITS.upload);
 
@@ -55,20 +19,6 @@ export async function POST(req: NextRequest) {
     const allowedRoles = ["admin", "teacher", "student"];
     if (!allowedRoles.includes(session.user.role)) {
       return NextResponse.json({ error: "Доступ запрещён. Доступно для администраторов, преподавателей и студентов" }, { status: 403 });
-    }
-
-    if (!isS3Available()) {
-      return NextResponse.json(
-        { error: "Хранилище не настроено — обратитесь к администратору" },
-        { status: 503 }
-      );
-    }
-
-    if (!s3Client) {
-      return NextResponse.json(
-        { error: "S3 клиент не инициализирован" },
-        { status: 500 }
-      );
     }
 
     const formData = await req.formData();
@@ -89,56 +39,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Файл не выбран" }, { status: 400 });
     }
 
-    // Early rejection based on client-reported size
-    if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { error: "Файл слишком большой (макс. 100 МБ)" },
-        { status: 400 }
-      );
-    }
+    const result = await uploadFileToS3(folder, file);
 
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { error: `Тип ${file.type} не поддерживается` },
-        { status: 400 }
-      );
-    }
-
-    const key = makeFileKey(folder, file.name);
-    const buffer = Buffer.from(await file.arrayBuffer());
-
-    // Verify actual size matches client-reported size (defense against tampered Content-Length)
-    if (buffer.byteLength > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { error: "Файл слишком большой (макс. 100 МБ)" },
-        { status: 400 }
-      );
-    }
-
-    // Server-side magic-byte signature check prevents MIME-type spoofing
-    if (!verifyMagicBytes(buffer, file.type)) {
-      return NextResponse.json(
-        { error: "Содержимое файла не соответствует указанному типу" },
-        { status: 400 }
-      );
-    }
-
-    await s3Client.send(
-      new PutObjectCommand({
-        Bucket: S3_BUCKET,
-        Key: key,
-        Body: buffer,
-        ContentType: file.type,
-      })
-    );
-
-    return NextResponse.json({
-      key,
-      url: toCdnUrl(key),
-      size: file.size,
-      type: file.type,
-    });
+    return NextResponse.json(result);
   } catch (error: unknown) {
+    if (error instanceof UploadError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     return handleApiError(error, { route: "upload" });
   }
 }

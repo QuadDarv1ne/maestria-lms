@@ -34,6 +34,7 @@ interface CourseCard {
   studentCount: number;
   totalLessons: number;
   totalDuration: number;
+  createdAt?: string;
   teacher: { id: string; name: string | null; image: string | null } | null;
   category: { id: string; name: string; slug: string; icon: string | null; color: string | null };
 }

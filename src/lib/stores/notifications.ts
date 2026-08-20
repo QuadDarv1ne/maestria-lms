@@ -4,7 +4,7 @@ import { log } from "@/lib/logger";
 
 export interface NotificationItem {
   id: string;
-  type: "enrollment" | "completion" | "achievement" | "review" | "payment" | "system";
+  type: "enrollment" | "completion" | "achievement" | "review" | "payment" | "comment" | "system";
   title: string;
   message: string;
   read: boolean;

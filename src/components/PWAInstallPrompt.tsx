@@ -30,6 +30,11 @@ export function PWAInstallPrompt() {
       return;
     }
 
+    // Don't show prompt if user already dismissed it
+    try {
+      if (localStorage.getItem("maestria-pwa-dismissed") === "true") return;
+    } catch { /* noop */ }
+
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
@@ -62,6 +67,8 @@ export function PWAInstallPrompt() {
   };
 
   const handleClose = () => {
+    // Persist dismissal so we don't nag the user on every render
+    try { localStorage.setItem("maestria-pwa-dismissed", "true"); } catch { /* noop */ }
     setShowPrompt(false);
   };
 

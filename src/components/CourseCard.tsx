@@ -10,6 +10,9 @@ import { levelColors, levelLabels } from "@/lib/constants";
 import { formatCurrency } from "@/lib/utils";
 import { Clock, BookOpen, Star, TrendingUp, Percent } from "lucide-react";
 
+const NEW_COURSE_DAYS = 30;
+const NEW_COURSE_CUTOFF = Date.now() - NEW_COURSE_DAYS * 24 * 60 * 60 * 1000;
+
 interface CourseCardCourse {
   id: string;
   title: string;
@@ -20,6 +23,7 @@ interface CourseCardCourse {
   level: string;
   isFeatured: boolean;
   rating: number;
+  createdAt?: string;
   studentCount?: number;
   reviewCount?: number;
   totalLessons: number;
@@ -49,6 +53,8 @@ export const CourseCard = React.memo(function CourseCard({ course, onClick }: Co
   const discount = course.oldPrice && course.oldPrice > course.price
     ? Math.round((1 - course.price / course.oldPrice) * 100)
     : 0;
+
+  const isNew = !!course.createdAt && new Date(course.createdAt).getTime() >= NEW_COURSE_CUTOFF;
 
   const handleClick = () => {
     onClick?.();
@@ -95,6 +101,11 @@ export const CourseCard = React.memo(function CourseCard({ course, onClick }: Co
               <Badge className="bg-amber-500 text-white border-0 shadow-sm">
                 <TrendingUp className="w-3 h-3 mr-1" />
                 {t("catalog.hit", locale)}
+              </Badge>
+            )}
+            {isNew && (
+              <Badge className="bg-blue-600 text-white border-0 shadow-sm">
+                {t("catalog.new", locale)}
               </Badge>
             )}
             {discount > 0 && (

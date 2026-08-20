@@ -322,6 +322,8 @@ export const RATE_LIMITS = {
   enrollment: { windowMs: 60_000, maxRequests: 10 },
   progress: { windowMs: 60_000, maxRequests: 60 },
   review: { windowMs: 60_000, maxRequests: 10 },
+  commentCreate: { windowMs: 60_000, maxRequests: 15 },
+  attachmentUpload: { windowMs: 60_000, maxRequests: 10 },
   profile: { windowMs: 60_000, maxRequests: 20 },
   twoFactor: { windowMs: 60_000, maxRequests: 10 },
   sendVerification: { windowMs: 60_000, maxRequests: 3 },

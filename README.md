@@ -249,6 +249,60 @@ All legal pages comply with Russian Federation legislation:
 - Government Decree No. 1724 (Remote Sales)
 - Roskomnadzor requirements for data storage in the RF
 
+## Intellectual Property Protection (RF Laws)
+
+The platform source code, course materials, and design are protected under the laws of the Russian Federation:
+
+### Civil Code of the Russian Federation (Part IV, Arts. 1225–1551)
+- **Copyright** (Arts. 1255–1302) — the source code, UI/UX design, texts, and graphics are protected as works of authorship from the moment of creation, without registration
+- **Computer programs** (Art. 1261) — the source code is legally protected as a literary work
+- **Databases** (Art. 1260) — the course catalog and user data structures are protected as compound works
+- **Author's exclusive rights** (Art. 1270) — reproduction, distribution, and modification of the code or content without the author's permission are prohibited
+- **Right to a work of authorship** and **right to a name** (Arts. 1265–1266) — the attribution to Maestro7IT / Dupley Maxim Igorevich is protected
+
+### Criminal Code of the Russian Federation
+- **Art. 146** — criminal liability for copyright and related rights infringement (illegal use, plagiarism, piracy)
+- **Art. 272** — criminal liability for unauthorized access to computer information
+- **Art. 273** — criminal liability for creating, using, or distributing malicious programs
+
+### Code of Administrative Offenses of the RF
+- **Art. 7.12** — administrative liability for copyright infringement for profit purposes (illegal copies, plagiarism)
+
+### Other key federal laws
+- **Federal Law No. 149-FZ** "On Information, Information Technologies and Information Protection" — regulates the operation of the platform as an information system
+- **Federal Law No. 187-FZ** "On the Security of the Critical Information Infrastructure of the RF" — information security requirements
+- **Federal Law No. 152-FZ** "On Personal Data" — protection of users' personal data
+- **RF Law No. 2300-1** "On Consumer Rights Protection" — rights of platform users
+
+Unauthorized copying, distribution, or modification of the project's code or content entails civil (Arts. 1252, 1301 of the Civil Code), administrative (Art. 7.12 of the Administrative Code), or criminal (Art. 146 of the Criminal Code) liability in accordance with the legislation of the Russian Federation.
+
+### Защита интеллектуальной собственности (законы РФ)
+
+Исходный код платформы, учебные материалы и дизайн защищены законодательством Российской Федерации:
+
+#### Гражданский кодекс РФ (Часть IV, ст. 1225–1551)
+- **Авторское право** (ст. 1255–1302) — исходный код, UI/UX-дизайн, тексты и графика охраняются как объекты авторского права с момента создания, без регистрации
+- **Программы для ЭВМ** (ст. 1261) — исходный код юридически приравнен к литературным произведениям
+- **Базы данных** (ст. 1260) — каталог курсов и структуры данных пользователей охраняются как составные произведения
+- **Исключительное право автора** (ст. 1270) — воспроизведение, распространение и переработка кода или контента без разрешения автора запрещены
+- **Право авторства** и **право на имя** (ст. 1265–1266) — указание авторства Maestro7IT / Дуплей Максим Игоревич охраняется законом
+
+#### Уголовный кодекс РФ
+- **Ст. 146** — уголовная ответственность за нарушение авторских и смежных прав (незаконное использование, плагиат, пиратство)
+- **Ст. 272** — уголовная ответственность за неправомерный доступ к компьютерной информации
+- **Ст. 273** — уголовная ответственность за создание, использование или распространение вредоносных программ
+
+#### КоАП РФ
+- **Ст. 7.12** — административная ответственность за нарушение авторских прав в целях извлечения дохода (незаконные копии, плагиат)
+
+#### Иные ключевые федеральные законы
+- **Федеральный закон № 149-ФЗ** «Об информации, информационных технологиях и о защите информации» — регулирует работу платформы как информационной системы
+- **Федеральный закон № 187-ФЗ** «О безопасности критической информационной инфраструктуры РФ» — требования к информационной безопасности
+- **Федеральный закон № 152-ФЗ** «О персональных данных» — защита персональных данных пользователей
+- **Закон РФ № 2300-1** «О защите прав потребителей» — права пользователей платформы
+
+Несанкционированное копирование, распространение или изменение кода либо контента проекта влечёт гражданско-правовую (ст. 1252, 1301 ГК РФ), административную (ст. 7.12 КоАП РФ) или уголовную (ст. 146 УК РФ) ответственность в соответствии с законодательством Российской Федерации.
+
 ## Team
 
 | Member | Role |
