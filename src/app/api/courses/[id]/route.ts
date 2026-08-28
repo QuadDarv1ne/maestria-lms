@@ -151,8 +151,8 @@ export async function GET(
 
       // Если пользователь записан, получаем прогресс по урокам
       if (userEnrollment) {
-        const lessonIds = course.modules.flatMap((m) =>
-          m.lessons.map((l) => l.id)
+        const lessonIds = course.modules.flatMap((m: { lessons: { id: string }[] }) =>
+          m.lessons.map((l: { id: string }) => l.id)
         );
         userProgress = await db.progress.findMany({
           where: {
@@ -166,21 +166,21 @@ export async function GET(
 
     // Вычисляем статистику
     const totalLessons = course.modules.reduce(
-      (acc, module) => acc + module.lessons.length,
+      (acc: number, module: { lessons: { duration: number }[] }) => acc + module.lessons.length,
       0
     );
     const totalDuration = course.modules.reduce(
-      (acc, module) =>
-        acc + module.lessons.reduce((a, l) => a + l.duration, 0),
+      (acc: number, module: { lessons: { duration: number }[] }) =>
+        acc + module.lessons.reduce((a: number, l: { duration: number }) => a + l.duration, 0),
       0
     );
     const freeLessons = course.modules.reduce(
-      (acc, module) => acc + module.lessons.filter((l) => l.isFree).length,
+      (acc: number, module: { lessons: { isFree: boolean }[] }) => acc + module.lessons.filter((l: { isFree: boolean }) => l.isFree).length,
       0
     );
 
     // Формируем данные для отзывов
-    const reviewsWithUser = course.reviews.map((review) => ({
+    const reviewsWithUser = course.reviews.map((review: { id: string; rating: number; comment: string | null; createdAt: Date; user: { id: string; name: string | null; image: string | null } }) => ({
       id: review.id,
       rating: review.rating,
       comment: review.comment,
@@ -192,9 +192,9 @@ export async function GET(
     const progressMap = new Map(userProgress.map((p) => [p.lessonId, p.completed]));
 
     // Добавляем прогресс к урокам для записанных пользователей
-    const modulesWithProgress = course.modules.map((module) => ({
+    const modulesWithProgress = course.modules.map((module: { id: string; title: string; sortOrder: number; lessons: { id: string; title: string; type: string; duration: number; isFree: boolean; sortOrder: number }[] }) => ({
       ...module,
-      lessons: module.lessons.map((lesson) => ({
+      lessons: module.lessons.map((lesson: { id: string; title: string; type: string; duration: number; isFree: boolean; sortOrder: number }) => ({
         ...lesson,
         completed: progressMap.get(lesson.id) || false,
       })),

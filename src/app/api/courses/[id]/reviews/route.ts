@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, Prisma } from "@/lib/db";
 import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
@@ -171,7 +171,7 @@ export async function POST(
 
     // Wrap review creation/update AND rating recalculation in a single transaction
     // to prevent race conditions when multiple requests arrive concurrently.
-    const result = await db.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx: Prisma.TransactionClient) => {
       // Check for existing review INSIDE the transaction to prevent race conditions
       const existing = await tx.review.findUnique({
         where: {

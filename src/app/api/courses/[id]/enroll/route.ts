@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, Prisma } from "@/lib/db";
 import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
@@ -98,7 +98,7 @@ export async function POST(
             select: { courseId: true },
           });
 
-          const completedCourseIds = new Set(completedEnrollments.map(e => e.courseId));
+          const completedCourseIds = new Set(completedEnrollments.map((e: { courseId: string }) => e.courseId));
           const missingIds = prerequisites.filter(id => !completedCourseIds.has(id));
 
           if (missingIds.length > 0) {
@@ -107,7 +107,7 @@ export async function POST(
               where: { id: { in: missingIds } },
               select: { id: true, title: true },
             });
-            missingPrereqs = missingCourses.map(c => ({ id: c.id, title: c.title }));
+            missingPrereqs = missingCourses.map((c: { id: string; title: string }) => ({ id: c.id, title: c.title }));
           }
         }
       } catch (e: unknown) {
@@ -168,7 +168,7 @@ export async function POST(
     }
 
     // Re-fetch course inside transaction to ensure data consistency
-    const result = await db.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx: Prisma.TransactionClient) => {
       // Re-fetch course inside transaction to avoid stale data
       const txCourse = await tx.course.findUnique({
         where: { id: resolvedCourseId },

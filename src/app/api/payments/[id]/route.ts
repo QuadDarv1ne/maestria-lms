@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, Prisma } from "@/lib/db";
 import { getAuthSession, requireAuth, authErrorResponse, requireAdmin, adminErrorResponse } from "@/lib/auth";
 import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
@@ -167,7 +167,7 @@ export async function PUT(
     // Атомарное обновление: статус платежа + запись на курс
     // Используем updateMany с where для предотвращения race condition:
     // только первый запрос обновит pending -> completed, остальные получат 0 записей
-    const result = await db.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx: Prisma.TransactionClient) => {
       let wasStatusUpdated = false;
       // Re-fetch payment inside transaction to ensure we have current data
       const txPayment = await tx.payment.findUnique({ where: { id } });

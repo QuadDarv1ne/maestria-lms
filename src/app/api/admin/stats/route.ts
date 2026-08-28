@@ -53,25 +53,25 @@ export async function GET(request: NextRequest) {
         by: ["userId"],
         where: { lastAccessed: { gte: oneDayAgo } },
         _count: { userId: true },
-      }).then((r) => r.length),
+      }).then((r: { userId: string }[]) => r.length),
       // Count distinct users with progress accessed in last week
       db.progress.groupBy({
         by: ["userId"],
         where: { lastAccessed: { gte: oneWeekAgo } },
         _count: { userId: true },
-      }).then((r) => r.length),
+      }).then((r: { userId: string }[]) => r.length),
       // Count distinct users with progress accessed in last month
       db.progress.groupBy({
         by: ["userId"],
         where: { lastAccessed: { gte: oneMonthAgo } },
         _count: { userId: true },
-      }).then((r) => r.length),
+      }).then((r: { userId: string }[]) => r.length),
     ]);
 
-    const totalUsers = userCounts.reduce((sum, g) => sum + g._count, 0);
-    const totalStudents = userCounts.find((g) => g.role === "student")?._count ?? 0;
-    const totalTeachers = userCounts.find((g) => g.role === "teacher")?._count ?? 0;
-    const totalAdmins = userCounts.find((g) => g.role === "admin")?._count ?? 0;
+    const totalUsers = userCounts.reduce((sum: number, g: { role: string; _count: number }) => sum + g._count, 0);
+    const totalStudents = userCounts.find((g: { role: string; _count: number }) => g.role === "student")?._count ?? 0;
+    const totalTeachers = userCounts.find((g: { role: string; _count: number }) => g.role === "teacher")?._count ?? 0;
+    const totalAdmins = userCounts.find((g: { role: string; _count: number }) => g.role === "admin")?._count ?? 0;
 
     const totalRevenue = paymentAgg._sum.amount || 0;
     const totalPayments = paymentAgg._count || 0;

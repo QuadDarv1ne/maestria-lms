@@ -113,11 +113,11 @@ export async function GET(request: NextRequest) {
     ]);
 
     // Build lessonId → progress lookup
-    const progressMap = new Map(progress.map((p) => [p.lessonId, p]));
+    const progressMap = new Map(progress.map((p: { lessonId: string }) => [p.lessonId, p]));
 
     // Compute per-enrollment stats server-side to eliminate N+1 client fetches
-    const enrollmentDetails = enrollments.map((enrollment) => {
-      const lessons = enrollment.course.modules.flatMap((m) => m.lessons);
+    const enrollmentDetails = enrollments.map((enrollment: { course: { modules: { lessons: { id: string }[] }[]; id: string; title: string; image: string | null; level: string }; id: string; status: string; progress: number; enrolledAt: Date }) => {
+      const lessons = enrollment.course.modules.flatMap((m: { lessons: { id: string }[] }) => m.lessons);
       const totalLessons = lessons.length;
 
       let completedLessons = 0;
@@ -126,7 +126,7 @@ export async function GET(request: NextRequest) {
       const scores: number[] = [];
 
       for (const lesson of lessons) {
-        const p = progressMap.get(lesson.id);
+        const p = progressMap.get(lesson.id) as { completed: boolean; timeSpent: number; score: number | null; lastAccessed: Date } | undefined;
         if (!p) continue;
         if (p.completed) completedLessons++;
         totalTimeSpent += p.timeSpent;
@@ -160,10 +160,14 @@ export async function GET(request: NextRequest) {
     });
 
     // Strip internal modules data from enrollments — only send what the client needs
-    const enrollmentsForClient = enrollments.map(({ course: { modules: _modules, ...courseRest }, ...rest }) => ({
-      ...rest,
-      course: courseRest,
-    }));
+    const enrollmentsForClient = enrollments.map((enrollment: { course: { modules: unknown[] } & Record<string, unknown>; id: string; status: string; progress: number; enrolledAt: Date }) => {
+      const { modules: _modules, ...courseRest } = enrollment.course;
+      const { course: _course, ...rest } = enrollment;
+      return {
+        ...rest,
+        course: courseRest,
+      };
+    });
 
     return NextResponse.json({
       user,

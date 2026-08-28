@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
 
     // Get per-course lesson completion details — batched into a single query
     // instead of 5 separate queries per enrollment (N+1 problem)
-    const courseIds = enrollments.map((e) => e.courseId);
+    const courseIds = enrollments.map((e: { courseId: string }) => e.courseId);
 
     // Guard: Prisma.join([]) produces invalid SQL (empty IN clause)
     let statsMap: Map<string, { totalLessons: number; completedLessons: number; totalTimeSpent: number; lastAccessed: Date | null; avgScore: number | null }> = new Map();
@@ -163,7 +163,7 @@ export async function GET(request: NextRequest) {
       `;
 
       statsMap = new Map(
-        batchedStats.map((s) => [
+        batchedStats.map((s: { courseId: string; totalLessons: bigint; completedLessons: bigint; totalTimeSpent: bigint; lastAccessed: Date | null; avgScore: number | null }) => [
           s.courseId,
           {
             totalLessons: Number(s.totalLessons),
@@ -176,7 +176,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const enrollmentDetails = enrollments.map((enrollment) => {
+    const enrollmentDetails = enrollments.map((enrollment: { courseId: string; status: string; progress: number; completedLessons?: number; totalLessons?: number; totalTimeSpent?: number; avgScore?: number | null }) => {
       const stats = statsMap.get(enrollment.courseId) ?? {
         totalLessons: 0,
         completedLessons: 0,
@@ -237,16 +237,16 @@ export async function GET(request: NextRequest) {
 
     // Compute overall stats
     const totalCoursesEnrolled = enrollments.length;
-    const completedCourses = enrollments.filter((e) => e.status === "completed").length;
-    const inProgressCourses = enrollments.filter((e) => e.status === "active" && e.progress > 0).length;
-    const notStartedCourses = enrollments.filter((e) => e.progress === 0).length;
+    const completedCourses = enrollments.filter((e: { status: string }) => e.status === "completed").length;
+    const inProgressCourses = enrollments.filter((e: { status: string; progress: number }) => e.status === "active" && e.progress > 0).length;
+    const notStartedCourses = enrollments.filter((e: { progress: number }) => e.progress === 0).length;
 
-    const totalLessonsCompleted = enrollmentDetails.reduce((sum, e) => sum + e.completedLessons, 0);
-    const totalLessonsAvailable = enrollmentDetails.reduce((sum, e) => sum + e.totalLessons, 0);
-    const totalTimeSpent = enrollmentDetails.reduce((sum, e) => sum + e.totalTimeSpent, 0);
+    const totalLessonsCompleted = enrollmentDetails.reduce((sum: number, e: { completedLessons: number }) => sum + e.completedLessons, 0);
+    const totalLessonsAvailable = enrollmentDetails.reduce((sum: number, e: { totalLessons: number }) => sum + e.totalLessons, 0);
+    const totalTimeSpent = enrollmentDetails.reduce((sum: number, e: { totalTimeSpent: number }) => sum + e.totalTimeSpent, 0);
     const overallAvgScore = enrollmentDetails
-      .filter((e) => e.avgScore !== null)
-      .reduce((sum, e, i, arr) => sum + (e.avgScore || 0) / arr.length, 0);
+      .filter((e: { avgScore: number | null }) => e.avgScore !== null)
+      .reduce((sum: number, e: { avgScore: number | null }, _i: number, arr: { avgScore: number | null }[]) => sum + (e.avgScore || 0) / arr.length, 0);
 
     // Activity: last 7 days progress count
     const sevenDaysAgo = new Date();
@@ -275,7 +275,7 @@ export async function GET(request: NextRequest) {
         overallAvgScore: Math.round(overallAvgScore),
         recentProgress,
         avgProgress: totalCoursesEnrolled > 0
-          ? Math.round(enrollments.reduce((sum, e) => sum + e.progress, 0) / totalCoursesEnrolled)
+          ? Math.round(enrollments.reduce((sum: number, e: { progress: number }) => sum + e.progress, 0) / totalCoursesEnrolled)
           : 0,
       },
     });

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import type { Prisma } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
     const expires = new Date(Date.now() + MS.DAY);
 
     // Create user and verification token atomically
-    const user = await db.$transaction(async (tx) => {
+    const user = await db.$transaction(async (tx: Prisma.TransactionClient) => {
       const createdUser = await tx.user.create({
         data: {
           email: normalizedEmail,
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
       });
 
       return createdUser;
-    }).catch((err) => {
+    }).catch((err: unknown) => {
       // Handle unique constraint violation (race condition)
       if (err instanceof Error && "code" in err && err.code === "P2002") {
         throw new Error("EMAIL_ALREADY_EXISTS");

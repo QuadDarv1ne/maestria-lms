@@ -445,7 +445,7 @@ export async function PUT(request: NextRequest) {
       }
 
       // Pre-fetch all assignments for existing lessons (eliminates N+1 in transaction)
-      const existingLessonIds = existingModules.flatMap((m) => m.lessons.map((l) => l.id));
+      const existingLessonIds = existingModules.flatMap((m: { lessons: { id: string }[] }) => m.lessons.map((l: { id: string }) => l.id));
       const existingAssignments = existingLessonIds.length > 0
         ? await db.assignment.findMany({ where: { lessonId: { in: existingLessonIds } } })
         : [];
@@ -456,7 +456,7 @@ export async function PUT(request: NextRequest) {
         assignmentsByLesson.set(a.lessonId, list);
       }
 
-      await db.$transaction(async (tx) => {
+      await db.$transaction(async (tx: Prisma.TransactionClient) => {
         // Batch-update existing modules in parallel
         const moduleUpdates: Promise<unknown>[] = [];
         const moduleLessonData: { existingId: string; mod: ModuleInput; mIdx: number }[] = [];
@@ -524,7 +524,7 @@ export async function PUT(request: NextRequest) {
 
               if (lesson.assignments !== undefined) {
                 const existingAssignmentList = assignmentsByLesson.get(existingLessonId) ?? [];
-                const existingAssignmentMap = new Map(existingAssignmentList.map((a) => [a.id, a]));
+                const existingAssignmentMap = new Map((existingAssignmentList as { id: string }[]).map((a: { id: string }) => [a.id, a]));
                 const incomingAssignmentIds = new Set<string>();
                 for (const a of lesson.assignments || []) {
                   if (a.id && existingAssignmentMap.has(a.id)) incomingAssignmentIds.add(a.id);
@@ -548,7 +548,7 @@ export async function PUT(request: NextRequest) {
                   }
                 }
 
-                for (const [aId] of existingAssignmentMap) {
+                for (const aId of Array.from(existingAssignmentMap.keys())) {
                   if (!incomingAssignmentIds.has(aId)) {
                     lessonOps.push(tx.assignment.delete({ where: { id: aId } }));
                   }
@@ -567,7 +567,7 @@ export async function PUT(request: NextRequest) {
                     sortOrder: lesson.sortOrder ?? lIdx + 1,
                     isFree: lesson.isFree || false,
                   },
-                }).then((newLesson) => {
+                }).then((newLesson: { id: string }) => {
                   if (lesson.assignments && lesson.assignments.length > 0) {
                     return Promise.all(
                       lesson.assignments.map((a) =>

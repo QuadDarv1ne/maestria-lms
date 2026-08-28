@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, Prisma } from "@/lib/db";
 import { getAuthSession, requireAuth, authErrorResponse, requireAdmin, adminErrorResponse } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
@@ -47,7 +47,7 @@ export async function POST(
       return NextResponse.json({ error: "Платёж уже обработан" }, { status: 400 });
     }
 
-    const result = await db.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx: Prisma.TransactionClient) => {
       const updateResult = await tx.payment.updateMany({
         where: { id, status: "pending" },
         data: {

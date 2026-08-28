@@ -96,8 +96,8 @@ export async function GET(
     }
 
     // Get all progress records for this user in this course
-    const allLessonIds = courseWithModules.modules.flatMap((m) =>
-      m.lessons.map((l) => l.id)
+    const allLessonIds = courseWithModules.modules.flatMap((m: { id: string; lessons: { id: string }[] }) =>
+      m.lessons.map((l: { id: string }) => l.id)
     );
 
     const progressRecords = await db.progress.findMany({
@@ -116,14 +116,14 @@ export async function GET(
 
     // Build progress map
     const progressMap = new Map(
-      progressRecords.map((p) => [p.lessonId, p])
+      progressRecords.map((p: { lessonId: string; completed: boolean; score: number | null; timeSpent: number; lastAccessed: Date | null }) => [p.lessonId, p])
     );
 
     // Calculate overall stats
     const totalLessons = allLessonIds.length;
-    const completedLessons = progressRecords.filter((p) => p.completed).length;
+    const completedLessons = progressRecords.filter((p: { completed: boolean }) => p.completed).length;
     const totalTimeSpent = progressRecords.reduce(
-      (sum, p) => sum + p.timeSpent,
+      (sum: number, p: { timeSpent: number }) => sum + p.timeSpent,
       0
     );
     const courseProgress =
@@ -132,13 +132,13 @@ export async function GET(
         : 0;
 
     // Build module-level progress
-    const modulesWithProgress = courseWithModules.modules.map((module) => {
+    const modulesWithProgress = courseWithModules.modules.map((module: { id: string; title: string; sortOrder: number; lessons: { id: string; title: string; sortOrder: number; type: string }[] }) => {
       const moduleLessons = module.lessons.length;
-      const moduleCompleted = module.lessons.filter((l) => {
+      const moduleCompleted = module.lessons.filter((l: { id: string }) => {
         const p = progressMap.get(l.id);
         return p?.completed;
       }).length;
-      const moduleTimeSpent = module.lessons.reduce((sum, l) => {
+      const moduleTimeSpent = module.lessons.reduce((sum: number, l: { id: string }) => {
         const p = progressMap.get(l.id);
         return sum + (p?.timeSpent || 0);
       }, 0);
@@ -154,7 +154,7 @@ export async function GET(
             ? Math.round((moduleCompleted / moduleLessons) * 100)
             : 0,
         timeSpent: moduleTimeSpent,
-        lessons: module.lessons.map((lesson) => {
+        lessons: module.lessons.map((lesson: { id: string; title: string; sortOrder: number; type: string }) => {
           const p = progressMap.get(lesson.id);
           return {
             id: lesson.id,
@@ -175,8 +175,8 @@ export async function GET(
 
     const activeDays = new Set(
       progressRecords
-        .filter((p): p is typeof p & { lastAccessed: Date } => p.lastAccessed !== null)
-        .map((p) => utcDateKey(p.lastAccessed)),
+        .filter((p: { lastAccessed: Date | null }): p is typeof p & { lastAccessed: Date } => p.lastAccessed !== null)
+        .map((p: { lastAccessed: Date }) => utcDateKey(p.lastAccessed)),
     );
 
     const now = new Date();
@@ -334,7 +334,7 @@ export async function PATCH(
         where: { module: { courseId: resolvedCourseId } },
         select: { id: true },
       })
-    ).map((l) => l.id);
+    ).map((l: { id: string }) => l.id);
 
     const completedCount = await db.progress.count({
       where: {

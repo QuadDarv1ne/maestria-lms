@@ -90,38 +90,38 @@ export async function GET(request: NextRequest) {
 
     // Compute enrollment stats
     const totalEnrolled = enrollments.length;
-    const completedCourses = enrollments.filter((e) => e.status === "completed").length;
-    const activeCourses = enrollments.filter((e) => e.status === "active").length;
+    const completedCourses = enrollments.filter((e: { status: string }) => e.status === "completed").length;
+    const activeCourses = enrollments.filter((e: { status: string }) => e.status === "active").length;
     const overallProgress =
       totalEnrolled > 0
         ? Math.round(
-            enrollments.reduce((sum, e) => sum + e.progress, 0) / totalEnrolled,
+            enrollments.reduce((sum: number, e: { progress: number }) => sum + e.progress, 0) / totalEnrolled,
           )
         : 0;
 
     // Compute lesson stats
-    const lessonsCompleted = progressRecords.filter((p) => p.completed).length;
-    const totalTimeSpent = progressRecords.reduce((sum, p) => sum + p.timeSpent, 0);
+    const lessonsCompleted = progressRecords.filter((p: { completed: boolean }) => p.completed).length;
+    const totalTimeSpent = progressRecords.reduce((sum: number, p: { timeSpent: number }) => sum + p.timeSpent, 0);
     const averageScore =
-      progressRecords.filter((p) => p.score !== null).length > 0
+      progressRecords.filter((p: { score: number | null }) => p.score !== null).length > 0
         ? Math.round(
             progressRecords
-              .filter((p) => p.score !== null)
-              .reduce((sum, p) => sum + (p.score ?? 0), 0) /
-              progressRecords.filter((p) => p.score !== null).length,
+              .filter((p: { score: number | null }) => p.score !== null)
+              .reduce((sum: number, p: { score: number | null }) => sum + (p.score ?? 0), 0) /
+              progressRecords.filter((p: { score: number | null }) => p.score !== null).length,
           )
         : null;
 
     // Assignment stats
     const assignmentsSubmitted = submissions.length;
-    const assignmentsGraded = submissions.filter((s) => s.status === "graded").length;
+    const assignmentsGraded = submissions.filter((s: { status: string }) => s.status === "graded").length;
     const averageAssignmentScore =
-      submissions.filter((s) => s.score !== null).length > 0
+      submissions.filter((s: { score: number | null }) => s.score !== null).length > 0
         ? Math.round(
             submissions
-              .filter((s) => s.score !== null)
-              .reduce((sum, s) => sum + (s.score ?? 0), 0) /
-              submissions.filter((s) => s.score !== null).length,
+              .filter((s: { score: number | null }) => s.score !== null)
+              .reduce((sum: number, s: { score: number | null }) => sum + (s.score ?? 0), 0) /
+              submissions.filter((s: { score: number | null }) => s.score !== null).length,
           )
         : null;
 

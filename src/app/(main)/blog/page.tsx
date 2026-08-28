@@ -83,7 +83,7 @@ export default async function BlogPage({ searchParams }: PageProps) {
   const totalPages = Math.ceil(total / limit);
 
   // Transform dates to ISO strings for client component
-  const articlesData = articles.map((a) => ({
+  const articlesData = articles.map((a: { id: string; title: string; slug: string; excerpt: string | null; image: string | null; category: string; tags: string | null; readTime: number; views: number; isFeatured: boolean; createdAt: Date; author: { id: string; name: string | null; image: string | null; role: string } }) => ({
     ...a,
     createdAt: a.createdAt.toISOString(),
   }));

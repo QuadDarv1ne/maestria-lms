@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, Prisma } from "@/lib/db";
 import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
 
     // Wrap check and creation in a transaction to prevent race conditions
     // where concurrent requests could create duplicate payments
-    const result = await db.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx: Prisma.TransactionClient) => {
       // Check for existing payment INSIDE transaction to prevent race conditions
       const existingPayment = await tx.payment.findFirst({
         where: {

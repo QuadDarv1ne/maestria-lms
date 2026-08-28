@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch enrollments and payments for each course separately
     const coursesWithEnrollments = await Promise.all(
-      courses.map(async (course) => {
+      courses.map(async (course: { id: string }) => {
         const enrollments = await db.enrollment.findMany({
           where: { courseId: course.id },
           include: {
@@ -71,13 +71,14 @@ export async function GET(request: NextRequest) {
     let totalEnrollments = 0;
     const recentStudentIds = new Set<string>();
 
-    const coursesWithStats = coursesWithEnrollments.map((course) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const coursesWithStats = coursesWithEnrollments.map((course: any) => {
       const enrollments = course.enrollments;
       const activeEnrollments = enrollments.filter(
-        (e) => e.status === "active"
+        (e: { status: string }) => e.status === "active"
       );
       const completedEnrollments = enrollments.filter(
-        (e) => e.status === "completed"
+        (e: { status: string }) => e.status === "completed"
       );
       const totalForCourse = enrollments.length;
 
@@ -89,7 +90,7 @@ export async function GET(request: NextRequest) {
       );
       totalEnrollments += totalForCourse;
 
-      enrollments.forEach((e) => {
+      enrollments.forEach((e: { enrolledAt: Date; completedAt: Date | null; userId: string }) => {
         if (
           e.enrolledAt >= thirtyDaysAgo ||
           (e.completedAt && e.completedAt >= thirtyDaysAgo)
@@ -121,7 +122,7 @@ export async function GET(request: NextRequest) {
               new Date(a.enrolledAt).getTime()
           )
           .slice(0, 5)
-          .map((e) => ({
+          .map((e: { userId: string; user: { name: string | null; image: string | null }; progress: number; enrolledAt: Date }) => ({
             userId: e.userId,
             name: e.user.name,
             image: e.user.image,

@@ -72,26 +72,26 @@ export async function GET(request: NextRequest) {
 
     // Compute stats
     const totalEnrolled = enrollments.length;
-    const completedCourses = enrollments.filter((e) => e.status === "completed").length;
-    const inProgressCourses = enrollments.filter((e) => e.status === "active").length;
+    const completedCourses = enrollments.filter((e: { status: string }) => e.status === "completed").length;
+    const inProgressCourses = enrollments.filter((e: { status: string }) => e.status === "active").length;
     const overallProgress =
       totalEnrolled > 0
-        ? Math.round(enrollments.reduce((sum, e) => sum + e.progress, 0) / totalEnrolled)
+        ? Math.round(enrollments.reduce((sum: number, e: { progress: number }) => sum + e.progress, 0) / totalEnrolled)
         : 0;
 
     // Recent activity summary
     const recentCompletions = recentProgress.length;
-    const weeklyTimeSpent = recentProgress.reduce((sum, p) => sum + p.timeSpent, 0);
+    const weeklyTimeSpent = recentProgress.reduce((sum: number, p: { timeSpent: number }) => sum + p.timeSpent, 0);
 
     // Next lessons for active courses (first incomplete lesson)
     const nextLessons = await Promise.all(
       enrollments
-        .filter((e) => e.status === "active")
+        .filter((e: { status: string }) => e.status === "active")
         .slice(0, 5) // Limit to 5 courses
-        .map(async (enrollment) => {
+        .map(async (enrollment: { course: { modules: { lessons: { id: string }[] }[]; id: string; title: string; slug: string; image: string | null }; status: string; progress: number }) => {
           // Get all lesson IDs for this course
-          const allLessonIds = enrollment.course.modules.flatMap((m) =>
-            m.lessons.map((l) => l.id),
+          const allLessonIds = enrollment.course.modules.flatMap((m: { lessons: { id: string }[] }) =>
+            m.lessons.map((l: { id: string }) => l.id),
           );
 
           // Get completed lesson IDs
@@ -105,13 +105,12 @@ export async function GET(request: NextRequest) {
                 },
                 select: { lessonId: true },
               })
-            ).map((p) => p.lessonId),
+            ).map((p: { lessonId: string }) => p.lessonId),
           );
 
           // Find first incomplete lesson
-          const nextLesson = enrollment.course.modules
-            .flatMap((m) => m.lessons)
-            .find((l) => !completedLessonIds.has(l.id));
+          const allLessons = (enrollment.course.modules as unknown as { lessons: { id: string; title: string }[] }[]).flatMap(m => m.lessons);
+          const nextLesson: { id: string; title: string } | undefined = allLessons.find((l: { id: string; title: string }) => !completedLessonIds.has(l.id));
 
           return {
             courseId: enrollment.course.id,
@@ -120,7 +119,7 @@ export async function GET(request: NextRequest) {
             courseImage: enrollment.course.image,
             progress: enrollment.progress,
             nextLesson: nextLesson
-              ? { id: nextLesson.id, title: nextLesson.title }
+              ? { id: (nextLesson as { id: string; title: string }).id, title: (nextLesson as { id: string; title: string }).title }
               : null,
           };
         }),

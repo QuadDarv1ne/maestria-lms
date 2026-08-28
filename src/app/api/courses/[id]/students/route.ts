@@ -104,13 +104,13 @@ export async function GET(
     if (search) {
       const searchLower = search.toLowerCase();
       filteredEnrollments = enrollments.filter(
-        (e) =>
+        (e: { user: { name: string | null; email: string } }) =>
           e.user.name?.toLowerCase().includes(searchLower) ||
           e.user.email.toLowerCase().includes(searchLower),
       );
     }
 
-    const students = filteredEnrollments.map((e) => ({
+    const students = filteredEnrollments.map((e: { id: string; enrolledAt: Date; completedAt: Date | null; status: string; progress: number; user: { id: string; name: string | null; email: string; image: string | null; role: string; createdAt: Date } }) => ({
       id: e.id,
       enrolledAt: e.enrolledAt.toISOString(),
       completedAt: e.completedAt?.toISOString() ?? null,

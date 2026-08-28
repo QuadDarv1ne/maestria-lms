@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, Prisma } from "@/lib/db";
 import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
@@ -139,14 +139,14 @@ export async function GET(
     });
 
     // Строим плоский список всех уроков по порядку
-    const allLessonsFlat = courseModules.flatMap((m) =>
-      m.lessons.map((l) => ({
+    const allLessonsFlat = courseModules.flatMap((m: { id: string; lessons: { id: string; sortOrder: number }[] }) =>
+      m.lessons.map((l: { id: string; sortOrder: number }) => ({
         id: l.id,
         moduleId: m.id,
       }))
     );
 
-    const currentFlatIndex = allLessonsFlat.findIndex((l) => l.id === lessonId);
+    const currentFlatIndex = allLessonsFlat.findIndex((l: { id: string; moduleId: string }) => l.id === lessonId);
     const prevStepId = currentFlatIndex > 0 ? allLessonsFlat[currentFlatIndex - 1].id : null;
     const nextStepId =
       currentFlatIndex < allLessonsFlat.length - 1
@@ -156,7 +156,7 @@ export async function GET(
     // Получаем информацию о том, какие уроки уже пройдены пользователем
     let completedLessonIds: string[] = [];
     if (sessionUser) {
-      const allLessonIds = allLessonsFlat.map((l) => l.id);
+      const allLessonIds = allLessonsFlat.map((l: { id: string; moduleId: string }) => l.id);
       const completedProgress = await db.progress.findMany({
         where: {
           userId: sessionUser.id,
@@ -165,7 +165,7 @@ export async function GET(
         },
         select: { lessonId: true },
       });
-      completedLessonIds = completedProgress.map((p) => p.lessonId);
+      completedLessonIds = completedProgress.map((p: { lessonId: string }) => p.lessonId);
     }
 
     const assignments = lesson.assignments;
@@ -306,8 +306,8 @@ export async function POST(
     });
 
     if (courseData) {
-      const allLessonIds = courseData.modules.flatMap((m) =>
-        m.lessons.map((l) => l.id)
+      const allLessonIds = courseData.modules.flatMap((m: { lessons: { id: string }[] }) =>
+        m.lessons.map((l: { id: string }) => l.id)
       );
       const completedLessons = await db.progress.count({
         where: {
@@ -332,7 +332,7 @@ export async function POST(
       if (enrollment) {
         const wasAlreadyCompleted = enrollment.status === "completed";
 
-        await db.$transaction(async (tx) => {
+        await db.$transaction(async (tx: Prisma.TransactionClient) => {
           await tx.enrollment.update({
             where: { id: enrollment.id },
             data: {

@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     ]);
 
     return NextResponse.json({
-      notifications: notifications.map((n) => ({
+      notifications: notifications.map((n: { id: string; type: string; title: string; message: string; read: boolean; createdAt: Date; link: string | null }) => ({
         id: n.id,
         type: n.type,
         title: n.title,

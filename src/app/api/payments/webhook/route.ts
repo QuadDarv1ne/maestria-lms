@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, Prisma } from "@/lib/db";
 import { createNotification } from "@/lib/notifications";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
@@ -59,7 +59,7 @@ function startIdempotencyCleanup() {
 startIdempotencyCleanup();
 
 async function completePayment(paymentId: string, transactionId: string) {
-  const result = await db.$transaction(async (tx) => {
+  const result = await db.$transaction(async (tx: Prisma.TransactionClient) => {
     const payment = await tx.payment.findUnique({
       where: { id: paymentId },
       include: { course: true, user: true },
@@ -186,7 +186,7 @@ async function processRefundWebhook(data: {
   }
 
   // Mark refunded + cancel enrollment + decrement studentCount atomically.
-  const result = await db.$transaction(async (tx) => {
+  const result = await db.$transaction(async (tx: Prisma.TransactionClient) => {
     const updateResult = await tx.payment.updateMany({
       where: { id: payment.id, status: "completed" },
       data: {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, Prisma } from "@/lib/db";
 import { getAuthSession, requireAdmin, adminErrorResponse, authErrorResponse } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
@@ -117,7 +117,7 @@ export async function POST(
 
     // 2. Update state atomically — race-condition safe (only the first
     //    request changes a "completed" payment to "refunded").
-    const result = await db.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx: Prisma.TransactionClient) => {
       const updateResult = await tx.payment.updateMany({
         where: { id, status: "completed" },
         data: {

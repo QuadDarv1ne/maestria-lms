@@ -162,14 +162,18 @@ export async function GET(request: NextRequest) {
     ]);
 
     // Вычисляем дополнительные данные для каждого курса
-    const coursesWithStats = courses.map((course) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const coursesWithStats = courses.map((course: any) => {
       const totalLessons = course.modules.reduce(
-        (acc, module) => acc + module.lessons.length,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (acc: number, module: any) => acc + module.lessons.length,
         0
       );
       const totalDuration = course.modules.reduce(
-        (acc, module) =>
-          acc + module.lessons.reduce((a, l) => a + l.duration, 0),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (acc: number, module: any) =>
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          acc + module.lessons.reduce((a: number, l: any) => a + (typeof l.duration === "number" ? l.duration : 0), 0),
         0
       );
 

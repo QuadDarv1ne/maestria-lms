@@ -35,7 +35,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       orderBy: { updatedAt: "desc" },
     });
 
-    courseEntries = courses.map((course) => ({
+    courseEntries = courses.map((course: { slug: string; updatedAt: Date }) => ({
       url: `${SITE_URL}/course/${course.slug}`,
       lastModified: course.updatedAt,
       changeFrequency: "weekly" as const,
@@ -48,7 +48,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       orderBy: { updatedAt: "desc" },
     });
 
-    articleEntries = articles.map((article) => ({
+    articleEntries = articles.map((article: { slug: string; updatedAt: Date }) => ({
       url: `${SITE_URL}/blog/${article.slug}`,
       lastModified: article.updatedAt,
       changeFrequency: "monthly" as const,
