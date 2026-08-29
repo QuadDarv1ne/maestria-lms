@@ -10,6 +10,23 @@
 
 ---
 
+---
+
+Task ID: 15
+Agent: Main Agent
+Task: Фикс битых изображений промо-курсов + тесты целостности данных
+
+Work Log:
+- FIX (MEDIUM): src/lib/promo-courses.ts — промо-курсы 33/34 (`scientific-writing.jpg`, `thesis-writing.jpg`) ссылались на несуществующие файлы; в public/courses файлов нет, живут только русские имена («Написание научных статей v2.jpg», «Написние курсовых, дипломных работ.jpg»). Пути исправлены, карточки больше не падают на placeholder
+- TEST: promo-courses.test.ts (6 тестов) — уникальность id, валидный формат stepik URL (/a/<digits>), rating в [0,5], непустые image; для ru/en/zh: title/description/tag/duration и levelKey существуют и непустые; существует файл изображения в public/courses (тест сдулся бы на прежних битых путях)
+- NB: руссифицированные имена файлов (пробелы, кириллица) — fs.existsSync работает; env.cdnUrl → не URL-энкодится, но локально plain path
+- Проверено: 455 тестов (было 449), typecheck чистый, lint 0 ошибок/0 warnings
+
+Stage Summary:
+- 1 фикс данных (два битых изображения промо)
+- +6 тестов (целостность данных), итого 455
+
+---
 Task ID: 14
 Agent: Main Agent
 Task: Фикс GET статуса попыток + тесты api-versioning
