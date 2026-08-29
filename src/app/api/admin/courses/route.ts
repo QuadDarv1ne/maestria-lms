@@ -21,6 +21,7 @@ type AssignmentInput = {
   options?: string | null;
   correctAnswer?: string | null;
   maxAttempts?: string | number | null;
+  timeLimit?: string | number | null;
 };
 
 const assignmentDataShape = (a: AssignmentInput) => ({
@@ -31,6 +32,7 @@ const assignmentDataShape = (a: AssignmentInput) => ({
   options: a.options || null,
   correctAnswer: a.correctAnswer || null,
   maxAttempts: a.maxAttempts ? Number(a.maxAttempts) : undefined,
+  timeLimit: a.timeLimit && a.timeLimit !== 0 ? Number(a.timeLimit) : null,
 });
 
 const assignmentCreateData = (a: AssignmentInput, lessonId: string) => ({

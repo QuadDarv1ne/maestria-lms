@@ -9,6 +9,8 @@
 ## [Unreleased]
 
 ### Добавлено
+- **Лимит времени на задание (`timeLimit`)**: полная поддержка сквозняком — поле сохраняется в БД (миграция), валидируется (`course-validation.ts`), сериализуется из редактора курса, отдаётся в API урока и показывается студенту в `StepAssignment` (таймер обратного отсчёта MM:SS, автоотправка ответа при истечении, блокировка полей). Ранее поле собиралось в `AssignmentEditor`, но молча терялось
+- Тесты для `course-validation.test.ts` (14): createCourseSchema (мин. курс, короткий title/description, невалидный slug, string-цена, модули/уроки/задания с timeLimit, невалидный videoUrl), validatePrices (отрицательные, oldPrice ≤ price)
 - Тесты для проверки HMAC-подписи вебхуков (`webhook-verify.test.ts`): валидная sha256/sha512, формат `alg=signature` (Stripe-style), отсутствие/укороченная/подменённая подпись, защита от timing-атак через length-check
 - Тесты для стандартизированных ответов API (`api-response.test.ts`): `withTimeout` (успех/таймаут/ошибка), все `api*Response`-хелперы (404/405 с Allow/400/409/503/200/пагинация/401/403/500/422)
 - Тесты для CORS (`cors.test.ts`): разрешённые/запрещённые origin, wildcard, `allowCredentials: false`, preflight (204/запрет + null), обёртка `withCors` (preflight не вызывает handler, заголовки на реальных ответах)

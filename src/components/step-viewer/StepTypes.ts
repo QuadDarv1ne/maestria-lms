@@ -31,6 +31,8 @@ export interface AssignmentData {
   options: string | null;
   correctAnswer: string | null;
   points: number;
+  maxAttempts?: number;
+  timeLimit?: number | null;
 }
 
 export interface ProgressData {

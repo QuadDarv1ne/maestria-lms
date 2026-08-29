@@ -73,7 +73,8 @@ export async function GET(
             type: true,
             points: true,
             options: true,
-
+            maxAttempts: true,
+            timeLimit: true,
           },
         },
       },

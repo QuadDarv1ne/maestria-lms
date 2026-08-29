@@ -281,6 +281,7 @@ export function CourseEditorPage() {
                   type: a.type,
                   points: Number(a.points) || 10,
                   maxAttempts: a.maxAttempts ? Number(a.maxAttempts) : null,
+                  timeLimit: a.timeLimit && a.timeLimit > 0 ? Number(a.timeLimit) : null,
                 };
                 if (a.type === "quiz" && a.quizOptions?.length) {
                   aData.options = JSON.stringify(a.quizOptions.map((o) => o.text));

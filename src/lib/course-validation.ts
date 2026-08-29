@@ -9,6 +9,7 @@ const assignmentSchema = z.object({
   options: z.string().optional(),
   correctAnswer: z.string().optional(),
   maxAttempts: z.union([z.string(), z.number()]).optional(),
+  timeLimit: z.union([z.string(), z.number()]).optional().nullable(),
 });
 
 const lessonSchema = z.object({

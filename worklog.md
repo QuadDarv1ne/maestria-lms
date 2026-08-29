@@ -6,6 +6,29 @@
 
 ---
 
+---
+
+Task ID: 13
+Agent: Main Agent
+Task: Лимит времени на задание (timeLimit) — полная поддержка
+
+Work Log:
+- FEATURE: prisma/schema.prisma — Assignment.timeLimit Int? (минуты, null = без лимита); миграция 20260829160000_assignment_time_limit (ALTER TABLE ADD COLUMN "timeLimit" INTEGER); prisma generate
+- FIX: course-validation.ts — assignmentSchema теперь принимает timeLimit (string | number | null)
+- FIX: admin/courses route → assignmentDataShape сериализует timeLimit (0/пусто → null); POST и PUT покрыты
+- FIX: CourseEditorPage.tsx → handleSave отправляет timeLimit из AssignmentForm; ранее поле собиралось UI, но молча терялось (данные не сохранялись)
+- FIX: GET lessons/[lessonId] route → в select заданий добавлены maxAttempts и timeLimit; StepTypes.AssignmentData дополнено
+- FEATURE: StepAssignment.tsx — обратный отсчёт MM:SS (badge, Timer icon), автоотправка ответа при истечении времени (если ответ введён), блокировка полей и кнопки после таймаута; таймер не запускается для пройденных уроков
+- i18n: добавлены ключи course.step.timeRemaining/timeUp/timeUpNotice в ru/en/zh
+- TEST: course-validation.test.ts (14 тестов) — schema (мин. курс, ошибки title/slug/description, string-цена, модули + задания с timeLimit/maxAttempts, timeLimit как string/null, невалидный type/videoUrl), validatePrices (отрицательные, oldPrice<=price, null)
+- NB: перегенерация prisma client обязательна после изменения схемы (npx prisma generate), иначе typecheck падает
+- Проверено: 434 теста (было 420), typecheck чистый, lint 0 ошибок/0 warnings, check:i18n все ключи на месте
+
+Stage Summary:
+- 1 фича (timeLimit) сквозняком: БД → валидация → API → редактор → студент; устраняет молчаливую потерю данных в редакторе
+- +14 тестов (course-validation), итого 434
+
+---
 Task ID: 12
 Agent: Main Agent
 Task: Фикс валидации course-restricted промокодов
