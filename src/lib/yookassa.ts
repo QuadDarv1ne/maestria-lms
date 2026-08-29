@@ -25,6 +25,14 @@ interface YooKassaErrorResponse {
   parameter?: string;
 }
 
+interface YooKassaSbpPaymentResponse extends YooKassaPaymentResponse {
+  confirmation?: {
+    type: string;
+    confirmation_url?: string;
+    confirmation_data?: string;
+  };
+}
+
 const YOOKASSA_API_URL = env.yooKassaApiUrl || "https://api.yookassa.ru/v3";
 
 function getAuthHeader(): string | null {
