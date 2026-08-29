@@ -283,7 +283,70 @@ export async function GET(
     const session = await getAuthSession();
     if (!requireAuth(session)) return authErrorResponse();
 
-    const { assignmentId } = await params;
+    const { id: courseId, assignmentId } = await params;
+    const paramCheck = validateParams(
+      { id: courseId, assignmentId },
+      z.object({ id: idOrSlugSchema, assignmentId: uuidSchema }),
+    );
+    if ("response" in paramCheck) return paramCheck.response;
+
+    // Resolve course ID (support both UUID and slug)
+    const course = await db.course.findFirst({
+      where: { OR: [{ id: courseId }, { slug: courseId }] },
+      select: { id: true },
+    });
+
+    if (!course) {
+      return NextResponse.json(
+        { error: "Задание не найдено" },
+        { status: 404 }
+      );
+    }
+
+    const resolvedCourseId = course.id;
+
+    // Проверяем что assignment существует и принадлежит курсу
+    const assignment = await db.assignment.findFirst({
+      where: {
+        id: assignmentId,
+        lesson: {
+          module: {
+            courseId: resolvedCourseId,
+          },
+        },
+      },
+      select: {
+        id: true,
+        maxAttempts: true,
+        points: true,
+        title: true,
+        type: true,
+      },
+    });
+
+    if (!assignment) {
+      return NextResponse.json(
+        { error: "Задание не найдено" },
+        { status: 404 }
+      );
+    }
+
+    // Проверяем что пользователь записан на курс
+    const enrollment = await db.enrollment.findUnique({
+      where: {
+        userId_courseId: {
+          userId: session.user.id,
+          courseId: resolvedCourseId,
+        },
+      },
+    });
+
+    if (!enrollment) {
+      return NextResponse.json(
+        { error: "Вы не записаны на этот курс" },
+        { status: 403 }
+      );
+    }
 
     // Получаем информацию о попытках
     const attemptCount = await db.assignmentSubmission.count({
@@ -299,24 +362,14 @@ export async function GET(
         userId: session.user.id,
       },
       orderBy: { submittedAt: "desc" },
-      include: {
-        assignment: {
-          select: {
-            title: true,
-            type: true,
-            points: true,
-            maxAttempts: true,
-          },
-        },
-      },
     });
 
     if (!submission) {
       return NextResponse.json(
         {
           submission: null,
-          attemptCount,
-          maxAttempts: 0,
+          attemptCount: 0,
+          maxAttempts: assignment.maxAttempts,
         },
         { status: 200 }
       );
@@ -326,7 +379,7 @@ export async function GET(
       {
         submission,
         attemptCount,
-        maxAttempts: submission.assignment.maxAttempts,
+        maxAttempts: assignment.maxAttempts,
       },
       { status: 200 }
     );

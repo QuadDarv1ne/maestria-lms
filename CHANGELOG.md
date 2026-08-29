@@ -9,6 +9,7 @@
 ## [Unreleased]
 
 ### Добавлено
+- Тесты для `api-versioning.test.ts` (15): `getApiVersion` (Accept-Version точное/частичное «2», «1.0», неверное → дефолт; URL-префикс /v1//v2/неизвестный), `isVersionSupported`, `getVersionInfo/getAllVersions`, `addVersionHeaders` (X-API-Version, без deprecation-заголовков), `validateApiVersion` (null для зарегистрированных), `withApiVersion` (передаёт версию, добавляет заголовки)
 - **Лимит времени на задание (`timeLimit`)**: полная поддержка сквозняком — поле сохраняется в БД (миграция), валидируется (`course-validation.ts`), сериализуется из редактора курса, отдаётся в API урока и показывается студенту в `StepAssignment` (таймер обратного отсчёта MM:SS, автоотправка ответа при истечении, блокировка полей). Ранее поле собиралось в `AssignmentEditor`, но молча терялось
 - Тесты для `course-validation.test.ts` (14): createCourseSchema (мин. курс, короткий title/description, невалидный slug, string-цена, модули/уроки/задания с timeLimit, невалидный videoUrl), validatePrices (отрицательные, oldPrice ≤ price)
 - Тесты для проверки HMAC-подписи вебхуков (`webhook-verify.test.ts`): валидная sha256/sha512, формат `alg=signature` (Stripe-style), отсутствие/укороченная/подменённая подпись, защита от timing-атак через length-check
@@ -16,6 +17,7 @@
 - Тесты для CORS (`cors.test.ts`): разрешённые/запрещённые origin, wildcard, `allowCredentials: false`, preflight (204/запрет + null), обёртка `withCors` (preflight не вызывает handler, заголовки на реальных ответах)
 
 ### Исправлено
+- **MEDIUM**: `GET /api/courses/[id]/assignments/[assignmentId]` — не проверял принадлежность задания курсу и запись пользователя (метаданные задания получал любой авторизованный); при отсутствии попыток возвращал `maxAttempts: 0` вместо реального лимита задания. Теперь: резолв courseId, проверка принадлежности и enrollment (403), корректный `maxAttempts` из Assignment
 - **MEDIUM**: `validatePromoCode()` пропускал проверку привязки к курсу, когда `courseId` не передан — промокод, ограниченный конкретным курсом, проходил валидацию без указания курса; теперь `courseId` обязателен и несовпадение/отсутствие → ошибка. Добавлены тесты: код курса без `courseId` отклоняется, для совпадающего курса принимается
 - **MEDIUM**: `formatFileSize()` выводил русские единицы («Б», «КБ», «МБ») независимо от выбранной локали — теперь для `en`/`zh` используются латинские единицы (B/KB/MB/GB/TB); используется во вложениях уроков (`LessonAttachments`), обновлены тесты
 - **LOW**: ESLint в `src/lib/db.ts` — `.apply()` → spread, удалена неиспользуемая переменная `getClient`, тип `Promise<any>` → `Promise<PrismaClient>`; lint для `src/**/*.{ts,tsx}` теперь 0 ошибок / 0 warnings

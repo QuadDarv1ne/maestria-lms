@@ -8,6 +8,22 @@
 
 ---
 
+---
+
+Task ID: 14
+Agent: Main Agent
+Task: Фикс GET статуса попыток + тесты api-versioning
+
+Work Log:
+- FIX (MEDIUM): src/app/api/courses/[id]/assignments/[assignmentId]/route.ts GET — раньше: courseId не использовался вообще, assignment искался без проверки принадлежности курсу, enrollment не проверялся (метаданные задания — любому авторизованному), при пустых попытках maxAttempts=0 вместо реального лимита. Теперь: резолв courseId (id/slug), фильтр принадлежности к курсу (404), проверка enrollment (403), maxAttempts берётся из Assignment (в select title/type/points/maxAttempts)
+- TEST: api-versioning.test.ts (15 тестов) — getApiVersion: Accept-Version (точный, частичный "2"/"1.0", неверный → дефолт), URL-префикс /api/v1//api/v2/неизвестный, фолбэк на CURRENT; isVersionSupported; isVersionDeprecated/isVersionSunset (false — нет дат в реестре); getVersionInfo (null для неизвестной); getAllVersions отсортированы по убыванию; addVersionHeaders (X-API-Version, без deprecation заголовков); validateApiVersion (null для зарегистрированных); withApiVersion (вызывает handler с версией, добавляет заголовки)
+- Проверено: 449 тестов (было 434), typecheck чистый, lint 0 ошибок/0 warnings
+
+Stage Summary:
+- 1 фикс безопасности/корректности (assignment GET)
+- +15 тестов (api-versioning), итого 449
+
+---
 Task ID: 13
 Agent: Main Agent
 Task: Лимит времени на задание (timeLimit) — полная поддержка
