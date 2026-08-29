@@ -4,6 +4,24 @@
 
 ---
 
+---
+
+Task ID: 12
+Agent: Main Agent
+Task: Фикс валидации course-restricted промокодов
+
+Work Log:
+- FIX (MEDIUM): src/lib/promo-code.ts — проверка courseId в validatePromoCode: `if (promoCode.courseId && courseId && promoCode.courseId !== courseId)` → `if (promoCode.courseId && promoCode.courseId !== courseId)`. Раньше промокод, привязанный к курсу, мог пройти валидацию, когда вызывающий не передал courseId; теперь отсутствие или несовпадение курса отклоняется
+- Безопасность: все 3 вызывающих (enroll/route.ts, payments/route.ts, payments/promo/validate/route.ts) передают courseId; в promo/validate courseId обязателен в zod-схеме
+- TEST: promo-code.test.ts +2 теста — course-restricted код без courseId отклоняется ("not valid for this course"), для совпадающего курса принимается (discount 20%)
+- Проверено: 420 тестов (было 418), typecheck чистый, lint 0 ошибок/0 warnings, check:i18n exit 0 (все ключи на месте)
+
+Stage Summary:
+- 1 фикс безопасности (course-restricted промокоды)
+- +2 теста, итого 420
+
+---
+
 Task ID: 11
 Agent: Main Agent
 Task: Тесты для webhook-verify, api-response, cors

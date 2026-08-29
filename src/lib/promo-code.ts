@@ -95,7 +95,7 @@ export async function validatePromoCode(
   }
 
   // Check course restriction
-  if (promoCode.courseId && courseId && promoCode.courseId !== courseId) {
+  if (promoCode.courseId && promoCode.courseId !== courseId) {
     return { valid: false, error: "Promo code is not valid for this course" };
   }
 

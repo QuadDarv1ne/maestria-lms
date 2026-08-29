@@ -197,6 +197,50 @@ describe("Promo Code System", () => {
       expect(result.error).toContain("not valid for this course");
     });
 
+    it("should reject a course-restricted code when courseId is missing", async () => {
+      mockPromoCodeFindUnique.mockResolvedValue({
+        id: "pc-course",
+        code: "COURSE1",
+        isActive: true,
+        validFrom: new Date("2020-01-01"),
+        validUntil: null,
+        maxUses: 0,
+        usedCount: 0,
+        maxUsesPerUser: 1,
+        usedBy: null,
+        minAmount: 0,
+        courseId: "course-A",
+        discountType: "percentage",
+        discountValue: 20,
+        maxDiscount: null,
+      });
+      const result = await validatePromoCode("COURSE1", 1000, "user-1");
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain("not valid for this course");
+    });
+
+    it("should accept a course-restricted code for the matching course", async () => {
+      mockPromoCodeFindUnique.mockResolvedValue({
+        id: "pc-course",
+        code: "COURSE1",
+        isActive: true,
+        validFrom: new Date("2020-01-01"),
+        validUntil: null,
+        maxUses: 0,
+        usedCount: 0,
+        maxUsesPerUser: 1,
+        usedBy: null,
+        minAmount: 0,
+        courseId: "course-A",
+        discountType: "percentage",
+        discountValue: 20,
+        maxDiscount: null,
+      });
+      const result = await validatePromoCode("COURSE1", 1000, "user-1", "course-A");
+      expect(result.valid).toBe(true);
+      expect(result.discountAmount).toBe(200);
+    });
+
     it("should calculate percentage discount correctly", async () => {
       mockPromoCodeFindUnique.mockResolvedValue({
         id: "pc-1",
