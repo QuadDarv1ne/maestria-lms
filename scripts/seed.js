@@ -3,20 +3,20 @@
 // generated TypeScript client, so we load it through jiti (already a runtime
 // dependency of the Prisma CLI).
 const { createJiti } = require("jiti");
-const Database = require("better-sqlite3");
 const fs = require("fs");
 const path = require("path");
 
 const ifEmpty = process.argv.includes("--if-empty");
 const force = process.argv.includes("--force");
 
-// SQLite guard: when --if-empty is passed, seed only when the database has no
+// Database guard: when --if-empty is passed, seed only when the database has no
 // courses, so fresh deploys get demo content but production data is untouched.
-// The seed itself is destructive (wipes all tables), hence the early check.
 if (ifEmpty) {
   try {
     const url = process.env.DATABASE_URL || "file:./prisma/data.db";
-    if (!url.startsWith("sqlite") && !url.includes(".db") && !url.startsWith("file:")) {
+    const isSQLite = !url.startsWith("postgresql") && !url.startsWith("postgres") && !url.startsWith("mysql") && !url.startsWith("mongodb");
+    
+    if (!isSQLite) {
       if (!force) {
         console.log(
           "[seed] DANGER: --if-empty cannot safely check non-SQLite databases. " +
@@ -26,6 +26,7 @@ if (ifEmpty) {
       }
       console.log("[seed] --force passed — proceeding to seed non-SQLite database");
     } else {
+      const Database = require("better-sqlite3");
       const filePath = url.replace(/^file:/, "").replace(/^sqlite:\/\/\//, "");
       const resolved = path.resolve(process.cwd(), filePath.startsWith("./") ? filePath : filePath);
       if (!fs.existsSync(resolved)) {

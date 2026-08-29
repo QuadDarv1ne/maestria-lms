@@ -77,11 +77,10 @@ function createAdapter(provider: DatabaseProvider, url: string) {
       const sqlitePath = normalizeSqliteUrl(url);
       return new PrismaBetterSqlite3({ url: sqlitePath });
     case "postgresql":
-      // Amvera requires SSL for PostgreSQL connections.
-      // rejectUnauthorized: false allows self-signed certificates.
+      // Local PostgreSQL doesn't need SSL
       return new PrismaPg({
         connectionString: url,
-        ssl: { rejectUnauthorized: false },
+        ssl: false,
       });
     default:
       // Fallback: try SQLite adapter with normalized path

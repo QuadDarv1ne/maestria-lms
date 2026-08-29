@@ -1,14 +1,14 @@
-import { PrismaClient } from '../src/generated/prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
-import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '../src/generated/prisma/client.js';
 import bcrypt from 'bcryptjs';
 
 // Detect provider and create appropriate adapter
 const databaseUrl = process.env.DATABASE_URL || 'file:./prisma/data.db';
 let adapter;
 if (databaseUrl.startsWith('postgresql') || databaseUrl.startsWith('postgres')) {
+  const { PrismaPg } = await import('@prisma/adapter-pg');
   adapter = new PrismaPg({ connectionString: databaseUrl });
 } else {
+  const { PrismaBetterSqlite3 } = await import('@prisma/adapter-better-sqlite3');
   // SQLite: extract file path from 'file:./path' or use as-is
   const filePath = databaseUrl.replace(/^file:/, '');
   adapter = new PrismaBetterSqlite3({ url: filePath || './prisma/data.db' });
