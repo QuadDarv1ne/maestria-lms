@@ -42,11 +42,17 @@ export function formatCurrency(
   }).format(amount);
 }
 
+const fileSizeUnits: Record<string, string[]> = {
+  ru: ["Б", "КБ", "МБ", "ГБ", "ТБ"],
+  en: ["B", "KB", "MB", "GB", "TB"],
+  zh: ["B", "KB", "MB", "GB", "TB"],
+};
+
 export function formatFileSize(bytes: number, locale: string = "ru"): string {
-  if (!Number.isFinite(bytes) || bytes < 0) return "0 Б";
-  if (bytes < 1024) return `${bytes} Б`;
-  const units = ["КБ", "МБ", "ГБ", "ТБ"];
-  let value = bytes / 1024;
+  const units = fileSizeUnits[locale] || fileSizeUnits.en;
+  if (!Number.isFinite(bytes) || bytes < 0) return `0 ${units[0]}`;
+  if (bytes < 1024) return `${bytes} ${units[0]}`;
+  let value = bytes;
   let unitIndex = 0;
   while (value >= 1024 && unitIndex < units.length - 1) {
     value /= 1024;

@@ -1,6 +1,26 @@
 # Maestria LMS — Worklog
 
 ---
+
+Task ID: 10
+Agent: Main Agent
+Task: Локализация formatFileSize, чистка db.ts, тесты request-validation/webhook-retry/utils
+
+Work Log:
+- FIX (MEDIUM): src/lib/utils.ts — formatFileSize всегда выводил русские единицы («Б», «КБ», «МБ») даже для en/zh локалей; добавлена карта единиц per-locale (ru: Б/КБ/МБ, en+zh: B/KB/MB), с фолбэком на en для неизвестных локалей. Используется в LessonAttachments (вложения уроков)
+- FIX (LOW): src/lib/db.ts — ESLint error prefer-spread (.apply() → spread), удалена неиспользуемая переменная getClient, тип глобала Promise<any> → Promise<PrismaClient>; lint по src/**/*.{ts,tsx} теперь 0 ошибок / 0 warnings
+- TEST: request-validation.test.ts (23 теста) — validateBody/validateQuery/validateParams (валид/невалид uuid, idOrSlug), paginationSchema (defaults, >100 limit rejected, page 0 rejected), searchSchema, uuidSchema, safeJsonParse, withErrorHandling (успех, generic → 500, Prisma P2025 → 404, Zod → 400)
+- TEST: webhook-retry.test.ts (9 тестов) — calculateRetryDelay (эксп. рост, кап 1 час, целое >0), processWebhookWithRetry (нет записи, завершён, превышение попыток → failed, планирование retry), processPendingWebhooks, cleanupOldWebhookEvents
+- TEST: utils.test.ts расширены formatFileSize (en/zh единицы, TB, десятичные с локальным разделителем 1,5 КБ / 1.5 KB, инф. значения)
+- CHANGELOG.md + worklog.md обновлены
+
+Stage Summary:
+- 1 MEDIUM фикс локализации (formatFileSize per-locale)
+- 1 LOW фикс ESLint (db.ts: prefer-spread, unused var, any-тип)
+- 2 новых тестовых файла (request-validation, webhook-retry) + расширен utils.test
+- Итого 382 теста (было 308), typecheck чистый, lint 0 ошибок/0 warnings, check:i18n — все ключи на месте
+
+---
 Task ID: 9
 Agent: Main Agent
 Task: Комментарии к урокам, бейдж «Новинка», фикс сортировки каталога

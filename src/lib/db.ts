@@ -96,7 +96,7 @@ async function createAdapter(provider: DatabaseProvider, url: string) {
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
-  _adapterPromise: Promise<any> | undefined;
+  _adapterPromise: Promise<PrismaClient> | undefined;
 };
 
 let prismaClient: PrismaClient | undefined;
@@ -132,10 +132,6 @@ export const db = new Proxy({} as PrismaClient, {
   get: (_target, prop) => {
     // For non-function properties, return immediately
     // For functions, we need to handle async adapter creation
-    const getClient = async () => {
-      const client = await getPrismaClient();
-      return client;
-    };
 
     // Return a proxy that handles async client initialization
     return new Proxy(() => {}, {
@@ -154,7 +150,7 @@ export const db = new Proxy({} as PrismaClient, {
           globalForPrisma.prisma
         );
         return typeof value === "function"
-          ? (...args: unknown[]) => Promise.resolve().then(() => value.apply(null, args))
+          ? (...args: unknown[]) => Promise.resolve().then(() => value(...args))
           : value;
       },
     }) as unknown;

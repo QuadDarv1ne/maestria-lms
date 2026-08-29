@@ -104,9 +104,33 @@ describe('formatFileSize', () => {
     expect(formatFileSize(3 * 1024 * 1024 * 1024)).toBe('3 ГБ');
   });
 
+  it('uses english units for en locale', () => {
+    expect(formatFileSize(512, 'en')).toBe('512 B');
+    expect(formatFileSize(2048, 'en')).toBe('2 KB');
+    expect(formatFileSize(5 * 1024 * 1024, 'en')).toBe('5 MB');
+    expect(formatFileSize(3 * 1024 * 1024 * 1024, 'en')).toBe('3 GB');
+  });
+
+  it('uses latin units for zh locale', () => {
+    expect(formatFileSize(512, 'zh')).toBe('512 B');
+    expect(formatFileSize(2048, 'zh')).toBe('2 KB');
+    expect(formatFileSize(5 * 1024 * 1024, 'zh')).toBe('5 MB');
+  });
+
+  it('formats terabytes with ru locale', () => {
+    expect(formatFileSize(2 * 1024 * 1024 * 1024 * 1024)).toBe('2 ТБ');
+    expect(formatFileSize(3 * 1024 * 1024 * 1024 * 1024, 'en')).toBe('3 TB');
+  });
+
+  it('handles decimal values', () => {
+    expect(formatFileSize(1536)).toBe('1,5 КБ');
+    expect(formatFileSize(1536, 'en')).toBe('1.5 KB');
+  });
+
   it('handles invalid input', () => {
     expect(formatFileSize(-1)).toBe('0 Б');
     expect(formatFileSize(NaN)).toBe('0 Б');
+    expect(formatFileSize(-1, 'en')).toBe('0 B');
   });
 });
 

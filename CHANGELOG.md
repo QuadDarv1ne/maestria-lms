@@ -8,6 +8,15 @@
 
 ## [Unreleased]
 
+### Исправлено
+- **MEDIUM**: `formatFileSize()` выводил русские единицы («Б», «КБ», «МБ») независимо от выбранной локали — теперь для `en`/`zh` используются латинские единицы (B/KB/MB/GB/TB); используется во вложениях уроков (`LessonAttachments`), обновлены тесты
+- **LOW**: ESLint в `src/lib/db.ts` — `.apply()` → spread, удалена неиспользуемая переменная `getClient`, тип `Promise<any>` → `Promise<PrismaClient>`; lint для `src/**/*.{ts,tsx}` теперь 0 ошибок / 0 warnings
+
+### Добавлено
+- Тесты для `request-validation.ts`: `validateBody`/`validateQuery`/`validateParams`, `paginationSchema`/`searchSchema` (границы limit/page), `uuidSchema`/`idOrSlugSchema`, `safeJsonParse`, `withErrorHandling` (прма-ошибки → 404, Zod → 400, generic → 500)
+- Тесты для `webhook-retry.ts`: `calculateRetryDelay` (экспоненциальный рост, лимит 1 час, положительное целое), `processWebhookWithRetry` (успех, максимум попыток, повторная попытка), `processPendingWebhooks`, `cleanupOldWebhookEvents`
+- Расширены тесты `utils.test.ts` (`formatFileSize` для en/zh, TB, десятичные значения, инвалидные входные данные)
+
 ### Добавлено
 - **Комментарии к урокам (обсуждение)**: `GET/POST /api/courses/[id]/lessons/[lessonId]/comments` и `PATCH/DELETE /api/courses/[id]/lessons/[lessonId]/comments/[commentId]` — просмотр (пагинация), создание, редактирование и удаление комментариев. Доступ: запись на курс для платных уроков (для бесплатных — открыто). Ответы в один уровень (нельзя ответить на ответ), `parentId` проверяется на принадлежность уроку. Автор/учитель курса/админ могут редактировать и удалять; удаление каскадно убирает ответы. Учитель курса получает уведомление типа `comment` при новом комментарии. Лимит: 15 созданий/мин. UI-компонент `LessonComments.tsx` встроен в просмотр урока
 - **Бейдж «Новинка»**: курсы младше 30 дней помечаются `catalog.new` в `CourseCard`; `createdAt` добавлен в ответ `GET /api/courses`
