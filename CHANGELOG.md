@@ -8,6 +8,11 @@
 
 ## [Unreleased]
 
+### Добавлено
+- Тесты для проверки HMAC-подписи вебхуков (`webhook-verify.test.ts`): валидная sha256/sha512, формат `alg=signature` (Stripe-style), отсутствие/укороченная/подменённая подпись, защита от timing-атак через length-check
+- Тесты для стандартизированных ответов API (`api-response.test.ts`): `withTimeout` (успех/таймаут/ошибка), все `api*Response`-хелперы (404/405 с Allow/400/409/503/200/пагинация/401/403/500/422)
+- Тесты для CORS (`cors.test.ts`): разрешённые/запрещённые origin, wildcard, `allowCredentials: false`, preflight (204/запрет + null), обёртка `withCors` (preflight не вызывает handler, заголовки на реальных ответах)
+
 ### Исправлено
 - **MEDIUM**: `formatFileSize()` выводил русские единицы («Б», «КБ», «МБ») независимо от выбранной локали — теперь для `en`/`zh` используются латинские единицы (B/KB/MB/GB/TB); используется во вложениях уроков (`LessonAttachments`), обновлены тесты
 - **LOW**: ESLint в `src/lib/db.ts` — `.apply()` → spread, удалена неиспользуемая переменная `getClient`, тип `Promise<any>` → `Promise<PrismaClient>`; lint для `src/**/*.{ts,tsx}` теперь 0 ошибок / 0 warnings

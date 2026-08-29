@@ -2,6 +2,25 @@
 
 ---
 
+---
+
+Task ID: 11
+Agent: Main Agent
+Task: Тесты для webhook-verify, api-response, cors
+
+Work Log:
+- TEST: webhook-verify.test.ts (8 тестов) — verifyWebhookSignature: валидная sha256, отсутствие подписи, подмена тела, короткая подпись (length check против timing-атак), неверный секрет, формат "sha256=..." (Stripe-style), sha512, подпись с "=" посередине
+- TEST: api-response.test.ts (16 тестов) — withTimeout (успех/таймаут с кастомным и дефолтным сообщением/проброс ошибки), все api*Response: notFound (с id и без), methodNotAllowed (Allow-заголовок), badRequest (details опционально), conflict, serviceUnavailable (дефолтное сообщение), success (meta опционально, кастомный статус), paginated, unauthorized, forbidden, internalError, validationError
+- TEST: cors.test.ts (10 тестов) — applyCorsHeaders (разрешённый/запрещённый origin, wildcard, allowCredentials=false, expose headers), handleCorsPreflight (204/denied→null), withCors (preflight не вызывает handler, 403 на запрещённый origin, заголовки на реальных ответах). Для совместимости с типами используются NextRequest вместо Request
+- NB: среда node для crypto/timingSafeEqual; setTimeout().unref() в withTimeout не мешает тестам
+- Проверено: 418 тестов (было 382), typecheck чистый, lint src 0 ошибок/0 warnings
+
+Stage Summary:
+- 3 новых тестовых файла (34 теста) для ранее не покрытых модулей безопасности/ответов
+- Итого 418 тестов, typecheck чистый, lint чистый
+
+---
+
 Task ID: 10
 Agent: Main Agent
 Task: Локализация formatFileSize, чистка db.ts, тесты request-validation/webhook-retry/utils
