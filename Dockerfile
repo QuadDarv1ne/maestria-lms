@@ -4,7 +4,7 @@
 # Stage 1: base — shared Alpine with common deps
 # ============================================================
 FROM node:22-alpine AS base
-RUN apk add --no-cache libc6-compat curl bash openssl python3 make g++ && \
+RUN apk add --no-cache libc6-compat curl bash openssl && \
     ln -sf /usr/bin/python3 /usr/bin/python
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
@@ -21,7 +21,16 @@ ENV HUSKY=0
 ENV PYTHON=/usr/bin/python3
 ENV npm_config_engine_strict=false
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --omit=dev --no-audit --no-fund --engine-strict=false
+    npm ci --omit=dev --no-optional --no-audit --no-fund --engine-strict=false
+
+# Install only prebuilt optional deps (no compilation needed):
+# Tailwind CSS oxide and lightningcss have prebuilt binaries for linux-x64-musl.
+# better-sqlite3 is skipped (requires native compilation, not needed for PostgreSQL).
+RUN --mount=type=cache,target=/root/.npm \
+    npm install \
+      @tailwindcss/oxide-linux-x64-musl@4.1.18 \
+      lightningcss-linux-x64-musl@1.30.2 \
+      --no-save --omit=dev --no-audit --no-fund 2>/dev/null || true
 
 # ============================================================
 # Stage 3: builder — install dev deps and compile
@@ -52,13 +61,14 @@ RUN npx prisma generate
 
 RUN npm run build
 
-# Production image — no bun, no dev tools
+# Production image — minimal
 FROM node:22-alpine AS runner
 WORKDIR /app
 
 ARG NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 ENV NODE_ENV=production
+ENV NODE_OPTIONS="--max-old-space-size=768"
 ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN apk add --no-cache wget openssl && \
@@ -75,44 +85,16 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Copy Prisma files for runtime (client + migrate engine)
+# These are needed by prisma migrate deploy at runtime (start.sh)
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder --chown=nextjs:nodejs /app/src/generated ./src/generated
-# Prisma 7 with custom output (src/generated/prisma) no longer creates node_modules/.prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
+
+# Copy Prisma CLI and runtime into standalone node_modules
+# Next.js standalone doesn't auto-include dev-only packages, but prisma
+# is needed at runtime for `prisma migrate deploy` in start.sh.
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
-# Prisma 7 CLI (@prisma/config) requires 'effect' and other top-level packages at
-# runtime — npm hoists them, so the runner must copy them explicitly.
-# effect + deps:
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/effect ./node_modules/effect
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@standard-schema ./node_modules/@standard-schema
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/fast-check ./node_modules/fast-check
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/pure-rand ./node_modules/pure-rand
-# config loading stack (prisma.config.ts):
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/c12 ./node_modules/c12
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/confbox ./node_modules/confbox
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/destr ./node_modules/destr
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/dotenv ./node_modules/dotenv
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/defu ./node_modules/defu
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/exsolve ./node_modules/exsolve
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/jiti ./node_modules/jiti
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/perfect-debounce ./node_modules/perfect-debounce
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/pkg-types ./node_modules/pkg-types
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/rc9 ./node_modules/rc9
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/std-env ./node_modules/std-env
-# misc CLI deps:
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/deepmerge-ts ./node_modules/deepmerge-ts
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/get-port-please ./node_modules/get-port-please
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/graceful-fs ./node_modules/graceful-fs
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/grammex ./node_modules/grammex
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/graphmatch ./node_modules/graphmatch
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/pathe ./node_modules/pathe
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/proper-lockfile ./node_modules/proper-lockfile
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/remeda ./node_modules/remeda
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/retry ./node_modules/retry
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/valibot ./node_modules/valibot
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/zeptomatch ./node_modules/zeptomatch
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 
 # Copy startup script
 COPY --from=builder --chown=nextjs:nodejs /app/start.sh ./start.sh

@@ -13,7 +13,7 @@ echo "=========================================="
 # (e.g., on Amvera where build-time env vars differ from runtime env vars)
 if [ ! -d "src/generated/prisma" ]; then
   echo "[startup] Generating Prisma Client..."
-  npx prisma generate || echo "[startup] WARN: prisma generate failed — will try to use pre-built client"
+  node node_modules/prisma/build/index.js generate || echo "[startup] WARN: prisma generate failed — will try to use pre-built client"
 fi
 
 # ── Database Migration ──────────────────────────
@@ -23,7 +23,7 @@ RETRY_DELAY=3
 attempt=1
 
 echo "[startup] prisma migrate deploy (attempt $attempt/$MAX_RETRIES)..."
-until node node_modules/.bin/prisma migrate deploy; do
+until node node_modules/prisma/build/index.js migrate deploy; do
   if [ $attempt -ge $MAX_RETRIES ]; then
     echo "[startup] WARN: prisma migrate deploy failed after $MAX_RETRIES attempts — starting server on previous schema"
     break
