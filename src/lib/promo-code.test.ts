@@ -2,6 +2,7 @@
  * @vitest-environment node
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { Mock } from "vitest";
 
 // vi.mock is hoisted, so use vi.hoisted() for mock variables
 const { mockPromoCodeFindUnique, mockPromoCodeUpdate, mockTxFindUnique, mockTxUpdate } = vi.hoisted(() => ({
@@ -36,6 +37,14 @@ vi.mock("@/lib/logger", () => ({
     error: vi.fn(),
     debug: vi.fn(),
   },
+}));
+
+vi.mock("node:crypto", () => ({
+  randomInt: mockRandomInt.mockRandomInt,
+}));
+
+const mockRandomInt = vi.hoisted(() => ({
+  mockRandomInt: vi.fn() as Mock<(min: number, max: number) => number>,
 }));
 
 import { validatePromoCode, redeemPromoCode, generatePromoCode } from "@/lib/promo-code";
@@ -408,6 +417,14 @@ describe("Promo Code System", () => {
   });
 
   describe("generatePromoCode", () => {
+    beforeEach(() => {
+      // Default behaviour: return a pseudo-random uniform index so the
+      // generated codes vary across calls, mimicking real randomness.
+      mockRandomInt.mockRandomInt.mockImplementation((min, max) =>
+        Math.floor(Math.random() * (max - min)) + min
+      );
+    });
+
     it("should generate a code of default length 8", () => {
       const code = generatePromoCode();
       expect(code).toHaveLength(8);
@@ -428,6 +445,18 @@ describe("Promo Code System", () => {
       const code2 = generatePromoCode();
       // Extremely unlikely to be the same
       expect(code1).not.toBe(code2);
+    });
+
+    it("should use the crypto-secure randomInt source", () => {
+      mockRandomInt.mockRandomInt
+        .mockReturnValueOnce(0)
+        .mockReturnValueOnce(7)
+        .mockReturnValueOnce(10)
+        .mockReturnValueOnce(35);
+      const code = generatePromoCode(4);
+      // randomInt(0, 36) with indexes 0,7,10,35 -> "A","H","K","9"
+      expect(mockRandomInt.mockRandomInt).toHaveBeenCalledWith(0, 36);
+      expect(code).toBe("AHK9");
     });
   });
 });

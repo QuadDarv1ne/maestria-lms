@@ -14,6 +14,7 @@
  * - If courseId is set, promo code only applies to that course
  */
 
+import { randomInt } from "node:crypto";
 import { db } from "@/lib/db";
 import { log } from "@/lib/logger";
 
@@ -180,12 +181,16 @@ export async function redeemPromoCode(
 
 /**
  * Generate a random promo code string.
+ *
+ * Uses the cryptographic PRNG from `node:crypto` (`crypto.randomInt`) instead
+ * of `Math.random()` so that promo codes (which represent discounts) are not
+ * predictable by an attacker.
  */
 export function generatePromoCode(length: number = 8): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let result = "";
   for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
+    result += chars.charAt(randomInt(0, chars.length));
   }
   return result;
 }

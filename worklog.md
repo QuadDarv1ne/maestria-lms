@@ -12,6 +12,28 @@
 
 ---
 
+---
+
+---
+
+Task ID: 16
+Agent: Main Agent
+Task: Crypto-безопасная генерация промокодов + тесты ранее не покрытых модулей (csrf, api-logging, courseImage)
+
+Work Log:
+- FIX (LOW/SECURITY): src/lib/promo-code.ts — generatePromoCode использовал Math.random() (предсказуемый PRNG) для кодов, дающих скидки; заменён на crypto.randomInt() (node:crypto). Код по-прежнему состоит из [A-Z0-9], длина по умолчанию 8. Добавлен тест, проверяющий, что берутся индексы randomInt(0, 36) (детерминированная проверка через mock), + mock node:crypto в тесте
+- TEST: src/lib/csrf.test.ts (8 тестов) — SAFE_METHODS пропускаются без проверки, Origin==Host допустим, другой Origin -> 403, отсутствие Origin/Host пропускается (SameSite=Strict — единственная защита), совпадение портов, Origin с портом vs Host без порта -> 403, невалидный Origin URL -> 403
+- TEST: src/lib/api-logging.test.ts (11 тестов) — generateRequestId (8 hex, уникальность), уровень лога по статусу (2xx info / 4xx warn / 5xx error), пустые queryParams опускаются, смена X-Request-Id/X-Response-Time на успехе, чтение X-User-Id/X-User-Role из ответа в контекст, редоктеция sensitive query params (token->[REDACTED], page остаётся), брошенный хендлер -> 500 + X-Request-Id, сохранение статуса хендлера (201)
+- TEST: src/lib/courseImage.test.ts (7 тестов) — resolveCourseImageUrl (null/''->null, absolute http(s) as-is, срез /courses/, CDN base с/без завершающего слеша, относительный путь -> CDN, фолбэк на локальный путь без CDN), getLocalFallbackImage; env.cdnUrl замокан через getter (vi.hoisted + vi.mock)
+- NB: покрыты 3 ранее непокрытых модуля безопасности/утилит; итог — +27 тестов (промо +1, csrf +8, api-logging +11, courseImage +7)
+- CHANGELOG.md и worklog.md обновлены
+
+Stage Summary:
+- 1 фикс безопасности (промокоды на crypto.randomInt)
+- 3 новых тестовых файла (csrf, api-logging, courseImage) +1 тест к promo-code
+- Итого +27 тестов, все проверки чистые
+
+---
 Task ID: 15
 Agent: Main Agent
 Task: Фикс битых изображений промо-курсов + тесты целостности данных

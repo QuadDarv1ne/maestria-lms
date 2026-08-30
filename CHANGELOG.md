@@ -8,6 +8,10 @@
 
 ## [Unreleased]
 
+### Исправлено
+- **LOW (security)**: `generatePromoCode()` использовал `Math.random()` (неублично-безопасный PRNG) для генерации промокодов — скидки были предсказуемы; заменено на `crypto.randomInt()` (`node:crypto`). Добавлен тест, проверяющий, что код строится из индексов `randomInt(0, 36)`
+- **LOW**: покрытие тестами ранее не покрытых модулей — `csrf.ts` (8): разрешённые GET/HEAD/OPTIONS, совпадение Origin↔Host, разные Origin (403), отсутствие Origin/Host (пропуск, SameSite), порт Host, невалидный Origin URL; `api-logging.ts` (11): `generateRequestId` (8 hex), уровень лога по статусу (info/warn/error), пустые queryParams в контексте, заголовки `X-Request-Id`/`X-Response-Time`, чтение `X-User-Id`/`X-User-Role` из ответа, редоктеция sensitive query params, обработка брошенного хендлера (500), сохранение статуса; `courseImage.ts` (7): `resolveCourseImageUrl` (null/пусто, absolute-URL as-is, срез `/courses/`, CDN с/без завершающего слеша, относительный путь, локальный фолбэк без CDN), `getLocalFallbackImage`
+
 ### Добавлено
 - Тесты целостности данных промо-курсов (`promo-courses.test.ts`): уникальность id, валидные stepik URL, рейтинги в [0,5], непустые i18n-ключи title/description/tag/duration и levelKey во всех 3 локалях, **существование файлов изображений в `public/courses`** (не даёт промо-карточкам ломаться)
 - Тесты для `api-versioning.test.ts` (15): `getApiVersion` (Accept-Version точное/частичное «2», «1.0», неверное → дефолт; URL-префикс /v1//v2/неизвестный), `isVersionSupported`, `getVersionInfo/getAllVersions`, `addVersionHeaders` (X-API-Version, без deprecation-заголовков), `validateApiVersion` (null для зарегистрированных), `withApiVersion` (передаёт версию, добавляет заголовки)
