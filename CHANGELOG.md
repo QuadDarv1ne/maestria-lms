@@ -8,6 +8,10 @@
 
 ## [Unreleased]
 
+### Добавлено
+- Тесты для `api-validation.ts` (5): `validateSearchParams` — валидные/пустые query-параметры, 400 при невалидных (page=0), превышение limit (999), сообщение первой ошибки в теле 400
+- Тесты для `sse.ts` (4): регистрация клиентов и подсчёт `getTotalConnections` (несколько юзеров + cleanup), формат уведомления `data: {...}\n\n` через `pushNotification`, `pushUnreadCount` (`type="unreadCount"`, `count: 4`), отсутствие enqueue для пользователя без соединений
+
 ### Исправлено
 - **LOW (security)**: `generatePromoCode()` использовал `Math.random()` (неублично-безопасный PRNG) для генерации промокодов — скидки были предсказуемы; заменено на `crypto.randomInt()` (`node:crypto`). Добавлен тест, проверяющий, что код строится из индексов `randomInt(0, 36)`
 - **LOW**: покрытие тестами ранее не покрытых модулей — `csrf.ts` (8): разрешённые GET/HEAD/OPTIONS, совпадение Origin↔Host, разные Origin (403), отсутствие Origin/Host (пропуск, SameSite), порт Host, невалидный Origin URL; `api-logging.ts` (11): `generateRequestId` (8 hex), уровень лога по статусу (info/warn/error), пустые queryParams в контексте, заголовки `X-Request-Id`/`X-Response-Time`, чтение `X-User-Id`/`X-User-Role` из ответа, редоктеция sensitive query params, обработка брошенного хендлера (500), сохранение статуса; `courseImage.ts` (7): `resolveCourseImageUrl` (null/пусто, absolute-URL as-is, срез `/courses/`, CDN с/без завершающего слеша, относительный путь, локальный фолбэк без CDN), `getLocalFallbackImage`

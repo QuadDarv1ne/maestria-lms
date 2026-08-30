@@ -16,6 +16,21 @@
 
 ---
 
+Task ID: 17
+Agent: Main Agent
+Task: Тесты ранее не покрытых модулей (api-validation, sse)
+
+Work Log:
+- TEST: src/lib/api-validation.test.ts (5 тестов) — validateSearchParams: валидные query (page/limit/q с коэрсией z.coerce.number), пустые параметры -> {}, page=0 -> 400, limit=999 (превышение max) -> 400, тело 400 содержит сообщение первой проблемы Zod
+- TEST: src/lib/sse.test.ts (4 теста) — getTotalConnections инкрементируется при addClient (несколько юзеров) и уменьшается при cleanup(); pushNotification enqueue в формате SSE "data: {...}\n\n" (TextDecoder); pushUnreadCount -> type "unreadCount" и "count":4; push для юзера без соединений не вызывает enqueue (нет утечек). Контроллеры — факи (vi.fn enqueue/close/error), в addClient кастятся через as unknown as ReadableStreamDefaultController. stopCleanup() в afterAll для сброса таймера
+- NB: покрыты ещё 2 ранее непокрытых модуля (итого 5 за последние сессии). Проверки: typecheck чистый, lint 0 проблем, тесты 491 проходят, check:i18n exit 0. NB(типизация): vi.fn в vi.hoisted нужно типизировать как Mock<(min,max)=>number> (иначе mockReturnValueOnce проигрывает типу void)
+- CHANGELOG.md и worklog.md обновлены
+
+Stage Summary:
+- 2 новых тестовых файла (api-validation, sse)
+- Итого +9 тестов (491), все проверки чистые
+
+---
 Task ID: 16
 Agent: Main Agent
 Task: Crypto-безопасная генерация промокодов + тесты ранее не покрытых модулей (csrf, api-logging, courseImage)
