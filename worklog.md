@@ -16,6 +16,23 @@
 
 ---
 
+Task ID: 18
+Agent: Main Agent
+Task: Тесты ранее не покрытых модулей (logger, notifications, feature-flags-config)
+
+Work Log:
+- TEST: src/lib/logger.test.ts (5 тестов) — фильтрация по LOG_LEVEL (threshold "error" подавляет warn/info но печатает error), "debug" включает debug/info, JSON-формат записи (level/message/timestamp/context), маршрутизация warn/error на console.warn/error, fallback JSON при циклических ссылках (не бросает). env.logLevel замокан геттером через vi.hoisted; console-методы — vi.spyOn(...).mockImplementation
+- TEST: src/lib/notifications.test.ts (2 теста) — createNotification: db.notification.create вызывается с данными + pushNotification с корректным payload (createdAt.getTime(), link); при отсутствии link поле в payload опускается. Моки: @/lib/db, @/lib/sse
+- TEST: src/lib/feature-flags-config.test.ts (6 тестов) — целостность: ключи == свойство key, уникальность ключей, непустые описания, rollout в [0,100] или null, environment (если задан) ∈ {development, production}
+- NB: типографическая ловушка — vi.spyOn(console, level) возвращает MockInstance<...> с перегрузками console, для parse() нужно типизировать через MockInstance<(...args: unknown[])=>void> (иначе mock.calls конфликтует с Mock<Procedure>)
+- Проверки: typecheck чистый, lint 0 проблем, 513 тестов, check:i18n exit 0
+- CHANGELOG.md и worklog.md обновлены
+
+Stage Summary:
+- 3 новых тестовых файла (logger, notifications, feature-flags-config)
+- Итого +13 тестов (513), все проверки чистые
+
+---
 Task ID: 17
 Agent: Main Agent
 Task: Тесты ранее не покрытых модулей (api-validation, sse)

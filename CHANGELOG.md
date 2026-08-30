@@ -9,6 +9,11 @@
 ## [Unreleased]
 
 ### Добавлено
+- Тесты для `logger.ts` (5): фильтрация по `LOG_LEVEL` (порог error не печатает warn/info), уровень debug включает debug/info, JSON-формат записей (level/message/timestamp/context), маршрутизация warn/error в соответствующие console-методы, устойчивость JSON-сериализации к циклическим ссылкам (fallback-ветка)
+- Тесты для `notifications.ts` (2): `createNotification` создаёт запись в БД и пушит SSE-уведомление с корректным payload (createdAt в мс, link), отсутствие link → поле опускается из payload
+- Тесты для `feature-flags-config.ts` (6): целостность реестра — ключи совпадают со свойством `key`, уникальность, непустые описания, rollout в [0,100] или null, валидный environment (если задан)
+
+### Добавлено
 - Тесты для `api-validation.ts` (5): `validateSearchParams` — валидные/пустые query-параметры, 400 при невалидных (page=0), превышение limit (999), сообщение первой ошибки в теле 400
 - Тесты для `sse.ts` (4): регистрация клиентов и подсчёт `getTotalConnections` (несколько юзеров + cleanup), формат уведомления `data: {...}\n\n` через `pushNotification`, `pushUnreadCount` (`type="unreadCount"`, `count: 4`), отсутствие enqueue для пользователя без соединений
 
