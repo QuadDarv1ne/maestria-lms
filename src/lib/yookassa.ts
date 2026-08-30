@@ -25,7 +25,7 @@ interface YooKassaErrorResponse {
   parameter?: string;
 }
 
-interface YooKassaSbpPaymentResponse extends YooKassaPaymentResponse {
+interface YooKassaSbpPaymentResponse extends Omit<YooKassaPaymentResponse, 'confirmation'> {
   confirmation?: {
     type: string;
     confirmation_url?: string;
