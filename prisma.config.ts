@@ -1,5 +1,4 @@
 import { defineConfig, env } from "prisma/config";
-import path from "node:path";
 
 // Prisma 7 does not load .env automatically.
 // We load it here so that prisma generate / migrate deploy work

@@ -25,13 +25,6 @@ interface YooKassaErrorResponse {
   parameter?: string;
 }
 
-interface YooKassaSbpPaymentResponse extends Omit<YooKassaPaymentResponse, 'confirmation'> {
-  confirmation?: {
-    type: string;
-    confirmation_url?: string;
-    confirmation_data?: string;
-  };
-}
 
 const YOOKASSA_API_URL = env.yooKassaApiUrl || "https://api.yookassa.ru/v3";
 
