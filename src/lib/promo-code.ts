@@ -137,6 +137,10 @@ export async function validatePromoCode(
  * Mark a promo code as used by a specific user.
  * Increments the usage counter and records the user ID.
  * Uses atomic transaction to prevent race conditions across all DB providers.
+ *
+ * The atomicity guarantee: the entire read-check-write sequence runs inside
+ * a single Prisma transaction, so concurrent requests are serialized by the
+ * database lock on the promo-code row.
  */
 export async function redeemPromoCode(
   promoCodeId: string,
@@ -156,7 +160,7 @@ export async function redeemPromoCode(
 
       const usedBy: string[] = promoCode.usedBy ? safeParseJsonArray(promoCode.usedBy) : [];
 
-      // Check if user already used this code
+      // Check if user already used this code (checked inside transaction)
       if (usedBy.includes(userId)) {
         log.info("Promo code already used by this user", { promoCodeId, userId });
         return;

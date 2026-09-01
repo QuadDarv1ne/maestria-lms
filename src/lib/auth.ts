@@ -40,6 +40,9 @@ async function verifyPassword(password: string, hash: string): Promise<boolean> 
 
 // Short-lived cache for JWT callback DB lookups — avoids a query per request
 // while still catching role/deactivation changes within 5 minutes.
+// Note: this means a user demoted from admin to student will retain admin
+// access for up to 5 minutes. If stricter real-time enforcement is needed,
+// reduce JWT_CACHE_TTL or disable the cache entirely.
 const jwtUserCache = new Map<string, { role: string; isActive: boolean; expiresAt: number }>();
 const JWT_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 const JWT_CACHE_MAX = 500;

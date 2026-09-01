@@ -164,7 +164,7 @@ export async function flushAll(): Promise<void> {
     try {
       // Use SCAN instead of KEYS to avoid blocking Redis
       let cursor = "0";
-      const batchSize = 100;
+      const batchSize = 500; // Increased for better throughput
       do {
         const [nextCursor, keys] = await redis.scan(cursor, "MATCH", "cache:*", "COUNT", batchSize);
         cursor = nextCursor;

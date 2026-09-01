@@ -37,11 +37,12 @@ function isRetryableError(error: unknown): boolean {
     // Retry on 429 (rate limit), 5xx (server errors), and network failures
     if (statusCode === 429 || (statusCode && statusCode >= 500)) return true;
     if (resendError.name === "FetchError" || resendError.name === "AbortError") return true;
-    // Default to retrying unknown errors (likely transient)
+    // No statusCode means a network-level error — likely transient
     if (!statusCode) return true;
     // 4xx errors (except 429) are client errors — not retryable
     if (statusCode >= 400 && statusCode < 500) return false;
   }
+  // For non-object errors (e.g., TypeError from network issues), retry
   return true;
 }
 

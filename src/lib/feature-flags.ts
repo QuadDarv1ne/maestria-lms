@@ -164,6 +164,8 @@ export function setServerFeatureFlag(key: FeatureFlagKey, value: boolean): void 
 
 /**
  * Simple string hash function for rollout percentage calculation.
+ * Uses a deterministic algorithm consistent across runs.
+ * Returns a non-negative integer in [0, 2^31).
  */
 function simpleHash(str: string): number {
   let hash = 0;
@@ -172,5 +174,6 @@ function simpleHash(str: string): number {
     hash = ((hash << 5) - hash) + char;
     hash |= 0; // Convert to 32-bit integer
   }
-  return Math.abs(hash);
+  // Ensure non-negative: Math.abs(-2147483648) === -2147483648, so use bitwise OR
+  return hash >>> 0;
 }

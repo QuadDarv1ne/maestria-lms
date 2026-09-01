@@ -10,15 +10,29 @@ const translationCache: Record<Locale, Record<string, string>> = {
   zh: zhLocale as Record<string, string>,
 };
 
+const ALPHANUMERIC_RE = /^[a-z0-9.\-_]+$/;
+
+/**
+ * Validate a translation key: only allow safe characters (alphanumeric, dots, dashes, underscores).
+ * Prevents prototype-pollution-style attacks via keys like "__proto__" or "constructor".
+ */
+function safeKey(key: string): string | null {
+  if (typeof key !== "string" || !key.length) return null;
+  return ALPHANUMERIC_RE.test(key) ? key : null;
+}
+
 export function t(key: string, locale?: Locale): string {
+  const validated = safeKey(key);
+  if (!validated) return key;
+
   const loc = locale || "ru";
   const dict = translationCache[loc];
-  if (dict) return dict[key] ?? key;
+  if (dict) return dict[validated] ?? validated;
   if (loc !== "ru") {
     const ruDict = translationCache["ru"];
-    if (ruDict) return ruDict[key] ?? key;
+    if (ruDict) return ruDict[validated] ?? validated;
   }
-  return key;
+  return validated;
 }
 
 export function useLocale() {

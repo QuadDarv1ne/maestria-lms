@@ -38,6 +38,8 @@ function isPrismaError(error: unknown): error is { code: string; message: string
     error !== null &&
     "code" in error &&
     typeof (error as { code: unknown }).code === "string" &&
+    "message" in error &&
+    typeof (error as { message: unknown }).message === "string" &&
     ((error as { code: string }).code.startsWith("P"))
   );
 }

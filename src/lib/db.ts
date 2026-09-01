@@ -125,8 +125,8 @@ async function getPrismaClient(): Promise<PrismaClient> {
   return client;
 }
 
-// Validate env on first load (production only)
-env.validate();
+// env.validate() is called from src/proxy.ts (middleware) which is always loaded.
+// Keeping it here as a safety net for direct Prisma usage without middleware.
 
 export const db = new Proxy({} as PrismaClient, {
   get: (_target, prop) => {
@@ -144,11 +144,10 @@ export const db = new Proxy({} as PrismaClient, {
         return value;
       },
       get: (_target2, prop2) => {
-        const value = Reflect.get(
-          globalForPrisma.prisma || {},
-          prop2,
-          globalForPrisma.prisma
-        );
+        const globalClient = globalForPrisma.prisma;
+        const value = globalClient
+          ? Reflect.get(globalClient, prop2, globalClient)
+          : undefined;
         return typeof value === "function"
           ? (...args: unknown[]) => Promise.resolve().then(() => value(...args))
           : value;

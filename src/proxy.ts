@@ -4,6 +4,9 @@ import { getToken } from "next-auth/jwt";
 import { csrfProtection } from "@/lib/csrf";
 import { env } from "@/lib/env";
 
+// Validate required environment variables at startup (middleware is always loaded)
+env.validate();
+
 // ─── Locale Detection ────────────────────────────────────────────────────────
 
 const VALID_LOCALES = ["ru", "en", "zh"] as const;
