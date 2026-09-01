@@ -10,7 +10,7 @@ const translationCache: Record<Locale, Record<string, string>> = {
   zh: zhLocale as Record<string, string>,
 };
 
-const ALPHANUMERIC_RE = /^[a-z0-9.\-_]+$/;
+const ALPHANUMERIC_RE = /^[a-zA-Z0-9.\-_]+$/;
 
 /**
  * Validate a translation key: only allow safe characters (alphanumeric, dots, dashes, underscores).
@@ -18,6 +18,8 @@ const ALPHANUMERIC_RE = /^[a-z0-9.\-_]+$/;
  */
 function safeKey(key: string): string | null {
   if (typeof key !== "string" || !key.length) return null;
+  // Reject keys that look like prototype injection
+  if (key.includes("__") || key === "constructor" || key === "prototype") return null;
   return ALPHANUMERIC_RE.test(key) ? key : null;
 }
 
