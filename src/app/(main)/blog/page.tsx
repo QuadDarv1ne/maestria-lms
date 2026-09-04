@@ -48,42 +48,65 @@ export default async function BlogPage({ searchParams }: PageProps) {
 
   const skip = (page - 1) * limit;
 
-  // Fetch articles and count in parallel
-  const [articles, total] = await Promise.all([
-    db.article.findMany({
-      where,
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        excerpt: true,
-        image: true,
-        category: true,
-        tags: true,
-        readTime: true,
-        views: true,
-        isFeatured: true,
-        createdAt: true,
-        author: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
-            role: true,
+  // Fetch articles and count with error handling
+  let articles: unknown[] = [];
+  let total = 0;
+
+  try {
+    [articles, total] = await Promise.all([
+      db.article.findMany({
+        where,
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          excerpt: true,
+          image: true,
+          category: true,
+          tags: true,
+          readTime: true,
+          views: true,
+          isFeatured: true,
+          createdAt: true,
+          author: {
+            select: {
+              id: true,
+              name: true,
+              image: true,
+              role: true,
+            },
           },
         },
-      },
-      orderBy,
-      skip,
-      take: limit,
-    }),
-    db.article.count({ where }),
-  ]);
+        orderBy,
+        skip,
+        take: limit,
+      }),
+      db.article.count({ where }),
+    ]);
+  } catch (dbError) {
+    // If database query fails, return empty results — the client will handle the error
+    console.error("[blog:page] Database query failed:", dbError instanceof Error ? dbError.message : String(dbError));
+    articles = [];
+    total = 0;
+  }
 
   const totalPages = Math.ceil(total / limit);
 
   // Transform dates to ISO strings for client component
-  const articlesData = articles.map((a: { id: string; title: string; slug: string; excerpt: string | null; image: string | null; category: string; tags: string | null; readTime: number; views: number; isFeatured: boolean; createdAt: Date; author: { id: string; name: string | null; image: string | null; role: string } }) => ({
+  const articlesData = (articles as Array<{
+    id: string;
+    title: string;
+    slug: string;
+    excerpt: string | null;
+    image: string | null;
+    category: string;
+    tags: string | null;
+    readTime: number;
+    views: number;
+    isFeatured: boolean;
+    createdAt: Date;
+    author: { id: string; name: string | null; image: string | null; role: string };
+  }>).map((a) => ({
     ...a,
     createdAt: a.createdAt.toISOString(),
   }));
