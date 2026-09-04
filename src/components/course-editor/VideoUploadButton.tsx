@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { t } from "@/lib/i18n";
+import { apiErrorMessage } from "@/lib/api-error-codes";
 import type { Locale } from "@/lib/stores/ui";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -38,7 +39,7 @@ export function VideoUploadButton({ onUpload, locale }: { onUpload: (url: string
           } else {
             try {
               const data = JSON.parse(xhr.responseText);
-              reject(new Error(data.error || t("courseEditor.uploadError", locale)));
+              reject(new Error(apiErrorMessage(data, locale, "courseEditor.uploadError")));
             } catch {
               reject(new Error(t("courseEditor.uploadError", locale)));
             }

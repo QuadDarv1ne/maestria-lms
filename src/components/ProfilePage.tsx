@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import type { Locale } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import { apiErrorMessage } from "@/lib/api-error-codes";
 import { log } from "@/lib/logger";
 import { formatDate, getInitials } from "@/lib/utils";
 import { toast } from "sonner";
@@ -212,7 +213,7 @@ export function ProfilePage() {
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || t("profile.uploadError", locale));
+        throw new Error(apiErrorMessage(data, locale, "profile.uploadError"));
       }
       const data = await res.json();
       setEditForm((prev) => ({ ...prev, image: data.url }));
@@ -249,7 +250,7 @@ export function ProfilePage() {
         setEditing(false);
       } else {
         const data = await res.json();
-        toast.error(data.error || t("profile.updateError", locale));
+        toast.error(apiErrorMessage(data, locale, "profile.updateError"));
       }
     } catch (error: unknown) {
       log.error("Failed to save profile", { error: String(error) });

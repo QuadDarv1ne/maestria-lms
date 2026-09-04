@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { t } from "@/lib/i18n";
+import { apiErrorMessage } from "@/lib/api-error-codes";
 import { toast } from "sonner";
 
 export function AuthDialogs() {
@@ -180,7 +181,7 @@ export function AuthDialogs() {
           email: registerForm.email,
         });
       } else {
-        toast.error(data.error || t("auth.registerError", locale));
+        toast.error(apiErrorMessage(data, locale, "auth.registerError"));
       }
     } catch (e: unknown) {
       log.error("Registration failed", { error: e instanceof Error ? e.message : String(e) });
@@ -204,7 +205,7 @@ export function AuthDialogs() {
         setForgotSent(true);
         toast.success(data.message);
       } else {
-        toast.error(data.error || t("common.error", locale));
+        toast.error(apiErrorMessage(data, locale, "common.error"));
       }
     } catch (e: unknown) {
       log.error("Forgot password request failed", { error: e instanceof Error ? e.message : String(e) });

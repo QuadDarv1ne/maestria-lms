@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import { apiErrorMessage } from "@/lib/api-error-codes";
 import { formatDate, getInitials } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -107,7 +108,7 @@ export function LessonComments({ courseId, lessonId }: LessonCommentsProps) {
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || t("comments.errorPost", locale));
+        toast.error(apiErrorMessage(data, locale, "comments.errorPost"));
         return;
       }
       setComments((prev) => [data.comment, ...prev]);
@@ -138,7 +139,7 @@ export function LessonComments({ courseId, lessonId }: LessonCommentsProps) {
       );
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || t("comments.errorEdit", locale));
+        toast.error(apiErrorMessage(data, locale, "comments.errorEdit"));
         return;
       }
       setComments((prev) => prev.map((c) => (c.id === item.id ? data.comment : c)));

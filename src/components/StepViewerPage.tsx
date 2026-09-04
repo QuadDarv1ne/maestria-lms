@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useAppStore } from "@/lib/store";
 import { t, useLocale } from "@/lib/i18n";
+import { apiErrorMessage } from "@/lib/api-error-codes";
 import { log } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -86,7 +87,7 @@ export function StepViewerPage({
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || t("course.step.errorLoad", locale));
+        toast.error(apiErrorMessage(data, locale, "course.step.errorLoad"));
         return null;
       }
       return data;
@@ -158,7 +159,7 @@ export function StepViewerPage({
           let errorMessage = t("course.step.errorAccess", localeRef.current);
           try {
             const data = await res.json();
-            errorMessage = data.error || errorMessage;
+            errorMessage = apiErrorMessage(data, localeRef.current, "course.step.errorAccess");
           } catch {
             // Response may not be JSON, use default message
           }

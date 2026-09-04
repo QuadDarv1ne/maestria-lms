@@ -3,6 +3,7 @@
 import { useState } from "react";
 import NextImage from "next/image";
 import { t } from "@/lib/i18n";
+import { apiErrorMessage } from "@/lib/api-error-codes";
 import { toast } from "sonner";
 import type { Locale } from "@/lib/stores/ui";
 import type { CourseFormData } from "./types";
@@ -55,7 +56,7 @@ export function BasicTab({
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || t("courseEditor.uploadError", locale));
+        throw new Error(apiErrorMessage(data, locale, "courseEditor.uploadError"));
       }
       const data = await res.json();
       onUpdateField("image", data.url);

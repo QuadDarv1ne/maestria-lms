@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { t } from "@/lib/i18n";
+import { apiErrorMessage } from "@/lib/api-error-codes";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -72,7 +73,7 @@ export function AdminPromoCodes(props: AdminTabProps) {
       const res = await fetch("/api/admin/promo-codes?limit=100");
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || t("adminPromo.error", locale));
+        toast.error(apiErrorMessage(data, locale, "adminPromo.error"));
         return;
       }
       setPromoCodes(data.promoCodes ?? []);
@@ -114,7 +115,7 @@ export function AdminPromoCodes(props: AdminTabProps) {
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || t("adminPromo.error", locale));
+        toast.error(apiErrorMessage(data, locale, "adminPromo.error"));
         return;
       }
       toast.success(t("adminPromo.created", locale));
@@ -136,7 +137,7 @@ export function AdminPromoCodes(props: AdminTabProps) {
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || t("adminPromo.error", locale));
+        toast.error(apiErrorMessage(data, locale, "adminPromo.error"));
         return;
       }
       toast.success(t("adminPromo.updated", locale));
@@ -152,7 +153,7 @@ export function AdminPromoCodes(props: AdminTabProps) {
       const res = await fetch(`/api/admin/promo-codes/${promo.id}`, { method: "DELETE" });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || t("adminPromo.error", locale));
+        toast.error(apiErrorMessage(data, locale, "adminPromo.error"));
         return;
       }
       toast.success(promo.usedCount > 0 ? t("adminPromo.deactivated", locale) : t("adminPromo.deleted", locale));

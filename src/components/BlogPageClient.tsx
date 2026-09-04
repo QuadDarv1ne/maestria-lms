@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import { apiErrorMessage } from "@/lib/api-error-codes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -120,7 +121,7 @@ export function BlogPageClient({ initialArticles, initialPagination }: BlogPageC
           try {
             errorBody = await res.json();
           } catch { /* ignore */ }
-          throw new Error(errorBody.error || `API error ${res.status}: ${res.statusText}`);
+          throw new Error(apiErrorMessage(errorBody, locale, `API error ${res.status}: ${res.statusText}`));
         }
 
         const data = await res.json();

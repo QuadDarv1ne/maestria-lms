@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { t } from "@/lib/i18n";
+import { apiErrorMessage } from "@/lib/api-error-codes";
 import { log } from "@/lib/logger";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,8 +40,8 @@ export function AdminSettings({ locale }: AdminTabProps) {
         body: JSON.stringify({ [key]: newValue }),
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: t("admin.settings.unknown_error", locale) }));
-        toast.error(err.error || t("admin.settings.update_failed", locale));
+        const err = await res.json().catch(() => null);
+        toast.error(apiErrorMessage(err, locale, "admin.settings.update_failed"));
         return;
       }
       const updated = await res.json();

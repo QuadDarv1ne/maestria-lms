@@ -9,13 +9,14 @@ function apiError(
   message: string,
   status: number,
   context?: Record<string, unknown>,
+  code?: string,
 ): NextResponse {
   if (status >= 500) {
     log.error(message, context);
   } else if (status >= 400) {
     log.warn(message, context);
   }
-  return NextResponse.json({ error: message }, { status });
+  return NextResponse.json(code ? { error: message, code } : { error: message }, { status });
 }
 
 /**
@@ -69,7 +70,7 @@ export function handleApiError(error: unknown, context?: Record<string, unknown>
         ...context,
         prismaCode: error.code,
         prismaMessage: error.message,
-      });
+      }, "record_exists");
     }
     // Unknown Prisma code
     const prismaStack = (error as unknown as { stack?: unknown }).stack;
@@ -78,13 +79,13 @@ export function handleApiError(error: unknown, context?: Record<string, unknown>
       prismaCode: error.code,
       prismaMessage: error.message,
       ...(typeof prismaStack === "string" ? { stack: prismaStack } : {}),
-    });
+    }, "internal_error");
   }
 
   // Zod validation errors
   if (isZodError(error)) {
     const firstIssue = error.issues[0];
-    return apiError(firstIssue.message, 400, { ...context, zodIssues: error.issues });
+    return apiError(firstIssue.message, 400, { ...context, zodIssues: error.issues }, "validation_failed");
   }
 
   // Generic errors
@@ -96,5 +97,5 @@ export function handleApiError(error: unknown, context?: Record<string, unknown>
     name: errorName,
     message: errorMessage,
     ...(stack ? { stack } : {}),
-  });
+  }, "internal_error");
 }

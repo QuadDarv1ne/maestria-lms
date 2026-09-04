@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useCallback } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import { apiErrorMessage } from "@/lib/api-error-codes";
 import { log } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -323,7 +324,7 @@ export function CourseEditorPage() {
           );
           router.push("/admin");
         } else {
-          toast.error(data.error || t("courseEditor.saveError", locale));
+          toast.error(apiErrorMessage(data, locale, "courseEditor.saveError"));
         }
       } catch (e: unknown) {
         log.error("Failed to save course", { error: e instanceof Error ? e.message : String(e) });

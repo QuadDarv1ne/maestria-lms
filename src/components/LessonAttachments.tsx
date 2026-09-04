@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import { apiErrorMessage } from "@/lib/api-error-codes";
 import { formatFileSize } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -113,7 +114,7 @@ export function LessonAttachments({ courseId, lessonId }: LessonAttachmentsProps
           } else {
             try {
               const data = JSON.parse(xhr.responseText);
-              reject(new Error(data.error || t("attachments.uploadError", locale)));
+              reject(new Error(apiErrorMessage(data, locale, "attachments.uploadError")));
             } catch {
               reject(new Error(t("attachments.uploadError", locale)));
             }

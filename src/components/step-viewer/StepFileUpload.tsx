@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Upload, Send, FileText, CheckCircle2, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { t } from "@/lib/i18n";
+import { apiErrorMessage } from "@/lib/api-error-codes";
 import type { StepComponentProps } from "./StepTypes";
 
 export function StepFileUpload({ step, locale, onSubmitAssignment }: StepComponentProps) {
@@ -51,7 +52,7 @@ export function StepFileUpload({ step, locale, onSubmitAssignment }: StepCompone
           } else {
             try {
               const data = JSON.parse(xhr.responseText);
-              reject(new Error(data.error || t("course.step.errorLoad", locale)));
+              reject(new Error(apiErrorMessage(data, locale, "course.step.errorLoad")));
             } catch {
               reject(new Error(t("course.step.errorLoad", locale)));
             }

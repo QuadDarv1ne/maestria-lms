@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import { apiErrorMessage } from "@/lib/api-error-codes";
 import { log } from "@/lib/logger";
 import type { Locale } from "@/lib/stores/ui";
 import { Button } from "@/components/ui/button";
@@ -105,7 +106,7 @@ export function LessonPage({
           let errorMessage = t("course.step.errorAccess", locale);
           try {
             const data = await res.json();
-            errorMessage = data.error || errorMessage;
+            errorMessage = apiErrorMessage(data, locale, "course.step.errorAccess");
           } catch {
             // Response may not be JSON
           }
@@ -147,7 +148,7 @@ export function LessonPage({
         );
       } else {
         const error = await res.json().catch(() => null);
-        toast.error(error?.error || t("course.step.errorProgress", locale));
+        toast.error(apiErrorMessage(error, locale, "course.step.errorProgress"));
       }
     } catch (e: unknown) {
       log.error("Failed to complete step", { courseId, lessonId, error: e instanceof Error ? e.message : String(e) });

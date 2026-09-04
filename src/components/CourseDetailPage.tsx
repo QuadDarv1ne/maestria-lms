@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import React, { useState, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import { apiErrorMessage } from "@/lib/api-error-codes";
 import { sanitizeContent } from "@/lib/sanitize";
 import { log } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
@@ -233,7 +234,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
         setPromoCodeValid(false);
         setPromoDiscount(0);
         setPromoFinalPrice(null);
-        setPromoError(data.error || t("course.promoInvalid", locale));
+        setPromoError(apiErrorMessage(data, locale, "course.promoInvalid"));
       }
     } catch (err) {
       log.error("Promo validation failed", { error: err instanceof Error ? err.message : String(err) });
@@ -277,7 +278,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
           invalidateCourse();
         }
       } else {
-        toast.error(data.error || t("common.error", locale));
+        toast.error(apiErrorMessage(data, locale, "common.error"));
       }
     } catch (err) {
       log.error("Enroll failed", { error: err instanceof Error ? err.message : String(err) });
