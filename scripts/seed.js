@@ -76,6 +76,10 @@ if (ifEmpty) {
 }
 
 (async () => {
+  // Ensure process is available in the transpiled context
+  if (typeof process === 'undefined') {
+    globalThis.process = require('process');
+  }
   const jiti = await createJiti(__filename);
   await jiti.import("../prisma/seed.mjs");
 })().catch((error) => {

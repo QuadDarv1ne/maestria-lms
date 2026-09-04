@@ -95,6 +95,7 @@
     "lightningcss-linux-x64-musl": "1.30.2"
   },
   "devDependencies": {
+    "@prisma/adapter-libsql": "^7.10.0",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "7.0.0",
     "@testing-library/react": "^16.3.2",
