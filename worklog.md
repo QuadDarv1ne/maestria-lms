@@ -4,6 +4,28 @@
 
 ---
 
+Task ID: 19
+Agent: Main Agent
+Task: Тесты для lesson-access, auth, refund email template
+
+Work Log:
+- TEST: src/lib/lesson-access.test.ts (16 тестов) — resolveLessonAccess: 404 при отсутствии курса, 404 когда урок не принадлежит курсу, 404 при отсутствии module, доступ к free-урокам без enrollment, доступ для enrolled, 403 для не-enrolled на платных, доступ teacher/admin, slug-based resolution, сообщение об ошибке 403. resolveLessonManageAccess: 404 без auth, доступ teacher/admin, 403 для student и non-course teacher
+- TEST: src/lib/auth.test.ts (11 тестов) — requireAuth (true/false для null/без user), requireAdmin (admin=true, student/teacher/null=false), authErrorResponse (401 + RU сообщение), adminErrorResponse (403 + RU сообщение)
+- FEATURE: src/lib/emails/templates.ts — refundNotificationEmail (subject/html/text для 3 локалей), XSS-safe через escapeHtml
+- i18n: добавлены ключи emails.refund.* (ru/en/zh) — 21 ключ (subject/title/heading/greeting/body/footer/cta + text версии)
+- TEST: src/lib/emails/templates.test.ts — +7 тестов для refundNotificationEmail (subject, heading, amount, url, XSS escape, text version, HTML structure), +1 в structure test
+- Проверено: 582 теста (было 548), typecheck чистый, lint 0 ошибок/0 warnings, check:i18n exit 0
+
+Stage Summary:
+- 2 новых тестовых файла (lesson-access +16, auth +11)
+- 1 новый email-шаблон (refundNotificationEmail)
+- 21 i18n ключ (3 локали)
+- +34 теста (582), все проверки чистые
+
+---
+
+---
+
 ---
 
 ---

@@ -2088,5 +2088,17 @@
   "emails.enrollment.cta": "Посмотреть студентов",
   "emails.enrollment.textGreeting": "Здравствуйте, {name}!",
   "emails.enrollment.textBody": "Студент «{studentName}» записался на ваш курс «{courseName}».",
-  "emails.enrollment.textCta": "Посмотреть студентов"
+  "emails.enrollment.textCta": "Посмотреть студентов",
+
+  "emails.refund.subject": "Возврат средств: «{courseName}» — {appName}",
+  "emails.refund.title": "Возврат средств",
+  "emails.refund.heading": "Возврат средств оформлен",
+  "emails.refund.greeting": "Здравствуйте, {name}",
+  "emails.refund.body": "Мы оформили возврат средств за курс «{courseName}» на сумму «{amount}». Средства вернутся на ваш способ оплаты в течение нескольких рабочих дней.",
+  "emails.refund.footer": "Если у вас есть вопросы, обратитесь в поддержку.",
+  "emails.refund.cta": "История платежей",
+  "emails.refund.textGreeting": "Здравствуйте, {name}!",
+  "emails.refund.textBody": "Мы оформили возврат средств за курс «{courseName}» на сумму {amount}.",
+  "emails.refund.textCta": "Посмотреть историю платежей",
+  "emails.refund.textFooter": "Если у вас есть вопросы, обратитесь в поддержку."
 }

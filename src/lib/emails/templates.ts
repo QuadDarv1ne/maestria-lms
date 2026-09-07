@@ -224,3 +224,29 @@ export function enrollmentNotificationEmail(
     text: `${t("emails.enrollment.textGreeting", locale).replace("{name}", teacherName)}\n\n${t("emails.enrollment.textBody", locale).replace("{studentName}", studentName).replace("{courseName}", courseName)}\n\n${t("emails.enrollment.textCta", locale)}: ${courseUrl}`,
   };
 }
+
+/** Refund notification for students when a payment is refunded */
+export function refundNotificationEmail(
+  name: string,
+  courseName: string,
+  amount: string,
+  paymentUrl: string,
+  lang: string = "ru"
+): EmailTemplate {
+  const safeName = escapeHtml(name);
+  const safeCourse = escapeHtml(courseName);
+  const safeAmount = escapeHtml(amount);
+  const safeUrl = escapeHtml(paymentUrl);
+  const locale = getLocaleFromLang(lang);
+  return {
+    subject: t("emails.refund.subject", locale).replace("{courseName}", safeCourse).replace("{appName}", APP_NAME),
+    html: layout(t("emails.refund.title", locale), `
+      <h2 style="margin:0 0 16px;font-size:20px;color:#1e293b">${t("emails.refund.heading", locale)}</h2>
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">${t("emails.refund.greeting", locale).replace("{name}", safeName)}</p>
+      <p style="margin:0 0 12px;font-size:15px;color:#475569;line-height:1.6">${t("emails.refund.body", locale).replace("{courseName}", safeCourse).replace("{amount}", safeAmount)}</p>
+      <p style="margin:0 0 12px;font-size:13px;color:#94a3b8">${t("emails.refund.footer", locale)}</p>
+      ${button(safeUrl, t("emails.refund.cta", locale))}
+    `, lang),
+    text: `${t("emails.refund.textGreeting", locale).replace("{name}", name)}\n\n${t("emails.refund.textBody", locale).replace("{courseName}", courseName).replace("{amount}", amount)}\n\n${t("emails.refund.textCta", locale)}: ${paymentUrl}`,
+  };
+}

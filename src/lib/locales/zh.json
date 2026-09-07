@@ -2088,5 +2088,17 @@
   "emails.enrollment.cta": "查看学生",
   "emails.enrollment.textGreeting": "您好，{name}！",
   "emails.enrollment.textBody": "学生「{studentName}」报名了您的课程「{courseName}」。",
-  "emails.enrollment.textCta": "查看学生"
+  "emails.enrollment.textCta": "查看学生",
+
+  "emails.refund.subject": "退款处理：「{courseName}」 — {appName}",
+  "emails.refund.title": "退款处理",
+  "emails.refund.heading": "退款已处理",
+  "emails.refund.greeting": "您好，{name}",
+  "emails.refund.body": "我们已为您处理课程「{courseName}」的退款，金额为「{amount}」。资金将在几个工作日内退回您的支付方式。",
+  "emails.refund.footer": "如有任何问题，请联系客服。",
+  "emails.refund.cta": "支付历史",
+  "emails.refund.textGreeting": "您好，{name}！",
+  "emails.refund.textBody": "我们已为您处理课程「{courseName}」的退款，金额为 {amount}。",
+  "emails.refund.textCta": "查看支付历史",
+  "emails.refund.textFooter": "如有任何问题，请联系客服。"
 }

@@ -9,6 +9,7 @@ import {
   lessonReminderEmail,
   achievementEmail,
   paymentNotificationEmail,
+  refundNotificationEmail,
 } from "./templates";
 
 describe("welcomeEmail", () => {
@@ -148,6 +149,46 @@ describe("paymentNotificationEmail", () => {
   });
 });
 
+describe("refundNotificationEmail", () => {
+  const result = refundNotificationEmail("Иван", "Python Pro", "4 990 ₽", "https://example.com/payments");
+
+  it("includes subject with course name", () => {
+    expect(result.subject).toContain("Python Pro");
+    expect(result.subject).toContain("Возврат");
+  });
+
+  it("includes refund heading", () => {
+    expect(result.html).toContain("Возврат средств оформлен");
+  });
+
+  it("includes amount in body", () => {
+    expect(result.html).toContain("4 990 ₽");
+    expect(result.html).toContain("Python Pro");
+  });
+
+  it("includes payment url", () => {
+    expect(result.html).toContain("https://example.com/payments");
+    expect(result.text).toContain("https://example.com/payments");
+  });
+
+  it("escapes html in amount", () => {
+    const r = refundNotificationEmail("Иван", "Course<script>", "100 <b>₽</b>", "https://example.com");
+    expect(r.html).not.toContain("<script>");
+    expect(r.html).not.toContain("<b>");
+  });
+
+  it("includes text version", () => {
+    expect(result.text).toContain("Иван");
+    expect(result.text).toContain("Python Pro");
+    expect(result.text).toContain("4 990 ₽");
+  });
+
+  it("renders valid HTML structure", () => {
+    expect(result.html).toContain("<!DOCTYPE html>");
+    expect(result.html).toContain("</html>");
+  });
+});
+
 describe("email templates", () => {
   it("all templates return valid structure", () => {
     const templates = [
@@ -160,6 +201,7 @@ describe("email templates", () => {
       lessonReminderEmail("Test", "Course", "https://example.com", "Lesson"),
       achievementEmail("Test", "Achievement", "https://example.com"),
       paymentNotificationEmail("Test", "Course", "100 ₽", "https://example.com"),
+      refundNotificationEmail("Test", "Course", "100 ₽", "https://example.com"),
     ];
 
     for (const t of templates) {

@@ -2088,5 +2088,17 @@
   "emails.enrollment.cta": "View students",
   "emails.enrollment.textGreeting": "Hello, {name}!",
   "emails.enrollment.textBody": "The student «{studentName}» enrolled in your course «{courseName}».",
-  "emails.enrollment.textCta": "View students"
+  "emails.enrollment.textCta": "View students",
+
+  "emails.refund.subject": "Refund processed: «{courseName}» — {appName}",
+  "emails.refund.title": "Refund processed",
+  "emails.refund.heading": "Refund processed",
+  "emails.refund.greeting": "Hello, {name}",
+  "emails.refund.body": "We have processed a refund for the course «{courseName}» in the amount of «{amount}». The funds will be returned to your payment method within a few business days.",
+  "emails.refund.footer": "If you have any questions, please contact support.",
+  "emails.refund.cta": "Payment history",
+  "emails.refund.textGreeting": "Hello, {name}!",
+  "emails.refund.textBody": "We have processed a refund for the course «{courseName}» in the amount of {amount}.",
+  "emails.refund.textCta": "View payment history",
+  "emails.refund.textFooter": "If you have any questions, please contact support."
 }
