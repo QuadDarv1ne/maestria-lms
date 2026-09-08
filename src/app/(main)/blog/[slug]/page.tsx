@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ArticlePage } from "@/components/ArticlePage";
 import { db } from "@/lib/db";
+import { log } from "@/lib/logger";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -16,7 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       select: { title: true, excerpt: true, image: true },
     });
   } catch (error) {
-    console.error("[blog:metadata] Database query failed:", error instanceof Error ? error.message : String(error));
+    log.error("[blog:metadata] Database query failed:", error instanceof Error ? error.message : String(error));
   }
 
   return {
@@ -70,7 +71,7 @@ export default async function Page({ params }: Props) {
       },
     });
   } catch (error) {
-    console.error("[blog:slug] Database query failed:", error instanceof Error ? error.message : String(error));
+    log.error("[blog:slug] Database query failed:", error instanceof Error ? error.message : String(error));
   }
 
   // Transform dates to strings for client component

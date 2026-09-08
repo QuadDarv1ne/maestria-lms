@@ -85,6 +85,7 @@ export type AssignmentInput = {
   options?: string;
   correctAnswer?: string;
   maxAttempts?: string | number;
+  timeLimit?: string | number | null;
 };
 
 export type LessonInput = {

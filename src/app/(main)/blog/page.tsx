@@ -1,5 +1,6 @@
 import { db, Prisma, getDatabaseProvider } from "@/lib/db";
 import { BlogPageClient } from "@/components/BlogPageClient";
+import { log } from "@/lib/logger";
 
 interface PageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -85,7 +86,7 @@ export default async function BlogPage({ searchParams }: PageProps) {
     ]);
   } catch (dbError) {
     // If database query fails, return empty results — the client will handle the error
-    console.error("[blog:page] Database query failed:", dbError instanceof Error ? dbError.message : String(dbError));
+    log.error("[blog:page] Database query failed:", dbError instanceof Error ? dbError.message : String(dbError));
     articles = [];
     total = 0;
   }

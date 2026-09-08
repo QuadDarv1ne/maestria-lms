@@ -346,7 +346,7 @@ export async function POST(
           // Auto-create certificate on first-time completion (inside transaction to prevent duplicates)
           if (courseProgress === 100 && !wasAlreadyCompleted && courseData.hasCertificate) {
             const existingCert = await tx.certificate.findUnique({
-              where: { userId_courseId: { userId, courseId } },
+              where: { userId_courseId: { userId, courseId: resolvedCourseId } },
               select: { id: true },
             });
 

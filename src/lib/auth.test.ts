@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import type { ExtendedSession } from "./auth";
 import {
   requireAuth,
   requireAdmin,
@@ -10,7 +11,8 @@ describe("requireAuth", () => {
   it("returns true for authenticated session", () => {
     const session = {
       user: { id: "user-1", role: "student" },
-    };
+      expires: "2030-01-01T00:00:00.000Z",
+    } as ExtendedSession;
 
     expect(requireAuth(session)).toBe(true);
   });
@@ -20,9 +22,9 @@ describe("requireAuth", () => {
   });
 
   it("returns false for session without user", () => {
-    const session = { user: null };
+    const session = { user: null, expires: "2030-01-01T00:00:00.000Z" } as unknown as ExtendedSession | null;
 
-    expect(requireAuth(session as { user: null } | null)).toBe(false);
+    expect(requireAuth(session)).toBe(false);
   });
 });
 
@@ -30,7 +32,8 @@ describe("requireAdmin", () => {
   it("returns true for admin session", () => {
     const session = {
       user: { id: "admin-1", role: "admin" },
-    };
+      expires: "2030-01-01T00:00:00.000Z",
+    } as ExtendedSession;
 
     expect(requireAdmin(session)).toBe(true);
   });
@@ -42,7 +45,8 @@ describe("requireAdmin", () => {
   it("returns false for non-admin role", () => {
     const session = {
       user: { id: "user-1", role: "student" },
-    };
+      expires: "2030-01-01T00:00:00.000Z",
+    } as ExtendedSession;
 
     expect(requireAdmin(session)).toBe(false);
   });
@@ -50,7 +54,8 @@ describe("requireAdmin", () => {
   it("returns false for teacher role", () => {
     const session = {
       user: { id: "teacher-1", role: "teacher" },
-    };
+      expires: "2030-01-01T00:00:00.000Z",
+    } as ExtendedSession;
 
     expect(requireAdmin(session)).toBe(false);
   });

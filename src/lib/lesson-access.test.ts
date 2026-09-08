@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from "vitest";
 import { resolveLessonAccess, resolveLessonManageAccess } from "./lesson-access";
 
 // Mock dependencies
@@ -20,8 +20,12 @@ vi.mock("./auth", () => ({
   getAuthSession: vi.fn(),
 }));
 
-const mockDb = await import("./db").then((m) => m.db);
-const mockGetAuthSession = await import("./auth").then((m) => m.getAuthSession);
+const mockDb = await import("./db").then((m) => ({
+  course: m.db.course as Mock,
+  lesson: m.db.lesson as Mock,
+  enrollment: m.db.enrollment as Mock,
+}));
+const mockGetAuthSession = await import("./auth").then((m) => m.getAuthSession as Mock);
 
 describe("resolveLessonAccess", () => {
   beforeEach(() => {
