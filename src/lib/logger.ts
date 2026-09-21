@@ -8,7 +8,7 @@ interface LogEntry {
   level: LogLevel;
   message: string;
   timestamp: string;
-  context?: Record<string, unknown>;
+  context?: unknown;
 }
 
 const LOG_LEVEL_ORDER: Record<LogLevel, number> = {
@@ -65,7 +65,7 @@ function writeLog(entry: LogEntry): void {
 function logger(
   level: LogLevel,
   message: string,
-  context?: Record<string, unknown>,
+  context?: unknown,
 ): void {
   writeLog({
     level,
@@ -76,12 +76,12 @@ function logger(
 }
 
 export const log = {
-  error: (message: string, context?: Record<string, unknown>) =>
+  error: (message: string, context?: unknown) =>
     logger("error", message, context),
-  warn: (message: string, context?: Record<string, unknown>) =>
+  warn: (message: string, context?: unknown) =>
     logger("warn", message, context),
-  info: (message: string, context?: Record<string, unknown>) =>
+  info: (message: string, context?: unknown) =>
     logger("info", message, context),
-  debug: (message: string, context?: Record<string, unknown>) =>
+  debug: (message: string, context?: unknown) =>
     logger("debug", message, context),
 };

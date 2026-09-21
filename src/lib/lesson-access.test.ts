@@ -21,11 +21,11 @@ vi.mock("./auth", () => ({
 }));
 
 const mockDb = await import("./db").then((m) => ({
-  course: m.db.course as Mock,
-  lesson: m.db.lesson as Mock,
-  enrollment: m.db.enrollment as Mock,
+  course: m.db.course as unknown as { findFirst: ReturnType<typeof vi.fn> },
+  lesson: m.db.lesson as unknown as { findUnique: ReturnType<typeof vi.fn> },
+  enrollment: m.db.enrollment as unknown as { findUnique: ReturnType<typeof vi.fn> },
 }));
-const mockGetAuthSession = await import("./auth").then((m) => m.getAuthSession as Mock);
+const mockGetAuthSession = await import("./auth").then((m) => m.getAuthSession as ReturnType<typeof vi.fn>);
 
 describe("resolveLessonAccess", () => {
   beforeEach(() => {
