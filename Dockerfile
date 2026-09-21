@@ -23,6 +23,11 @@ ENV npm_config_engine_strict=false
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --omit=dev --no-optional --no-audit --no-fund --engine-strict=false
 
+# Prisma CLI and the production seed run outside the Next.js bundle.
+# Keep their direct runtime dependencies in the final image as well.
+RUN --mount=type=cache,target=/root/.npm \
+    npm install --no-save effect@3.20.0 bcryptjs@3.0.3 --omit=dev --no-audit --no-fund --engine-strict=false
+
 # Install only prebuilt optional deps (no compilation needed):
 # Tailwind CSS oxide and lightningcss have prebuilt binaries for linux-x64-musl.
 # better-sqlite3 is skipped (requires native compilation, not needed for PostgreSQL).
@@ -50,6 +55,8 @@ RUN --mount=type=cache,target=/root/.npm \
 
 ARG NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+ARG DATABASE_PROVIDER=postgresql
+ENV DATABASE_PROVIDER=$DATABASE_PROVIDER
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
@@ -57,7 +64,7 @@ ENV NODE_ENV=production
 # Note: If DATABASE_URL is not available at build time (e.g., Amvera),
 # prisma generate will use a fallback URL from prisma.config.ts.
 # The real database connection is configured at runtime via start.sh.
-RUN npx prisma generate
+RUN node scripts/prisma-auto.js generate
 
 RUN npm run build
 
