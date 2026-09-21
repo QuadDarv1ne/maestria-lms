@@ -64,6 +64,7 @@ src/generated/
 *.db
 *.db-journal
 prisma-data/
+scripts/vk-articles-extracted.json
 
 # MiMoCode runtime files
 .mimocode/  

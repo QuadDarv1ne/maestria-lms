@@ -1,4 +1,6 @@
 import fs from "fs";
+import path from "node:path";
+import "dotenv/config";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaPg } from "@prisma/adapter-pg";
@@ -8,8 +10,8 @@ let adapter;
 if (databaseUrl.startsWith("postgresql") || databaseUrl.startsWith("postgres")) {
   adapter = new PrismaPg({ connectionString: databaseUrl });
 } else {
-  const filePath = databaseUrl.replace(/^file:/, "");
-  adapter = new PrismaBetterSqlite3({ url: filePath || "./prisma/data.db" });
+  const filePath = databaseUrl.replace(/^file:/, "") || "./prisma/data.db";
+  adapter = new PrismaBetterSqlite3({ url: path.resolve(filePath) });
 }
 const prisma = new PrismaClient({ adapter });
 
@@ -21,6 +23,7 @@ function cleanContent(raw) {
   text = text.replace(/Наука и Техника\s*𖤍\s*Q➆[\s\S]*?Дуплей\s*/m, "");
   // Collapse multiple whitespace/newlines into single spaces
   text = text.replace(/\s+/g, " ").trim();
+  text = text.replace(/^1x\s*/i, "");
   // Remove trailing promo
   const cutMarkers = [
     "Смотри курсы по программированию",
@@ -84,7 +87,7 @@ async function main() {
   const raw = fs.readFileSync("scripts/vk-articles-extracted.json", "utf-8");
   const articles = JSON.parse(raw);
 
-  const okArticles = articles.filter((a) => a.status === "ok");
+  const okArticles = articles.filter((a) => a.status !== "error");
   console.log(`Importing ${okArticles.length} articles...\n`);
 
   // Find system user
@@ -112,6 +115,10 @@ async function main() {
     const readTime = estimateReadTime(content);
     const excerpt = cleanExcerpt(art.excerpt || content, art.title);
     const coverImage = art.images?.[0] || null;
+    const sourceUrl = art.sourceUrl || art.url;
+    const contentWithSource = sourceUrl && !content.includes(sourceUrl)
+      ? `${content}\n\nИсточник: ${sourceUrl}`
+      : content;
 
     // Check if already exists
     const existing = await prisma.article.findUnique({ where: { slug } });
@@ -124,9 +131,9 @@ async function main() {
     try {
       const created = await prisma.article.create({
         data: {
-          title: art.title.replace(/[^\w\s\-а-яА-Яa-zA-Z(),.:!?]/g, "").trim().slice(0, 200),
+          title: art.title.replace(/[<>]/g, "").trim().slice(0, 200),
           slug,
-          content,
+          content: contentWithSource,
           excerpt: excerpt.slice(0, 500),
           image: coverImage,
           category,

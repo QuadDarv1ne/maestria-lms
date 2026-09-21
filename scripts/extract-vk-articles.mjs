@@ -1,18 +1,8 @@
 import { chromium } from "playwright";
 import fs from "fs";
 
-const VK_ARTICLE_URLS = [
-  "https://vk.ru/@science_geeks-raid-massivy-prostymi-slovami-kak-obedinit-diski-dlya-skor",
-  "https://vk.ru/@science_geeks-kak-avtomatizaciya-pomogaet-sistemnym-administratoram-ot-ruc",
-  "https://vk.ru/@science_geeks-novosti-kitaya-14-iulya-tovarooborot-rf-i-knr-za-polgoda-vy",
-  "https://vk.ru/@science_geeks-top-10-kitaiskih-innovacionnyh-kompanii-za-kotorymi-stoit-sl",
-  "https://vk.ru/@science_geeks-pochemu-rezervnoe-kopirovanie-spasaet-biznes",
-  "https://vk.ru/@science_geeks-kak-posmotret-parol-ot-svoego-wi-fi-na-telefone-komputere-i",
-  "https://vk.ru/@science_geeks-obzor-kasperskyos-community-edition",
-  "https://vk.ru/@science_geeks-xiaomi-vypustila-mimo-code-besplatnogo-ii-agenta-dlya-progr",
-  "https://vk.ru/@science_geeks-finansovaya-gramotnost-za-5-minut-pochemu-vashi-dengi-rabot",
-  "https://vk.ru/@science_geeks-ozvucheno-po-versii-kurazh-bambei-denis-kolesnikov-rasskazal",
-];
+const GROUP_URL = "https://vk.ru/@science_geeks";
+const DEFAULT_LIMIT = 20;
 
 const CATEGORIES = {
   "raid-massivy": "databases",
@@ -50,10 +40,21 @@ async function extractArticle(page, url) {
   });
 }
 
+async function discoverArticleUrls(page, limit) {
+  await page.goto(GROUP_URL, { waitUntil: "networkidle", timeout: 30000 });
+  return page.evaluate((maxArticles) => {
+    const urls = Array.from(document.querySelectorAll("a[href]"))
+      .map((anchor) => anchor.href)
+      .filter((href) => /^https:\/\/vk\.ru\/@science_geeks-/.test(href));
+    return [...new Set(urls)].slice(0, maxArticles);
+  }, limit);
+}
+
 function cleanContent(raw) {
-  let text = raw.replace(/^1x\s*/, "");
+  let text = raw;
   text = text.replace(/Наука и Техника\s*𖤍\s*Q➆[\s\S]*?Дуплей\s*/m, "");
   text = text.replace(/\s+/g, " ").trim();
+  text = text.replace(/^1x\s*/i, "");
   const cutMarkers = [
     "Смотри курсы по программированию", "Читай статьи по IT",
     "Попробуй себя в профессии", "https://school-maestro7it.ru",
@@ -82,7 +83,9 @@ function makeExcerpt(content, title) {
 }
 
 async function main() {
-  console.log(`Extracting ${VK_ARTICLE_URLS.length} VK articles...\n`);
+  const explicitUrls = process.argv.slice(2).filter((arg) => arg.startsWith("http"));
+  const limitArg = process.argv.find((arg) => arg.startsWith("--limit="));
+  const limit = Number.parseInt(limitArg?.split("=")[1] || String(DEFAULT_LIMIT), 10);
   const browser = await chromium.launch({ headless: true });
   const ctx = await browser.newContext({
     userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
@@ -90,8 +93,13 @@ async function main() {
   });
   const page = await ctx.newPage();
   const results = [];
+  const articleUrls = explicitUrls.length > 0
+    ? explicitUrls
+    : await discoverArticleUrls(page, Number.isFinite(limit) ? limit : DEFAULT_LIMIT);
 
-  for (const url of VK_ARTICLE_URLS) {
+  console.log(`Extracting ${articleUrls.length} VK articles...\n`);
+
+  for (const url of articleUrls) {
     try {
       const slugPart = url.split("@science_geeks-")[1];
       console.log(`Fetching: ${slugPart}`);
@@ -104,7 +112,9 @@ async function main() {
       const excerpt = makeExcerpt(content, data.title);
 
       results.push({
-        title: data.title.replace(/[^\w\s\-а-яА-Яa-zA-Z(),.:!?🔥💻📃✦]/g, "").trim().slice(0, 200),
+        status: "ok",
+        sourceUrl: url,
+        title: data.title.replace(/[<>]/g, "").trim().slice(0, 200),
         slug: slugPart,
         content,
         excerpt: excerpt.slice(0, 500),
@@ -119,8 +129,8 @@ async function main() {
   }
 
   await browser.close();
-  fs.writeFileSync("scripts/vk-articles.json", JSON.stringify(results, null, 2), "utf-8");
-  console.log(`\nSaved ${results.length} articles to scripts/vk-articles.json`);
+  fs.writeFileSync("scripts/vk-articles-extracted.json", JSON.stringify(results, null, 2), "utf-8");
+  console.log(`\nSaved ${results.length} articles to scripts/vk-articles-extracted.json`);
 }
 
 main().catch(console.error);
