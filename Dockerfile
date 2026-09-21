@@ -93,8 +93,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/src/generated ./src/generated
 # Copy Prisma CLI and runtime into standalone node_modules
 # Next.js standalone doesn't auto-include dev-only packages, but prisma
 # is needed at runtime for `prisma migrate deploy` in start.sh.
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
+# Prisma CLI runs during startup, so copy its complete production dependency graph.
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
 
 # Copy startup script
 COPY --from=builder --chown=nextjs:nodejs /app/start.sh ./start.sh
