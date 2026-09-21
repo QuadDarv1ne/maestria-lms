@@ -7,4 +7,12 @@ for remote in $(git remote); do
   if ! git push "$remote" "$branch"; then
     echo "post-commit: push to $remote failed (push manually later with: git push-all)" >&2
   fi
+
+  # Keep both Amvera deployment branch names synchronized from main.
+  if [ "$remote" = "amvera" ] && [ "$branch" = "main" ]; then
+    echo "post-commit: pushing main -> amvera/master"
+    if ! git push "$remote" "main:master"; then
+      echo "post-commit: push to amvera/master failed" >&2
+    fi
+  fi
 done
