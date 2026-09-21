@@ -86,7 +86,9 @@ export default async function BlogPage({ searchParams }: PageProps) {
     ]);
   } catch (dbError) {
     // If database query fails, return empty results — the client will handle the error
-    log.error("[blog:page] Database query failed:", dbError instanceof Error ? dbError.message : String(dbError));
+    log.error("[blog:page] Database query failed", {
+      error: dbError instanceof Error ? dbError.message : String(dbError),
+    });
     articles = [];
     total = 0;
   }
