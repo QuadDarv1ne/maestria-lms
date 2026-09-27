@@ -29,6 +29,26 @@ const PRISMA_BIN = path.join(
   process.platform === 'win32' ? 'prisma.cmd' : 'prisma',
 )
 
+// Fall back to the CLI entry point when the .bin shim is not shipped
+// (slim runtime images may copy node_modules without .bin).
+const PRISMA_JS = path.join(ROOT, 'node_modules', 'prisma', 'build', 'index.js')
+const MIGRATION_LOCK = path.join(ROOT, 'prisma', 'migrations', 'migration_lock.toml')
+
+/**
+ * Provider recorded in prisma/migrations/migration_lock.toml.
+ * Migration history is engine-specific: replaying it against another engine
+ * fails with an opaque Prisma error (P3019, or P1001 on a bad URL match).
+ */
+function readMigrationsProvider() {
+  try {
+    const lock = fs.readFileSync(MIGRATION_LOCK, 'utf8')
+    const match = lock.match(/provider\s*=\s*"([^"]+)"/)
+    return match ? match[1] : null
+  } catch {
+    return null
+  }
+}
+
 /**
  * Update schema.prisma datasource provider while preserving everything else.
  */
@@ -54,7 +74,11 @@ function updateSchemaProvider(provider) {
 try {
   const envVars = env.parseEnv(ENV_FILE)
   const databaseUrl = process.env.DATABASE_URL || envVars.DATABASE_URL
-  const provider = env.detectProvider(databaseUrl) || envVars.DATABASE_PROVIDER || 'sqlite'
+  // A URL always wins; otherwise the declared provider is used. The Dockerfile
+  // passes DATABASE_PROVIDER=postgresql, which previously had no effect because
+  // only .env was consulted — the image silently baked a sqlite schema.
+  const declaredProvider = process.env.DATABASE_PROVIDER || envVars.DATABASE_PROVIDER
+  const provider = env.detectProvider(databaseUrl) || declaredProvider || 'sqlite'
 
   updateSchemaProvider(provider)
 
@@ -67,8 +91,33 @@ try {
   // Execute the original Prisma command
   const args = process.argv.slice(2)
 
+  // Migrations are the source of truth for the PostgreSQL deployment only.
+  // Refuse to run them against another engine instead of corrupting history
+  // or failing with an opaque Prisma error.
+  const MIGRATE_SUBCOMMANDS = new Set(['dev', 'deploy', 'reset', 'status', 'resolve'])
+  if (args[0] === 'migrate' && MIGRATE_SUBCOMMANDS.has(args[1])) {
+    const lockProvider = readMigrationsProvider()
+    if (lockProvider && lockProvider !== provider) {
+      console.error(
+        `[auto-db] Provider mismatch: prisma/migrations targets "${lockProvider}" ` +
+          `but the current provider is "${provider}".`,
+      )
+      console.error(
+        '[auto-db] Use "npm run db:push" for non-PostgreSQL development, or point ' +
+          "DATABASE_URL at a " +
+          lockProvider +
+          " database to work with migrations.",
+      )
+      process.exit(1)
+    }
+  }
+
   const quoteArg = (a) => (/\s|"/.test(a) ? `"${a.replace(/"/g, '\\"')}"` : a)
-  execSync(`"${PRISMA_BIN}" ${args.map(quoteArg).join(' ')}`, {
+  const prismaCommand = fs.existsSync(PRISMA_BIN)
+    ? `"${PRISMA_BIN}"`
+    : `"${process.execPath}" "${PRISMA_JS}"`
+
+  execSync(`${prismaCommand} ${args.map(quoteArg).join(' ')}`, {
     stdio: 'inherit',
     cwd: ROOT,
     env: { ...process.env },

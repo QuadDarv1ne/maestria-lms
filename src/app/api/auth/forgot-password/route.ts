@@ -174,15 +174,17 @@ export async function PUT(request: NextRequest) {
     const passwordHash = await hashPassword(password);
 
     // Атомарно: обновляем пароль и удаляем ВСЕ токены для этого email
-    await db.$transaction([
-      db.user.update({
+    // Interactive transaction: the array form requires Prisma-native promises,
+    // which the lazy `db` proxy cannot produce (it returns ordinary promises).
+    await db.$transaction(async (tx) => {
+      await tx.user.update({
         where: { email },
         data: { passwordHash },
-      }),
-      db.verificationToken.deleteMany({
+      });
+      await tx.verificationToken.deleteMany({
         where: { identifier: `reset-password:${email}` },
-      }),
-    ]);
+      });
+    });
 
     return NextResponse.json(
       { message: "Пароль успешно изменён" },

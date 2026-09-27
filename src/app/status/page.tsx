@@ -165,7 +165,7 @@ export default function StatusPage() {
   }, [locale]);
 
   useEffect(() => {
-    fetchData();
+    void fetchData();
   }, [fetchData]);
 
   if (loading) {

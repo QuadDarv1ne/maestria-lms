@@ -134,9 +134,6 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(siteUrl),
     title: titles[locale],
     description: descriptions[locale],
-    alternates: {
-      canonical: siteUrl,
-    },
     keywords: [
       "Maestria",
       "Maestro7IT",

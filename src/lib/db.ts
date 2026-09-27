@@ -21,7 +21,11 @@ function normalizeSqliteUrl(url: string): string {
 
   // Resolve relative path against the current working directory
   // This ensures the path is correct regardless of where the container runs from
-  return path.resolve(process.cwd(), filePath);
+  //
+  // The path is environment-driven, so the bundler cannot bound it statically
+  // and would otherwise trace the entire project into the server output. The
+  // opt-out below is the suppression recommended by Turbopack for this call.
+  return path.resolve(/* turbopackIgnore: true */ process.cwd(), filePath);
 }
 
 /**
@@ -96,20 +100,14 @@ async function createAdapter(provider: DatabaseProvider, url: string) {
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
-  _adapterPromise: Promise<PrismaClient> | undefined;
 };
 
 let prismaClient: PrismaClient | undefined;
+// Single in-flight initialisation: concurrent first calls must not each build
+// their own adapter/client, otherwise the loser is leaked and never closed.
+let clientPromise: Promise<PrismaClient> | undefined;
 
-async function getPrismaClient(): Promise<PrismaClient> {
-  if (prismaClient) return prismaClient;
-  const cached = globalForPrisma.prisma;
-  // Never reuse the lazy proxy itself as a client (would recurse infinitely).
-  if (cached && !nodeTypes.isProxy(cached)) {
-    prismaClient = cached;
-    return prismaClient;
-  }
-
+async function createPrismaClient(): Promise<PrismaClient> {
   const provider = getDatabaseProvider();
   const databaseUrl = env.databaseUrl;
   const adapter = await createAdapter(provider, databaseUrl);
@@ -120,9 +118,31 @@ async function getPrismaClient(): Promise<PrismaClient> {
   });
 
   prismaClient = client;
-  if (!env.isProduction) globalForPrisma.prisma = client;
+  // Cache the client globally in every environment so that other module
+  // instances reuse it. Guarding this with `!env.isProduction` was a defect:
+  // in production builds nothing ever populated the cache. Model member
+  // access no longer depends on this cache — see the lazy resolution below.
+  globalForPrisma.prisma = client;
 
   return client;
+}
+
+async function getPrismaClient(): Promise<PrismaClient> {
+  if (prismaClient) return prismaClient;
+  const cached = globalForPrisma.prisma;
+  // Never reuse the lazy proxy itself as a client (would recurse infinitely).
+  if (cached && !nodeTypes.isProxy(cached)) {
+    prismaClient = cached;
+    return prismaClient;
+  }
+
+  clientPromise ??= createPrismaClient().catch((error: unknown) => {
+    // Let a later call retry after a failed initialisation.
+    clientPromise = undefined;
+    throw error;
+  });
+
+  return clientPromise;
 }
 
 // env.validate() is called from src/proxy.ts (middleware) which is always loaded.
@@ -144,13 +164,24 @@ export const db = new Proxy({} as PrismaClient, {
         return value;
       },
       get: (_target2, prop2) => {
-        const globalClient = globalForPrisma.prisma;
-        const value = globalClient
-          ? Reflect.get(globalClient, prop2, globalClient)
-          : undefined;
-        return typeof value === "function"
-          ? (...args: unknown[]) => Promise.resolve().then(() => value(...args))
-          : value;
+        // Member access is resolved lazily against the real client: the adapter
+        // is created asynchronously, so the client may not exist yet when
+        // `db.<model>.<method>` is evaluated. Returning a function that awaits
+        // getPrismaClient() keeps model calls independent of initialisation order.
+        return (...args: unknown[]) =>
+          getPrismaClient().then((client) => {
+            const target = Reflect.get(client, prop, client);
+            const value =
+              target === null || target === undefined
+                ? undefined
+                : Reflect.get(target, prop2, target);
+            if (typeof value !== "function") {
+              throw new TypeError(
+                `db.${String(prop)}.${String(prop2)} is not a function`,
+              );
+            }
+            return value.apply(target, args);
+          });
       },
     }) as unknown;
   },

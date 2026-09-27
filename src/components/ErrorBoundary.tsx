@@ -157,7 +157,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       retryCount: 0,
       lastRetryAt: 0,
     });
-    window.location.href = "/";
+    // Full document navigation is intentional in an error boundary:
+    // client-side navigation would keep the broken tree mounted.
+    window.location.assign("/");
   };
 
   handleCopyError = () => {

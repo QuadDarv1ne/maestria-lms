@@ -78,7 +78,9 @@ ENV NODE_ENV=production
 ENV NODE_OPTIONS="--max-old-space-size=768"
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN apk add --no-cache wget openssl && \
+# postgresql-client provides pg_dump, which scripts/backup-db.js shells out to
+# for PostgreSQL backups (the admin backup endpoint calls that script).
+RUN apk add --no-cache wget openssl postgresql-client && \
     addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
@@ -109,6 +111,14 @@ RUN chmod +x ./start.sh
 
 # Seed entrypoint (jiti loader for prisma/seed.mjs) — used by start.sh on first boot
 COPY --from=builder --chown=nextjs:nodejs /app/scripts/seed.js ./scripts/seed.js
+
+# Provider-aware Prisma wrapper used by start.sh: rewrites the datasource
+# provider from the runtime DATABASE_URL before generate/migrate, so
+# `migrate deploy` cannot run against a schema built for another engine.
+COPY --from=builder --chown=nextjs:nodejs /app/scripts/prisma-auto.js ./scripts/prisma-auto.js
+# Executed at runtime by POST /api/admin/backup (via execFileSync).
+COPY --from=builder --chown=nextjs:nodejs /app/scripts/backup-db.js ./scripts/backup-db.js
+COPY --from=builder --chown=nextjs:nodejs /app/scripts/lib ./scripts/lib
 
 USER nextjs
 

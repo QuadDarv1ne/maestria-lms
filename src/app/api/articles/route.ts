@@ -147,12 +147,16 @@ export async function GET(request: NextRequest) {
         db.article.count({ where }),
       ]);
     } catch (dbError: unknown) {
-      // If database query fails, return empty results with warning
-      log.warn("Database query failed for articles list, returning empty results", {
+      // A database outage used to be reported as "no articles" and then cached
+      // for five minutes, so the blog stayed empty even after the database
+      // recovered. Surface the outage and never cache a degraded response.
+      log.error("Database query failed for articles list", {
         error: dbError instanceof Error ? dbError.message : String(dbError),
       });
-      articles = [];
-      total = 0;
+      return NextResponse.json(
+        { error: "Контент временно недоступен", code: "content_unavailable" },
+        { status: 503, headers: { "Cache-Control": "no-store" } },
+      );
     }
 
     const responseData: ArticlesResponse = {
@@ -179,20 +183,18 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: unknown) {
-    // Log the full error for debugging
-    if (error instanceof Error) {
-      log.error(`[articles:GET] Failed to fetch articles: ${error.message}`);
-    } else {
-      log.error(`[articles:GET] Unknown error: ${error}`);
-    }
-    // Return empty results instead of 500 error
-    return NextResponse.json({
-      articles: [],
-      pagination: { page: 1, limit: 12, total: 0, totalPages: 0 },
-    }, {
-      status: 200,
-      headers: createCacheHeaders(0, true, 0),
+    log.error("[articles:GET] Failed to fetch articles", {
+      error: error instanceof Error ? error.message : String(error),
     });
+    return NextResponse.json(
+      {
+        error: "Контент временно недоступен",
+        code: "content_unavailable",
+        articles: [],
+        pagination: { page: 1, limit: 12, total: 0, totalPages: 0 },
+      },
+      { status: 503, headers: { "Cache-Control": "no-store" } },
+    );
   }
 }
 

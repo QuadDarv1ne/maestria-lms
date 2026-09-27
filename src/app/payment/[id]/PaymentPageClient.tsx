@@ -80,10 +80,13 @@ export function PaymentPageClient({
   }, [paymentId, locale]);
 
   const fetchPaymentRef = useRef(fetchPayment);
-  fetchPaymentRef.current = fetchPayment;
 
   useEffect(() => {
-    fetchPayment();
+    fetchPaymentRef.current = fetchPayment;
+  }, [fetchPayment]);
+
+  useEffect(() => {
+    void fetchPayment();
   }, [fetchPayment]);
 
   useEffect(() => {

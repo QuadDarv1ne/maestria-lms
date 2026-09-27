@@ -6,21 +6,21 @@ const SITE_URL = env.siteUrl;
 
 // Pages that should always be in sitemap
 const STATIC_PAGES: MetadataRoute.Sitemap = [
-  { url: SITE_URL, lastModified: new Date(), changeFrequency: "daily", priority: 1 },
-  { url: `${SITE_URL}/catalog`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
-  { url: `${SITE_URL}/about`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
-  { url: `${SITE_URL}/blog`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.6 },
-  { url: `${SITE_URL}/help`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.3 },
-  { url: `${SITE_URL}/terms`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.2 },
-  { url: `${SITE_URL}/privacy`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.2 },
-  { url: `${SITE_URL}/offer`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.2 },
-  { url: `${SITE_URL}/refund`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.2 },
-  { url: `${SITE_URL}/rules`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.2 },
-  { url: `${SITE_URL}/license`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.2 },
-  { url: `${SITE_URL}/personal-data`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.2 },
-  { url: `${SITE_URL}/edu-info`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.2 },
-  { url: `${SITE_URL}/cookies`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.2 },
-  { url: `${SITE_URL}/age-rating`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.2 },
+  { url: SITE_URL, changeFrequency: "daily", priority: 1 },
+  { url: `${SITE_URL}/catalog`, changeFrequency: "daily", priority: 0.9 },
+  { url: `${SITE_URL}/about`, changeFrequency: "monthly", priority: 0.5 },
+  { url: `${SITE_URL}/blog`, changeFrequency: "weekly", priority: 0.6 },
+  { url: `${SITE_URL}/help`, changeFrequency: "monthly", priority: 0.3 },
+  { url: `${SITE_URL}/terms`, changeFrequency: "monthly", priority: 0.2 },
+  { url: `${SITE_URL}/privacy`, changeFrequency: "monthly", priority: 0.2 },
+  { url: `${SITE_URL}/offer`, changeFrequency: "monthly", priority: 0.2 },
+  { url: `${SITE_URL}/refund`, changeFrequency: "monthly", priority: 0.2 },
+  { url: `${SITE_URL}/rules`, changeFrequency: "monthly", priority: 0.2 },
+  { url: `${SITE_URL}/license`, changeFrequency: "monthly", priority: 0.2 },
+  { url: `${SITE_URL}/personal-data`, changeFrequency: "monthly", priority: 0.2 },
+  { url: `${SITE_URL}/edu-info`, changeFrequency: "monthly", priority: 0.2 },
+  { url: `${SITE_URL}/cookies`, changeFrequency: "monthly", priority: 0.2 },
+  { url: `${SITE_URL}/age-rating`, changeFrequency: "monthly", priority: 0.2 },
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

@@ -13,6 +13,11 @@ const eslintConfig = [...nextCoreWebVitals, ...nextTypescript, {
 
     // React rules
     "react-hooks/exhaustive-deps": "error",
+    // New React Hooks v7 rules (eslint-config-next >= 16.3) flag legacy
+    // fetch-on-mount and manual-memoization patterns across the codebase.
+    // Tracked for migration; warnings keep them visible without breaking CI.
+    "react-hooks/set-state-in-effect": "warn",
+    "react-hooks/preserve-manual-memoization": "warn",
     "react/no-unescaped-entities": "off",
     "react/display-name": "off",
     "react/prop-types": "off",
@@ -53,7 +58,7 @@ const eslintConfig = [...nextCoreWebVitals, ...nextTypescript, {
     "@typescript-eslint/no-non-null-assertion": "error",
   },
 }, {
-  ignores: ["node_modules/**", ".next/**", "out/**", "build/**", "next-env.d.ts", "examples/**", "skills", "eslint.config.mjs", "scripts/**", "prisma/seed.js", "prisma/seed.mjs", "check-db.js", "server-with-csp.js", "public/sw.js", "coverage/**"]
+  ignores: ["src/generated/**", "node_modules/**", ".next/**", "out/**", "build/**", "next-env.d.ts", "examples/**", "skills", "eslint.config.mjs", "scripts/**", "prisma/seed.js", "prisma/seed.mjs", "check-db.js", "server-with-csp.js", "public/sw.js", "coverage/**"]
 }];
 
 export default eslintConfig;

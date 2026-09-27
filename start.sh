@@ -13,17 +13,23 @@ echo "=========================================="
 # (e.g., on Amvera where build-time env vars differ from runtime env vars)
 if [ ! -d "src/generated/prisma" ]; then
   echo "[startup] Generating Prisma Client..."
-  node node_modules/prisma/build/index.js generate || echo "[startup] WARN: prisma generate failed — will try to use pre-built client"
+  node scripts/prisma-auto.js generate || echo "[startup] WARN: prisma generate failed — will try to use pre-built client"
 fi
 
 # ── Database Migration ──────────────────────────
+# Routed through scripts/prisma-auto.js so the datasource provider is rewritten
+# from the RUNTIME DATABASE_URL before Prisma runs. Calling the Prisma CLI
+# directly used the provider baked into the image at build time, which produced
+# "Datasource db: SQLite database ... at <host>:5432" plus a P1001 connection
+# failure on PostgreSQL; migrate deploy then gave up and the server started
+# against an unmigrated schema.
 # Retry up to 5 times with exponential backoff
 MAX_RETRIES=5
 RETRY_DELAY=3
 attempt=1
 
 echo "[startup] prisma migrate deploy (attempt $attempt/$MAX_RETRIES)..."
-until node node_modules/prisma/build/index.js migrate deploy; do
+until node scripts/prisma-auto.js migrate deploy; do
   if [ $attempt -ge $MAX_RETRIES ]; then
     echo "[startup] WARN: prisma migrate deploy failed after $MAX_RETRIES attempts — starting server on previous schema"
     break

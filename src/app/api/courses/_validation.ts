@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const coursesListQuerySchema = z.object({
-  ids: z.string().optional(),
+  ids: z.string().max(2000).optional(),
   category: z.string().optional(),
   search: z.string().max(200).optional(),
   level: z.enum(["beginner", "intermediate", "advanced"]).optional(),

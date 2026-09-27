@@ -58,8 +58,13 @@ Dockerfile
 !.env.example
 LICENSE
 
-# Scripts (keep only essential ones)
+# Scripts (keep only what the Dockerfile and start.sh actually execute).
+# /scripts/prisma-auto.js is required by `RUN node scripts/prisma-auto.js
+# generate` and by start.sh at runtime; excluding it broke the image build.
 /scripts
+!/scripts/prisma-auto.js
+!/scripts/lib
+!/scripts/backup-db.js
 !/scripts/generate-secret.js
 !/scripts/copy-build-assets.js
 !/scripts/seed.js

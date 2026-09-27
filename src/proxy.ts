@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { csrfProtection } from "@/lib/csrf";
 import { env } from "@/lib/env";
+import { applySecurityHeaders } from "@/lib/security-headers";
 
 // Validate required environment variables at startup (middleware is always loaded)
 env.validate();
@@ -49,11 +50,6 @@ function hasMaintenanceBypass(request: NextRequest): boolean {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function safeOrigin(url: string | undefined): string | null {
-  if (!url) return null;
-  try { return new URL(url).origin; } catch { return null; }
-}
-
 type Role = "admin" | "teacher";
 const PROTECTED_ROUTES = {
   "/admin": ["admin" as const],
@@ -87,6 +83,7 @@ export async function proxy(request: NextRequest) {
     if (!API_ROUTE_PATTERN.test(pathname)) {
       const url = new URL("/maintenance", request.url);
       const response = NextResponse.rewrite(url);
+      applySecurityHeaders(response, pathname);
       return response;
     }
   }
@@ -146,13 +143,17 @@ export async function proxy(request: NextRequest) {
 
     if (!token) {
       const loginUrl = new URL("/#login", request.url);
-      return NextResponse.redirect(loginUrl);
+      const response = NextResponse.redirect(loginUrl);
+      applySecurityHeaders(response, pathname);
+      return response;
     }
 
     const role = "role" in token ? (token as { role?: Role }).role : undefined;
     if (!role || !allowedRoles.includes(role)) {
       const homeUrl = new URL("/", request.url);
-      return NextResponse.redirect(homeUrl);
+      const response = NextResponse.redirect(homeUrl);
+      applySecurityHeaders(response, pathname);
+      return response;
     }
   }
 
@@ -180,76 +181,6 @@ export async function proxy(request: NextRequest) {
 
   applySecurityHeaders(response, pathname);
   return response;
-}
-
-function applySecurityHeaders(response: NextResponse, pathname: string): void {
-  response.headers.set("X-Frame-Options", "SAMEORIGIN");
-  response.headers.set("X-Content-Type-Options", "nosniff");
-
-  response.headers.set("Referrer-Policy", "no-referrer-when-downgrade");
-
-  response.headers.set(
-    "Permissions-Policy",
-    "camera=(), microphone=(self), geolocation=(self), accelerometer=(), gyroscope=()",
-  );
-
-  response.headers.set("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
-  response.headers.set("Cross-Origin-Resource-Policy", "cross-origin");
-
-  if (pathname.startsWith("/api/")) {
-    const isFullyPublic = pathname.startsWith("/api/health") || pathname === "/api/auth/csrf"
-      || pathname === "/api/auth/providers" || pathname.startsWith("/api/auth/callback");
-    response.headers.set(
-      "Access-Control-Allow-Origin",
-      isFullyPublic ? "*" : env.siteUrl,
-    );
-    response.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-    response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    response.headers.set("Access-Control-Allow-Credentials", "true");
-  }
-
-  if (env.isProduction) {
-    response.headers.set(
-      "Strict-Transport-Security",
-      "max-age=31536000; includeSubDomains; preload",
-    );
-  }
-
-  const cdnOrigin = safeOrigin(env.cdnUrl);
-  const s3Origin = safeOrigin(env.s3Endpoint);
-
-  // Next.js generates new inline script hashes on every build.
-  // Using 'unsafe-inline' for scripts is required because we cannot
-  // predict the hashes at build time. In production, Next.js uses
-  // nonces for its inline scripts, but the middleware runs before
-  // Next.js can set them. 'unsafe-inline' is the pragmatic choice
-  // for self-hosted Next.js deployments.
-  const connectSources = [
-    "'self'",
-    "https:",
-    "http://localhost:*",
-    "wss:",
-  ];
-  if (cdnOrigin) connectSources.push(cdnOrigin);
-  if (s3Origin) connectSources.push(s3Origin);
-
-  response.headers.set(
-    "Content-Security-Policy",
-    [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
-      "style-src 'self' 'unsafe-inline' https:",
-      "img-src 'self' data: blob: https:",
-      "font-src 'self' data: https:",
-      `connect-src ${connectSources.join(" ")}`.trim(),
-      "media-src 'self' https:",
-      "object-src 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-      "frame-src 'self' https://www.youtube.com https://player.vimeo.com https://ok.ru",
-      "frame-ancestors 'self' https://www.youtube.com",
-    ].join("; "),
-  );
 }
 
 export const config = {

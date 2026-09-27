@@ -65,7 +65,9 @@ export function StepViewerPage({
   const user = useAppStore((s) => s.user);
   const { locale } = useLocale();
   const localeRef = useRef(locale);
-  localeRef.current = locale;
+  useEffect(() => {
+    localeRef.current = locale;
+  }, [locale]);
   const [step, setStep] = useState<StepData | null>(null);
   const [courseStructure, setCourseStructure] = useState<CourseStructure | null>(null);
   const [loading, setLoading] = useState(true);

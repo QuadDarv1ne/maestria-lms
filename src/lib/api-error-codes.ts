@@ -79,6 +79,12 @@ const entries: ApiErrorEntry[] = [
   // --- Generic / infrastructure ---
   { code: "record_exists", ru: "Такая запись уже существует", en: "This record already exists", zh: "记录已存在" },
   { code: "record_not_found", ru: "Запись не найдена", en: "Record not found", zh: "记录不存在" },
+  {
+    code: "content_unavailable",
+    ru: "Контент временно недоступен. Попробуйте обновить страницу.",
+    en: "Content is temporarily unavailable. Please try again.",
+    zh: "内容暂时不可用，请稍后重试。",
+  },
   { code: "internal_error", ru: "Внутренняя ошибка сервера", en: "Internal server error", zh: "服务器内部错误" },
   { code: "unknown_error", ru: "Произошла ошибка", en: "An error occurred", zh: "发生错误" },
 ];

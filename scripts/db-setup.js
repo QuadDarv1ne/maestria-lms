@@ -313,7 +313,9 @@ async function setup(options = {}) {
     try {
       if (force) {
         log('Resetting database...', 'warn')
-        const resetCmd = 'npx prisma migrate reset --force'
+        // Routed through the provider-aware wrapper: a direct `migrate reset`
+        // bypasses the provider/lock check and fails with an opaque error.
+        const resetCmd = 'node scripts/prisma-auto.js migrate reset --force'
         log(`Running: ${resetCmd}`, 'info')
         try {
           execSync(resetCmd, {

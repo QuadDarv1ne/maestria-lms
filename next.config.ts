@@ -23,9 +23,19 @@ const nextConfig: NextConfig = {
         path: "**/next.config.ts",
         title: "Encountered unexpected file in NFT list",
       },
+      // Several runtime paths are environment-driven by design (the SQLite file
+      // from DATABASE_URL, application log files), so the bundler cannot bound
+      // them statically and traces the project instead. On Next 16.3 this is
+      // reported as a build-stopping issue, so the pattern is acknowledged here.
+      {
+        path: "**/*",
+        title: "Dynamic filesystem access causes tracing of the whole project",
+      },
     ],
   },
   reactStrictMode: true,
+  // Do not advertise the framework in response headers.
+  poweredByHeader: false,
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "api.dicebear.com" },
@@ -39,44 +49,33 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
-      // Security headers for ALL routes (including HTML pages)
+      // The full security-header set is applied by the middleware
+      // (src/proxy.ts via src/lib/security-headers.ts). The paths below are
+      // excluded from the middleware matcher, so they keep a minimal fallback
+      // here — values must stay in sync with src/lib/security-headers.ts.
       {
-        source: "/:path*",
-        headers: [
-          // Prevent MIME type sniffing
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          // Prevent clickjacking
-          { key: "X-Frame-Options", value: "DENY" },
-          // Enable XSS filter in older browsers
-          { key: "X-XSS-Protection", value: "1; mode=block" },
-          // Referrer policy
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          // HTTP Strict Transport Security (1 year, include subdomains, preload)
-          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains; preload" },
-          // Disable feature permissions
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), interest-cohort=()" },
-          // Content Security Policy — allows Next.js inline scripts to work
-          // NOTE: Amvera's nginx may override this header. If the site is blank,
-          // check the CSP in browser devtools. If it shows a different CSP,
-          // Amvera is overriding it and you need to configure CSP in Amvera's dashboard.
-          {
-            key: "Content-Security-Policy",
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
-              "style-src 'self' 'unsafe-inline' https:",
-              "img-src 'self' data: blob: https:",
-              "font-src 'self' data: https:",
-              "connect-src 'self' https: http://localhost:* wss:",
-              "media-src 'self' https:",
-              "object-src 'none'",
-              "base-uri 'self'",
-              "form-action 'self'",
-              "frame-src 'self' https://www.youtube.com https://player.vimeo.com https://ok.ru",
-              "frame-ancestors 'self' https://www.youtube.com",
-            ].join("; "),
-          },
-        ],
+        source: "/_next/static/:path*",
+        headers: [{ key: "X-Content-Type-Options", value: "nosniff" }],
+      },
+      {
+        source: "/_next/image",
+        headers: [{ key: "X-Content-Type-Options", value: "nosniff" }],
+      },
+      {
+        source: "/_next/webpack-hmr",
+        headers: [{ key: "X-Content-Type-Options", value: "nosniff" }],
+      },
+      {
+        source: "/favicon.ico",
+        headers: [{ key: "X-Content-Type-Options", value: "nosniff" }],
+      },
+      {
+        source: "/api/notifications/sse",
+        headers: [{ key: "X-Content-Type-Options", value: "nosniff" }],
+      },
+      {
+        source: "/api/notifications/sse/:path*",
+        headers: [{ key: "X-Content-Type-Options", value: "nosniff" }],
       },
       // Cache static assets aggressively
       {

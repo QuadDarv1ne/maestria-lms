@@ -219,3 +219,30 @@ bun run docker:db
 docker compose -f docker-compose.db.yml down -v
 bun run docker:db
 ```
+
+---
+
+## Миграции и провайдер схемы
+
+Обновлено 2026-09-27. Полная политика — в `prisma/migrations/README.md`.
+
+**Решение: источник истины для продакшена — миграции Prisma** (так устроен деплой:
+`start.sh` выполняет `prisma migrate deploy`). Для sqlite/mysql в разработке
+миграции не применяются — используется `npm run db:push`.
+
+Наблюдаемые факты, воспроизведённые локально:
+
+| Конфигурация | Команда | Результат |
+|---|---|---|
+| sqlite-URL + sqlite-схема | `prisma migrate status` | `Error: P3019` — провайдер схемы (`sqlite`) не совпадает с `migration_lock.toml` (`postgresql`), exit 1 |
+| sqlite-схема в образе + postgres `DATABASE_URL` | `prisma migrate deploy` | `Datasource "db": SQLite database ... at "<host>:5432"` → `Error: P1001`, exit 1 |
+
+Второй случай — это то, что происходило в контейнере: `Dockerfile` вызывает
+`scripts/prisma-auto.js generate`, который переписывает провайдер по `DATABASE_URL`
+этапа сборки, а при её отсутствии откатывается к `sqlite`. `start.sh` считает падение
+миграций некритичным (WARN и старт сервера), поэтому миграции могли не применяться молча.
+
+Что сделано (проверено): `start.sh` вызывает Prisma через `scripts/prisma-auto.js`, поэтому
+провайдер определяется по рантаймовому `DATABASE_URL`; `Dockerfile` копирует обёртку в образ;
+обёртка отказывается запускать `migrate *` при несовпадении провайдера с `migration_lock.toml`
+и печатает понятную подсказку.

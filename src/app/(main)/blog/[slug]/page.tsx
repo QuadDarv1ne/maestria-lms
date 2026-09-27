@@ -1,20 +1,39 @@
 import type { Metadata } from "next";
 import { ArticlePage } from "@/components/ArticlePage";
 import { db } from "@/lib/db";
+import { env } from "@/lib/env";
 import { log } from "@/lib/logger";
 
 interface Props {
   params: Promise<{ slug: string }>;
 }
 
+interface ArticleMetadata {
+  title: string;
+  excerpt: string | null;
+  image: string | null;
+  isPublished: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  let article: { title: string; excerpt: string | null; image: string | null } | null = null;
-  
+  const canonical = `${env.siteUrl}/blog/${slug}`;
+
+  let article: ArticleMetadata | null = null;
+
   try {
     article = await db.article.findUnique({
       where: { slug },
-      select: { title: true, excerpt: true, image: true },
+      select: {
+        title: true,
+        excerpt: true,
+        image: true,
+        isPublished: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
   } catch (error) {
     log.error("[blog:metadata] Database query failed", {
@@ -22,9 +41,34 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     });
   }
 
+  const title = article ? `${article.title} — Maestria` : "Article — Maestria";
+  const description = article?.excerpt || "Information technology article";
+
   return {
-    title: article ? `${article.title} — Maestria` : "Article — Maestria",
-    description: article?.excerpt || "Information technology article",
+    title,
+    description,
+    // An explicit canonical is required here: without it the page inherited the
+    // root layout's canonical (the homepage) and search engines were told to
+    // index the homepage instead of the article.
+    alternates: { canonical },
+    openGraph: {
+      type: "article",
+      title,
+      description,
+      url: canonical,
+      siteName: "Maestria",
+      images: article?.image ? [{ url: article.image, alt: article.title }] : undefined,
+      publishedTime: article?.createdAt?.toISOString(),
+      modifiedTime: article?.updatedAt?.toISOString(),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: article?.image ? [article.image] : undefined,
+    },
+    // Draft articles must never be indexed.
+    robots: article && !article.isPublished ? { index: false, follow: false } : undefined,
   };
 }
 

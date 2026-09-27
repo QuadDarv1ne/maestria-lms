@@ -11,6 +11,44 @@ export const runtime = "nodejs";
 
 const checkRateLimit = rateLimit("courses", RATE_LIMITS.default);
 
+// Explicit include object so Prisma derives the full payload type of the
+// course list query (previously annotated with `any`).
+const COURSE_LIST_INCLUDE = {
+  teacher: {
+    select: {
+      id: true,
+      name: true,
+      image: true,
+    },
+  },
+  category: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      icon: true,
+      color: true,
+    },
+  },
+  modules: {
+    select: {
+      id: true,
+      lessons: {
+        select: {
+          id: true,
+          duration: true,
+        },
+      },
+    },
+  },
+  _count: {
+    select: {
+      enrollments: true,
+      reviews: true,
+    },
+  },
+} satisfies Prisma.CourseInclude;
+
 // GET: Список всех опубликованных курсов с фильтрами
 export async function GET(request: NextRequest) {
   const blocked = checkRateLimit(request);
@@ -25,7 +63,14 @@ export async function GET(request: NextRequest) {
 
     // Batch fetch by IDs - lightweight response for bookmark/title fetching
     if (ids) {
-      const idList = ids.split(",").filter(Boolean);
+      // Bound the lookup: an unbounded `in` list would let a single request
+      // push an arbitrarily large query at the database.
+      const MAX_LOOKUP_IDS = 100;
+      const idList = ids
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean)
+        .slice(0, MAX_LOOKUP_IDS);
       const courses = await db.course.findMany({
         where: { id: { in: idList }, isPublished: true },
         select: { id: true, title: true, slug: true },
@@ -119,41 +164,7 @@ export async function GET(request: NextRequest) {
     const [courses, total] = await Promise.all([
       db.course.findMany({
         where,
-        include: {
-          teacher: {
-            select: {
-              id: true,
-              name: true,
-              image: true,
-            },
-          },
-          category: {
-            select: {
-              id: true,
-              name: true,
-              slug: true,
-              icon: true,
-              color: true,
-            },
-          },
-          modules: {
-            select: {
-              id: true,
-              lessons: {
-                select: {
-                  id: true,
-                  duration: true,
-                },
-              },
-            },
-          },
-          _count: {
-            select: {
-              enrollments: true,
-              reviews: true,
-            },
-          },
-        },
+        include: COURSE_LIST_INCLUDE,
         orderBy,
         skip,
         take: limit,
@@ -162,18 +173,17 @@ export async function GET(request: NextRequest) {
     ]);
 
     // Вычисляем дополнительные данные для каждого курса
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const coursesWithStats = courses.map((course: any) => {
+    const coursesWithStats = courses.map((course) => {
       const totalLessons = course.modules.reduce(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (acc: number, module: any) => acc + module.lessons.length,
+        (acc, module) => acc + module.lessons.length,
         0
       );
       const totalDuration = course.modules.reduce(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (acc: number, module: any) =>
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          acc + module.lessons.reduce((a: number, l: any) => a + (typeof l.duration === "number" ? l.duration : 0), 0),
+        (acc, module) =>
+          acc + module.lessons.reduce(
+            (a, l) => a + (typeof l.duration === "number" ? l.duration : 0),
+            0
+          ),
         0
       );
 
