@@ -26,7 +26,7 @@ if (ifEmpty) {
         const lower = url.toLowerCase();
         if (lower.startsWith("postgresql") || lower.startsWith("postgres")) {
           const { PrismaPg } = await import("@prisma/adapter-pg");
-          adapter = new PrismaPg({ connectionString: url, ssl: false });
+          adapter = new PrismaPg({ connectionString: url, ...(process.env.DATABASE_SSL === "true" ? { ssl: { rejectUnauthorized: false } } : {}) });
         } else if (lower.startsWith("mysql") || lower.startsWith("mariadb")) {
           // MySQL adapter — skip for now, assume not empty if we can't check
           console.log("[seed] MySQL/MariaDB: cannot safely check emptiness — skipping seed unless --force");

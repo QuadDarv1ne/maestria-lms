@@ -38,6 +38,12 @@ async function verifyPassword(password: string, hash: string): Promise<boolean> 
   return bcrypt.compare(password, hash);
 }
 
+// Precomputed bcrypt hash (cost 12) used only to equalize timing for accounts
+// that cannot be verified (unknown email, inactive user, missing password).
+// Must remain a valid bcrypt hash so compare() actually performs the work.
+const TIMING_EQUALIZER_HASH =
+  "$2b$12$NosL3wYlZa2RAIT5TD1g/.SaFLesWAk3.VJSDvVRIeTUecs9TeC1a";
+
 // Short-lived cache for JWT callback DB lookups — avoids a query per request
 // while still catching role/deactivation changes within 5 minutes.
 // Note: this means a user demoted from admin to student will retain admin
@@ -94,13 +100,16 @@ export const authOptions: NextAuthOptions = {
           where: { email: credentials.email.toLowerCase() },
         });
 
-        // Check isActive BEFORE password verification to prevent user enumeration
-        // and avoid unnecessary computation for blocked accounts
+        // Run a dummy password comparison even for unknown or inactive
+        // accounts so response time does not reveal which emails are
+        // registered.
         if (!user || !user.isActive) {
+          await verifyPassword(credentials.password, TIMING_EQUALIZER_HASH).catch(() => false);
           throw new Error("Неверный email или пароль");
         }
 
         if (!user.passwordHash) {
+          await verifyPassword(credentials.password, TIMING_EQUALIZER_HASH).catch(() => false);
           throw new Error("Неверный email или пароль");
         }
 
@@ -228,7 +237,13 @@ export async function getAuthSession(): Promise<ExtendedSession | null> {
  * After a truthy return, session.user is guaranteed to exist.
  */
 export function requireAuth(session: ExtendedSession | null): session is ExtendedSession {
-  return !!session?.user;
+  // A deactivated user's JWT collapses to "{}", producing a session whose
+  // user object has an empty id; that must count as unauthenticated.
+  return (
+    !!session?.user &&
+    typeof session.user.id === "string" &&
+    session.user.id.length > 0
+  );
 }
 
 /**
@@ -236,7 +251,7 @@ export function requireAuth(session: ExtendedSession | null): session is Extende
  * After a truthy return, session.user is guaranteed to exist with admin role.
  */
 export function requireAdmin(session: ExtendedSession | null): session is ExtendedSession {
-  return !!session?.user && session.user.role === "admin";
+  return requireAuth(session) && session.user.role === "admin";
 }
 
 /** 401 error response for unauthenticated users */

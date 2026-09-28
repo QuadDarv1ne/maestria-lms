@@ -71,7 +71,10 @@ export function parsePagination(
   const { defaultLimit = 20, maxLimit = 50 } = options;
   const rawPage = parseInt(searchParams.get("page") || "1", 10);
   const rawLimit = parseInt(searchParams.get("limit") || String(defaultLimit), 10);
-  const page = Number.isNaN(rawPage) ? 1 : Math.max(1, rawPage);
+  // Cap the page number: an unbounded page (e.g. ?page=2147483647) turns into
+  // a giant offset that makes the database scan an arbitrary number of rows.
+  const MAX_PAGE = 10_000;
+  const page = Number.isNaN(rawPage) ? 1 : Math.min(MAX_PAGE, Math.max(1, rawPage));
   const limit = Number.isNaN(rawLimit)
     ? defaultLimit
     : Math.min(maxLimit, Math.max(1, rawLimit));

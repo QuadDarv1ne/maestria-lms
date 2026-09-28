@@ -52,6 +52,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Private ("invite-only") courses are rejected by the enroll endpoint;
+    // selling them here would create a payment that enrollment must refuse.
+    if (course.visibility === "private") {
+      return NextResponse.json(
+        { error: "Запись на этот курс доступна только по приглашению" },
+        { status: 403 }
+      );
+    }
+
     if (course.price === 0) {
       return NextResponse.json(
         { error: "Этот курс бесплатный — оплата не требуется" },

@@ -66,17 +66,24 @@ async function createAdapter(provider: DatabaseProvider, url: string) {
     }
     case "postgresql": {
       const { PrismaPg } = await import("@prisma/adapter-pg");
-      // Local PostgreSQL doesn't need SSL
+      // TLS: previously hardcoded `ssl: false`, which broke managed PostgreSQL
+      // that requires TLS and also masked an explicit `sslmode` in the URL.
+      // Default is now to let the connection string decide; DATABASE_SSL=true
+      // opts into TLS without certificate verification (self-signed chains of
+      // managed providers).
+      const ssl =
+        process.env.DATABASE_SSL === "true"
+          ? { rejectUnauthorized: false }
+          : undefined;
       return new PrismaPg({
         connectionString: url,
-        ssl: false,
+        ...(ssl ? { ssl } : {}),
       });
     }
     default: {
-      const { PrismaBetterSqlite3 } = await import("@prisma/adapter-better-sqlite3");
-      // Fallback: try SQLite adapter with normalized path
-      const fallbackPath = normalizeSqliteUrl(url);
-      return new PrismaBetterSqlite3({ url: fallbackPath });
+      // Fail loudly instead of pointing the SQLite adapter at a mysql://-style
+      // URL: the old fallback produced a cryptic "cannot open database file".
+      throw new Error(`Unsupported database provider: ${provider}`);
     }
   }
 }

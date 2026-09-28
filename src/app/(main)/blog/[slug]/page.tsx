@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { ArticlePage } from "@/components/ArticlePage";
 import { db } from "@/lib/db";
+import { getAuthSession } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { log } from "@/lib/logger";
 
@@ -120,6 +122,17 @@ export default async function Page({ params }: Props) {
     log.error("[blog:slug] Database query failed", {
       error: error instanceof Error ? error.message : String(error),
     });
+  }
+
+  // Drafts are only reachable by admins/teachers in preview mode; everyone
+  // else gets a 404. The API route already enforced this, but the SSR page
+  // served the full draft content to anybody who knew the slug.
+  if (article && !article.isPublished) {
+    const session = await getAuthSession();
+    const canPreview =
+      !!session?.user &&
+      (session.user.role === "admin" || session.user.role === "teacher");
+    if (!canPreview) notFound();
   }
 
   // Transform dates to strings for client component

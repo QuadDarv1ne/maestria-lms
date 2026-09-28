@@ -22,11 +22,11 @@ function apiError(
 /**
  * Map of known Prisma error codes to user-friendly messages and HTTP status codes.
  */
-const PRISMA_ERROR_MAP: Record<string, { status: number; message: string }> = {
-  P2002: { status: 409, message: "Такая запись уже существует" },
-  P2003: { status: 400, message: "Недопустимая операция: связанные данные не найдены" },
-  P2025: { status: 404, message: "Запись не найдена" },
-  P2014: { status: 400, message: "Операция нарушает связь между данными" },
+const PRISMA_ERROR_MAP: Record<string, { status: number; message: string; code: string }> = {
+  P2002: { status: 409, code: "record_exists", message: "Такая запись уже существует" },
+  P2003: { status: 400, code: "validation_failed", message: "Недопустимая операция: связанные данные не найдены" },
+  P2025: { status: 404, code: "record_not_found", message: "Запись не найдена" },
+  P2014: { status: 400, code: "validation_failed", message: "Операция нарушает связь между данными" },
 };
 
 /**
@@ -70,7 +70,7 @@ export function handleApiError(error: unknown, context?: Record<string, unknown>
         ...context,
         prismaCode: error.code,
         prismaMessage: error.message,
-      }, "record_exists");
+      }, mapping.code);
     }
     // Unknown Prisma code
     const prismaStack = (error as unknown as { stack?: unknown }).stack;

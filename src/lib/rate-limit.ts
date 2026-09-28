@@ -39,8 +39,11 @@ function getClientIp(request: Request): string {
 function isValidPublicIp(ip: string): boolean {
   const ipv4Match = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(ip);
   if (ipv4Match) {
-    const a = Number(ipv4Match[1]);
-    const b = Number(ipv4Match[2]);
+    const octets = ipv4Match.slice(1).map(Number);
+    // Reject impossible octets — the regex alone accepted e.g. 999.999.999.999,
+    // and any string that passes as a "public" IP becomes its own bucket.
+    if (octets.some((octet) => octet > 255)) return false;
+    const [a, b] = octets;
 
     if (a === 10) return false;
     if (a === 172 && b >= 16 && b <= 31) return false;

@@ -13,6 +13,7 @@ function scheduleReconnect(): void {
   reconnectTimeout = setTimeout(() => {
     reconnectTimeout = null;
     connectionFailed = false;
+    initializing = false;
     log.info("Attempting to reconnect Redis");
     if (client) {
       client.disconnect();
@@ -46,6 +47,7 @@ export function getRedisClient(): Redis | null {
       connectionFailed = true;
       client?.disconnect();
       client = null;
+      initializing = false;
       scheduleReconnect();
     });
 
@@ -62,6 +64,7 @@ export function getRedisClient(): Redis | null {
       log.warn("Redis connection failed", { error: error.message });
       connectionFailed = true;
       client = null;
+      initializing = false;
       scheduleReconnect();
     });
 

@@ -365,7 +365,7 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
       {courseSchema && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(courseSchema) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(courseSchema).replace(/</g, "\\u003c") }}
         />
       )}
       <div>

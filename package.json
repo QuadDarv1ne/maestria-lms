@@ -11,7 +11,7 @@
     "dev:pg": "node scripts/setup.js --db postgresql",
     "dev:mongo": "node scripts/setup.js --db mongodb",
     "build": "next build && node scripts/copy-build-assets.js",
-    "start": "NODE_ENV=production node .next/standalone/server.js 2>&1 | tee server.log",
+    "start": "node scripts/start.js",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit --skipLibCheck",
     "db:push": "node scripts/prisma-auto.js db push",

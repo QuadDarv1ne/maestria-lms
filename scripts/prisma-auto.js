@@ -78,7 +78,23 @@ try {
   // passes DATABASE_PROVIDER=postgresql, which previously had no effect because
   // only .env was consulted — the image silently baked a sqlite schema.
   const declaredProvider = process.env.DATABASE_PROVIDER || envVars.DATABASE_PROVIDER
-  const provider = env.detectProvider(databaseUrl) || declaredProvider || 'sqlite'
+  // Normalize declared aliases the way the runtime resolver does (postgres
+  // becomes postgresql, mariadb becomes mysql, mongo becomes mongodb, plus
+  // trim/lowercase); otherwise schema.prisma would be rewritten with an engine
+  // name Prisma rejects while the app resolves it to a supported provider.
+  const DECLARED_ALIASES = {
+    postgres: 'postgresql',
+    postgresql: 'postgresql',
+    mysql: 'mysql',
+    mariadb: 'mysql',
+    sqlite: 'sqlite',
+    mongodb: 'mongodb',
+    mongo: 'mongodb',
+  }
+  const normalizedDeclared = declaredProvider
+    ? DECLARED_ALIASES[String(declaredProvider).trim().toLowerCase()] || null
+    : null
+  const provider = env.detectProvider(databaseUrl) || normalizedDeclared || 'sqlite'
 
   updateSchemaProvider(provider)
 

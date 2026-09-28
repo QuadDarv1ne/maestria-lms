@@ -25,16 +25,43 @@ describe("generateCacheKey", () => {
     expect(key).toMatch(/^myPrefix:/);
   });
 
-  it("produces a key with reasonable length (prefix + base64 substring)", () => {
+  it("produces a key that encodes the full parameter string", () => {
     const key = generateCacheKey("courses", {
       page: 1,
       limit: 20,
       category: "web-development",
       search: "typescript advanced course",
     });
-    // prefix:5 + : + 32 base64 chars = ~38 chars
+    // The full JSON parameter string is encoded — no truncation.
     expect(key.length).toBeGreaterThan(20);
-    expect(key.length).toBeLessThan(100);
+    expect(key.length).toBeLessThan(400);
+  });
+
+  it("keeps trailing parameters significant (collision regression)", () => {
+    // Sorted article-list params: category, featured, limit, page, search,
+    // sortBy, tag. page/limit/search/sortBy/tag all live beyond the first
+    // 24 bytes of the JSON and used to be ignored by the truncated key.
+    const base = {
+      category: null,
+      featured: null,
+      limit: 12,
+      page: 1,
+      search: null,
+      sortBy: null,
+      tag: null,
+    };
+    const baseKey = generateCacheKey("articles:list", base);
+    const variants = [
+      generateCacheKey("articles:list", { ...base, page: 2 }),
+      generateCacheKey("articles:list", { ...base, search: "java" }),
+      generateCacheKey("articles:list", { ...base, limit: 50 }),
+      generateCacheKey("articles:list", { ...base, sortBy: "popular" }),
+      generateCacheKey("articles:list", { ...base, tag: "sql" }),
+    ];
+    for (const key of variants) {
+      expect(key).not.toBe(baseKey);
+    }
+    expect(new Set(variants).size).toBe(variants.length);
   });
 
   it("handles string and boolean params", () => {

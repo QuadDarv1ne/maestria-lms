@@ -408,7 +408,9 @@ export async function PUT(request: NextRequest) {
         tags: tags || null,
         requirements: requirements ? sanitizeContent(requirements) : null,
         whatYouLearn: whatYouLearn ? sanitizeContent(whatYouLearn) : null,
-        categoryId: categoryConnect || null,
+        // PUT: keep the category when the field is omitted; only an
+        // explicitly provided value (or empty string) changes it.
+        ...(categoryId !== undefined ? { categoryId: categoryConnect || null } : {}),
         startDate: startDate ? new Date(startDate) : null,
         endDate: endDate ? new Date(endDate) : null,
         visibility,

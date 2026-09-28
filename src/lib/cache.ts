@@ -2,7 +2,7 @@ import { log } from "@/lib/logger";
 import { getRedisClient } from "@/lib/redis";
 
 // In-memory fallback cache with TTL validation
-const memoryCache = new Map<string, { data: unknown; expiresAt: number }>();
+const memoryCache = new Map<string, { data: unknown; expiresAt: number; tags?: string[] }>();
 const MAX_MEMORY_CACHE_ENTRIES = 1000;
 const MEMORY_CACHE_CLEANUP_INTERVAL = 300_000; // 5 minutes
 
@@ -83,7 +83,9 @@ export async function cacheSet(
         const tagKeys = tags.map((tag) => `cache:tag:${tag}`);
         const pipeline = redis.pipeline();
         for (const tagKey of tagKeys) {
-          pipeline.sadd(tagKey, key);
+          // Store the prefixed key — the same one the entry is written under —
+          // so tag invalidation can delete the real entry.
+          pipeline.sadd(tagKey, `cache:${key}`);
           pipeline.expire(tagKey, Math.ceil(ttl / 1000));
         }
         await pipeline.exec();
@@ -104,11 +106,12 @@ export async function cacheSet(
     const firstKey = memoryCache.keys().next().value;
     if (firstKey) memoryCache.delete(firstKey);
   }
-  memoryCache.set(key, { data, expiresAt });
+  memoryCache.set(key, { data, expiresAt, tags });
   return true;
 }
 
 export async function cacheInvalidateByTag(tag: string): Promise<boolean> {
+  let removed = false;
   const redis = getRedisClient();
 
   if (redis) {
@@ -118,13 +121,14 @@ export async function cacheInvalidateByTag(tag: string): Promise<boolean> {
       if (keys.length > 0) {
         const pipeline = redis.pipeline();
         for (const key of keys) {
-          // Keys stored in the tag set are already prefixed with "cache:"
+          // Tag members are stored with the same "cache:" prefix the entry is
+          // written under in cacheSet, so deleting them removes the real entry.
           pipeline.del(key);
         }
         pipeline.del(tagKey);
         await pipeline.exec();
+        removed = true;
       }
-      return true;
     } catch (error: unknown) {
       log.warn("Redis cache invalidate by tag failed", {
         tag,
@@ -133,8 +137,17 @@ export async function cacheInvalidateByTag(tag: string): Promise<boolean> {
     }
   }
 
-  // Memory cache doesn't support tags
-  return false;
+  // Memory fallback: entries carry their own tags, so invalidate them too.
+  // Previously this path ignored tags entirely and returned false, leaving
+  // stale list responses after Redis went down.
+  for (const [cacheKey, entry] of memoryCache) {
+    if (entry.tags?.includes(tag)) {
+      memoryCache.delete(cacheKey);
+      removed = true;
+    }
+  }
+
+  return removed;
 }
 
 function toBase64Url(str: string): string {
@@ -155,7 +168,11 @@ export function generateCacheKey(prefix: string, params: Record<string, unknown>
     }, {} as Record<string, unknown>);
 
   const paramString = JSON.stringify(sortedParams);
-  return `${prefix}:${toBase64Url(paramString).substring(0, 32)}`;
+  // The full encoded parameter string participates in the key. Previously it
+  // was truncated to 32 base64 chars (24 JSON bytes), so page/limit/search/
+  // sortBy values collapsed onto one key for lists with leading null
+  // filters — page 2 could be served the cached page-1 response.
+  return `${prefix}:${toBase64Url(paramString)}`;
 }
 
 export async function flushAll(): Promise<void> {

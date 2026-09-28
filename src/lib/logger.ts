@@ -19,7 +19,12 @@ const LOG_LEVEL_ORDER: Record<LogLevel, number> = {
 };
 
 function getLogLevel(): LogLevel {
-  return (env.logLevel as LogLevel) || "info";
+  const configured = env.logLevel as LogLevel;
+  // An unknown LOG_LEVEL string (e.g. "verbose") previously made every
+  // comparison false and silently disabled all logging. Fall back to "info".
+  return Object.prototype.hasOwnProperty.call(LOG_LEVEL_ORDER, configured)
+    ? configured
+    : "info";
 }
 
 function shouldLog(level: LogLevel): boolean {

@@ -10,7 +10,8 @@ export default async function BlogPage({ searchParams }: PageProps) {
   const params = await searchParams;
   
   // Read query params for initial fetch
-  const page = parseInt((params.page as string) || "1", 10);
+  const rawPage = parseInt((params.page as string) || "1", 10);
+  const page = Number.isNaN(rawPage) ? 1 : Math.min(10000, Math.max(1, rawPage));
   const limit = 12;
   const category = (params.category as string) || "all";
   const search = (params.search as string) || "";

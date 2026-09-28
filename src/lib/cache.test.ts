@@ -15,6 +15,7 @@ const mockRedis = {
     del: vi.fn(),
   })),
   on: vi.fn(),
+  connect: vi.fn().mockResolvedValue(undefined),
   disconnect: vi.fn(),
 };
 
@@ -30,17 +31,22 @@ vi.mock("@/lib/logger", () => ({
   },
 }));
 
-// Set REDIS_URL before importing cache module
-process.env.REDIS_URL = "redis://localhost:6379";
+const originalRedisUrl = process.env.REDIS_URL;
 
 describe("Cache utilities", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Assume a configured Redis by default; tests that need the memory path
+    // override REDIS_URL explicitly. It is restored in afterEach so the
+    // mutation cannot leak into other test files sharing the worker.
+    process.env.REDIS_URL = "redis://localhost:6379";
     // Reset module state between tests
     vi.resetModules();
   });
 
   afterEach(() => {
+    if (originalRedisUrl === undefined) delete process.env.REDIS_URL;
+    else process.env.REDIS_URL = originalRedisUrl;
     vi.restoreAllMocks();
   });
 
@@ -107,15 +113,67 @@ describe("Cache utilities", () => {
       expect(result).toEqual({ data: "test" });
     });
 
-    it("should invalidate by tag", async () => {
+    it("should not throw when invalidating a tag with no cached entries", async () => {
       process.env.REDIS_URL = "";
       vi.resetModules();
 
       const { cacheInvalidateByTag } = await import("@/lib/cache");
 
-      // Memory cache doesn't support tags, but should not throw
       const result = await cacheInvalidateByTag("articles");
       expect(result).toBe(false);
+    });
+
+    it("invalidates memory-cached entries by tag", async () => {
+      process.env.REDIS_URL = "";
+      vi.resetModules();
+
+      const { cacheSet, cacheGet, cacheInvalidateByTag } = await import("@/lib/cache");
+
+      await cacheSet("tagged-key", { data: "tagged" }, { ttl: 60000, tags: ["articles"] });
+      await cacheSet("other-key", { data: "other" }, { ttl: 60000, tags: ["courses"] });
+
+      const removed = await cacheInvalidateByTag("articles");
+
+      expect(removed).toBe(true);
+      expect(await cacheGet("tagged-key")).toBeNull();
+      expect(await cacheGet("other-key")).toEqual({ data: "other" });
+    });
+
+    it("stores redis tag members under the same prefix as the entries (regression)", async () => {
+      vi.resetModules();
+      mockRedis.pipeline.mockClear();
+      // afterEach restoreAllMocks() wipes implementations of the shared mocks;
+      // re-establish the ones this test relies on.
+      mockRedis.connect.mockResolvedValue(undefined);
+
+      const setPipeline = {
+        sadd: vi.fn(),
+        expire: vi.fn(),
+        del: vi.fn(),
+        exec: vi.fn().mockResolvedValue([]),
+      };
+      mockRedis.pipeline.mockReturnValueOnce(setPipeline);
+
+      const { cacheSet, cacheInvalidateByTag } = await import("@/lib/cache");
+
+      await cacheSet("k1", { x: 1 }, { ttl: 60000, tags: ["articles"] });
+
+      expect(setPipeline.sadd).toHaveBeenCalledWith("cache:tag:articles", "cache:k1");
+      expect(setPipeline.expire).toHaveBeenCalledWith("cache:tag:articles", 60);
+
+      const invalidatePipeline = {
+        sadd: vi.fn(),
+        expire: vi.fn(),
+        del: vi.fn(),
+        exec: vi.fn().mockResolvedValue([]),
+      };
+      mockRedis.pipeline.mockReturnValueOnce(invalidatePipeline);
+      mockRedis.smembers.mockResolvedValueOnce(["cache:k1"]);
+
+      const removed = await cacheInvalidateByTag("articles");
+
+      expect(removed).toBe(true);
+      expect(invalidatePipeline.del).toHaveBeenCalledWith("cache:k1");
     });
   });
 });
