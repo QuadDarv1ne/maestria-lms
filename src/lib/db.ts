@@ -1,9 +1,10 @@
 import { PrismaClient, Prisma } from "@/generated/prisma/client";
 import { env } from "@/lib/env";
+import { resolveDatabaseProvider, type DatabaseProvider } from "@/lib/db-provider";
 import { types as nodeTypes } from "node:util";
 import path from "node:path";
 
-export type DatabaseProvider = "postgresql" | "mysql" | "sqlite" | "mongodb";
+export type { DatabaseProvider };
 
 /**
  * Normalize a Prisma database URL to a path suitable for better-sqlite3.
@@ -29,42 +30,24 @@ function normalizeSqliteUrl(url: string): string {
 }
 
 /**
- * Detect database provider from connection URL.
- */
-function detectProviderFromUrl(url: string): DatabaseProvider | null {
-  const lower = url.toLowerCase();
-  if (lower.startsWith("file:") || lower.endsWith(".db") || lower.endsWith(".sqlite")) {
-    return "sqlite";
-  }
-  if (lower.startsWith("postgresql://") || lower.startsWith("postgres://")) {
-    return "postgresql";
-  }
-  if (lower.startsWith("mysql://") || lower.startsWith("mariadb://")) {
-    return "mysql";
-  }
-  if (lower.startsWith("mongodb://") || lower.startsWith("mongodb+srv://")) {
-    return "mongodb";
-  }
-  return null;
-}
-
-/**
  * Get the current database provider from environment variables.
- * Auto-detects from DATABASE_URL if DATABASE_PROVIDER is not set.
- * Defaults to 'sqlite' if nothing is detected.
+ *
+ * The connection URL wins over DATABASE_PROVIDER, mirroring the Prisma CLI
+ * wrapper in scripts/prisma-auto.js ("a URL always wins"): migrations run
+ * against the engine named in DATABASE_URL, so the client must target the same
+ * engine.
+ *
+ * This previously read env.databaseProvider, which falls back to "sqlite".
+ * Because "sqlite" is itself a valid provider, the URL auto-detection below it
+ * was dead code: the production runner exports no DATABASE_PROVIDER and ships
+ * no SQLite driver, so the client selected the SQLite adapter and every query
+ * failed immediately.
  */
 export function getDatabaseProvider(): DatabaseProvider {
-  const provider = env.databaseProvider.toLowerCase();
-
-  if (provider && ["postgresql", "mysql", "sqlite", "mongodb"].includes(provider)) {
-    return provider as DatabaseProvider;
-  }
-
-  // Auto-detect from DATABASE_URL
-  const detected = detectProviderFromUrl(env.databaseUrl);
-  if (detected) return detected;
-
-  return "sqlite";
+  return resolveDatabaseProvider({
+    url: process.env.DATABASE_URL,
+    declared: process.env.DATABASE_PROVIDER,
+  }).provider;
 }
 
 /**

@@ -4,7 +4,7 @@ import { APP_VERSION } from "@/lib/constants";
 import { getRedisClient } from "@/lib/redis";
 import { log } from "@/lib/logger";
 import { env } from "@/lib/env";
-import { getDatabaseProvider } from "@/lib/db";
+import { resolveDatabaseProvider } from "@/lib/db-provider";
 import { isS3Available } from "@/lib/s3";
 
 export const runtime = "nodejs";
@@ -16,7 +16,13 @@ interface HealthCheckResult {
   uptime: string;
   environment: string;
   services: {
-    database: { status: string; responseTime: number; provider: string };
+    database: {
+      status: string;
+      responseTime: number;
+      provider: string;
+      providerSource: "url" | "env" | "default";
+      urlConfigured: boolean;
+    };
     cache: { status: string; responseTime: number };
     storage: { status: string; configured: boolean };
     email: { status: string; configured: boolean };
@@ -32,6 +38,12 @@ export async function GET() {
   const startTime = Date.now();
 
   try {
+    // Reported alongside the probe result so a deployment can distinguish
+    // "no DATABASE_URL" from "the URL points somewhere unreachable".
+    const providerInfo = resolveDatabaseProvider({
+      url: process.env.DATABASE_URL,
+      declared: process.env.DATABASE_PROVIDER,
+    });
     const result: HealthCheckResult = {
       status: "healthy",
       timestamp: new Date().toISOString(),
@@ -39,7 +51,13 @@ export async function GET() {
       uptime: formatUptime(process.uptime()),
       environment: env.nodeEnv,
       services: {
-        database: { status: "unknown", responseTime: 0, provider: getDatabaseProvider() },
+        database: {
+          status: "unknown",
+          responseTime: 0,
+          provider: providerInfo.provider,
+          providerSource: providerInfo.source,
+          urlConfigured: Boolean(process.env.DATABASE_URL),
+        },
         cache: { status: "unknown", responseTime: 0 },
         storage: { status: "unknown", configured: isS3Available() },
         email: { status: "unknown", configured: !!env.resendApiKey },

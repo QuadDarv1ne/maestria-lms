@@ -1,3 +1,5 @@
+import { resolveDatabaseProvider } from "@/lib/db-provider";
+
 /**
  * Centralized environment configuration with validation.
  * Provides type-safe access to environment variables across the application.
@@ -119,7 +121,15 @@ export const env = {
   },
 
   get databaseProvider(): string {
-    return cached("databaseProvider", () => process.env.DATABASE_PROVIDER ?? "sqlite");
+    // Same precedence as the runtime client: the URL decides, DATABASE_PROVIDER
+    // is the fallback. Defaulting to "sqlite" here used to shadow DATABASE_URL
+    // detection for every consumer, including the Prisma client factory.
+    return cached("databaseProvider", () =>
+      resolveDatabaseProvider({
+        url: process.env.DATABASE_URL,
+        declared: process.env.DATABASE_PROVIDER,
+      }).provider,
+    );
   },
 
   get nodeEnv(): string {
