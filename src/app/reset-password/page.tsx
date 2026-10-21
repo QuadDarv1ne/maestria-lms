@@ -22,7 +22,15 @@ function ResetPasswordContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [token, setToken] = useState<string | null>(null);
+
+  // Initialize token from sessionStorage or URL on mount
+  const [token] = useState<string | null>(() => {
+    try {
+      return sessionStorage.getItem("reset-token") || searchParams.get("code");
+    } catch {
+      return null;
+    }
+  });
 
   const passwordStrength = {
     hasLength: password.length >= 8,
@@ -41,24 +49,17 @@ function ResetPasswordContent() {
     passwordScore <= 2 ? "text-yellow-500" :
     passwordScore <= 3 ? "text-blue-500" : "text-green-500";
 
+  // Sync token from URL params after mount (e.g. new email link without refresh)
   useEffect(() => {
-    // Try sessionStorage first (persists across refreshes)
-    let storedToken = sessionStorage.getItem("reset-token");
-
-    if (!storedToken) {
-      // Fall back to URL parameter (first visit from email link)
-      const rawToken = searchParams.get("code");
-      if (rawToken) {
-        storedToken = rawToken;
+    const rawToken = searchParams.get("code");
+    if (rawToken) {
+      try {
         sessionStorage.setItem("reset-token", rawToken);
-        // Clear URL parameter immediately
         window.history.replaceState({}, "", window.location.pathname);
-      }
+      } catch { /* ignore */ }
     }
-
-    if (storedToken) {
-      setToken(storedToken);
-    } else {
+    if (!rawToken && !sessionStorage.getItem("reset-token")) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError(t("auth.noResetToken", locale));
     }
   }, [searchParams, locale]);

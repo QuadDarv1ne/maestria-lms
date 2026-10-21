@@ -146,17 +146,17 @@ export function HomePage() {
                 tabIndex={0}
                 className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1.5 border-0 shadow-sm"
                 onClick={() => {
-                  router.push("/catalog");
                   useAppStore.getState().setCourseFilters({ category: cat.slug, search: "", level: "", sortBy: "popular", freeOnly: false });
+                  router.push("/catalog");
                 }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
-                    router.push("/catalog");
                     useAppStore.getState().setCourseFilters({ category: cat.slug, search: "", level: "", sortBy: "popular", freeOnly: false });
+                    router.push("/catalog");
                   }
                 }}
-                aria-label={`${cat.name}: ${cat.description}`}
+                aria-label={cat.name}
               >
                 <CardContent className="p-4 text-center">
                   <div

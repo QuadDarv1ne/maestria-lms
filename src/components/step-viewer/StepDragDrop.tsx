@@ -120,7 +120,7 @@ export function StepDragDrop({ step, locale, submittingAssignment, onSubmitAssig
       }
     } catch { /* ignore */ }
     return { items: [] as DragDropItem[], groups: [] as string[] };
-  }, [step?.assignments]);
+  }, [step]);
 
   // Reset local state when step changes (React-render-time reset pattern)
   const [prevStepId, setPrevStepId] = useState(step?.id);

@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { apiErrorMessage } from "@/lib/api-error-codes";
@@ -158,6 +158,12 @@ export function LessonPage({
     }
   }, [user, lesson, courseId, lessonId, locale]);
 
+  // Ref to keep lesson duration current without causing useCallback churn
+  const lessonDurationRef = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    lessonDurationRef.current = lesson?.duration;
+  }, [lesson?.duration]);
+
   const handleSubmitAssignment = useCallback(async (assignmentId: string, answer: unknown) => {
     if (!user) return null;
     setSubmittingAssignment(true);
@@ -170,7 +176,7 @@ export function LessonPage({
           body: JSON.stringify({
             assignmentId,
             answer,
-            timeSpent: lesson?.duration || 5,
+            timeSpent: lessonDurationRef.current || 5,
           }),
         }
       );
@@ -187,7 +193,7 @@ export function LessonPage({
     } finally {
       setSubmittingAssignment(false);
     }
-  }, [user, courseId, lessonId, lesson?.duration, locale]);
+  }, [user, courseId, lessonId, locale]);
 
   if (loading) return <LessonSkeleton />;
 

@@ -94,8 +94,10 @@ export function Header() {
       await signOut({ redirect: false });
     } catch (e: unknown) {
       log.error("Logout failed", { error: e instanceof Error ? e.message : String(e) });
+    } finally {
+      // Always clear local store — even if signOut fails, we want to reset UI state
+      logout();
     }
-    logout();
   };
 
   const userInitials = getInitials(user?.name, "??");

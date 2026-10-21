@@ -159,7 +159,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     });
     // Full document navigation is intentional in an error boundary:
     // client-side navigation would keep the broken tree mounted.
-    window.location.assign("/");
+    if (typeof window !== "undefined") {
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+      globalThis.location.href = "/";
+    }
   };
 
   handleCopyError = () => {

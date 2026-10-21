@@ -293,8 +293,9 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
       router.push("?dialog=login");
       return;
     }
+    const currentlyFavored = isFavorite(courseId);
     toggleFavorite(courseId);
-    toast.success(favored ? t("profile.removeFromFavorites", locale) : t("profile.addToFavorites", locale));
+    toast.success(currentlyFavored ? t("profile.removeFromFavorites", locale) : t("profile.addToFavorites", locale));
   };
 
   const handleShare = async () => {

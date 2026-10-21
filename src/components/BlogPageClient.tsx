@@ -147,7 +147,6 @@ export function BlogPageClient({ initialArticles, initialPagination }: BlogPageC
     // Only fetch if not the initial page load (which already has data)
     if (initialArticles.length > 0 && pagination.page === 1 && !filters.search && filters.category === "all" && filters.sortBy === "new") {
       // Initial load - articles already loaded via SSR
-      setIsLoading(false);
       return;
     }
 

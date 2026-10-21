@@ -86,7 +86,12 @@ export function PaymentPageClient({
   }, [fetchPayment]);
 
   useEffect(() => {
-    void fetchPayment();
+    let cancelled = false;
+    (async () => {
+      const result = await fetchPayment();
+      if (!cancelled) setPayment(result);
+    })();
+    return () => { cancelled = true; };
   }, [fetchPayment]);
 
   useEffect(() => {

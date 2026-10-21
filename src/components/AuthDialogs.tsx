@@ -176,10 +176,8 @@ export function AuthDialogs() {
       if (res.ok) {
         toast.success(t("auth.registerSuccess", locale));
         switchToLogin();
-        setLoginForm({
-          ...loginForm,
-          email: registerForm.email,
-        });
+        // Pre-fill only email, never password (security: don't leak registration password to login form)
+        setLoginForm({ email: registerForm.email, password: "", twoFactorCode: "" });
       } else {
         toast.error(apiErrorMessage(data, locale, "auth.registerError"));
       }

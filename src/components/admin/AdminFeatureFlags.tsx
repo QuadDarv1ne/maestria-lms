@@ -40,8 +40,25 @@ export function AdminFeatureFlags({ locale }: { locale: Locale }) {
   }, [locale]);
 
   useEffect(() => {
-    fetchFlags();
-  }, [fetchFlags]);
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const res = await fetch("/api/admin/feature-flags");
+        if (!res.ok) throw new Error(t("admin.feature_flags.fetch_failed", locale));
+        const data = await res.json();
+        if (!cancelled) setFlags(data.flags);
+      } catch (e: unknown) {
+        if (!cancelled) {
+          log.error("Failed to fetch feature flags", { error: e instanceof Error ? e.message : String(e) });
+          toast.error(t("admin.feature_flags.load_failed", locale));
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [locale]);
 
   async function toggleFlag(key: string, enabled: boolean) {
     try {

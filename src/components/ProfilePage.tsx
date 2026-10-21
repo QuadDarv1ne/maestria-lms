@@ -118,9 +118,9 @@ export function ProfilePage() {
   useEffect(() => {
     if (favorites.length === 0) return;
     let cancelled = false;
-    setBookmarksLoading(true);
 
-    const fetchTitles = async () => {
+    (async () => {
+      setBookmarksLoading(true);
       const titles: Record<string, string> = {};
       try {
         const ids = favorites.join(",");
@@ -138,8 +138,8 @@ export function ProfilePage() {
         setBookmarkCourses(titles);
         setBookmarksLoading(false);
       }
-    };
-    fetchTitles();
+    })();
+    
     return () => { cancelled = true; };
   }, [favorites, locale]);
 

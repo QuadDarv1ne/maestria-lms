@@ -54,6 +54,12 @@ export function CatalogPage() {
   const [showFilters, setShowFilters] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Sync search input when store filter changes externally (e.g. from HomePage)
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSearchInput(courseFilters.search);
+  }, [courseFilters.search]);
+
   const { data, isLoading, error } = useCourses({
     page: pagination.page,
     limit: pagination.limit,

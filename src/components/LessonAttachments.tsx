@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { apiErrorMessage } from "@/lib/api-error-codes";
@@ -71,25 +71,27 @@ export function LessonAttachments({ courseId, lessonId }: LessonAttachmentsProps
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const fetchAttachments = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/courses/${courseId}/lessons/${lessonId}/attachments`);
-      if (res.ok) {
-        const data = await res.json();
-        setAttachments(data.attachments ?? []);
-        setCanManage(!!data.canManage);
-      }
-    } catch {
-      // silent — show empty state
-    } finally {
-      setLoading(false);
-    }
-  }, [courseId, lessonId]);
-
   useEffect(() => {
-    fetchAttachments();
-  }, [fetchAttachments]);
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/courses/${courseId}/lessons/${lessonId}/attachments`);
+        if (res.ok) {
+          const data = await res.json();
+          if (!cancelled) {
+            setAttachments(data.attachments ?? []);
+            setCanManage(!!data.canManage);
+          }
+        }
+      } catch {
+        // silent — show empty state
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [courseId, lessonId]);
 
   const upload = async (file: File) => {
     if (file.size > MAX_ATTACHMENT_SIZE) {

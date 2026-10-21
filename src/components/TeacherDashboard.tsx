@@ -94,12 +94,28 @@ export function TeacherDashboard() {
       router.push("/");
       return;
     }
-    const controller = new AbortController();
-    fetchStats(controller.signal);
-    return () => {
-      controller.abort();
-    };
-  }, [sessionReady, user, fetchStats, router]);
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch("/api/teacher/stats");
+        if (!res.ok) throw new Error("fetch failed");
+        const data = await res.json();
+        if (!cancelled) {
+          setCourses(data.courses);
+          setStats(data.stats);
+        }
+      } catch (err: unknown) {
+        if (!cancelled && !(err instanceof DOMException && err.name === "AbortError")) {
+          setError(t("teacher.loadError", locale));
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [sessionReady, user, locale, router]);
 
   if (!user) return null;
 

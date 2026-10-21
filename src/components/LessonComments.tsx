@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { apiErrorMessage } from "@/lib/api-error-codes";
@@ -63,24 +63,24 @@ export function LessonComments({ courseId, lessonId }: LessonCommentsProps) {
 
   const isLoggedIn = !!user;
 
-  const fetchComments = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/courses/${courseId}/lessons/${lessonId}/comments`);
-      if (res.ok) {
-        const data = await res.json();
-        setComments(data.comments ?? []);
-      }
-    } catch {
-      // silent — show empty state
-    } finally {
-      setLoading(false);
-    }
-  }, [courseId, lessonId]);
-
   useEffect(() => {
-    fetchComments();
-  }, [fetchComments]);
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/courses/${courseId}/lessons/${lessonId}/comments`);
+        if (res.ok) {
+          const data = await res.json();
+          if (!cancelled) setComments(data.comments ?? []);
+        }
+      } catch {
+        // silent — show empty state
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [courseId, lessonId]);
 
   const commentsByParent = useMemo(() => {
     const map: Record<string, LessonCommentItem[]> = {};

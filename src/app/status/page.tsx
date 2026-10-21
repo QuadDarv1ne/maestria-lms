@@ -165,8 +165,35 @@ export default function StatusPage() {
   }, [locale]);
 
   useEffect(() => {
-    void fetchData();
-  }, [fetchData]);
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [healthRes, metricsRes] = await Promise.all([
+          fetch("/api/?detailed=true"),
+          fetch("/api/metrics"),
+        ]);
+
+        if (!healthRes.ok || !metricsRes.ok) {
+          throw new Error(t("status.fetchFailed", locale));
+        }
+
+        const healthData = await healthRes.json();
+        const metricsData = await metricsRes.json();
+
+        if (!cancelled) {
+          setHealth(healthData);
+          setMetrics(metricsData);
+        }
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : t("status.unknownError", locale));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [locale]);
 
   if (loading) {
     return <StatusPageSkeleton />;

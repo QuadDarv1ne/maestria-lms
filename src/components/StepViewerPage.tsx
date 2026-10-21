@@ -74,6 +74,8 @@ export function StepViewerPage({
   const [completing, setCompleting] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const navigationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Ref to always have the latest nextStepId for the navigation timeout
+  const nextStepIdRef = useRef<string | null>(null);
 
   // Submit assignment to server
   const [submittingAssignment, setSubmittingAssignment] = useState(false);
@@ -106,6 +108,8 @@ export function StepViewerPage({
   const handleComplete = useCallback(async () => {
     if (!user || !step) return;
     setCompleting(true);
+    // Capture nextStepId in ref for the delayed navigation timeout
+    nextStepIdRef.current = step.nextStepId ?? null;
     try {
       const body: Record<string, unknown> = {
         completed: true,
@@ -118,7 +122,7 @@ export function StepViewerPage({
       });
       if (res.ok) {
         toast.success(t("course.step.completed", locale), {
-          description: step.nextStepId ? t("course.step.completedDesc", locale) : t("course.step.courseCompletedDesc", locale),
+          description: nextStepIdRef.current ? t("course.step.completedDesc", locale) : t("course.step.courseCompletedDesc", locale),
         });
         setStep((prev) => prev ? { ...prev, completed: true } : prev);
         setCourseStructure((prev) => {
@@ -130,9 +134,9 @@ export function StepViewerPage({
             progress: Math.round((completedLessons / prev.totalLessons) * 100),
           };
         });
-        if (step.nextStepId) {
+        if (nextStepIdRef.current) {
           navigationTimerRef.current = setTimeout(() => {
-            router.push(`/course/${courseId}/lesson/${step.nextStepId}`);
+            router.push(`/course/${courseId}/lesson/${nextStepIdRef.current}`);
           }, 1200);
         }
       }

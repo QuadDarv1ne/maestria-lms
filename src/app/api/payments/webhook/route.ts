@@ -9,6 +9,7 @@ import { verifyWebhookSignature } from "@/lib/webhook-verify";
 import { rateLimit } from "@/lib/rate-limit";
 import { sendEmail } from "@/lib/email";
 import { coursePurchaseEmail } from "@/lib/emails";
+import { getRedisClient } from "@/lib/redis";
 
 export const runtime = "nodejs";
 
@@ -33,30 +34,41 @@ const webhookBodySchema = z.object({
   }).passthrough().optional(),
 });
 
-// Idempotency: track processed webhooks to prevent duplicate processing
+// Idempotency: use Redis with in-memory fallback for multi-instance deployments
+const IDEMPOTENCY_TTL = 24 * 60 * 60; // 24 hours in seconds
+// Local fallback for when Redis is unavailable
 const processedWebhooks = new Map<string, { status: string; timestamp: number }>();
-const IDEMPOTENCY_TTL = 24 * 60 * 60 * 1000; // 24 hours
 const MAX_IDEMPOTENCY_ENTRIES = 10000;
 
-// Periodic cleanup of expired idempotency entries
-let idempotencyCleanupInterval: ReturnType<typeof setInterval> | null = null;
-
-function startIdempotencyCleanup() {
-  if (idempotencyCleanupInterval) return;
-  idempotencyCleanupInterval = setInterval(() => {
-    const now = Date.now();
-    for (const [key, entry] of processedWebhooks.entries()) {
-      if (now - entry.timestamp > IDEMPOTENCY_TTL) {
-        processedWebhooks.delete(key);
-      }
+async function checkIdempotency(key: string): Promise<string | null> {
+  // Try Redis first
+  const redis = getRedisClient();
+  if (redis) {
+    try {
+      const existing = await redis.get(`wh:${key}`);
+      if (existing) return existing;
+      // Set with NX (only if not exists) and EX (TTL)
+      const ok = await redis.set(`wh:${key}`, key, "EX", IDEMPOTENCY_TTL, "NX");
+      if (ok) return null; // newly set, not processed
+      return key; // already exists
+    } catch {
+      // Redis unavailable — fall through to in-memory
+      log.warn("Redis unavailable for webhook idempotency, using in-memory fallback");
     }
-  }, 60 * 60 * 1000); // Clean up every hour
-  if (idempotencyCleanupInterval && typeof idempotencyCleanupInterval === "object" && "unref" in idempotencyCleanupInterval) {
-    (idempotencyCleanupInterval as NodeJS.Timeout).unref();
   }
-}
 
-startIdempotencyCleanup();
+  // In-memory fallback
+  const now = Date.now();
+  const processed = processedWebhooks.get(key);
+  if (processed) return processed.status;
+
+  if (processedWebhooks.size >= MAX_IDEMPOTENCY_ENTRIES) {
+    const oldestKey = processedWebhooks.keys().next().value;
+    if (oldestKey) processedWebhooks.delete(oldestKey);
+  }
+  processedWebhooks.set(key, { status: "pending", timestamp: now });
+  return null;
+}
 
 async function completePayment(paymentId: string, transactionId: string) {
   const result = await db.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -285,24 +297,15 @@ export async function POST(request: NextRequest) {
     // Use eventId as the idempotency key (if available), otherwise fall back to paymentId
     const idempotencyKey = data.eventId || data.object?.paymentId || data.object?.id;
     if (idempotencyKey) {
-      const now = Date.now();
-      const processed = processedWebhooks.get(idempotencyKey);
-      if (processed) {
+      const existingStatus = await checkIdempotency(idempotencyKey);
+      if (existingStatus) {
         log.info("Duplicate webhook received, skipping", {
           idempotencyKey,
           provider,
           status: data.status,
         });
-        return NextResponse.json({ received: true, status: processed.status, idempotent: true });
+        return NextResponse.json({ received: true, status: data.status, idempotent: true });
       }
-
-      // Store the processed webhook
-      if (processedWebhooks.size >= MAX_IDEMPOTENCY_ENTRIES) {
-        // Evict oldest entries
-        const oldestKey = processedWebhooks.keys().next().value;
-        if (oldestKey) processedWebhooks.delete(oldestKey);
-      }
-      processedWebhooks.set(idempotencyKey, { status: data.status, timestamp: now });
     }
 
     // ── Refund events (e.g. YooKassa `refund.succeeded` / `refund.canceled`) ──
