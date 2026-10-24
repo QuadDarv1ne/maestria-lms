@@ -38,29 +38,44 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    // Fetch enrollments and payments for each course separately
-    const coursesWithEnrollments = await Promise.all(
-      courses.map(async (course: { id: string }) => {
-        const enrollments = await db.enrollment.findMany({
-          where: { courseId: course.id },
-          include: {
-            user: {
-              select: {
-                id: true, name: true, image: true,
-              },
+    // Batch-fetch all enrollments and payments for all courses in parallel
+    const courseIds = courses.map((c: { id: string }) => c.id);
+    const [allEnrollments, allPayments] = await Promise.all([
+      db.enrollment.findMany({
+        where: { courseId: { in: courseIds } },
+        include: {
+          user: {
+            select: {
+              id: true, name: true, image: true,
             },
           },
-          orderBy: { enrolledAt: "desc" },
-        });
+        },
+        orderBy: { enrolledAt: "desc" },
+      }),
+      db.payment.findMany({
+        where: { courseId: { in: courseIds }, status: "completed" },
+        select: { courseId: true, amount: true },
+      }),
+    ]);
 
-        const payments = await db.payment.findMany({
-          where: { courseId: course.id, status: "completed" },
-          select: { amount: true },
-        });
+    // Group by courseId
+    const enrollmentsByCourse = new Map<string, typeof allEnrollments>();
+    for (const e of allEnrollments) {
+      const existing = enrollmentsByCourse.get(e.courseId) ?? [];
+      existing.push(e);
+      enrollmentsByCourse.set(e.courseId, existing);
+    }
 
-        return { ...course, enrollments, payments };
-      })
-    );
+    const paymentsByCourse = new Map<string, number>();
+    for (const p of allPayments) {
+      paymentsByCourse.set(p.courseId, (paymentsByCourse.get(p.courseId) ?? 0) + Number(p.amount));
+    }
+
+    const coursesWithEnrollments = courses.map((course: { id: string }) => ({
+      ...course,
+      enrollments: enrollmentsByCourse.get(course.id) ?? [],
+      totalRevenue: paymentsByCourse.get(course.id) ?? 0,
+    }));
 
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - MS.THIRTY_DAYS);
@@ -145,7 +160,7 @@ export async function GET(request: NextRequest) {
         : 0;
 
     const totalRevenue = coursesWithEnrollments.reduce(
-      (sum: number, c) => sum + c.payments.reduce((pSum: number, p: { amount: number }) => pSum + Number(p.amount), 0),
+      (sum: number, c: { totalRevenue: number }) => sum + c.totalRevenue,
       0
     );
 
