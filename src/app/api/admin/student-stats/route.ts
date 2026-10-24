@@ -193,47 +193,54 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // Get reviews with course info
-    const reviews = await db.review.findMany({
-      where: { userId },
-      include: {
-        course: {
-          select: {
-            id: true,
-            title: true,
-          },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    // Get reviews, certificates, payments, and recent activity in parallel
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    // Get certificates
-    const certificates = await db.certificate.findMany({
-      where: { userId },
-      include: {
-        course: {
-          select: {
-            id: true,
-            title: true,
+    const [reviews, certificates, payments, recentProgress] = await Promise.all([
+      db.review.findMany({
+        where: { userId },
+        include: {
+          course: {
+            select: {
+              id: true,
+              title: true,
+            },
           },
         },
-      },
-      orderBy: { issuedAt: "desc" },
-    });
-
-    // Get payments
-    const payments = await db.payment.findMany({
-      where: { userId },
-      include: {
-        course: {
-          select: {
-            id: true,
-            title: true,
+        orderBy: { createdAt: "desc" },
+      }),
+      db.certificate.findMany({
+        where: { userId },
+        include: {
+          course: {
+            select: {
+              id: true,
+              title: true,
+            },
           },
         },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+        orderBy: { issuedAt: "desc" },
+      }),
+      db.payment.findMany({
+        where: { userId },
+        include: {
+          course: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      db.progress.count({
+        where: {
+          userId,
+          lastAccessed: { gte: sevenDaysAgo },
+        },
+      }),
+    ]);
 
     // Compute overall stats
     const totalCoursesEnrolled = enrollments.length;
@@ -247,16 +254,6 @@ export async function GET(request: NextRequest) {
     const overallAvgScore = enrollmentDetails
       .filter((e: { avgScore: number | null }) => e.avgScore !== null)
       .reduce((sum: number, e: { avgScore: number | null }, _i: number, arr: { avgScore: number | null }[]) => sum + (e.avgScore || 0) / arr.length, 0);
-
-    // Activity: last 7 days progress count
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const recentProgress = await db.progress.count({
-      where: {
-        userId,
-        lastAccessed: { gte: sevenDaysAgo },
-      },
-    });
 
     return NextResponse.json({
       user,
