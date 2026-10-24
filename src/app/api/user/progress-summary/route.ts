@@ -84,46 +84,44 @@ export async function GET(request: NextRequest) {
     const weeklyTimeSpent = recentProgress.reduce((sum: number, p: { timeSpent: number }) => sum + p.timeSpent, 0);
 
     // Next lessons for active courses (first incomplete lesson)
-    const nextLessons = await Promise.all(
-      enrollments
-        .filter((e: { status: string }) => e.status === "active")
-        .slice(0, 5) // Limit to 5 courses
-        .map(async (enrollment: { course: { modules: { lessons: { id: string }[] }[]; id: string; title: string; slug: string; image: string | null }; status: string; progress: number }) => {
-          // Get all lesson IDs for this course
-          const allLessonIds = enrollment.course.modules.flatMap((m: { lessons: { id: string }[] }) =>
-            m.lessons.map((l: { id: string }) => l.id),
-          );
+    const activeEnrollments = enrollments
+      .filter((e: { status: string }) => e.status === "active")
+      .slice(0, 5); // Limit to 5 courses
 
-          // Get completed lesson IDs
-          const completedLessonIds = new Set(
-            (
-              await db.progress.findMany({
-                where: {
-                  userId,
-                  lessonId: { in: allLessonIds },
-                  completed: true,
-                },
-                select: { lessonId: true },
-              })
-            ).map((p: { lessonId: string }) => p.lessonId),
-          );
-
-          // Find first incomplete lesson
-          const allLessons = (enrollment.course.modules as unknown as { lessons: { id: string; title: string }[] }[]).flatMap(m => m.lessons);
-          const nextLesson: { id: string; title: string } | undefined = allLessons.find((l: { id: string; title: string }) => !completedLessonIds.has(l.id));
-
-          return {
-            courseId: enrollment.course.id,
-            courseTitle: enrollment.course.title,
-            courseSlug: enrollment.course.slug,
-            courseImage: enrollment.course.image,
-            progress: enrollment.progress,
-            nextLesson: nextLesson
-              ? { id: (nextLesson as { id: string; title: string }).id, title: (nextLesson as { id: string; title: string }).title }
-              : null,
-          };
-        }),
+    // Batch-fetch all completed lessons for active courses in one query
+    const allActiveLessonIds = activeEnrollments.flatMap(
+      (e: { course: { modules: { lessons: { id: string }[] }[] } }) =>
+        e.course.modules.flatMap((m: { lessons: { id: string }[] }) => m.lessons.map((l: { id: string }) => l.id)),
     );
+
+    const allCompleted = allActiveLessonIds.length > 0
+      ? new Set(
+          (await db.progress.findMany({
+            where: {
+              userId,
+              lessonId: { in: allActiveLessonIds },
+              completed: true,
+            },
+            select: { lessonId: true },
+          })).map((p: { lessonId: string }) => p.lessonId),
+        )
+      : new Set<string>();
+
+    const nextLessons = activeEnrollments.map((enrollment: { course: { modules: { lessons: { id: string; title: string }[] }[]; id: string; title: string; slug: string; image: string | null }; status: string; progress: number }) => {
+      const allLessons = (enrollment.course.modules as unknown as { lessons: { id: string; title: string }[] }[]).flatMap(m => m.lessons);
+      const nextLesson: { id: string; title: string } | undefined = allLessons.find((l: { id: string; title: string }) => !allCompleted.has(l.id));
+
+      return {
+        courseId: enrollment.course.id,
+        courseTitle: enrollment.course.title,
+        courseSlug: enrollment.course.slug,
+        courseImage: enrollment.course.image,
+        progress: enrollment.progress,
+        nextLesson: nextLesson
+          ? { id: (nextLesson as { id: string; title: string }).id, title: (nextLesson as { id: string; title: string }).title }
+          : null,
+      };
+    });
 
     return NextResponse.json({
         data: {
