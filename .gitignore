@@ -63,6 +63,7 @@ src/generated/
 # Database files
 *.db
 *.db-journal
+*.db.bak
 prisma-data/
 scripts/vk-articles-extracted.json
 /downloads/stepik_course_*/
