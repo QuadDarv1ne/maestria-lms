@@ -65,6 +65,7 @@ src/generated/
 *.db-journal
 prisma-data/
 scripts/vk-articles-extracted.json
+/downloads/stepik_course_*/
 
 # MiMoCode runtime files
 .mimocode/  
