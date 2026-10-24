@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
@@ -20,15 +21,16 @@ import { useAdminCourses, useAdminUsers, useUpdateUserRole, useToggleUserStatus 
 import { useQueryClient } from "@tanstack/react-query";
 import type { UserRole } from "@/hooks/useAdmin";
 import { AdminSkeleton } from "@/components/skeletons/AdminSkeleton";
-import { AdminDashboard } from "@/components/admin/AdminDashboard";
-import { AdminUsers } from "@/components/admin/AdminUsers";
-import { AdminTests } from "@/components/admin/AdminTests";
-import { AdminMaterials } from "@/components/admin/AdminMaterials";
-import { AdminFinance } from "@/components/admin/AdminFinance";
-import { AdminCourses } from "@/components/admin/AdminCourses";
-import { AdminReports } from "@/components/admin/AdminReports";
-import { AdminLogs } from "@/components/admin/AdminLogs";
-import { AdminSettings } from "@/components/admin/AdminSettings";
+
+const AdminDashboard = dynamic(() => import("@/components/admin/AdminDashboard").then(m => m.AdminDashboard), { ssr: false });
+const AdminUsers = dynamic(() => import("@/components/admin/AdminUsers").then(m => m.AdminUsers), { ssr: false });
+const AdminTests = dynamic(() => import("@/components/admin/AdminTests").then(m => m.AdminTests), { ssr: false });
+const AdminMaterials = dynamic(() => import("@/components/admin/AdminMaterials").then(m => m.AdminMaterials), { ssr: false });
+const AdminFinance = dynamic(() => import("@/components/admin/AdminFinance").then(m => m.AdminFinance), { ssr: false });
+const AdminCourses = dynamic(() => import("@/components/admin/AdminCourses").then(m => m.AdminCourses), { ssr: false });
+const AdminReports = dynamic(() => import("@/components/admin/AdminReports").then(m => m.AdminReports), { ssr: false });
+const AdminLogs = dynamic(() => import("@/components/admin/AdminLogs").then(m => m.AdminLogs), { ssr: false });
+const AdminSettings = dynamic(() => import("@/components/admin/AdminSettings").then(m => m.AdminSettings), { ssr: false });
 import { getInitials } from "@/lib/utils";
 
 type AdminTab = "dashboard" | "users" | "tests" | "materials" | "finance" | "courses" | "reports" | "logs" | "settings";

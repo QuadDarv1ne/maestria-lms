@@ -44,8 +44,13 @@ function isMaintenanceMode(): boolean {
 }
 
 function hasMaintenanceBypass(request: NextRequest): boolean {
+  // Fail closed: if the bypass secret is not configured, nobody gets a bypass.
+  // Otherwise an unset secret (undefined) would equal a missing cookie
+  // (undefined) and silently disable maintenance mode for every visitor.
+  const secret = process.env.MAINTENANCE_BYPASS_SECRET;
+  if (!secret) return false;
   const bypass = request.cookies.get(MAINTENANCE_COOKIE)?.value;
-  return bypass === process.env.MAINTENANCE_BYPASS_SECRET;
+  return !!bypass && bypass === secret;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

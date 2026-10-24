@@ -26,12 +26,20 @@ const disable2FASchema = z.object({
 });
 
 function generateSecret(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  // TOTP secrets use Base32 alphabet: A-Z + 2-7 (32 chars = 5 bits each)
+  // Use rejection sampling to avoid modulo bias from crypto.getRandomValues
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'; // 32 valid chars
+  const mask = 0x1F; // 5 bits → values 0-31
   let secret = '';
-  const randomValues = new Uint32Array(32);
-  crypto.getRandomValues(randomValues);
-  for (let i = 0; i < 32; i++) {
-    secret += chars[randomValues[i] % chars.length];
+  const randomBytes = new Uint8Array(32);
+  crypto.getRandomValues(randomBytes);
+  let bytesRead = 0;
+  while (secret.length < 32 && bytesRead < randomBytes.length) {
+    const byte = randomBytes[bytesRead++];
+    const value = byte & mask; // extract lowest 5 bits (0-31)
+    if (value < 32) {
+      secret += alphabet[value];
+    }
   }
   return secret;
 }

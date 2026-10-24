@@ -68,6 +68,37 @@ describe("proxy middleware — security headers", () => {
     expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
   });
 
+  it("keeps maintenance mode active when the bypass secret is not configured", async () => {
+    // Regression: an unset MAINTENANCE_BYPASS_SECRET must NOT equal a missing
+    // cookie (both undefined), which previously let every visitor bypass.
+    process.env.MAINTENANCE_MODE = "true";
+    delete process.env.MAINTENANCE_BYPASS_SECRET;
+
+    const res = await proxy(request("/courses"));
+
+    // Maintenance rewrites to /maintenance via the x-middleware-rewrite header.
+    expect(res.headers.get("x-middleware-rewrite") ?? "").toContain("/maintenance");
+  });
+
+  it("grants bypass only when the configured secret matches the cookie", async () => {
+    process.env.MAINTENANCE_MODE = "true";
+    process.env.MAINTENANCE_BYPASS_SECRET = "s3cr3t";
+
+    // Correct secret → not rewritten to maintenance (normal pass-through).
+    const allowed = await proxy(
+      request("/courses", { cookies: { "maestria-maintenance-bypass": "s3cr3t" } }),
+    );
+    expect(allowed.headers.get("x-middleware-rewrite")).toBeNull();
+
+    // Wrong secret → still in maintenance.
+    const denied = await proxy(
+      request("/courses", { cookies: { "maestria-maintenance-bypass": "wrong" } }),
+    );
+    expect(denied.headers.get("x-middleware-rewrite") ?? "").toContain("/maintenance");
+
+    delete process.env.MAINTENANCE_BYPASS_SECRET;
+  });
+
   it("attaches the header set to the login redirect for unauthenticated users", async () => {
     mockGetToken.mockResolvedValue(null);
 

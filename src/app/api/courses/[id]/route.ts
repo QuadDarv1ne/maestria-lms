@@ -120,16 +120,18 @@ export async function GET(
         );
       }
       const userRole = session.user.role;
-      const isEnrolled = await db.enrollment.findUnique({
-        where: { userId_courseId: { userId: session.user.id, courseId: course.id } },
-      });
-      const isActiveEnrollment = isEnrolled && isEnrolled.status !== "cancelled";
       const isOwner = course.teacherId === session.user.id;
-      if (userRole !== "admin" && userRole !== "teacher" && !isActiveEnrollment && !isOwner) {
-        return NextResponse.json(
-          { error: "Курс недоступен" },
-          { status: 403 }
-        );
+      if (userRole !== "admin" && userRole !== "teacher" && !isOwner) {
+        const enrollment = await db.enrollment.findUnique({
+          where: { userId_courseId: { userId: session.user.id, courseId: course.id } },
+          select: { status: true },
+        });
+        if (!enrollment || enrollment.status === "cancelled") {
+          return NextResponse.json(
+            { error: "Курс недоступен" },
+            { status: 403 }
+          );
+        }
       }
     }
 
@@ -140,28 +142,31 @@ export async function GET(
     let userProgress: LessonProgress[] = [];
 
     if (session?.user?.id) {
-      userEnrollment = await db.enrollment.findUnique({
-        where: {
-          userId_courseId: {
-            userId: session.user.id,
-            courseId: course.id,
-          },
-        },
-      });
+      const lessonIds = course.modules.flatMap((m: { lessons: { id: string }[] }) =>
+        m.lessons.map((l: { id: string }) => l.id)
+      );
 
-      // Если пользователь записан, получаем прогресс по урокам
-      if (userEnrollment) {
-        const lessonIds = course.modules.flatMap((m: { lessons: { id: string }[] }) =>
-          m.lessons.map((l: { id: string }) => l.id)
-        );
-        userProgress = await db.progress.findMany({
+      // Parallel: enrollment + progress (progress is useful even if enrollment
+      // is null — for free lessons the user may have partial progress)
+      const [enrollmentResult, progressResult] = await Promise.all([
+        db.enrollment.findUnique({
+          where: {
+            userId_courseId: {
+              userId: session.user.id,
+              courseId: course.id,
+            },
+          },
+        }),
+        db.progress.findMany({
           where: {
             userId: session.user.id,
             lessonId: { in: lessonIds },
           },
           select: { lessonId: true, completed: true },
-        });
-      }
+        }),
+      ]);
+      userEnrollment = enrollmentResult;
+      userProgress = progressResult;
     }
 
     // Вычисляем статистику

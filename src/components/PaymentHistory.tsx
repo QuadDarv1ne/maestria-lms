@@ -33,25 +33,26 @@ export function PaymentHistory() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
     const load = async () => {
       try {
-        const res = await fetch("/api/payments?limit=20");
+        const res = await fetch("/api/payments?limit=20", { signal: controller.signal });
         if (res.ok) {
           const data = await res.json();
-          if (!cancelled) setPayments(data.payments ?? []);
-        } else if (!cancelled) {
+          setPayments(data.payments ?? []);
+        } else {
           setPayments([]);
         }
       } catch (e: unknown) {
+        if (e instanceof DOMException && e.name === "AbortError") return;
         log.error("Failed to load payment history", { error: e instanceof Error ? e.message : String(e) });
-        if (!cancelled) setPayments([]);
+        setPayments([]);
       } finally {
-        if (!cancelled) setLoading(false);
+        setLoading(false);
       }
     };
     load();
-    return () => { cancelled = true; };
+    return () => { controller.abort(); };
   }, []);
 
   if (loading) {

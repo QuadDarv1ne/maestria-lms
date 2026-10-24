@@ -30,21 +30,11 @@ const COURSE_LIST_INCLUDE = {
       color: true,
     },
   },
-  modules: {
-    select: {
-      id: true,
-      lessons: {
-        select: {
-          id: true,
-          duration: true,
-        },
-      },
-    },
-  },
   _count: {
     select: {
       enrollments: true,
       reviews: true,
+      modules: true,
     },
   },
 } satisfies Prisma.CourseInclude;
@@ -172,20 +162,41 @@ export async function GET(request: NextRequest) {
       db.course.count({ where }),
     ]);
 
+    // Batch-fetch lesson counts and durations for all courses in one query
+    const courseIds = courses.map((c) => c.id);
+    const lessonStats = courseIds.length > 0
+      ? await db.lesson.groupBy({
+          by: ["moduleId"],
+          where: { module: { courseId: { in: courseIds } } },
+          _count: { id: true },
+          _sum: { duration: true },
+        })
+      : [];
+
+    // Map module stats to course IDs via module lookup
+    const moduleIds = lessonStats.map((s) => s.moduleId);
+    const modulesToCourse = moduleIds.length > 0
+      ? await db.module.findMany({
+          where: { id: { in: moduleIds } },
+          select: { id: true, courseId: true },
+        })
+      : [];
+    const moduleCourseMap = new Map(modulesToCourse.map((m) => [m.id, m.courseId]));
+
+    // Aggregate per course
+    const courseLessonStats = new Map<string, { totalLessons: number; totalDuration: number }>();
+    for (const stat of lessonStats) {
+      const courseId = moduleCourseMap.get(stat.moduleId);
+      if (!courseId) continue;
+      const existing = courseLessonStats.get(courseId) || { totalLessons: 0, totalDuration: 0 };
+      existing.totalLessons += stat._count.id;
+      existing.totalDuration += stat._sum.duration || 0;
+      courseLessonStats.set(courseId, existing);
+    }
+
     // Вычисляем дополнительные данные для каждого курса
     const coursesWithStats = courses.map((course) => {
-      const totalLessons = course.modules.reduce(
-        (acc, module) => acc + module.lessons.length,
-        0
-      );
-      const totalDuration = course.modules.reduce(
-        (acc, module) =>
-          acc + module.lessons.reduce(
-            (a, l) => a + (typeof l.duration === "number" ? l.duration : 0),
-            0
-          ),
-        0
-      );
+      const stats = courseLessonStats.get(course.id) || { totalLessons: 0, totalDuration: 0 };
 
       return {
         id: course.id,
@@ -208,9 +219,9 @@ export async function GET(request: NextRequest) {
         tags: course.tags,
         teacher: course.teacher,
         category: course.category,
-        totalLessons,
-        totalDuration,
-        modulesCount: course.modules.length,
+        totalLessons: stats.totalLessons,
+        totalDuration: stats.totalDuration,
+        modulesCount: course._count.modules,
         createdAt: course.createdAt,
       };
     });

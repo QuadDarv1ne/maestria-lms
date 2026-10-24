@@ -12,6 +12,8 @@ const { mockDb, mockCacheGet, mockHandleApiError } = vi.hoisted(() => ({
   mockDb: {
     course: { findMany: vi.fn(), count: vi.fn(), findUnique: vi.fn() },
     category: { findUnique: vi.fn() },
+    lesson: { groupBy: vi.fn() },
+    module: { findMany: vi.fn() },
   },
   mockCacheGet: vi.fn(),
   mockHandleApiError: vi.fn(),
@@ -76,7 +78,7 @@ const courseRow = {
     { id: "m1", lessons: [{ id: "l1", duration: 30 }, { id: "l2", duration: 45 }] },
     { id: "m2", lessons: [{ id: "l3", duration: 15 }] },
   ],
-  _count: { enrollments: 7, reviews: 3 },
+  _count: { enrollments: 7, reviews: 3, modules: 2 },
   createdAt: new Date("2026-01-01T00:00:00Z"),
 };
 
@@ -91,6 +93,14 @@ beforeEach(() => {
   mockDb.course.count.mockResolvedValue(1);
   mockDb.course.findUnique.mockResolvedValue(null);
   mockDb.category.findUnique.mockResolvedValue(null);
+  mockDb.lesson.groupBy.mockResolvedValue([
+    { moduleId: "m1", _count: { id: 2 }, _sum: { duration: 75 } },
+    { moduleId: "m2", _count: { id: 1 }, _sum: { duration: 15 } },
+  ]);
+  mockDb.module.findMany.mockResolvedValue([
+    { id: "m1", courseId: "course-1" },
+    { id: "m2", courseId: "course-1" },
+  ]);
   mockHandleApiError.mockReturnValue(new Response(JSON.stringify({ error: "internal" }), { status: 500 }));
 });
 

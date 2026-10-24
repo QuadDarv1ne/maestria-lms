@@ -37,40 +37,12 @@ export async function GET(
 
     const userId = session.user.id;
 
-    // Resolve course ID (support both UUID and slug)
-    const course = await db.course.findFirst({
+    // Resolve course ID and fetch structure in one query (support both UUID and slug)
+    const courseWithModules = await db.course.findFirst({
       where: { OR: [{ id: courseId }, { slug: courseId }] },
-      select: { id: true, title: true },
-    });
-
-    if (!course) {
-      return NextResponse.json(
-        { error: "Курс не найден" },
-        { status: 404 }
-      );
-    }
-
-    const resolvedCourseId = course.id;
-
-    // Verify enrollment
-    const enrollment = await db.enrollment.findUnique({
-      where: {
-        userId_courseId: { userId, courseId: resolvedCourseId },
-      },
-      select: { id: true, status: true, progress: true },
-    });
-
-    if (!enrollment) {
-      return NextResponse.json(
-        { error: "Вы не записаны на этот курс" },
-        { status: 403 }
-      );
-    }
-
-    // Get course structure (modules + lessons)
-    const courseWithModules = await db.course.findUnique({
-      where: { id: resolvedCourseId },
-      include: {
+      select: {
+        id: true,
+        title: true,
         modules: {
           include: {
             lessons: {
@@ -92,6 +64,23 @@ export async function GET(
       return NextResponse.json(
         { error: "Курс не найден" },
         { status: 404 }
+      );
+    }
+
+    const resolvedCourseId = courseWithModules.id;
+
+    // Verify enrollment
+    const enrollment = await db.enrollment.findUnique({
+      where: {
+        userId_courseId: { userId, courseId: resolvedCourseId },
+      },
+      select: { id: true, status: true, progress: true },
+    });
+
+    if (!enrollment) {
+      return NextResponse.json(
+        { error: "Вы не записаны на этот курс" },
+        { status: 403 }
       );
     }
 
@@ -328,25 +317,26 @@ export async function PATCH(
       },
     });
 
-    // Recalculate course-level progress
-    const allLessonIds = (
-      await db.lesson.findMany({
+    // Recalculate course-level progress (parallel: lesson count + completed count)
+    const [allLessonIds, completedCount] = await Promise.all([
+      db.lesson.findMany({
         where: { module: { courseId: resolvedCourseId } },
         select: { id: true },
-      })
-    ).map((l: { id: string }) => l.id);
+      }),
+      db.progress.count({
+        where: {
+          userId,
+          lesson: { module: { courseId: resolvedCourseId } },
+          completed: true,
+        },
+      }),
+    ]);
 
-    const completedCount = await db.progress.count({
-      where: {
-        userId,
-        lessonId: { in: allLessonIds },
-        completed: true,
-      },
-    });
+    const totalLessonCount = allLessonIds.length;
 
     const courseProgress =
-      allLessonIds.length > 0
-        ? Math.round((completedCount / allLessonIds.length) * 100)
+      totalLessonCount > 0
+        ? Math.round((completedCount / totalLessonCount) * 100)
         : 0;
 
     // Update enrollment progress

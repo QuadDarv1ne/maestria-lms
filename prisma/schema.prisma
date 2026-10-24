@@ -177,6 +177,7 @@ model Module {
   updatedAt DateTime @updatedAt
 
   @@index([courseId])
+  @@index([courseId, sortOrder])
 }
 
 model Lesson {
@@ -199,6 +200,7 @@ model Lesson {
   updatedAt DateTime @updatedAt
 
   @@index([moduleId])
+  @@index([moduleId, sortOrder])
 }
 
 model LessonAttachment {
