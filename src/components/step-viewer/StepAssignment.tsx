@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { PenTool, Send, Timer } from "lucide-react";
 import { toast } from "sonner";
 import { t } from "@/lib/i18n";
+import { LessonContent } from "./LessonContent";
 import type { StepComponentProps } from "./StepTypes";
 
 function formatTime(totalSeconds: number): string {
@@ -87,9 +88,7 @@ export function StepAssignment({ step, locale, submittingAssignment, onSubmitAss
             <PenTool className="w-4 h-4" />
             <span className="font-medium">{t("course.step.practicalAssignment", locale)}</span>
           </div>
-          <div className="prose prose-sm max-w-none whitespace-pre-wrap">
-            {step.content || t("course.step.loadingContent", locale)}
-          </div>
+          <LessonContent content={step.content} locale={locale} />
         </CardContent>
       </Card>
 

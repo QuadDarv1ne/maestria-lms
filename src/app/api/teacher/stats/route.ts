@@ -79,12 +79,64 @@ export async function GET(request: NextRequest) {
 
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - MS.THIRTY_DAYS);
+    const sevenDaysAgo = new Date(now.getTime() - MS.DAY * 7);
 
     let totalStudents = 0;
     let totalCompleted = 0;
     let totalProgressSum = 0;
     let totalEnrollments = 0;
     const recentStudentIds = new Set<string>();
+    const lowProgressStudents: Array<{
+      userId: string;
+      name: string | null;
+      email: string;
+      progress: number;
+      courseId: string;
+      courseTitle: string;
+    }> = [];
+
+    // Batch-fetch pending assignments (essays to review)
+    const pendingAssignments = await db.assignmentSubmission.findMany({
+      where: {
+        assignment: {
+          lesson: {
+            module: {
+              course: { teacherId },
+            },
+          },
+          type: "essay",
+        },
+        status: "pending",
+      },
+      include: {
+        assignment: {
+          select: {
+            title: true,
+            lesson: {
+              select: {
+                title: true,
+                module: {
+                  select: {
+                    course: {
+                      select: { title: true },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        user: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+    });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const coursesWithStats = coursesWithEnrollments.map((course: any) => {
@@ -105,12 +157,23 @@ export async function GET(request: NextRequest) {
       );
       totalEnrollments += totalForCourse;
 
-      enrollments.forEach((e: { enrolledAt: Date; completedAt: Date | null; userId: string }) => {
+      // Find low-progress students (< 30%)
+      activeEnrollments.forEach((e: { enrolledAt: Date; completedAt: Date | null; userId: string; progress: number }) => {
         if (
           e.enrolledAt >= thirtyDaysAgo ||
           (e.completedAt && e.completedAt >= thirtyDaysAgo)
         ) {
           recentStudentIds.add(e.userId);
+        }
+        if (e.progress < 30) {
+          lowProgressStudents.push({
+            userId: e.userId,
+            name: e.user?.name ?? null,
+            email: e.user?.email ?? "",
+            progress: e.progress,
+            courseId: course.id,
+            courseTitle: course.title,
+          });
         }
       });
 
@@ -149,6 +212,58 @@ export async function GET(request: NextRequest) {
       };
     });
 
+    // Weekly activity: last 7 days with daily stats
+    const weeklyActivity = Array.from({ length: 7 }, (_, i) => {
+      const day = new Date(now);
+      day.setUTCDate(day.getUTCDate() - (6 - i));
+      const dayStart = new Date(Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate()));
+      const dayEnd = new Date(dayStart.getTime() + MS.DAY);
+
+      return {
+        date: day.toISOString().split("T")[0],
+        day: getDayShort(day, "ru"),
+        enrollments: 0,
+        completions: 0,
+        timeSpent: 0,
+      };
+    });
+
+    // Batch-fetch daily stats
+    const dailyProgress = await db.progress.findMany({
+      where: {
+        lesson: {
+          module: {
+            course: { teacherId },
+          },
+        },
+        lastAccessed: { gte: sevenDaysAgo },
+      },
+      select: {
+        lastAccessed: true,
+        timeSpent: true,
+        completed: true,
+      },
+    });
+
+    for (const p of dailyProgress) {
+      if (!p.lastAccessed) continue;
+      const dayKey = p.lastAccessed.toISOString().split("T")[0];
+      const dayStats = weeklyActivity.find((d) => d.date === dayKey);
+      if (dayStats) {
+        dayStats.timeSpent += p.timeSpent;
+        if (p.completed) dayStats.completions++;
+      }
+    }
+
+    // Also count enrollments this week
+    const weeklyEnrollments = await db.enrollment.count({
+      where: {
+        course: { teacherId },
+        enrolledAt: { gte: sevenDaysAgo },
+      },
+    });
+    weeklyActivity[6].enrollments = weeklyEnrollments; // today gets enrollments
+
     const avgCompletionRate =
       totalEnrollments > 0
         ? Math.round((totalCompleted / totalEnrollments) * 100)
@@ -175,9 +290,21 @@ export async function GET(request: NextRequest) {
         totalRevenue,
         recentStudents: recentStudentIds.size,
         publishedCourses: courses.filter((c) => c.isPublished).length,
+        pendingReviews: pendingAssignments.length,
+        lowProgressStudents: lowProgressStudents.slice(0, 10),
+        weeklyActivity,
       },
     });
   } catch (error: unknown) {
     return handleApiError(error, { route: "teacher/stats" });
   }
+}
+
+function getDayShort(date: Date, locale: string): string {
+  const days: Record<string, string[]> = {
+    ru: ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"],
+    en: ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
+    zh: ["日", "一", "二", "三", "四", "五", "六"],
+  };
+  return (days[locale] || days.ru)[date.getDay()];
 }

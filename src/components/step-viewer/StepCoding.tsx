@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Code2, Lightbulb, Send, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { t } from "@/lib/i18n";
+import { LessonContent } from "./LessonContent";
 import type { StepComponentProps } from "./StepTypes";
 
 export function StepCoding({ step, locale, submittingAssignment, onSubmitAssignment }: StepComponentProps) {
@@ -39,7 +40,7 @@ export function StepCoding({ step, locale, submittingAssignment, onSubmitAssignm
               <Lightbulb className="w-4 h-4" />
               <span className="font-medium">{t("course.step.theory", locale)}</span>
             </div>
-            <div className="prose prose-sm max-w-none whitespace-pre-wrap">{step.content}</div>
+            <LessonContent content={step.content} locale={locale} />
           </CardContent>
         </Card>
       )}

@@ -26,6 +26,7 @@ import {
 import { ProfileSkeleton } from "@/components/skeletons/ProfileSkeleton";
 import { PaymentHistory } from "@/components/PaymentHistory";
 import { AchievementsPage } from "@/components/AchievementsPage";
+import { StudentDashboard } from "@/components/StudentDashboard";
 
 // Use translation keys version:
 function formatTimeLocalized(seconds: number, tFn: typeof t, locale?: Locale): string {
@@ -532,6 +533,11 @@ export function ProfilePage() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Student Dashboard: Continue Learning + Weekly Activity */}
+      {user && (
+        <StudentDashboard />
       )}
 
       {/* Progress Summary (replaces fake heatmap) */}

@@ -3,6 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { FileText } from "lucide-react";
 import { t } from "@/lib/i18n";
+import { LessonContent } from "./LessonContent";
 import type { StepComponentProps } from "./StepTypes";
 
 export function StepText({ step, locale }: StepComponentProps) {
@@ -13,9 +14,7 @@ export function StepText({ step, locale }: StepComponentProps) {
           <FileText className="w-4 h-4" />
           <span className="font-medium">{t("course.step.theory", locale)}</span>
         </div>
-        <div className="prose prose-sm max-w-none whitespace-pre-wrap leading-relaxed">
-          {step.content || t("course.step.loadingContent", locale)}
-        </div>
+        <LessonContent content={step.content} locale={locale} />
       </CardContent>
     </Card>
   );

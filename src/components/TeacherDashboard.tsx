@@ -17,7 +17,8 @@ import {
 } from "@/components/ui/table";
 import {
   BookOpen, Users, TrendingUp, Star, Plus, GraduationCap,
-  Clock, RefreshCw, BarChart3, ExternalLink,
+  Clock, RefreshCw, BarChart3, ExternalLink, AlertTriangle,
+  FileText, Calendar,
 } from "lucide-react";
 import { getInitials } from "@/lib/utils";
 
@@ -53,6 +54,22 @@ interface TeacherStats {
   totalRevenue: number;
   recentStudents: number;
   publishedCourses: number;
+  pendingReviews: number;
+  lowProgressStudents: Array<{
+    userId: string;
+    name: string | null;
+    email: string;
+    progress: number;
+    courseId: string;
+    courseTitle: string;
+  }>;
+  weeklyActivity: Array<{
+    date: string;
+    day: string;
+    enrollments: number;
+    completions: number;
+    timeSpent: number;
+  }>;
 }
 
 export function TeacherDashboard() {
@@ -166,10 +183,10 @@ export function TeacherDashboard() {
           bg: "bg-violet-50 dark:bg-violet-950/30",
         },
         {
-          label: t("teacher.avgProgress", locale),
-          value: `${stats.avgProgress}%`,
-          icon: <TrendingUp className="w-5 h-5 text-amber-600" />,
-          bg: "bg-amber-50 dark:bg-amber-950/30",
+          label: t("teacher.pendingReviews", locale),
+          value: stats.pendingReviews > 0 ? stats.pendingReviews : "0",
+          icon: <FileText className={`w-5 h-5 ${stats.pendingReviews > 0 ? "text-red-600" : "text-gray-400"}`} />,
+          bg: stats.pendingReviews > 0 ? "bg-red-50 dark:bg-red-950/30" : "bg-gray-50 dark:bg-gray-950/30",
         },
       ]
     : [];
@@ -397,6 +414,114 @@ export function TeacherDashboard() {
                     </Button>
                   </div>
                 ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Weekly Activity Chart */}
+      {stats?.weeklyActivity && stats.weeklyActivity.length > 0 && (
+        <Card className="border-0 shadow-sm mt-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-blue-700" />
+              {t("teacher.weeklyActivity", locale)}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-end justify-between gap-2 h-24">
+              {stats.weeklyActivity.map((day, idx) => {
+                const totalMinutes = day.timeSpent;
+                const height = Math.max(4, Math.min(100, (totalMinutes / 120) * 100));
+                return (
+                  <div key={idx} className="flex flex-col items-center flex-1 gap-1">
+                    <div className="flex flex-col items-center gap-0.5 w-full">
+                      <div
+                        className="w-full max-w-[40px] rounded-t-md bg-linear-to-t from-blue-600 to-violet-500 transition-all"
+                        style={{ height: `${height}%` }}
+                      />
+                      {totalMinutes > 0 && (
+                        <span className="text-[10px] text-muted-foreground">
+                          {totalMinutes >= 60
+                            ? `${Math.round(totalMinutes / 60)}h`
+                            : `${totalMinutes}m`}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">
+                      {day.day}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Pending Reviews */}
+      {stats?.pendingReviews && stats.pendingReviews > 0 && (
+        <Card className="border-0 shadow-sm mt-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-red-700" />
+              {t("teacher.pendingReviews", locale)}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {stats.pendingReviews > 0 && (
+                <div className="bg-red-50 dark:bg-red-950/30 rounded-lg p-4">
+                  <p className="text-sm font-medium text-red-800 dark:text-red-300">
+                    {stats.pendingReviews} {t("teacher.assignmentToReview", locale)}
+                  </p>
+                  <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                    {t("teacher.reviewHint", locale)}
+                  </p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Low Progress Students */}
+      {stats?.lowProgressStudents && stats.lowProgressStudents.length > 0 && (
+        <Card className="border-0 shadow-sm mt-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-amber-700" />
+              {t("teacher.lowProgress", locale)}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {stats.lowProgressStudents.slice(0, 5).map((student) => (
+                <div key={`${student.userId}-${student.courseId}`} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
+                  <div className="w-8 h-8 bg-linear-to-br from-amber-500 to-orange-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                    {getInitials(student.name, "?")}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">
+                      {student.name || student.email}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {student.courseTitle}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-red-500"
+                        style={{ width: `${student.progress}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-red-600 font-medium">
+                      {student.progress}%
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>

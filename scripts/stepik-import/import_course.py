@@ -184,6 +184,37 @@ def html_to_text(html: str) -> str:
     return parser.result()
 
 
+# --------------------------------------------------------------------------- #
+# Сохраняем HTML для LessonContent (теперь поддерживает HTML/Markdown)
+# --------------------------------------------------------------------------- #
+def html_to_maestria_content(html: str) -> str | None:
+    """Очищаем HTML от служебных тегов Stepik, но сохраняем разметку.
+
+    Stepik добавляет обёртки <div class="stepik-step">, <p>, <br> —
+    всё это поддерживается sanitize-html и CSS-классом .lesson-content.
+    """
+    if not html:
+        return None
+
+    cleaned = html
+
+    # Удаляем служебные атрибуты Stepik
+    for attr in ["data-stepik-block-id", "data-stepik-step-id"]:
+        cleaned = re.sub(rf'\s{re.escape(attr)}="[^"]*"', "", cleaned)
+
+    # Удаляем обёртки stepik-step (содержимое оставляем)
+    cleaned = re.sub(r'<div\s+class="stepik-step"\s*>', "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"</div\s*>", "", cleaned, count=0)
+    # Возвращаем закрывающий тег только если он был
+    cleaned = re.sub(r"</div\s*>$", "", cleaned)
+
+    # Нормализуем переносы
+    cleaned = re.sub(r">\s*<", ">\n<", cleaned)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+
+    return cleaned.strip() or None
+
+
 def html_to_oneline(html: str) -> str:
     return re.sub(r"\s+", " ", html_to_text(html)).strip()
 
@@ -338,11 +369,12 @@ def build_quiz(step: dict, number: int) -> AssignmentDraft | None:
         return None
 
     multiple = bool(source.get("is_multiple_choice"))
-    question = html_to_oneline(step.get("html") or "") or f"Вопрос {number}"
-    description = question + ("\n\nВыберите все верные варианты." if multiple else "")
+    question_html = step.get("html") or ""
+    question_plain = html_to_text(question_html)
+    description = html_to_oneline(question_plain) + ("\n\nВыберите все верные варианты." if multiple else "")
 
     return AssignmentDraft(
-        title=truncate(question, 180),
+        title=truncate(html_to_oneline(question_plain), 180),
         description=description,
         type="quiz",
         options=json.dumps(texts, ensure_ascii=False),
@@ -351,9 +383,10 @@ def build_quiz(step: dict, number: int) -> AssignmentDraft | None:
 
 
 def build_essay(step: dict, number: int) -> AssignmentDraft:
-    question = html_to_text(step.get("html") or "")
+    question = html_to_maestria_content(step.get("html") or "") or ""
+    question_plain = html_to_text(step.get("html") or "")
     return AssignmentDraft(
-        title=truncate(html_to_oneline(question), 180) or f"Задание {number}",
+        title=truncate(html_to_oneline(question_plain), 180) or f"Задание {number}",
         description=question,
         type="essay",
     )
@@ -432,7 +465,7 @@ def build_course(source: dict, slug_override: str | None, keep_price: bool) -> C
             for step in unit.get("steps") or []:
                 block = step.get("block_name")
                 if block == "text":
-                    text = html_to_text(step.get("html") or "")
+                    text = html_to_maestria_content(step.get("html") or "")
                     if text:
                         text_parts.append(text)
                 elif block == "choice":
@@ -440,7 +473,7 @@ def build_course(source: dict, slug_override: str | None, keep_price: bool) -> C
                     if quiz:
                         quizzes.append(quiz)
                     else:
-                        text = html_to_text(step.get("html") or "")
+                        text = html_to_maestria_content(step.get("html") or "")
                         if text:
                             text_parts.append(text)
                         course.notes.append(
@@ -449,7 +482,7 @@ def build_course(source: dict, slug_override: str | None, keep_price: bool) -> C
                 elif block == "free-answer":
                     essays.append(build_essay(step, len(essays) + 1))
                 else:
-                    text = html_to_text(step.get("html") or "")
+                    text = html_to_maestria_content(step.get("html") or "")
                     if text:
                         text_parts.append(text)
                     course.notes.append(f"step {step.get('id')}: тип «{block}» добавлен как текст")

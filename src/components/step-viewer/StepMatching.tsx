@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowUpDown, CheckCircle2, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import { t } from "@/lib/i18n";
+import { LessonContent } from "./LessonContent";
 import type { StepComponentProps } from "./StepTypes";
 import { shuffleArray } from "./StepTypes";
 
@@ -43,7 +44,7 @@ export function StepMatching({ step, locale, submittingAssignment, onSubmitAssig
       {step.content && (
         <Card className="border-0 shadow-sm">
           <CardContent className="p-6">
-            <div className="prose prose-sm max-w-none whitespace-pre-wrap">{step.content}</div>
+            <LessonContent content={step.content} locale={locale} />
           </CardContent>
         </Card>
       )}
