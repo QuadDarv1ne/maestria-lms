@@ -188,6 +188,43 @@ def html_to_oneline(html: str) -> str:
     return re.sub(r"\s+", " ", html_to_text(html)).strip()
 
 
+BLOCK_SPLIT_RE = re.compile(
+    r"<\s*(?:/)?\s*(?:p|li|div|br|tr|h[1-6])\b[^>]*>", re.IGNORECASE
+)
+
+
+def html_to_items(value: object) -> list[str]:
+    """HTML-список (или строка с <p>/<li>) -> массив чистых пунктов.
+
+    Stepik отдаёт `requirements` одной HTML-строкой, а Maestria хранит
+    JSON-массив строк и выводит его как текст — теги там недопустимы.
+    """
+    if value is None:
+        return []
+
+    if isinstance(value, list):
+        items: list[str] = []
+        for entry in value:
+            if isinstance(entry, dict):
+                entry = entry.get("text") or entry.get("title") or ""
+            items.extend(html_to_items(entry))
+        return items
+
+    text = str(value).strip()
+    if not text:
+        return []
+
+    # Разбиваем по блочным тегам, затем чистим каждый кусок от остатков разметки.
+    chunks = BLOCK_SPLIT_RE.split(text)
+    items = []
+    for chunk in chunks:
+        cleaned = html_to_oneline(chunk)
+        cleaned = cleaned.lstrip("–—-•*· ").strip()
+        if cleaned:
+            items.append(cleaned)
+    return items
+
+
 # --------------------------------------------------------------------------- #
 # Транслитерация и slug
 # --------------------------------------------------------------------------- #

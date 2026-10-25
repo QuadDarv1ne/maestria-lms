@@ -209,9 +209,70 @@ html {
 .prose ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 0.75rem; }
 .prose ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 0.75rem; }
 .prose li { margin-bottom: 0.25rem; }
+.prose li > ul, .prose li > ol { margin-top: 0.25rem; margin-bottom: 0.25rem; }
 .prose code { background: var(--muted); padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.875rem; }
 .prose pre { background: var(--card); color: var(--card-foreground); padding: 1rem; border-radius: 0.5rem; overflow-x: auto; margin-bottom: 0.75rem; border: 1px solid var(--border); }
+.prose pre code { background: transparent; padding: 0; border-radius: 0; font-size: 0.85rem; }
 .prose blockquote { border-left: 3px solid var(--border); padding-left: 1rem; font-style: italic; margin-bottom: 0.75rem; }
+
+/* Ссылки в учебном контенте */
+.prose a { color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
+.prose a:hover { text-decoration-thickness: 2px; }
+
+/* Изображения: адаптивные, с мягкой рамкой и кликом для увеличения */
+.lesson-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  cursor: zoom-in;
+}
+.lesson-content figure { margin: 1rem 0; }
+.lesson-content figcaption { font-size: 0.8rem; color: var(--muted-foreground); text-align: center; margin-top: 0.4rem; }
+
+/* Таблицы: горизонтальная прокрутка вместо разлома макета на мобильных */
+.lesson-content table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  margin: 1rem 0;
+}
+.lesson-content .lesson-table-scroll {
+  overflow-x: auto;
+  margin: 1rem 0;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+}
+.lesson-content .lesson-table-scroll table { margin: 0; }
+.lesson-content th,
+.lesson-content td {
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+.lesson-content th { background: var(--muted); font-weight: 600; }
+.lesson-content tbody tr:nth-child(even) { background: color-mix(in oklch, var(--muted) 45%, transparent); }
+.lesson-content hr { border: 0; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+.lesson-content details { border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.75rem 1rem; margin-bottom: 0.75rem; }
+.lesson-content summary { cursor: pointer; font-weight: 600; }
+
+/* Встроенное видео и аудио в текстовом шаге */
+.lesson-content iframe {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  border: 0;
+  border-radius: 0.5rem;
+  background: #000;
+}
+.lesson-content video,
+.lesson-content audio { max-width: 100%; border-radius: 0.5rem; }
+
+/* На узких экранах таблица прокручивается целиком, а не сжимается */
+@media (max-width: 640px) {
+  .lesson-content table { display: block; overflow-x: auto; white-space: nowrap; }
+}
 
 /* ═══════════════════════════════════════════════════════════════════════
    КАСТОМНЫЙ КУРСОР — Maestria

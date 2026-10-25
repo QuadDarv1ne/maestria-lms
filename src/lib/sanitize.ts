@@ -1,4 +1,5 @@
 import sanitizeHtml from "sanitize-html";
+import { ALLOWED_EMBED_HOSTS } from "@/lib/video-embed";
 
 const DEFAULT_ALLOWED_TAGS = [
   "h1", "h2", "h3", "h4", "h5", "h6",
@@ -30,24 +31,78 @@ const DEFAULT_ALLOWED_ATTRIBUTES: Record<string, string[]> = {
   "*": ["id", "class", "title", "data-*", "aria-*", "role"],
 };
 
+const IFRAME_ALLOWED_ATTRIBUTES = [
+  "src", "width", "height", "title", "allow", "allowfullscreen",
+  "frameborder", "loading", "referrerpolicy",
+];
+
+export interface SanitizeContentOptions {
+  allowedTags?: string[];
+  allowedAttributes?: Record<string, string[]>;
+  /** Разрешить встраивание видео с известных хостингов (YouTube, VK, Rutube, …). */
+  allowIframes?: boolean;
+  /** Открывать внешние ссылки в новой вкладке с rel="noopener noreferrer". */
+  externalLinks?: boolean;
+  /** Добавлять loading="lazy"/decoding="async" к изображениям. */
+  lazyImages?: boolean;
+}
+
 /**
  * Sanitize HTML content, stripping dangerous tags and attributes.
  * Use for rich text fields like course descriptions, lesson content, etc.
  */
 export function sanitizeContent(
   html: string,
-  options?: {
-    allowedTags?: string[];
-    allowedAttributes?: Record<string, string[]>;
-  }
+  options?: SanitizeContentOptions
 ): string {
+  const allowIframes = options?.allowIframes ?? false;
+  const baseTags = options?.allowedTags ?? DEFAULT_ALLOWED_TAGS;
+  const baseAttributes = {
+    ...DEFAULT_ALLOWED_ATTRIBUTES,
+    ...(options?.allowedAttributes ?? {}),
+  };
+
+  const allowedTags = allowIframes
+    ? Array.from(new Set([...baseTags, "iframe"]))
+    : baseTags;
+  const allowedAttributes = allowIframes
+    ? { ...baseAttributes, iframe: IFRAME_ALLOWED_ATTRIBUTES }
+    : baseAttributes;
+
+  const transformTags: sanitizeHtml.Transformer = {};
+
+  if (options?.externalLinks) {
+    transformTags.a = (tagName: string, attribs: Record<string, string>) => {
+      const href = attribs.href ?? "";
+      const isExternal = /^https?:\/\//i.test(href) && !href.startsWith("/");
+      if (!isExternal) return { tagName, attribs };
+      return {
+        tagName,
+        attribs: { ...attribs, target: "_blank", rel: "noopener noreferrer" },
+      };
+    };
+  }
+
+  if (options?.lazyImages) {
+    transformTags.img = (tagName: string, attribs: Record<string, string>) => ({
+      tagName,
+      attribs: {
+        ...attribs,
+        loading: attribs.loading || "lazy",
+        decoding: attribs.decoding || "async",
+      },
+    });
+  }
+
   return sanitizeHtml(html, {
-    allowedTags: options?.allowedTags ?? DEFAULT_ALLOWED_TAGS,
-    allowedAttributes: options?.allowedAttributes ?? DEFAULT_ALLOWED_ATTRIBUTES,
+    allowedTags,
+    allowedAttributes,
+    allowedIframeHostnames: allowIframes ? ALLOWED_EMBED_HOSTS : undefined,
     allowedSchemes: ["http", "https", "mailto", "tel"],
     allowedSchemesAppliedToAttributes: ["href", "src", "srcset", "poster"],
     allowProtocolRelative: false,
     enforceHtmlBoundary: false,
+    ...(Object.keys(transformTags).length > 0 ? { transformTags } : {}),
   });
 }
 
