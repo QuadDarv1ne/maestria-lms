@@ -69,10 +69,10 @@ export function sanitizeContent(
     ? { ...baseAttributes, iframe: IFRAME_ALLOWED_ATTRIBUTES }
     : baseAttributes;
 
-  const transformTags: sanitizeHtml.Transformer = {};
+  const transformTags: Record<string, sanitizeHtml.Transformer> = {};
 
   if (options?.externalLinks) {
-    transformTags.a = (tagName: string, attribs: Record<string, string>) => {
+    transformTags["a"] = (tagName: string, attribs: sanitizeHtml.Attributes) => {
       const href = attribs.href ?? "";
       const isExternal = /^https?:\/\//i.test(href) && !href.startsWith("/");
       if (!isExternal) return { tagName, attribs };
@@ -84,7 +84,7 @@ export function sanitizeContent(
   }
 
   if (options?.lazyImages) {
-    transformTags.img = (tagName: string, attribs: Record<string, string>) => ({
+    transformTags["img"] = (tagName: string, attribs: sanitizeHtml.Attributes) => ({
       tagName,
       attribs: {
         ...attribs,
@@ -94,6 +94,8 @@ export function sanitizeContent(
     });
   }
 
+  const hasTransforms = Object.keys(transformTags).length > 0;
+
   return sanitizeHtml(html, {
     allowedTags,
     allowedAttributes,
@@ -102,7 +104,7 @@ export function sanitizeContent(
     allowedSchemesAppliedToAttributes: ["href", "src", "srcset", "poster"],
     allowProtocolRelative: false,
     enforceHtmlBoundary: false,
-    ...(Object.keys(transformTags).length > 0 ? { transformTags } : {}),
+    ...(hasTransforms ? { transformTags } : {}),
   });
 }
 

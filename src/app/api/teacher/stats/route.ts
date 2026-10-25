@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
         include: {
           user: {
             select: {
-              id: true, name: true, image: true,
+              id: true, name: true, email: true, image: true,
             },
           },
         },
@@ -132,7 +132,6 @@ export async function GET(request: NextRequest) {
             email: true,
           },
         },
-        createdAt: true,
       },
       orderBy: { createdAt: "desc" },
       take: 10,
@@ -158,7 +157,7 @@ export async function GET(request: NextRequest) {
       totalEnrollments += totalForCourse;
 
       // Find low-progress students (< 30%)
-      activeEnrollments.forEach((e: { enrolledAt: Date; completedAt: Date | null; userId: string; progress: number }) => {
+      activeEnrollments.forEach((e: { enrolledAt: Date; completedAt: Date | null; userId: string; progress: number; user: { name: string | null; email: string } }) => {
         if (
           e.enrolledAt >= thirtyDaysAgo ||
           (e.completedAt && e.completedAt >= thirtyDaysAgo)
