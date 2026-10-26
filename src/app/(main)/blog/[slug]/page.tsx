@@ -5,7 +5,6 @@ import { ArticleJsonLd } from "@/components/article/ArticleJsonLd";
 import { getArticleBySlug, getRelatedArticles } from "@/lib/articles";
 import { getAuthSession } from "@/lib/auth";
 import { env } from "@/lib/env";
-import { log } from "@/lib/logger";
 
 interface Props {
   params: Promise<{ slug: string }>;

@@ -16,20 +16,8 @@ import { TableOfContents } from "@/components/article/TableOfContents";
 import { ArticleImageZoom } from "@/components/article/ArticleImageZoom";
 import { ArticleShare } from "@/components/article/ArticleShare";
 import { ArticleBreadcrumbs } from "@/components/article/ArticleBreadcrumbs";
-import { RelatedArticles } from "@/components/article/RelatedArticles";
+import { RelatedArticles, type RelatedArticleData } from "@/components/article/RelatedArticles";
 import { ArticlePageSkeleton } from "@/components/article/ArticlePageSkeleton";
-
-interface RelatedArticleData {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt: string | null;
-  image: string | null;
-  category: string;
-  readTime: number;
-  views: number;
-  createdAt: string;
-}
 
 // Allowed HTML tags for sanitization
 const HTML_ALLOWED_TAGS = [
@@ -165,8 +153,9 @@ export function ArticlePage({ slug, initialArticle, relatedArticles = [] }: Arti
   }, [slug, locale, initialArticle]);
 
   // Record a view after the article is mounted (once per 30 min per server cookie).
+  const articleId = article?.id;
   useEffect(() => {
-    if (!article) return;
+    if (!articleId) return;
     let cancelled = false;
     fetch(`/api/articles/${slug}/view`, { method: "POST" })
       .then((res) => {
@@ -174,8 +163,9 @@ export function ArticlePage({ slug, initialArticle, relatedArticles = [] }: Arti
         return res.json() as Promise<{ views?: number; counted?: boolean }>;
       })
       .then((data) => {
-        if (cancelled || !data?.views) return;
-        setArticle((prev) => (prev ? { ...prev, views: data.views! } : prev));
+        const views = data?.views;
+        if (cancelled || typeof views !== "number") return;
+        setArticle((prev) => (prev ? { ...prev, views } : prev));
       })
       .catch(() => {
         // A failed view counter must never surface as a user-facing error.
@@ -183,7 +173,7 @@ export function ArticlePage({ slug, initialArticle, relatedArticles = [] }: Arti
     return () => {
       cancelled = true;
     };
-  }, [slug, article?.id]);
+  }, [slug, articleId]);
 
   if (isLoading) {
     return <ArticlePageSkeleton />;

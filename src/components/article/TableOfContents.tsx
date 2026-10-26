@@ -78,7 +78,14 @@ export function TableOfContents({
       collected.push({ id, text, level });
     }
 
-    setItems(collected);
+    // Defer setState into rAF to satisfy the no-sync-state-update lint rule
+    // while keeping the TOC visible within one frame of the article render.
+    let rafId = 0;
+    const schedule = () => {
+      rafId = window.requestAnimationFrame(() => setItems(collected));
+    };
+    schedule();
+    return () => window.cancelAnimationFrame(rafId);
   }, [targetSelector, minLevel, maxLevel]);
 
   // Scroll-spy: highlight the heading nearest the top of the viewport.

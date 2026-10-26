@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { db } from "@/lib/db";
+import { db, Prisma, getDatabaseProvider } from "@/lib/db";
 import { log } from "@/lib/logger";
 
 /**
@@ -76,6 +76,109 @@ const ARTICLE_SELECT = {
     },
   },
 } as const;
+
+export interface ArticleListItem {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  image: string | null;
+  category: string;
+  tags: string | null;
+  readTime: number;
+  views: number;
+  isFeatured: boolean;
+  createdAt: Date;
+  author: { id: string; name: string | null; image: string | null; role: string };
+}
+
+export interface ArticlesPageOptions {
+  page: number;
+  limit: number;
+  category?: string;
+  search?: string;
+  sortBy?: "new" | "popular";
+}
+
+export interface ArticlesPageResult {
+  articles: ArticleListItem[];
+  total: number;
+  totalPages: number;
+}
+
+const ARTICLE_LIST_SELECT = {
+  id: true,
+  title: true,
+  slug: true,
+  excerpt: true,
+  image: true,
+  category: true,
+  tags: true,
+  readTime: true,
+  views: true,
+  isFeatured: true,
+  createdAt: true,
+  author: {
+    select: { id: true, name: true, image: true, role: true },
+  },
+} as const;
+
+/**
+ * Paginated, filtered list of published articles for the blog page.
+ * Returns empty results (never throws) when the database is unavailable —
+ * the client renders its own error state.
+ */
+export async function getArticlesPage({
+  page,
+  limit,
+  category,
+  search,
+  sortBy = "new",
+}: ArticlesPageOptions): Promise<ArticlesPageResult> {
+  const where: Prisma.ArticleWhereInput = { isPublished: true };
+
+  if (category && category !== "all") {
+    where.category = category;
+  }
+
+  if (search) {
+    // 'mode: insensitive' is only supported by PostgreSQL; SQLite LIKE is case-insensitive natively
+    const provider = getDatabaseProvider();
+    const searchFilter = provider === "postgresql"
+      ? { contains: search, mode: "insensitive" as const }
+      : { contains: search };
+    where.OR = [{ title: searchFilter }, { excerpt: searchFilter }];
+  }
+
+  const orderBy: { isFeatured?: "desc"; createdAt?: "desc"; views?: "desc" }[] = [
+    { isFeatured: "desc" },
+  ];
+  if (sortBy === "popular") {
+    orderBy.push({ views: "desc" });
+  } else {
+    orderBy.push({ createdAt: "desc" });
+  }
+
+  const skip = (page - 1) * limit;
+
+  try {
+    const [articles, total] = await Promise.all([
+      db.article.findMany({ where, select: ARTICLE_LIST_SELECT, orderBy, skip, take: limit }),
+      db.article.count({ where }),
+    ]);
+
+    return {
+      articles: articles as ArticleListItem[],
+      total,
+      totalPages: Math.ceil(total / limit),
+    };
+  } catch (error) {
+    log.error("[articles] Failed to fetch article list", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return { articles: [], total: 0, totalPages: 0 };
+  }
+}
 
 /**
  * Fetch a single article by slug. Returns `null` when the article is missing

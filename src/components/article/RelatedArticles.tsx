@@ -6,8 +6,11 @@ import type { RelatedArticle } from "@/lib/articles";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 
+/** Serialized form passed from the server page (dates become ISO strings). */
+export type RelatedArticleData = Omit<RelatedArticle, "createdAt"> & { createdAt: string };
+
 interface RelatedArticlesProps {
-  articles: RelatedArticle[];
+  articles: RelatedArticleData[];
 }
 
 /**
