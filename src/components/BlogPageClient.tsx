@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ArticleCard } from "@/components/ArticleCard";
+import { ArticleCardSkeletonGrid } from "@/components/article/ArticleCardSkeleton";
 import { Search, X, BookOpen, SlidersHorizontal } from "lucide-react";
 
 const CATEGORIES = [
@@ -271,14 +272,7 @@ export function BlogPageClient({ initialArticles, initialPagination }: BlogPageC
 
       {/* Articles Grid */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="animate-pulse rounded-lg bg-muted h-80"
-            />
-          ))}
-        </div>
+        <ArticleCardSkeletonGrid count={6} />
       ) : error ? (
         <div className="text-center py-16">
           <X className="w-16 h-16 text-red-400 mx-auto mb-4" />
