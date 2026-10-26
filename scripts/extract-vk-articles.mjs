@@ -34,46 +34,42 @@ async function extractArticle(page, url) {
       : document.title.replace(/\s*\|\s*VK.*/, "").trim();
 
     // ─── Article content container ───
-    // VK articles use .article_layer or [class*="article_layer"] or [class*="post__text"]
-    const selectors = [
-      ".article_layer",
-      "[class*='article_layer']",
-      ".post__text",
-      "[class*='post__text']",
+    // VK articles structure: .article_layer > .article_layer__views > .article_layer__content
+    // The content div also includes .article_layer__header which we need to remove
+    const contentSelectors = [
+      ".article_layer__content",
+      "[class*='article_layer__content']",
       ".typography",
       "[class*='typography']",
+      ".post__text",
+      "[class*='post__text']",
+      ".article_layer",
+      "[class*='article_layer']",
     ];
 
     let articleEl = null;
-    for (const sel of selectors) {
+    for (const sel of contentSelectors) {
       const el = document.querySelector(sel);
-      if (el && (el.innerHTML || "").length > 100) {
+      if (el && (el.innerHTML || "").length > 200) {
         articleEl = el;
         break;
       }
     }
 
-    if (!articleEl) {
-      // Fallback: try to find any element with substantial text content
-      const allDivs = Array.from(document.querySelectorAll("div, article, main"));
-      for (const div of allDivs) {
-        const text = div.textContent || "";
-        if (text.length > 500 && !div.querySelector("script")) {
-          articleEl = div;
-          break;
-        }
-      }
-    }
-
-    if (!articleEl) return { title, html: "", content: "", images: [], attachments: [] };
+    if (!articleEl) return { title, html: "", content: "", images: [], attachments: [], embeddedMedia: [] };
 
     // Clone to avoid modifying the DOM
     const clone = articleEl.cloneNode(true);
 
-    // Remove interactive elements
+    // Remove VK-specific UI elements (header, TTS player, buttons, ads, footer, etc.)
     clone.querySelectorAll(
-      "script, style, noscript, button, [onclick], iframe[src*='vk']",
-      "link[rel='stylesheet']"
+      "script, style, noscript, link, button, svg, " +
+      "[class*='tts_player'], [class*='article_layer__header'], " +
+      "[class*='top_actions'], [class*='_close'], [class*='overlay'], " +
+      "[class*='modal'], [class*='article_react'], [class*='article_share'], " +
+      "[class*='views_counter'], [class*='article_layer__up'], [class*='dvd'], " +
+      "[class*='article_layer_ads_place'], [class*='article_layer__simple_footer'], " +
+      "[class*='article_layer_misc'], [class*='article_anchor_button']"
     ).forEach((el) => el.remove());
 
     // Get HTML content (preserves formatting!)
@@ -96,8 +92,6 @@ async function extractArticle(page, url) {
         };
       })
       .filter((img) => img.src && !img.src.includes("ava="));
-
-    // ─── Extract attachments (files) ───
     const attachments = Array.from(clone.querySelectorAll("a[href]"))
       .map((a) => {
         const href = a.getAttribute("href") || "";
@@ -124,7 +118,7 @@ async function extractArticle(page, url) {
       })
       .filter(Boolean);
 
-    // ─── Extract embedded media (videos, maps, etc.) ───
+    // ─── Extract embedded media (videos, maps, polls) ───
     const embeddedMedia = Array.from(clone.querySelectorAll("iframe, embed"))
       .map((el) => ({
         type: el.tagName.toLowerCase(),
@@ -203,17 +197,42 @@ function makeExcerpt(content, title) {
 }
 
 /**
- * Clean HTML content: remove VK-specific UI elements, fix URLs
+ * Upgrade a single VK image URL: use the largest size from `as=` parameter as `cs=`.
+ * Handles both plain `&` and HTML-encoded `&amp;` separators.
+ */
+function upgradeVkImageUrl(url) {
+  const asMatch = url.match(/(?:[?&]|&amp;)as=([^&"']+)/);
+  if (!asMatch) return url;
+  const sizes = asMatch[1].split(",");
+  let maxW = 0;
+  let maxSize = "";
+  for (const size of sizes) {
+    const w = Number.parseInt(size.split("x")[0], 10);
+    if (Number.isFinite(w) && w > maxW) {
+      maxW = w;
+      maxSize = size;
+    }
+  }
+  if (!maxSize) return url;
+  return url.replace(/([?&]|&amp;)cs=\d+x\d+/, `$1cs=${maxSize}`);
+}
+
+/**
+ * Clean HTML content: remove VK-specific UI elements, fix URLs, upgrade image sizes
  */
 function cleanHtml(html) {
   if (!html) return "";
 
-  // Remove VK-specific UI classes and elements
   let cleaned = html;
 
   // Remove any script/style tags that might have slipped through
   cleaned = cleaned.replace(/<script[\s\S]*?<\/script>/gi, "");
   cleaned = cleaned.replace(/<style[\s\S]*?<\/style>/gi, "");
+
+  // Upgrade VK image sizes: use the largest size from as= parameter
+  cleaned = cleaned.replace(/https?:\/\/sun[^"'\s]+?vkuserphoto[^"'\s]*?\.(?:jpg|jpeg|png|webp)\?[^"'\s]*/gi, (url) =>
+    upgradeVkImageUrl(url)
+  );
 
   // Clean up excessive whitespace but preserve paragraph structure
   cleaned = cleaned.replace(/\s{3,}/g, " ");

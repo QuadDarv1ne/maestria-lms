@@ -12,6 +12,59 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import sanitizeHtml from "sanitize-html";
 
+// Allowed HTML tags for sanitization
+const HTML_ALLOWED_TAGS = [
+  ...sanitizeHtml.defaults.allowedTags,
+  "h1", "h2", "h3", "h4", "h5", "h6",
+  "ul", "ol", "li",
+  "table", "thead", "tbody", "tfoot", "tr", "th", "td", "caption", "colgroup", "col",
+  "blockquote", "pre", "code",
+  "img", "figure", "figcaption",
+  "br", "hr",
+  "div", "span",
+  "video", "audio", "source", "iframe",
+  "details", "summary",
+  "del", "ins", "s", "strike", "u",
+];
+
+// Allowed HTML attributes for sanitization
+const HTML_ALLOWED_ATTRS: Record<string, string[]> = {
+  ...sanitizeHtml.defaults.allowedAttributes,
+  "img": ["src", "alt", "width", "height", "loading"],
+  "a": ["href", "target", "rel"],
+  "iframe": ["src", "width", "height", "frameborder", "allow", "allowfullscreen"],
+  "video": ["src", "controls", "width", "height", "poster"],
+  "audio": ["src", "controls"],
+  "source": ["src", "type"],
+  "td": ["colspan", "rowspan"],
+  "th": ["colspan", "rowspan"],
+  "div": ["class"],
+  "span": ["class"],
+  "figure": ["class"],
+};
+
+/**
+ * Sanitize article HTML content
+ */
+function sanitizeArticleHtml(html: string): string {
+  return sanitizeHtml(html, {
+    allowedTags: HTML_ALLOWED_TAGS,
+    allowedAttributes: HTML_ALLOWED_ATTRS,
+    allowedSchemes: ["http", "https", "data"],
+    transformTags: {
+      "a": sanitizeHtml.simpleTransform("a", { target: "_blank", rel: "noopener noreferrer" }),
+    },
+  });
+}
+
+/**
+ * Check if content is HTML or Markdown
+ */
+function isHtmlContent(content: string): boolean {
+  if (!content) return false;
+  return /<[a-z][\s\S]*>/i.test(content);
+}
+
 const categoryColors: Record<string, string> = {
   development: "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800",
   testing: "bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800",
@@ -190,8 +243,12 @@ export function ArticlePage({ slug, initialArticle }: ArticlePageProps) {
         )}
 
         {/* Content */}
-        <div className="prose prose-lg dark:prose-invert max-w-none mb-8">
-          <ReactMarkdown>{article.content}</ReactMarkdown>
+        <div className="prose prose-lg dark:prose-invert max-w-none mb-8 article-content">
+          {isHtmlContent(article.content) ? (
+            <div dangerouslySetInnerHTML={{ __html: sanitizeArticleHtml(article.content) }} />
+          ) : (
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{article.content}</ReactMarkdown>
+          )}
         </div>
 
         {/* Tags */}
