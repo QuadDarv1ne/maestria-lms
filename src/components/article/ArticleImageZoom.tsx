@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { X } from "lucide-react";
+import { useAppStore } from "@/lib/store";
+import { t } from "@/lib/i18n";
 
 interface ZoomedImage {
   src: string;
@@ -20,6 +22,7 @@ interface ArticleImageZoomProps {
  */
 export function ArticleImageZoom({ targetSelector = ".article-content" }: ArticleImageZoomProps) {
   const [image, setImage] = useState<ZoomedImage | null>(null);
+  const locale = useAppStore((s) => s.locale);
 
   useEffect(() => {
     const container = document.querySelector(targetSelector);
@@ -48,7 +51,7 @@ export function ArticleImageZoom({ targetSelector = ".article-content" }: Articl
         showCloseButton={false}
         className="max-w-[95vw] max-h-[95vh] w-auto bg-transparent border-0 p-0 shadow-none"
       >
-        <DialogTitle className="sr-only">{image?.alt || "Изображение статьи"}</DialogTitle>
+        <DialogTitle className="sr-only">{image?.alt || t("article.image", locale)}</DialogTitle>
         {image && (
           <figure className="relative flex flex-col items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -66,7 +69,7 @@ export function ArticleImageZoom({ targetSelector = ".article-content" }: Articl
               type="button"
               onClick={() => setImage(null)}
               className="absolute -top-2 right-0 translate-x-1/2 -translate-y-1/2 rounded-full bg-black/70 p-2 text-white transition hover:bg-black"
-              aria-label="Закрыть изображение"
+              aria-label={t("article.closeImage", locale)}
             >
               <X className="h-5 w-5" />
             </button>

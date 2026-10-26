@@ -11,6 +11,25 @@ import { ArrowLeft, Clock, Eye, User, Calendar } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import sanitizeHtml from "sanitize-html";
+import { ReadingProgress } from "@/components/article/ReadingProgress";
+import { TableOfContents } from "@/components/article/TableOfContents";
+import { ArticleImageZoom } from "@/components/article/ArticleImageZoom";
+import { ArticleShare } from "@/components/article/ArticleShare";
+import { ArticleBreadcrumbs } from "@/components/article/ArticleBreadcrumbs";
+import { RelatedArticles } from "@/components/article/RelatedArticles";
+import { ArticlePageSkeleton } from "@/components/article/ArticlePageSkeleton";
+
+interface RelatedArticleData {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  image: string | null;
+  category: string;
+  readTime: number;
+  views: number;
+  createdAt: string;
+}
 
 // Allowed HTML tags for sanitization
 const HTML_ALLOWED_TAGS = [
@@ -113,9 +132,10 @@ interface Article {
 interface ArticlePageProps {
   slug: string;
   initialArticle?: Article | null;
+  relatedArticles?: RelatedArticleData[];
 }
 
-export function ArticlePage({ slug, initialArticle }: ArticlePageProps) {
+export function ArticlePage({ slug, initialArticle, relatedArticles = [] }: ArticlePageProps) {
   const router = useRouter();
   const locale = useAppStore((s) => s.locale);
   const [article, setArticle] = useState<Article | null>(initialArticle ?? null);
@@ -144,20 +164,29 @@ export function ArticlePage({ slug, initialArticle }: ArticlePageProps) {
     fetchArticle();
   }, [slug, locale, initialArticle]);
 
+  // Record a view after the article is mounted (once per 30 min per server cookie).
+  useEffect(() => {
+    if (!article) return;
+    let cancelled = false;
+    fetch(`/api/articles/${slug}/view`, { method: "POST" })
+      .then((res) => {
+        if (!res.ok) return;
+        return res.json() as Promise<{ views?: number; counted?: boolean }>;
+      })
+      .then((data) => {
+        if (cancelled || !data?.views) return;
+        setArticle((prev) => (prev ? { ...prev, views: data.views! } : prev));
+      })
+      .catch(() => {
+        // A failed view counter must never surface as a user-facing error.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, article?.id]);
+
   if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="animate-pulse space-y-8 max-w-4xl mx-auto">
-          <div className="h-8 bg-muted rounded w-3/4" />
-          <div className="h-64 bg-muted rounded" />
-          <div className="space-y-3">
-            <div className="h-4 bg-muted rounded w-full" />
-            <div className="h-4 bg-muted rounded w-5/6" />
-            <div className="h-4 bg-muted rounded w-4/6" />
-          </div>
-        </div>
-      </div>
-    );
+    return <ArticlePageSkeleton />;
   }
 
   if (error || !article) {
@@ -183,6 +212,14 @@ export function ArticlePage({ slug, initialArticle }: ArticlePageProps) {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <ArticleBreadcrumbs
+        categoryLabel={categoryLabel}
+        category={article.category}
+        title={article.title}
+      />
+
+      <ReadingProgress />
+
       {/* Back Button */}
       <Button
         variant="ghost"
@@ -193,7 +230,13 @@ export function ArticlePage({ slug, initialArticle }: ArticlePageProps) {
         {t("article.backToBlog", locale)}
       </Button>
 
-      <article className="max-w-4xl mx-auto">
+      {/* Mobile TOC */}
+      <div className="mb-6 lg:hidden">
+        <TableOfContents />
+      </div>
+
+      <div className="mx-auto flex max-w-6xl gap-8">
+      <article className="min-w-0 flex-1">
         {/* Header */}
         <header className="mb-8">
           {/* Category */}
@@ -262,6 +305,11 @@ export function ArticlePage({ slug, initialArticle }: ArticlePageProps) {
           </div>
         )}
 
+        {/* Share */}
+        <div className="mt-8">
+          <ArticleShare title={article.title} url={`/blog/${article.slug}`} />
+        </div>
+
         {/* Author Bio */}
         <div className="mt-8 p-6 rounded-lg bg-muted">
           <div className="flex items-start gap-4">
@@ -283,7 +331,21 @@ export function ArticlePage({ slug, initialArticle }: ArticlePageProps) {
             </div>
           </div>
         </div>
+
+        {/* Related Articles */}
+        <RelatedArticles articles={relatedArticles} />
       </article>
+
+      {/* Desktop TOC sidebar */}
+      <aside className="hidden w-72 shrink-0 lg:block">
+        <div className="sticky top-24">
+          <TableOfContents />
+        </div>
+      </aside>
+
+      {/* Image lightbox */}
+      <ArticleImageZoom />
+      </div>
     </div>
   );
 }

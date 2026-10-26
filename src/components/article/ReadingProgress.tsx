@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAppStore } from "@/lib/store";
+import { t } from "@/lib/i18n";
 
 interface ReadingProgressProps {
   /** Selector of the element whose scroll progress should be tracked. */
@@ -18,6 +20,7 @@ export function ReadingProgress({
   showLabel = false,
 }: ReadingProgressProps) {
   const [progress, setProgress] = useState(0);
+  const locale = useAppStore((s) => s.locale);
 
   useEffect(() => {
     const target = document.querySelector(targetSelector);
@@ -58,7 +61,7 @@ export function ReadingProgress({
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={Math.round(progress * 100)}
-      aria-label="Прогресс чтения"
+      aria-label={t("article.readingProgress", locale)}
     >
       <div
         className="h-full bg-primary transition-[width] duration-150 ease-out"

@@ -1,23 +1,28 @@
+"use client";
+
 import Link from "next/link";
 import { Clock, Eye } from "lucide-react";
 import type { RelatedArticle } from "@/lib/articles";
+import { useAppStore } from "@/lib/store";
+import { t } from "@/lib/i18n";
 
 interface RelatedArticlesProps {
   articles: RelatedArticle[];
-  heading?: string;
 }
 
 /**
- * "Читайте также" block rendered after the article body.
- * Server component — the related list is fetched by the page.
+ * "Read also" block rendered after the article body.
+ * The related list itself is fetched by the server page and passed down.
  */
-export function RelatedArticles({ articles, heading = "Читайте также" }: RelatedArticlesProps) {
+export function RelatedArticles({ articles }: RelatedArticlesProps) {
+  const locale = useAppStore((s) => s.locale);
+
   if (articles.length === 0) return null;
 
   return (
     <section className="mt-12 pt-8 border-t" aria-labelledby="related-articles-heading">
       <h2 id="related-articles-heading" className="text-xl font-bold mb-6">
-        {heading}
+        {t("article.related", locale)}
       </h2>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {articles.map((article) => (
@@ -48,7 +53,7 @@ export function RelatedArticles({ articles, heading = "Читайте также
               <div className="mt-auto flex items-center gap-3 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
-                  {article.readTime} мин
+                  {article.readTime} {t("blog.min", locale)}
                 </span>
                 <span className="flex items-center gap-1">
                   <Eye className="h-3 w-3" />

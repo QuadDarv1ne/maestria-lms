@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { List, ChevronDown } from "lucide-react";
+import { useAppStore } from "@/lib/store";
+import { t } from "@/lib/i18n";
 
 export interface TocItem {
   id: string;
@@ -44,6 +46,7 @@ export function TableOfContents({
   const [items, setItems] = useState<TocItem[]>([]);
   const [activeId, setActiveId] = useState<string>("");
   const [isOpen, setIsOpen] = useState(false);
+  const locale = useAppStore((s) => s.locale);
 
   // Collect headings once the article HTML is in the DOM.
   useEffect(() => {
@@ -120,7 +123,7 @@ export function TableOfContents({
 
   return (
     <nav
-      aria-label="Оглавление"
+      aria-label={t("article.toc", locale)}
       className="rounded-xl border bg-card/60 backdrop-blur-sm p-4"
     >
       <button
@@ -131,7 +134,7 @@ export function TableOfContents({
       >
         <span className="flex items-center gap-2">
           <List className="h-4 w-4" />
-          Содержание
+          {t("article.toc", locale)}
         </span>
         <ChevronDown
           className={`h-4 w-4 transition-transform lg:hidden ${isOpen ? "rotate-180" : ""}`}

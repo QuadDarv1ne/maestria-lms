@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Check, Link2, Send, Share2 } from "lucide-react";
+import { useAppStore } from "@/lib/store";
+import { t } from "@/lib/i18n";
 
 interface ArticleShareProps {
   title: string;
@@ -16,6 +18,7 @@ interface ArticleShareProps {
  */
 export function ArticleShare({ title, url }: ArticleShareProps) {
   const [copied, setCopied] = useState(false);
+  const locale = useAppStore((s) => s.locale);
 
   const absoluteUrl =
     typeof window !== "undefined" && url.startsWith("/")
@@ -29,7 +32,7 @@ export function ArticleShare({ title, url }: ArticleShareProps) {
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
       // Clipboard API can be unavailable (insecure context) — fall back to a prompt.
-      window.prompt("Скопируйте ссылку", absoluteUrl);
+      window.prompt(t("article.copyLinkPrompt", locale), absoluteUrl);
     }
   };
 
@@ -50,11 +53,13 @@ export function ArticleShare({ title, url }: ArticleShareProps) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="mr-1 text-sm font-medium text-muted-foreground">Поделиться:</span>
+      <span className="mr-1 text-sm font-medium text-muted-foreground">
+        {t("article.share", locale)}:
+      </span>
 
       <Button variant="outline" size="sm" onClick={handleNativeShare}>
         <Share2 className="mr-1.5 h-4 w-4" />
-        Поделиться
+        {t("article.share", locale)}
       </Button>
 
       <Button variant="outline" size="sm" asChild>
@@ -82,12 +87,12 @@ export function ArticleShare({ title, url }: ArticleShareProps) {
         {copied ? (
           <>
             <Check className="mr-1.5 h-4 w-4 text-green-600" />
-            Скопировано
+            {t("article.linkCopied", locale)}
           </>
         ) : (
           <>
             <Link2 className="mr-1.5 h-4 w-4" />
-            Ссылка
+            {t("article.shareLink", locale)}
           </>
         )}
       </Button>
