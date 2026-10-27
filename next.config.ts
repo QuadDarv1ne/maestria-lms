@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import os from "node:os";
 
 // Security headers are set in next.config.ts with fine-grained control
 // (different rules for API routes, static assets, etc.)
@@ -7,8 +8,48 @@ import type { NextConfig } from "next";
 //
 // NOTE: Amvera's reverse proxy may override some headers (especially Content-Security-Policy).
 
+/**
+ * Next.js blocks every cross-origin request to dev-only assets (client chunks,
+ * HMR, fonts) unless the origin is explicitly allowed. Opening the dev server
+ * from another device through the LAN IP therefore rendered the pages but never
+ * hydrated them — cards were not clickable, filter selects stayed inert and
+ * pagination did nothing.
+ *
+ * The LAN address is collected automatically so the behaviour does not break
+ * when the router hands out a different DHCP lease. Extra hosts can be listed
+ * in ALLOWED_DEV_ORIGINS (comma separated).
+ */
+function collectDevOrigins(): string[] {
+  const origins = new Set<string>();
+
+  for (const addresses of Object.values(os.networkInterfaces())) {
+    for (const address of addresses ?? []) {
+      if (address.family !== "IPv4" || address.internal) continue;
+      if (!isPrivateIPv4(address.address)) continue;
+      origins.add(address.address);
+    }
+  }
+
+  for (const extra of (process.env.ALLOWED_DEV_ORIGINS ?? "").split(",")) {
+    const host = extra.trim();
+    if (host) origins.add(host);
+  }
+
+  return [...origins];
+}
+
+function isPrivateIPv4(address: string): boolean {
+  return (
+    address.startsWith("10.") ||
+    address.startsWith("192.168.") ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(address)
+  );
+}
+
 const nextConfig: NextConfig = {
   output: "standalone",
+  // Only affects `next dev`; the production build ignores it.
+  allowedDevOrigins: collectDevOrigins(),
   outputFileTracingIncludes: {
     "/": [
       "node_modules/prisma",
