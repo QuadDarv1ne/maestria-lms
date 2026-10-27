@@ -240,6 +240,10 @@ export function ArticlePage({ slug, initialArticle, relatedArticles = [] }: Arti
               src={article.image}
               alt={article.title}
               className="w-full h-auto object-cover"
+              // The cover is the LCP element on this page: keep it eager and
+              // tell the browser to fetch it before anything else on the page.
+              fetchPriority="high"
+              decoding="async"
             />
           </div>
         )}
