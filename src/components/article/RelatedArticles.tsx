@@ -37,12 +37,13 @@ export function RelatedArticles({ articles }: RelatedArticlesProps) {
           >
             <div className="relative h-36 overflow-hidden bg-muted">
               {article.image ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
+                <Image
                   src={article.image}
                   alt=""
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
                   loading="lazy"
-                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center text-3xl opacity-30">
