@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { formatDate } from "@/lib/utils";
@@ -71,11 +72,12 @@ export const ArticleCard = React.memo(function ArticleCard({ article, onClick }:
         {/* Cover Image */}
         <div className="relative h-48 overflow-hidden bg-linear-to-br from-blue-500 to-violet-600">
           {article.image ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
+            <Image
               src={article.image}
               alt={article.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
               loading="lazy"
             />
           ) : (
@@ -83,7 +85,7 @@ export const ArticleCard = React.memo(function ArticleCard({ article, onClick }:
               <span className="text-6xl opacity-30">{categoryIcon}</span>
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/40 to-transparent" />
 
           {/* Category Badge */}
           <Badge className={`absolute top-3 left-3 border ${categoryColor}`}>

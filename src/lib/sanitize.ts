@@ -4,7 +4,7 @@ import { ALLOWED_EMBED_HOSTS } from "@/lib/video-embed";
 const DEFAULT_ALLOWED_TAGS = [
   "h1", "h2", "h3", "h4", "h5", "h6",
   "p", "br", "hr",
-  "strong", "em", "u", "s", "mark", "sub", "sup",
+  "strong", "em", "u", "s", "strike", "del", "ins", "mark", "sub", "sup",
   "blockquote", "pre", "code",
   "ul", "ol", "li",
   "a",
@@ -21,7 +21,7 @@ const DEFAULT_ALLOWED_TAGS = [
 
 const DEFAULT_ALLOWED_ATTRIBUTES: Record<string, string[]> = {
   a: ["href", "name", "target", "rel", "title"],
-  img: ["src", "srcset", "alt", "width", "height", "loading"],
+  img: ["src", "srcset", "alt", "width", "height", "loading", "decoding"],
   video: ["src", "controls", "autoplay", "loop", "muted", "poster", "width", "height"],
   audio: ["src", "controls", "autoplay", "loop", "muted"],
   source: ["src", "type"],

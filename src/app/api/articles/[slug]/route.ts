@@ -7,14 +7,10 @@ import { getAuthSession, requireAuth, authErrorResponse, requireAdmin, adminErro
 import { z } from "zod";
 import { sanitizeContent } from "@/lib/sanitize";
 import { validateParams } from "@/lib/request-validation";
-import { log } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
 const checkRateLimit = rateLimit("article", RATE_LIMITS.default);
-
-const VIEW_DEDUP_COOKIE = "article_view";
-const VIEW_DEDUP_TTL = 30; // seconds — prevent refresh-based inflation
 
 const articleUpdateSchema = z.object({
   title: z.string().min(1).max(200).optional(),
@@ -64,37 +60,10 @@ export async function GET(
       }
     }
 
-    // Increment views only for published articles, with cookie-based dedup
-    if (article.isPublished) {
-      const viewCookie = request.cookies.get(VIEW_DEDUP_COOKIE);
-      const lastView = viewCookie ? parseInt(viewCookie.value, 10) : 0;
-      const now = Math.floor(Date.now() / 1000);
-
-      if (now - lastView > VIEW_DEDUP_TTL) {
-        try {
-          await db.article.update({
-            where: { id: article.id },
-            data: { views: { increment: 1 } },
-          });
-        } catch (viewError: unknown) {
-          // Don't fail the request if view counting fails
-          log.warn("Failed to increment article views", {
-            articleId: article.id,
-            error: viewError instanceof Error ? viewError.message : String(viewError),
-          });
-        }
-      }
-
-      const response = NextResponse.json(article, { status: 200 });
-      response.cookies.set(VIEW_DEDUP_COOKIE, String(now), {
-        httpOnly: true,
-        sameSite: "lax",
-        maxAge: VIEW_DEDUP_TTL,
-        path: "/",
-      });
-      return response;
-    }
-
+    // View counting is owned by POST /api/articles/[slug]/view (cookie-deduped,
+    // 30 min window). The SSR page mounts the client component which fires that
+    // request; incrementing here too would double-count every visit and the two
+    // handlers used incompatible cookie formats.
     return NextResponse.json(article, { status: 200 });
   } catch (error: unknown) {
     return handleApiError(error, { route: "article" });

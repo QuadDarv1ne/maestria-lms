@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Clock, Eye, User, Calendar } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import sanitizeHtml from "sanitize-html";
+import { sanitizeContent } from "@/lib/sanitize";
 import { ReadingProgress } from "@/components/article/ReadingProgress";
 import { TableOfContents } from "@/components/article/TableOfContents";
 import { ArticleImageZoom } from "@/components/article/ArticleImageZoom";
@@ -19,57 +19,26 @@ import { ArticleBreadcrumbs } from "@/components/article/ArticleBreadcrumbs";
 import { RelatedArticles, type RelatedArticleData } from "@/components/article/RelatedArticles";
 import { ArticlePageSkeleton } from "@/components/article/ArticlePageSkeleton";
 
-// Allowed HTML tags for sanitization
-const HTML_ALLOWED_TAGS = [
-  ...sanitizeHtml.defaults.allowedTags,
-  "h1", "h2", "h3", "h4", "h5", "h6",
-  "ul", "ol", "li",
-  "table", "thead", "tbody", "tfoot", "tr", "th", "td", "caption", "colgroup", "col",
-  "blockquote", "pre", "code",
-  "img", "figure", "figcaption",
-  "br", "hr",
-  "div", "span",
-  "video", "audio", "source", "iframe",
-  "details", "summary",
-  "del", "ins", "s", "strike", "u",
-];
-
-// Allowed HTML attributes for sanitization
-const HTML_ALLOWED_ATTRS: Record<string, string[]> = {
-  ...sanitizeHtml.defaults.allowedAttributes,
-  "img": ["src", "alt", "width", "height", "loading"],
-  "a": ["href", "target", "rel"],
-  "iframe": ["src", "width", "height", "frameborder", "allow", "allowfullscreen"],
-  "video": ["src", "controls", "width", "height", "poster"],
-  "audio": ["src", "controls"],
-  "source": ["src", "type"],
-  "td": ["colspan", "rowspan"],
-  "th": ["colspan", "rowspan"],
-  "div": ["class"],
-  "span": ["class"],
-  "figure": ["class"],
-};
-
 /**
- * Sanitize article HTML content
- */
-function sanitizeArticleHtml(html: string): string {
-  return sanitizeHtml(html, {
-    allowedTags: HTML_ALLOWED_TAGS,
-    allowedAttributes: HTML_ALLOWED_ATTRS,
-    allowedSchemes: ["http", "https", "data"],
-    transformTags: {
-      "a": sanitizeHtml.simpleTransform("a", { target: "_blank", rel: "noopener noreferrer" }),
-    },
-  });
-}
-
-/**
- * Check if content is HTML or Markdown
+ * Check if content is HTML or Markdown.
+ * VK-imported articles store rich HTML; admin-authored ones use Markdown.
  */
 function isHtmlContent(content: string): boolean {
   if (!content) return false;
   return /<[a-z][\s\S]*>/i.test(content);
+}
+
+/**
+ * Article bodies need embeds and external links, but the allow-list, iframe
+ * host restrictions and lazy-image handling all come from the shared
+ * `sanitizeContent` so there is a single security policy for the whole app.
+ */
+function renderArticleHtml(html: string): string {
+  return sanitizeContent(html, {
+    allowIframes: true,
+    externalLinks: true,
+    lazyImages: true,
+  });
 }
 
 const categoryColors: Record<string, string> = {
@@ -278,7 +247,7 @@ export function ArticlePage({ slug, initialArticle, relatedArticles = [] }: Arti
         {/* Content */}
         <div className="prose prose-lg dark:prose-invert max-w-none mb-8 article-content">
           {isHtmlContent(article.content) ? (
-            <div dangerouslySetInnerHTML={{ __html: sanitizeArticleHtml(article.content) }} />
+            <div dangerouslySetInnerHTML={{ __html: renderArticleHtml(article.content) }} />
           ) : (
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{article.content}</ReactMarkdown>
           )}
