@@ -100,7 +100,12 @@ export default async function Page({ params }: Props) {
           authorName: article.author.name,
         }}
       />
-      <ArticlePage slug={slug} initialArticle={articleData} relatedArticles={relatedData} />
+      <ArticlePage
+        slug={slug}
+        initialArticle={articleData}
+        relatedArticles={relatedData}
+        canonicalUrl={`${env.siteUrl}/blog/${slug}`}
+      />
     </>
   );
 }

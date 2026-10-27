@@ -8,38 +8,40 @@ import { t } from "@/lib/i18n";
 
 interface ArticleShareProps {
   title: string;
-  /** Absolute or relative URL of the article. */
+  /** Relative URL of the article, used by the copy-link fallback. */
   url: string;
+  /**
+   * Absolute URL resolved on the server. Share targets (Telegram, VK) need a
+   * fully qualified URL, and deriving it from `window.location.origin` during
+   * render produced different markup on server vs client (hydration mismatch).
+   */
+  canonicalUrl: string;
 }
 
 /**
  * Share row for the article: native share sheet (mobile), Telegram, VK and a
  * copy-link fallback with inline success feedback.
  */
-export function ArticleShare({ title, url }: ArticleShareProps) {
+export function ArticleShare({ title, url, canonicalUrl }: ArticleShareProps) {
   const [copied, setCopied] = useState(false);
   const locale = useAppStore((s) => s.locale);
 
-  const absoluteUrl =
-    typeof window !== "undefined" && url.startsWith("/")
-      ? `${window.location.origin}${url}`
-      : url;
+  const shareUrl = canonicalUrl || url;
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(absoluteUrl);
+      await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Clipboard API can be unavailable (insecure context) — fall back to a prompt.
-      window.prompt(t("article.copyLinkPrompt", locale), absoluteUrl);
+      window.prompt(t("article.copyLinkPrompt", locale), shareUrl);
     }
   };
 
   const handleNativeShare = async () => {
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
-        await navigator.share({ title, url: absoluteUrl });
+        await navigator.share({ title, url: shareUrl });
         return;
       } catch {
         // User dismissed the sheet — fall through to copy.
@@ -48,7 +50,7 @@ export function ArticleShare({ title, url }: ArticleShareProps) {
     await handleCopy();
   };
 
-  const encodedUrl = encodeURIComponent(absoluteUrl);
+  const encodedUrl = encodeURIComponent(shareUrl);
   const encodedTitle = encodeURIComponent(title);
 
   return (

@@ -298,7 +298,9 @@ html {
 .article-content a { color: var(--primary); text-decoration: underline; text-underline-offset: 2px; word-break: break-word; }
 .article-content a:hover { text-decoration-thickness: 2px; }
 
-.article-content img { max-width: 100%; height: auto; border-radius: 0.75rem; margin: 1rem 0; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); }
+.article-content img { max-width: 100%; height: auto; border-radius: 0.75rem; margin: 1rem 0; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); cursor: zoom-in; }
+/* Images inside links navigate instead of zooming. */
+.article-content a img { cursor: pointer; }
 .article-content figure { margin: 1.25rem 0; }
 .article-content figcaption { font-size: 0.85rem; color: var(--muted-foreground); text-align: center; margin-top: 0.5rem; font-style: italic; }
 

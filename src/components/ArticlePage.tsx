@@ -38,6 +38,9 @@ function renderArticleHtml(html: string): string {
     allowIframes: true,
     externalLinks: true,
     lazyImages: true,
+    // Imported VK bodies carry their own `<h1>`; the page already renders one,
+    // so the content heading is demoted to keep a single h1 per document.
+    demoteH1: true,
   });
 }
 
@@ -90,9 +93,11 @@ interface ArticlePageProps {
   slug: string;
   initialArticle?: Article | null;
   relatedArticles?: RelatedArticleData[];
+  /** Absolute article URL, resolved on the server (see `ArticleShare`). */
+  canonicalUrl: string;
 }
 
-export function ArticlePage({ slug, initialArticle, relatedArticles = [] }: ArticlePageProps) {
+export function ArticlePage({ slug, initialArticle, relatedArticles = [], canonicalUrl }: ArticlePageProps) {
   const router = useRouter();
   const locale = useAppStore((s) => s.locale);
   const [article, setArticle] = useState<Article | null>(initialArticle ?? null);
@@ -270,7 +275,7 @@ export function ArticlePage({ slug, initialArticle, relatedArticles = [] }: Arti
 
         {/* Share */}
         <div className="mt-8">
-          <ArticleShare title={article.title} url={`/blog/${article.slug}`} />
+          <ArticleShare title={article.title} url={`/blog/${article.slug}`} canonicalUrl={canonicalUrl} />
         </div>
 
         {/* Author Bio */}

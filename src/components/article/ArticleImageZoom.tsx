@@ -19,6 +19,10 @@ interface ArticleImageZoomProps {
 /**
  * Makes every image inside the article body clickable and opens it in a
  * full-screen lightbox. Keeps the native `alt` text as the caption.
+ *
+ * Uses event delegation: attaching a listener per image required reading
+ * `img.width`, which is still `0` for lazy images that have not loaded yet,
+ * so most article images silently stayed non-clickable.
  */
 export function ArticleImageZoom({ targetSelector = ".article-content" }: ArticleImageZoomProps) {
   const [image, setImage] = useState<ZoomedImage | null>(null);
@@ -28,21 +32,19 @@ export function ArticleImageZoom({ targetSelector = ".article-content" }: Articl
     const container = document.querySelector(targetSelector);
     if (!container) return;
 
-    const images = Array.from(container.querySelectorAll("img"));
-    const handlers: Array<{ el: HTMLImageElement; fn: (e: Event) => void }> = [];
-
-    for (const img of images) {
-      // Decorative or tiny icons are not worth zooming into.
-      if (img.closest("a") || img.width < 120) continue;
-      img.style.cursor = "zoom-in";
-      const fn = () => setImage({ src: img.currentSrc || img.src, alt: img.alt || "" });
-      img.addEventListener("click", fn);
-      handlers.push({ el: img, fn });
-    }
-
-    return () => {
-      for (const { el, fn } of handlers) el.removeEventListener("click", fn);
+    const onClick = (event: Event) => {
+      const target = event.target as HTMLElement | null;
+      if (!target || target.tagName !== "IMG") return;
+      const img = target as HTMLImageElement;
+      // Images wrapped in a link navigate instead of zooming.
+      if (img.closest("a")) return;
+      // Tiny inline icons/emoticons are not worth a lightbox.
+      if (img.naturalWidth && img.naturalWidth < 120) return;
+      setImage({ src: img.currentSrc || img.src, alt: img.alt || "" });
     };
+
+    container.addEventListener("click", onClick);
+    return () => container.removeEventListener("click", onClick);
   }, [targetSelector]);
 
   return (

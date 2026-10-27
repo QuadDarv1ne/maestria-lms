@@ -46,6 +46,12 @@ export interface SanitizeContentOptions {
   externalLinks?: boolean;
   /** Добавлять loading="lazy"/decoding="async" к изображениям. */
   lazyImages?: boolean;
+  /**
+   * Понизить `h1` до `h2`. Нужно для импортированного контента (статьи ВК),
+   * где заголовок первого уровня дублирует заголовок страницы — два `<h1>`
+   * вредят SEO и доступности.
+   */
+  demoteH1?: boolean;
 }
 
 /**
@@ -92,6 +98,13 @@ export function sanitizeContent(
         loading: attribs.loading || "lazy",
         decoding: attribs.decoding || "async",
       },
+    });
+  }
+
+  if (options?.demoteH1) {
+    transformTags["h1"] = (tagName: string, attribs: sanitizeHtml.Attributes) => ({
+      tagName: "h2",
+      attribs,
     });
   }
 
