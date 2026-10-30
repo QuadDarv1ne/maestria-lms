@@ -253,6 +253,9 @@ export const Footer = memo(function Footer() {
               © 2024-{new Date().getFullYear()} Maestria by Maestro7IT. {t("footer.rights", locale)}
             </p>
             <p className="text-xs text-muted-foreground">
+              Самозанятый Дуплей Максим Игоревич, ИНН 503234333170
+            </p>
+            <p className="text-xs text-muted-foreground">
               {t("footer.contribution", locale)}
             </p>
             <p className="text-xs text-muted-foreground/50">
