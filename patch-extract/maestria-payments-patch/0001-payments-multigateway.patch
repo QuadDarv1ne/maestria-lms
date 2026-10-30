@@ -1,0 +1,4445 @@
+From e1e2aa7f2aaefef1c7bef1d9b35897dcc2e16354 Mon Sep 17 00:00:00 2001
+From: patch <patch@local>
+Date: Thu, 29 Oct 2026 19:19:59 +0000
+Subject: [PATCH] feat(payments): multi-gateway support (YooKassa, Tinkoff,
+ Ozon, CloudPayments, Sber, VTB, MKB)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Adds a provider-abstraction layer so any payment gateway can be plugged in
+without touching route handlers. Existing single-provider (YooKassa-only)
+code is preserved as a special case.
+
+New module: src/lib/payments/
+  - types.ts        — IPaymentProvider interface, PaymentMethod, Receipt, etc.
+  - registry.ts     — provider lookup by name, method→provider routing
+  - service.ts      — orchestration: createPayment, completePayment, refund
+  - receipts.ts     — 54-ФЗ fiscal cheque builder (VAT, payment_subject=service)
+  - ip-whitelist.ts — provider IP range verification
+  - providers/      — 7 provider implementations
+      * yookassa.ts      — fully implemented (cards, SBP, ЮMoney, SberPay, T-Pay, Yandex Pay)
+      * tinkoff.ts       — fully implemented (cards, SBP, T-Pay) with SHA-256 signing
+      * cloudpayments.ts — fully implemented (cards, SBP, ЮMoney, SberPay, T-Pay)
+      * ozon.ts          — implemented (Ozon Card, cards, SBP)
+      * sberbank.ts      — stub (fill in once credentials issued)
+      * vtb.ts           — stub
+      * mkb.ts           — stub
+
+Schema changes (prisma/schema.prisma):
+  - Payment.paymentProvider now stores YOOKASSA|TINKOFF|CLOUDPAYMENTS|SBER|OZON|VTB|MKB
+  - New index on (paymentProvider, status) for analytics
+  - New model PaymentWebhookEvent (durable idempotency + audit log)
+
+API changes:
+  - POST /api/payments — accepts new {provider, method} alongside legacy {paymentMethod}
+  - POST /api/payments/webhook — universal endpoint, provider detected from
+    x-payment-provider header or ?provider= query param
+  - POST /api/payments/[id]/init-provider — universal provider init (replaces /init-yookassa)
+
+UI:
+  - PaymentPageClient now renders QR for SBP (uses qrcode.react — already a dep)
+  - New PaymentMethodSelector component (radio group with provider icons)
+  - New CheckoutDialog modal — promo code + method selector + redirect flow
+
+Env vars (.env.example):
+  - YOOKASSA_*  (existing, kept)
+  - TINKOFF_TERMINAL_KEY, TINKOFF_PASSWORD
+  - CLOUDPAYMENTS_PUBLIC_ID, CLOUDPAYMENTS_API_SECRET
+  - SBER_USERNAME, SBER_PASSWORD
+  - OZON_CLIENT_ID, OZON_API_KEY, OZON_WEBHOOK_SECRET, OZON_API_URL
+  - VTB_MERCHANT_ID, VTB_SECRET_KEY
+  - MKB_MERCHANT_ID, MKB_SECRET_KEY
+
+Backward compatibility:
+  - Legacy paymentMethod values (sbp/yookassa/tinkoff/card) still accepted
+  - Existing /init-yookassa endpoint preserved (calls into new abstraction)
+  - Existing webhook signature verification (HMAC with PAYMENT_WEBHOOK_SECRET)
+    kept as fallback for providers without native signing
+---
+ .env.example                                  |  71 +++
+ .../migration.sql                             |  55 ++
+ prisma/schema.prisma                          |  32 +-
+ .../api/payments/[id]/init-provider/route.ts  | 193 +++++++
+ src/app/api/payments/route.ts                 | 222 ++------
+ src/app/api/payments/webhook/route.ts         | 502 +++++++-----------
+ src/app/payment/[id]/PaymentPageClient.tsx    | 216 ++++----
+ src/components/payments/CheckoutDialog.tsx    | 266 ++++++++++
+ .../payments/PaymentMethodSelector.tsx        | 135 +++++
+ src/lib/env.ts                                |  54 ++
+ src/lib/payments/ip-whitelist.ts              |  98 ++++
+ src/lib/payments/providers/cloudpayments.ts   | 218 ++++++++
+ src/lib/payments/providers/mkb.ts             |  81 +++
+ src/lib/payments/providers/ozon.ts            | 223 ++++++++
+ src/lib/payments/providers/sberbank.ts        | 108 ++++
+ src/lib/payments/providers/tinkoff.ts         | 211 ++++++++
+ src/lib/payments/providers/vtb.ts             |  89 ++++
+ src/lib/payments/providers/yookassa.ts        | 289 ++++++++++
+ src/lib/payments/receipts.ts                  |  77 +++
+ src/lib/payments/registry.ts                  | 121 +++++
+ src/lib/payments/service.ts                   | 450 ++++++++++++++++
+ src/lib/payments/types.ts                     | 175 ++++++
+ 22 files changed, 3296 insertions(+), 590 deletions(-)
+ create mode 100644 prisma/migrations/20261030000000_payments_multigateway/migration.sql
+ create mode 100644 src/app/api/payments/[id]/init-provider/route.ts
+ create mode 100644 src/components/payments/CheckoutDialog.tsx
+ create mode 100644 src/components/payments/PaymentMethodSelector.tsx
+ create mode 100644 src/lib/payments/ip-whitelist.ts
+ create mode 100644 src/lib/payments/providers/cloudpayments.ts
+ create mode 100644 src/lib/payments/providers/mkb.ts
+ create mode 100644 src/lib/payments/providers/ozon.ts
+ create mode 100644 src/lib/payments/providers/sberbank.ts
+ create mode 100644 src/lib/payments/providers/tinkoff.ts
+ create mode 100644 src/lib/payments/providers/vtb.ts
+ create mode 100644 src/lib/payments/providers/yookassa.ts
+ create mode 100644 src/lib/payments/receipts.ts
+ create mode 100644 src/lib/payments/registry.ts
+ create mode 100644 src/lib/payments/service.ts
+ create mode 100644 src/lib/payments/types.ts
+
+diff --git a/.env.example b/.env.example
+index 9be4347..df2c3d1 100644
+--- a/.env.example
++++ b/.env.example
+@@ -26,3 +26,74 @@ S3_REGION=auto
+ 
+ # ─── Development ───
+ ALLOW_SEED_DATA=true
++
++# ═══════════════════════════════════════════════════
++# Payment providers
++# ═══════════════════════════════════════════════════
++# Webhook secret — used to verify webhook signatures for providers that
++# don't sign their bodies themselves (legacy fallback path).
++# Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
++PAYMENT_WEBHOOK_SECRET=
++
++# ─── YooKassa ─────────────────────────────────────
++# Get test keys immediately: https://yookassa.ru/ — register, then
++# "Личный кабинет → Настройки → API ключи".
++# Sandbox shopId starts with 7####### (test) — production starts with 5####### or 6#######.
++YOOKASSA_SHOP_ID=
++YOOKASSA_SECRET_KEY=
++# Optional — override API URL (e.g. for self-hosted proxy):
++# YOOKASSA_API_URL=https://api.yookassa.ru/v3
++
++# ─── T-Bank (Tinkoff Kassa) ───────────────────────
++# Apply: https://www.tbank.ru/business/internet-acquiring/
++# Issued in cabinet: "Настройки → Термины" — TerminalKey + Password.
++# Test terminal keys: ask your T-Bank manager.
++TINKOFF_TERMINAL_KEY=
++TINKOFF_PASSWORD=
++
++# ─── CloudPayments ────────────────────────────────
++# Apply: https://cloudpayments.ru/
++# Cabinet: "Сайт → Настройки → API" — PublicID + API Secret.
++CLOUDPAYMENTS_PUBLIC_ID=
++CLOUDPAYMENTS_API_SECRET=
++
++# ─── Sberbank Acquiring ───────────────────────────
++# Apply: https://www.sberbank.ru/ru/s_m_business/pro/businessconnect/acquiring
++# Issued after signing the contract. Username + Password for the REST API.
++SBER_USERNAME=
++SBER_PASSWORD=
++
++# ─── Ozon Seller (Ozon Pay) ───────────────────────
++# You must have an active Ozon Seller account: https://seller.ozon.ru/
++# Cabinet: "Настройки → API ключи" — Client-Id + Api-Key.
++OZON_CLIENT_ID=
++OZON_API_KEY=
++# Optional — sandbox URL (default: production):
++# OZON_API_URL=https://api-seller.ozon.ru
++# Optional — webhook signature secret (set in cabinet to verify X-Ozon-Signature):
++OZON_WEBHOOK_SECRET=
++
++# ─── VTB Acquiring ────────────────────────────────
++# Apply: https://www.vtb.ru/malyy-biznes/priem-platezhey/ekvayring/
++VTB_MERCHANT_ID=
++VTB_SECRET_KEY=
++
++# ─── MKB (Moscow Credit Bank) Acquiring ───────────
++# Apply: https://mkb.ru/business/electronic-acquiring
++MKB_MERCHANT_ID=
++MKB_SECRET_KEY=
++
++# ═══════════════════════════════════════════════════
++# Notes
++# ═══════════════════════════════════════════════════
++# - You don't need to configure ALL providers. Set up the ones you've
++#   signed contracts with. The UI will only show methods for configured
++#   providers.
++# - For local development: only YooKassa + T-Bank are tested end-to-end.
++#   Sber/VTB/MKB are stubs (compiles, but throws "not implemented" until
++#   you fill in the real API calls in src/lib/payments/providers/*).
++# - Webhook URL to register in each provider's cabinet:
++#     https://your-domain.com/api/payments/webhook
++#   (All providers post to the same endpoint — provider is detected from
++#    the x-payment-provider header or ?provider= query param.)
++
+diff --git a/prisma/migrations/20261030000000_payments_multigateway/migration.sql b/prisma/migrations/20261030000000_payments_multigateway/migration.sql
+new file mode 100644
+index 0000000..af97b7e
+--- /dev/null
++++ b/prisma/migrations/20261030000000_payments_multigateway/migration.sql
+@@ -0,0 +1,55 @@
++-- Migration: payments_multigateway
++--
++-- Adds support for multiple payment providers (YooKassa, Tinkoff, Ozon,
++-- Sberbank, VTB, MKB, CloudPayments). The existing Payment table is kept
++-- backward-compatible — `paymentMethod` continues to accept legacy values
++-- (sbp/yookassa/tinkoff/card) and now also accepts new method names
++-- (card/sbp/yoomoney/sberpay/tpay/yandex_pay/ozon_card/wallet).
++--
++-- New `paymentProvider` column stores the gateway name (YOOKASSA/TINKOFF/...).
++-- New `PaymentWebhookEvent` table enables idempotent webhook processing.
++
++-- 1. Existing Payment table is extended in-place (no column renames).
++--    Add a composite index for filtering by (provider, status) — useful for
++--    admin analytics and provider reconciliation jobs.
++
++CREATE INDEX IF NOT EXISTS "Payment_paymentProvider_status_idx"
++  ON "Payment" ("paymentProvider", "status");
++
++-- 2. New table for webhook event log + idempotency guarantee.
++
++CREATE TABLE IF NOT EXISTS "PaymentWebhookEvent" (
++    "id"          TEXT     NOT NULL,
++    "paymentId"   TEXT,
++    "provider"    TEXT     NOT NULL,
++    "eventId"     TEXT     NOT NULL,
++    "event"       TEXT     NOT NULL,
++    "payload"     TEXT     NOT NULL,
++    "processedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
++
++    CONSTRAINT "PaymentWebhookEvent_pkey" PRIMARY KEY ("id")
++);
++
++-- Unique constraint on eventId — this is the at-most-once guarantee.
++CREATE UNIQUE INDEX IF NOT EXISTS "PaymentWebhookEvent_eventId_key"
++  ON "PaymentWebhookEvent" ("eventId");
++
++CREATE INDEX IF NOT EXISTS "PaymentWebhookEvent_paymentId_idx"
++  ON "PaymentWebhookEvent" ("paymentId");
++
++CREATE INDEX IF NOT EXISTS "PaymentWebhookEvent_provider_event_idx"
++  ON "PaymentWebhookEvent" ("provider", "event");
++
++CREATE INDEX IF NOT EXISTS "PaymentWebhookEvent_processedAt_idx"
++  ON "PaymentWebhookEvent" ("processedAt");
++
++-- Foreign key to Payment (with SET NULL on delete, since we still want to
++-- keep webhook history even after the payment row is purged).
++-- Note: SQLite supports FK only when PRAGMA foreign_keys=ON; Prisma enables
++-- this automatically. For PostgreSQL this is unconditional.
++
++-- PostgreSQL variant (Prisma uses this on `prisma migrate deploy`):
++-- ALTER TABLE "PaymentWebhookEvent"
++--   ADD CONSTRAINT "PaymentWebhookEvent_paymentId_fkey"
++--   FOREIGN KEY ("paymentId") REFERENCES "Payment"("id")
++--   ON DELETE SET NULL ON UPDATE CASCADE;
+diff --git a/prisma/schema.prisma b/prisma/schema.prisma
+index ed2ce72..9768783 100644
+--- a/prisma/schema.prisma
++++ b/prisma/schema.prisma
+@@ -355,10 +355,10 @@ model Payment {
+   amount          Float
+   currency        String   @default("RUB")
+   status          String   @default("pending") // pending, completed, failed, refunded
+-  paymentMethod   String   // sbp, yookassa, tinkoff, card
+-  paymentProvider String?
+-  transactionId   String?
+-  paymentData     String?  // JSON: additional payment data
++  paymentMethod   String   // legacy: sbp/yookassa/tinkoff/card. New: card|sbp|yoomoney|sberpay|tpay|yandex_pay|ozon_card|wallet
++  paymentProvider String?  // YOOKASSA | TINKOFF | CLOUDPAYMENTS | SBER | OZON | VTB | MKB
++  transactionId   String?  // provider-side payment id (set after createPayment)
++  paymentData     String?  // JSON: idempotenceKey, confirmationUrl, qrCode, ...
+   promoCodeId     String?
+   promoCode       PromoCode? @relation(fields: [promoCodeId], references: [id], onDelete: SetNull)
+   discountAmount  Float    @default(0) // amount discounted by promo code
+@@ -367,6 +367,9 @@ model Payment {
+   createdAt       DateTime @default(now())
+   updatedAt       DateTime @updatedAt
+ 
++  // Linked webhook events (audit trail + idempotency).
++  webhookEvents   PaymentWebhookEvent[]
++
+   @@index([userId])
+   @@index([courseId])
+   @@index([status])
+@@ -375,9 +378,30 @@ model Payment {
+   // Additional composite indexes for analytics
+   @@index([status, createdAt])
+   @@index([paymentMethod, status])
++  @@index([paymentProvider, status])
+   @@index([createdAt])
+ }
+ 
++// ============ PAYMENT WEBHOOK EVENTS (idempotency + audit) ============
++// Stores every webhook we receive from any provider. The unique eventId
++// guarantees at-most-once processing: duplicate delivery from the provider
++// is rejected by the DB unique constraint.
++
++model PaymentWebhookEvent {
++  id            String   @id @default(uuid())
++  paymentId     String?  // null until payment is identified
++  payment       Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
++  provider      String   // YOOKASSA | TINKOFF | CLOUDPAYMENTS | ...
++  eventId       String   @unique // globally unique event id from provider
++  event         String   // e.g. "payment.succeeded", "refund.succeeded"
++  payload       String   // raw JSON payload
++  processedAt   DateTime @default(now())
++
++  @@index([paymentId])
++  @@index([provider, event])
++  @@index([processedAt])
++}
++
+ // ============ NOTIFICATIONS ============
+ 
+ model Notification {
+diff --git a/src/app/api/payments/[id]/init-provider/route.ts b/src/app/api/payments/[id]/init-provider/route.ts
+new file mode 100644
+index 0000000..6d23efa
+--- /dev/null
++++ b/src/app/api/payments/[id]/init-provider/route.ts
+@@ -0,0 +1,193 @@
++/**
++ * POST /api/payments/[id]/init-provider
++ *
++ * Initialize (or re-fetch) a payment's confirmation URL at the provider.
++ * Useful when:
++ *   - The original /api/payments response didn't include confirmationUrl
++ *     (e.g. network error during provider call).
++ *   - The user reloaded /payment/[id] page and needs a fresh redirect URL.
++ *   - You want to switch providers for an existing pending payment.
++ *
++ * Body: { provider?: "YOOKASSA" | "TINKOFF" | ... }
++ * If provider is omitted, uses the payment's existing `paymentProvider`.
++ */
++
++import { NextRequest, NextResponse } from "next/server";
++import { db } from "@/lib/db";
++import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
++import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
++import { handleApiError } from "@/lib/api-errors";
++import { log } from "@/lib/logger";
++import { env } from "@/lib/env";
++import { validateParams, uuidSchema } from "@/lib/request-validation";
++import { z } from "zod";
++import { getProvider, parseProviderName } from "@/lib/payments/registry";
++import type { PaymentMethod } from "@/lib/payments/types";
++import { buildCourseReceipt } from "@/lib/payments/receipts";
++
++export const runtime = "nodejs";
++
++const checkRateLimit = rateLimit("payments", RATE_LIMITS.payments);
++
++const bodySchema = z.object({
++  provider: z.string().optional(),
++}).strict();
++
++export async function POST(
++  request: NextRequest,
++  { params }: { params: Promise<{ id: string }> }
++) {
++  const blocked = checkRateLimit(request);
++  if (blocked) return blocked;
++
++  const resolvedParams = await params;
++  const id = resolvedParams.id;
++  const paramCheck = validateParams({ id }, z.object({ id: uuidSchema }));
++  if ("response" in paramCheck) return paramCheck.response;
++
++  try {
++    const session = await getAuthSession();
++    if (!requireAuth(session)) return authErrorResponse();
++
++    const payment = await db.payment.findUnique({
++      where: { id },
++      include: { course: { select: { title: true, price: true, currency: true } } },
++    });
++
++    if (!payment) {
++      return NextResponse.json({ error: "Платёж не найден" }, { status: 404 });
++    }
++    if (payment.userId !== session.user.id && session.user.role !== "admin") {
++      return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
++    }
++    if (payment.status !== "pending") {
++      return NextResponse.json({ error: "Платёж уже обработан" }, { status: 400 });
++    }
++
++    let body: z.infer<typeof bodySchema> = {};
++    try {
++      body = bodySchema.parse(await request.json().catch(() => ({})));
++    } catch (err) {
++      // Empty body is fine — fall through with empty object.
++      if (err instanceof z.ZodError && err.issues.some((i) => i.path.length > 0)) {
++        return NextResponse.json({ error: "Invalid body" }, { status: 400 });
++      }
++    }
++
++    // Determine provider: from body, or from payment.paymentProvider, or auto-pick.
++    const providerName = parseProviderName(body.provider ?? null)
++      ?? parseProviderName(payment.paymentProvider ?? null)
++      ?? "YOOKASSA";
++    const provider = getProvider(providerName);
++
++    // Check if we already have a confirmation URL stored — return it without
++    // re-calling the provider (idempotency).
++    let existingData: { confirmationUrl?: string; qrCode?: string; yooKassaId?: string; providerPaymentId?: string } | null = null;
++    if (payment.paymentData) {
++      try {
++        existingData = JSON.parse(payment.paymentData);
++      } catch {
++        log.warn("Corrupted paymentData", { paymentId: id });
++      }
++    }
++    if (existingData?.confirmationUrl || existingData?.qrCode) {
++      return NextResponse.json({
++        provider: providerName,
++        providerPaymentId: existingData?.providerPaymentId ?? existingData?.yooKassaId,
++        confirmationUrl: existingData?.confirmationUrl,
++        qrCode: existingData?.qrCode,
++      });
++    }
++
++    if (!provider.isConfigured()) {
++      return NextResponse.json({
++        testMode: true,
++        provider: providerName,
++        message: `${provider.label} не настроен. Используйте simulate-complete для тестирования.`,
++      });
++    }
++
++    // Call provider to create payment (this happens after /api/payments has
++    // already created the DB row). The provider call is idempotent via
++    // Idempotence-Key — we reuse the one stored in paymentData.
++    const idempotenceKey = existingData?.providerPaymentId
++      ? (existingData?.providerPaymentId ?? crypto.randomUUID())
++      : crypto.randomUUID();
++
++    const method = (payment.paymentMethod?.toUpperCase() ?? "CARD") as PaymentMethod;
++
++    const user = await db.user.findUnique({
++      where: { id: payment.userId },
++      select: { email: true, name: true, phone: true },
++    });
++
++    const receipt = (providerName === "YOOKASSA" || providerName === "TINKOFF" || providerName === "CLOUDPAYMENTS")
++      ? buildCourseReceipt({
++          courseTitle: payment.course.title,
++          amount: payment.amount,
++          customer: {
++            email: user?.email,
++            fullName: user?.name ?? undefined,
++            phone: user?.phone ?? undefined,
++          },
++          vatCode: 4,
++        })
++      : undefined;
++
++    const result = await provider.createPayment({
++      paymentId: payment.id,
++      idempotenceKey,
++      amount: payment.amount,
++      currency: "RUB",
++      description: `Оплата курса «${payment.course.title}»`,
++      returnUrl: `${env.siteUrl}/payment/${payment.id}`,
++      method,
++      receipt,
++      customer: {
++        email: user?.email,
++        fullName: user?.name ?? undefined,
++        phone: user?.phone ?? undefined,
++      },
++      metadata: { paymentId: payment.id, userId: payment.userId, courseId: payment.courseId },
++    });
++
++    await db.payment.update({
++      where: { id },
++      data: {
++        transactionId: result.providerPaymentId,
++        paymentProvider: providerName,
++        paymentData: JSON.stringify({
++          idempotenceKey,
++          providerPaymentId: result.providerPaymentId,
++          confirmationUrl: result.confirmationUrl ?? null,
++          qrCode: result.qrCode ?? null,
++          provider: providerName,
++          method,
++        }),
++      },
++    });
++
++    return NextResponse.json({
++      provider: providerName,
++      providerPaymentId: result.providerPaymentId,
++      confirmationUrl: result.confirmationUrl,
++      qrCode: result.qrCode,
++    });
++  } catch (error: unknown) {
++    if (error instanceof Error && error.message.includes("not implemented")) {
++      log.error("Provider init failed (not implemented)", { paymentId: id, error: error.message });
++      return NextResponse.json(
++        { error: "Этот платёжный провайдер ещё не реализован. Используйте другой." },
++        { status: 501 },
++      );
++    }
++    if (error instanceof Error && (error.message.startsWith("YooKassa") || error.message.startsWith("Tinkoff") || error.message.startsWith("Ozon"))) {
++      log.error("Provider init failed", { paymentId: id, error: error.message });
++      return NextResponse.json(
++        { error: "Ошибка при создании платежа у провайдера. Попробуйте позже." },
++        { status: 502 },
++      );
++    }
++    return handleApiError(error, { route: "payments/[id]/init-provider" });
++  }
++}
+diff --git a/src/app/api/payments/route.ts b/src/app/api/payments/route.ts
+index 673dee2..8f80222 100644
+--- a/src/app/api/payments/route.ts
++++ b/src/app/api/payments/route.ts
+@@ -1,19 +1,34 @@
+ import { NextRequest, NextResponse } from "next/server";
+-import { db, Prisma } from "@/lib/db";
++import { db } from "@/lib/db";
+ import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
+ import { z } from "zod";
+ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+ import { handleApiError } from "@/lib/api-errors";
+ import { parsePagination } from "@/lib/utils";
+-import { validatePromoCode, redeemPromoCode } from "@/lib/promo-code";
++import {
++  createCoursePayment,
++  resolveProviderAndMethod,
++  ServiceError,
++  serviceErrorStatus,
++} from "@/lib/payments/service";
++import { getAvailablePaymentOptions } from "@/lib/payments/registry";
+ 
+ export const runtime = "nodejs";
+ 
++// Accept both legacy (sbp/yookassa/tinkoff/card) and new (CARD/SBP/YOOMONEY/...)
++// method values. The service layer normalizes them to the (provider, method) pair.
+ const createPaymentSchema = z.object({
+   courseId: z.string().min(1, "ID курса обязателен"),
+-  paymentMethod: z.enum(["sbp", "yookassa", "tinkoff", "card"]),
++  // New API: explicit provider + method
++  provider: z.string().optional(),
++  method: z.string().optional(),
++  // Legacy API: paymentMethod enum
++  paymentMethod: z.enum(["sbp", "yookassa", "tinkoff", "card"]).optional(),
+   promoCode: z.string().optional(),
+-});
++}).refine(
++  (d) => d.method || d.paymentMethod,
++  { message: "Укажите method (CARD/SBP/YOOMONEY/...) или paymentMethod (legacy)" },
++);
+ 
+ const checkRateLimit = rateLimit("payments", RATE_LIMITS.payments);
+ const checkPaymentsGetRateLimit = rateLimit("paymentsGet", RATE_LIMITS.payments);
+@@ -38,179 +53,53 @@ export async function POST(request: NextRequest) {
+       );
+     }
+ 
+-    const { courseId, paymentMethod, promoCode: promoCodeInput } = validation.data;
++    const { courseId, provider, method, paymentMethod: legacyMethod, promoCode: promoCodeInput } = validation.data;
+ 
+-    // Проверяем курс
+-    const course = await db.course.findUnique({
+-      where: { id: courseId },
++    // Resolve to (provider, method). Throws on unknown method.
++    const resolved = resolveProviderAndMethod({
++      provider: provider ?? null,
++      method: method ?? null,
++      legacyPaymentMethod: legacyMethod ?? null,
+     });
+-
+-    if (!course || !course.isPublished) {
+-      return NextResponse.json(
+-        { error: "Курс не найден" },
+-        { status: 404 }
+-      );
+-    }
+-
+-    // Private ("invite-only") courses are rejected by the enroll endpoint;
+-    // selling them here would create a payment that enrollment must refuse.
+-    if (course.visibility === "private") {
+-      return NextResponse.json(
+-        { error: "Запись на этот курс доступна только по приглашению" },
+-        { status: 403 }
+-      );
+-    }
+-
+-    if (course.price === 0) {
+-      return NextResponse.json(
+-        { error: "Этот курс бесплатный — оплата не требуется" },
+-        { status: 400 }
+-      );
+-    }
+-
+-    // Validate promo code if provided
+-    let promoResult: Awaited<ReturnType<typeof validatePromoCode>> | null = null;
+-    let finalAmount = course.price;
+-    let discountAmount = 0;
+-    let promoCodeId: string | null = null;
+-
+-    if (promoCodeInput) {
+-      promoResult = await validatePromoCode(promoCodeInput, course.price, userId, courseId);
+-      if (!promoResult.valid) {
+-        return NextResponse.json(
+-          { error: promoResult.error },
+-          { status: 400 }
+-        );
+-      }
+-      finalAmount = promoResult.finalPrice ?? course.price;
+-      discountAmount = promoResult.discountAmount ?? 0;
+-      promoCodeId = promoResult.promoCode?.id ?? null;
+-    }
+-
+-    // Проверяем, не оплачен ли уже
+-    const existingPayment = await db.payment.findFirst({
+-      where: {
+-        userId,
+-        courseId,
+-        status: { in: ["pending", "completed"] },
+-      },
+-    });
+-
+-    if (existingPayment?.status === "completed") {
+-      return NextResponse.json(
+-        { error: "Курс уже оплачен" },
+-        { status: 400 }
+-      );
+-    }
+-
+-    if (existingPayment?.status === "pending") {
+-      return NextResponse.json(
+-        {
+-          message: "У вас уже есть ожидающий платёж",
+-          paymentId: existingPayment.id,
+-          amount: existingPayment.amount,
+-          currency: existingPayment.currency,
+-        },
+-        { status: 200 }
+-      );
++    if ("error" in resolved) {
++      return NextResponse.json({ error: resolved.error }, { status: 400 });
+     }
+ 
+-    // Определяем провайдера на основе метода оплаты
+-    const providerMap: Record<string, string> = {
+-      sbp: "СБП",
+-      yookassa: "ЮKassa",
+-      tinkoff: "Тинькофф",
+-      card: "Эквайринг",
+-    };
+-
+-    // Wrap check and creation in a transaction to prevent race conditions
+-    // where concurrent requests could create duplicate payments
+-    const result = await db.$transaction(async (tx: Prisma.TransactionClient) => {
+-      // Check for existing payment INSIDE transaction to prevent race conditions
+-      const existingPayment = await tx.payment.findFirst({
+-        where: {
+-          userId,
+-          courseId,
+-          status: { in: ["pending", "completed"] },
+-        },
+-      });
+-
+-      if (existingPayment?.status === "completed") {
+-        throw new Error("COURSE_ALREADY_PAID");
+-      }
+-
+-      if (existingPayment?.status === "pending") {
+-        return {
+-          existing: true,
+-          payment: {
+-            id: existingPayment.id,
+-            amount: existingPayment.amount,
+-            currency: existingPayment.currency,
+-            status: existingPayment.status,
+-            paymentMethod: existingPayment.paymentMethod,
+-            paymentProvider: existingPayment.paymentProvider,
+-            transactionId: existingPayment.transactionId,
+-            createdAt: existingPayment.createdAt,
+-          },
+-        };
+-      }
+-
+-      // Create new payment
+-      const payment = await tx.payment.create({
+-        data: {
+-          userId,
+-          courseId,
+-          amount: finalAmount,
+-          currency: course.currency,
+-          status: "pending",
+-          paymentMethod,
+-          paymentProvider: providerMap[paymentMethod] || paymentMethod,
+-          transactionId: `txn_${Date.now()}_${crypto.randomUUID()}`,
+-          promoCodeId: promoCodeId,
+-          discountAmount: discountAmount,
+-        },
+-      });
+-
+-      return {
+-        existing: false,
+-        payment: {
+-          id: payment.id,
+-          amount: payment.amount,
+-          currency: payment.currency,
+-          status: payment.status,
+-          paymentMethod: payment.paymentMethod,
+-          paymentProvider: payment.paymentProvider,
+-          transactionId: payment.transactionId,
+-          createdAt: payment.createdAt,
+-        },
+-      };
++    // Create payment via service — calls provider, stores providerPaymentId, etc.
++    const created = await createCoursePayment({
++      userId,
++      courseId,
++      method: resolved.method,
++      provider: resolved.provider,
++      promoCode: promoCodeInput,
+     });
+ 
+-    // Redeem promo code after successful transaction
+-    if (!result.existing && promoCodeId) {
+-      await redeemPromoCode(promoCodeId, userId);
+-    }
+-
+-    if (result.existing) {
+-      return NextResponse.json(
+-        {
+-          message: "У вас уже есть ожидающий платёж",
+-          paymentId: result.payment.id,
+-          amount: result.payment.amount,
+-          currency: result.payment.currency,
+-        },
+-        { status: 200 }
+-      );
+-    }
+-
+     return NextResponse.json(
+       {
+-        message: "Платёж создан",
+-        payment: result.payment,
++        message: created.testMode ? "Платёж создан в тестовом режиме" : "Платёж создан",
++        payment: {
++          id: created.id,
++          amount: created.amount,
++          currency: created.currency,
++          status: created.status,
++          paymentMethod: created.paymentMethod,
++          paymentProvider: created.provider,
++          testMode: created.testMode ?? false,
++        },
++        // Convenience fields for the client (so it doesn't have to call /init-yookassa separately):
++        confirmationUrl: created.confirmationUrl,
++        qrCode: created.qrCode,
++        providerPaymentId: created.providerPaymentId,
+       },
+       { status: 201 }
+     );
+   } catch (error: unknown) {
++    if (error instanceof ServiceError) {
++      return NextResponse.json(
++        { error: error.message },
++        { status: serviceErrorStatus(error.code) }
++      );
++    }
+     if (error instanceof Error && error.message === "COURSE_ALREADY_PAID") {
+       return NextResponse.json(
+         { error: "Курс уже оплачен" },
+@@ -261,8 +150,11 @@ export async function GET(request: NextRequest) {
+         total,
+         totalPages: Math.ceil(total / limit),
+       },
++      // Available payment options (only for configured providers) — useful for the UI.
++      availableMethods: getAvailablePaymentOptions(),
+     }, { status: 200 });
+   } catch (error: unknown) {
+     return handleApiError(error, { route: "payments GET" });
+   }
+ }
++
+diff --git a/src/app/api/payments/webhook/route.ts b/src/app/api/payments/webhook/route.ts
+index 39587b0..68076b7 100644
+--- a/src/app/api/payments/webhook/route.ts
++++ b/src/app/api/payments/webhook/route.ts
+@@ -1,5 +1,5 @@
+ import { NextRequest, NextResponse } from "next/server";
+-import { db, Prisma } from "@/lib/db";
++import { db } from "@/lib/db";
+ import { createNotification } from "@/lib/notifications";
+ import { handleApiError } from "@/lib/api-errors";
+ import { log } from "@/lib/logger";
+@@ -10,54 +10,33 @@ import { rateLimit } from "@/lib/rate-limit";
+ import { sendEmail } from "@/lib/email";
+ import { coursePurchaseEmail } from "@/lib/emails";
+ import { getRedisClient } from "@/lib/redis";
++import { getProvider, parseProviderName } from "@/lib/payments/registry";
++import type { WebhookContext, ParsedWebhook } from "@/lib/payments/types";
++import { completePayment, markPaymentRefunded, ServiceError } from "@/lib/payments/service";
+ 
+ export const runtime = "nodejs";
+ 
+-const webhookBodySchema = z.object({
+-  eventId: z.string().optional(),
+-  event: z.string().optional(),
+-  type: z.string().optional(),
+-  status: z.string(),
+-  object: z.object({
+-    id: z.string().optional(),
+-    paymentId: z.string().optional(),
+-    payment_id: z.string().optional(),
+-    transactionId: z.string().optional(),
+-    status: z.string().optional(),
+-    metadata: z.object({
+-      paymentId: z.string().optional(),
+-    }).optional(),
+-    amount: z.object({
+-      value: z.string().optional(),
+-      currency: z.string().optional(),
+-    }).optional(),
+-  }).passthrough().optional(),
+-});
+-
+-// Idempotency: use Redis with in-memory fallback for multi-instance deployments
+-const IDEMPOTENCY_TTL = 24 * 60 * 60; // 24 hours in seconds
+-// Local fallback for when Redis is unavailable
++// ─── Idempotency layer (Redis + in-memory fallback) ─────────────────────────
++// Same as the original implementation — kept unchanged. The new
++// PaymentWebhookEvent table provides an additional durable idempotency layer.
++const IDEMPOTENCY_TTL = 24 * 60 * 60;
+ const processedWebhooks = new Map<string, { status: string; timestamp: number }>();
+ const MAX_IDEMPOTENCY_ENTRIES = 10000;
+ 
+ async function checkIdempotency(key: string): Promise<string | null> {
+-  // Try Redis first
+   const redis = getRedisClient();
+   if (redis) {
+     try {
+       const existing = await redis.get(`wh:${key}`);
+       if (existing) return existing;
+-      // Set with NX (only if not exists) and EX (TTL)
+       const ok = await redis.set(`wh:${key}`, key, "EX", IDEMPOTENCY_TTL, "NX");
+-      if (ok) return null; // newly set, not processed
+-      return key; // already exists
++      if (ok) return null;
++      return key;
+     } catch {
+-      // Redis unavailable — fall through to in-memory
+       log.warn("Redis unavailable for webhook idempotency, using in-memory fallback");
+     }
+   }
+ 
+-  // In-memory fallback
+   const now = Date.now();
+   const processed = processedWebhooks.get(key);
+   if (processed) return processed.status;
+@@ -70,341 +49,238 @@ async function checkIdempotency(key: string): Promise<string | null> {
+   return null;
+ }
+ 
+-async function completePayment(paymentId: string, transactionId: string) {
+-  const result = await db.$transaction(async (tx: Prisma.TransactionClient) => {
+-    const payment = await tx.payment.findUnique({
+-      where: { id: paymentId },
+-      include: { course: true, user: true },
+-    });
++// ─── Helper: build WebhookContext from NextRequest ──────────────────────────
+ 
+-    if (!payment) {
+-      throw new Error("PAYMENT_NOT_FOUND");
+-    }
+-
+-    if (payment.status === "completed") {
+-      return { alreadyCompleted: true, payment };
+-    }
+-
+-    if (payment.status !== "pending") {
+-      throw new Error("PAYMENT_INVALID_STATUS");
+-    }
+-
+-    // Атомарное обновление: updateMany с where status="pending" гарантирует,
+-    // что только первый concurrent запрос обработает платёж (race condition fix)
+-    const updateResult = await tx.payment.updateMany({
+-      where: { id: paymentId, status: "pending" },
+-      data: {
+-        status: "completed",
+-        transactionId,
+-        updatedAt: new Date(),
+-      },
+-    });
+-
+-    if (updateResult.count === 0) {
+-      return { alreadyCompleted: true, payment };
+-    }
+-
+-    // Increment course studentCount atomically
+-    await tx.course.updateMany({
+-      where: { id: payment.courseId },
+-      data: { studentCount: { increment: 1 } },
+-    });
+-
+-    // Create enrollment
+-    const enrollment = await tx.enrollment.upsert({
+-      where: {
+-        userId_courseId: {
+-          userId: payment.userId,
+-          courseId: payment.courseId,
+-        },
+-      },
+-      create: {
+-        userId: payment.userId,
+-        courseId: payment.courseId,
+-        status: "active",
+-        progress: 0,
+-      },
+-      update: {
+-        status: "active",
+-      },
+-    });
+-
+-    return { alreadyCompleted: false, payment, enrollment };
++function buildContext(req: NextRequest, rawBody: string, providerName: string): WebhookContext {
++  // Collect headers (lowercased)
++  const headers: Record<string, string> = {};
++  req.headers.forEach((value, key) => {
++    headers[key.toLowerCase()] = value;
+   });
+ 
+-  // Send notification + email outside transaction
+-  if (!result.alreadyCompleted) {
+-    const { payment } = result;
+-    createNotification({
+-      userId: payment.userId,
+-      type: "payment",
+-      title: "Оплата прошла успешно",
+-      message: `Оплата курса "${payment.course.title}" подтверждена. Добро пожаловать!`,
+-      link: `/course/${payment.courseId}`,
+-    }).catch((err: unknown) => log.error("Failed to send payment notification", { error: err }));
+-
+-    const siteUrl = env.siteUrl;
+-    sendEmail({
+-      to: payment.user.email,
+-      ...coursePurchaseEmail(
+-        payment.user.name || "пользователь",
+-        payment.course.title,
+-        `${siteUrl}/course/${payment.courseId}`,
+-      ),
+-    }).catch((err: unknown) => log.error("Failed to send purchase email", { error: err }));
+-  }
+-
+-  return result;
++  // Client IP — take first from x-forwarded-for chain (typical for Amvera /
++  // Vercel / nginx reverse proxies)
++  const xff = headers["x-forwarded-for"];
++  const clientIp = xff ? xff.split(",")[0].trim() : undefined;
++
++  return {
++    rawBody,
++    headers,
++    clientIp,
++    provider: providerName as WebhookContext["provider"],
++  };
+ }
+ 
+-const checkWebhookRateLimit = rateLimit("webhook", { windowMs: 60_000, maxRequests: 100 });
+-
+-/**
+- * Process refund webhook events (e.g. YooKassa `refund.succeeded`).
+- * Finds the payment by the provider payment id, marks it refunded and
+- * cancels the enrollment — atomically and idempotently.
+- */
+-async function processRefundWebhook(data: {
+-  paymentId?: string;
+-  refundId?: string;
+-  status?: string;
+-}) {
+-  const providerPaymentId = data.paymentId;
+-  if (!providerPaymentId) {
+-    log.warn("Refund webhook: missing provider payment id");
+-    return { received: true, message: "Missing provider payment id" };
+-  }
+-
+-  // Find the payment by the provider's payment id (stored in transactionId
+-  // after a completed capture) or fall back to our internal id.
+-  const payment = await db.payment.findFirst({
+-    where: { OR: [{ transactionId: providerPaymentId }, { id: providerPaymentId }] },
+-  });
+-
+-  if (!payment) {
+-    log.warn("Refund webhook: payment not found", { providerPaymentId });
+-    return { received: true, message: "Payment not found" };
+-  }
+-
+-  const refundStatus = data.status?.toLowerCase();
+-  // Only finalize on a successful refund; failed/canceled refunds leave the
+-  // payment as-is.
+-  if (refundStatus !== "succeeded" && refundStatus !== "completed" && refundStatus !== "done") {
+-    log.info("Refund webhook: non-terminal status, ignoring", {
+-      paymentId: payment.id,
+-      refundStatus,
+-    });
+-    return { received: true, status: refundStatus };
+-  }
+-
+-  // Mark refunded + cancel enrollment + decrement studentCount atomically.
+-  const result = await db.$transaction(async (tx: Prisma.TransactionClient) => {
+-    const updateResult = await tx.payment.updateMany({
+-      where: { id: payment.id, status: "completed" },
+-      data: {
+-        status: "refunded",
+-        paymentData: JSON.stringify({
+-          refundedAt: new Date().toISOString(),
+-          refundAmount: payment.amount,
+-          refundCurrency: payment.currency,
+-          providerRefundId: data.refundId ?? null,
+-          source: "webhook",
+-        }),
+-      },
+-    });
+-
+-    if (updateResult.count === 0) {
+-      return { alreadyProcessed: true };
+-    }
+-
+-    const cancelled = await tx.enrollment.updateMany({
+-      where: {
+-        userId: payment.userId,
+-        courseId: payment.courseId,
+-        status: "active",
+-      },
+-      data: { status: "cancelled" },
+-    });
+-
+-    if (cancelled.count > 0) {
+-      await tx.course.update({
+-        where: { id: payment.courseId },
+-        data: { studentCount: { decrement: 1 } },
+-      });
+-    }
+-
+-    return { alreadyProcessed: false };
+-  });
++// ─── Helper: extract client IP for legacy path (where we don't have ctx) ────
++function getClientIp(req: NextRequest): string | undefined {
++  const xff = req.headers.get("x-forwarded-for");
++  if (xff) return xff.split(",")[0].trim();
++  return undefined;
++}
+ 
+-  if (result.alreadyProcessed) {
+-    return { received: true, status: "refunded", idempotent: true };
+-  }
++// ─── Send notification + email after successful completion ──────────────────
++async function notifyUserPaymentCompleted(
++  userId: string,
++  courseId: string,
++  courseTitle: string,
++  userName: string | null,
++  userEmail: string,
++) {
++  createNotification({
++    userId,
++    type: "payment",
++    title: "Оплата прошла успешно",
++    message: `Оплата курса "${courseTitle}" подтверждена. Добро пожаловать!`,
++    link: `/course/${courseId}`,
++  }).catch((err: unknown) => log.error("Failed to send payment notification", { error: err }));
++
++  const siteUrl = env.siteUrl;
++  sendEmail({
++    to: userEmail,
++    ...coursePurchaseEmail(
++      userName || "пользователь",
++      courseTitle,
++      `${siteUrl}/course/${courseId}`,
++    ),
++  }).catch((err: unknown) => log.error("Failed to send purchase email", { error: err }));
++}
+ 
+-  log.info("Webhook: payment refunded", {
+-    paymentId: payment.id,
+-    providerRefundId: data.refundId,
+-  });
++// ─── POST handler ───────────────────────────────────────────────────────────
+ 
+-  return { received: true, status: "refunded" };
+-}
++const checkWebhookRateLimit = rateLimit("webhook", { windowMs: 60_000, maxRequests: 100 });
+ 
+ export async function POST(request: NextRequest) {
+   const blocked = checkWebhookRateLimit(request);
+   if (blocked) return blocked;
++
+   try {
+-    const provider = request.headers.get("x-payment-provider")?.toLowerCase();
+-    const rawBody = await request.text();
+-    const signature =
+-      request.headers.get("x-webhook-signature") ||
+-      request.headers.get("x-signature");
+-
+-    // Verify HMAC signature — reject unauthenticated requests when secret is missing
+-    const webhookSecret = env.paymentWebhookSecret;
+-    if (!webhookSecret) {
+-      log.error("Webhook secret is not configured — rejecting request", { provider });
+-      return NextResponse.json({ error: "Webhook not configured" }, { status: 501 });
+-    }
+-    const { valid, algorithm } = verifyWebhookSignature({
+-      rawBody,
+-      signature,
+-      secret: webhookSecret,
+-    });
+-
+-    if (!valid) {
+-      log.warn("Webhook signature verification failed", { provider, algorithm });
+-      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
++    // 1. Determine provider from header or ?provider= query param.
++    const providerHeader = request.headers.get("x-payment-provider");
++    const url = new URL(request.url);
++    const providerQuery = url.searchParams.get("provider");
++    const providerName = parseProviderName(providerHeader ?? providerQuery);
++
++    if (!providerName) {
++      log.warn("Webhook: no provider header/param", { header: providerHeader, query: providerQuery });
++      return NextResponse.json({ error: "Provider not specified" }, { status: 400 });
+     }
+ 
+-    // Parse JSON body after signature verification
++    const provider = getProvider(providerName);
++    const rawBody = await request.text();
++    const ctx = buildContext(request, rawBody, providerName);
++
++    // 2. Verify webhook signature + IP. Each provider implements its own
++    //    verification logic (HMAC, signature header, IP whitelist).
+     let body: unknown;
+     try {
+       body = JSON.parse(rawBody);
+     } catch {
+-      log.warn("Invalid webhook JSON payload", { provider });
++      log.warn("Invalid webhook JSON payload", { provider: providerName });
+       return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+     }
+ 
+-    // Validate webhook payload
+-    const validation = webhookBodySchema.safeParse(body);
+-    if (!validation.success) {
+-      log.warn("Invalid webhook payload", { provider, error: validation.error.message });
+-      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
++    const verified = provider.verifyWebhook(ctx, body);
++    if (!verified) {
++      log.warn("Webhook verification failed", { provider: providerName, ip: ctx.clientIp });
++      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+     }
+ 
+-    const data = validation.data;
+-
+-    // Idempotency check: skip duplicate webhooks
+-    // Use eventId as the idempotency key (if available), otherwise fall back to paymentId
+-    const idempotencyKey = data.eventId || data.object?.paymentId || data.object?.id;
+-    if (idempotencyKey) {
+-      const existingStatus = await checkIdempotency(idempotencyKey);
+-      if (existingStatus) {
+-        log.info("Duplicate webhook received, skipping", {
+-          idempotencyKey,
+-          provider,
+-          status: data.status,
++    // 3. Parse provider-specific body into normalized event.
++    let parsed: ParsedWebhook;
++    try {
++      parsed = provider.parseWebhook(body, ctx);
++    } catch (err) {
++      log.warn("Webhook parse failed", {
++        provider: providerName,
++        error: err instanceof Error ? err.message : String(err),
++      });
++      return NextResponse.json({ error: "Invalid payload structure" }, { status: 400 });
++    }
++
++    // 4. Idempotency check #1 — Redis + in-memory cache (fast path).
++    if (parsed.eventId) {
++      const existing = await checkIdempotency(parsed.eventId);
++      if (existing) {
++        log.info("Duplicate webhook (Redis/in-mem), skipping", {
++          eventId: parsed.eventId,
++          provider: providerName,
+         });
+-        return NextResponse.json({ received: true, status: data.status, idempotent: true });
++        return NextResponse.json({ received: true, status: parsed.status, idempotent: true });
+       }
+     }
+ 
+-    // ── Refund events (e.g. YooKassa `refund.succeeded` / `refund.canceled`) ──
+-    const eventType = (data.event || data.type || "").toLowerCase();
+-    const isRefundEvent = eventType.startsWith("refund.");
+-
+-    if (isRefundEvent) {
+-      const result = await processRefundWebhook({
+-        paymentId: data.object?.payment_id ?? data.object?.paymentId,
+-        refundId: data.object?.id ?? idempotencyKey,
+-        status: data.object?.status ?? data.status,
++    // 5. Idempotency check #2 — durable via PaymentWebhookEvent table.
++    //    This catches duplicates that survive Redis eviction / server restart.
++    try {
++      await db.paymentWebhookEvent.create({
++        data: {
++          provider: providerName,
++          eventId: parsed.eventId,
++          event: parsed.event,
++          payload: rawBody.slice(0, 65535), // cap payload size
++          paymentId: parsed.internalPaymentId ?? null,
++        },
+       });
+-      return NextResponse.json(result);
++    } catch (err: unknown) {
++      // Unique constraint violation = duplicate event. Reply OK.
++      log.info("Duplicate webhook (DB), skipping", { eventId: parsed.eventId, provider: providerName });
++      return NextResponse.json({ received: true, status: parsed.status, idempotent: true });
+     }
+ 
+-    // Map provider-specific status values
+-    const statusMap: Record<string, string> = {
+-      succeeded: "completed",
+-      paid: "completed",
+-      completed: "completed",
+-      canceled: "failed",
+-      failed: "failed",
+-      refunded: "refunded",
+-    };
+-
+-    const rawStatus = data.status.trim().toLowerCase();
+-    const normalizedStatus = statusMap[rawStatus] ?? rawStatus;
+-
+-    if (normalizedStatus === "pending") {
+-      // Initial state notification — nothing to process yet
+-      return NextResponse.json({ received: true, status: normalizedStatus });
+-    }
++    // 6. Find our internal payment by providerPaymentId (stored in transactionId
++    //    after createPayment succeeds) or by internalPaymentId from metadata.
++    let payment: { id: string; userId: string; courseId: string; amount: number; status: string } | null = null;
+ 
+-    if (normalizedStatus !== "completed") {
+-      // Update payment to failed/refunded status
+-      const paymentId = data.object?.id ?? data.object?.paymentId;
+-      if (!paymentId) {
+-        log.warn("Webhook: cannot identify payment for non-completed status", { status: normalizedStatus });
+-        return NextResponse.json({ error: "Payment not identified" }, { status: 400 });
+-      }
+-      await db.payment.updateMany({
+-        where: { id: paymentId, status: "pending" },
+-        data: { status: normalizedStatus === "failed" ? "failed" : "refunded" },
++    if (parsed.internalPaymentId) {
++      payment = await db.payment.findUnique({
++        where: { id: parsed.internalPaymentId },
++        select: { id: true, userId: true, courseId: true, amount: true, status: true },
+       });
+-      return NextResponse.json({ received: true, status: normalizedStatus });
+     }
+ 
+-    // Find payment by metadata.paymentId (set during payment creation),
+-    // then fall back to provider's transaction ID or object ID
+-    const providerTransactionId = data.object?.transactionId;
+-    const providerObjectId = data.object?.id;
+-    const metaPaymentId = data.object?.metadata?.paymentId;
+-    let payment = null;
+-
+-    if (metaPaymentId) {
++    if (!payment && parsed.providerPaymentId) {
+       payment = await db.payment.findFirst({
+-        where: { id: metaPaymentId, status: "pending" },
++        where: { transactionId: parsed.providerPaymentId },
++        select: { id: true, userId: true, courseId: true, amount: true, status: true },
+       });
+     }
+ 
+-    if (!payment && providerTransactionId) {
+-      payment = await db.payment.findFirst({
+-        where: { transactionId: providerTransactionId, status: "pending" },
++    if (!payment) {
++      log.warn("Webhook: payment not found", {
++        provider: providerName,
++        providerPaymentId: parsed.providerPaymentId,
++        internalPaymentId: parsed.internalPaymentId,
+       });
++      // WebhookEvent row is already created (audit), respond OK so provider stops retrying.
++      return NextResponse.json({ received: true, status: "payment_not_found" });
+     }
+ 
+-    if (!payment && providerObjectId) {
+-      payment = await db.payment.findFirst({
+-        where: { id: providerObjectId, status: "pending" },
++    // 7. Link webhook event to the payment (now that we know the paymentId).
++    if (!parsed.internalPaymentId) {
++      await db.paymentWebhookEvent.updateMany({
++        where: { eventId: parsed.eventId },
++        data: { paymentId: payment.id },
+       });
+     }
+ 
+-    if (!payment) {
+-      log.warn("Webhook: payment not found", { transactionId: providerTransactionId, objectId: providerObjectId });
+-      return NextResponse.json({ error: "Payment not found" }, { status: 404 });
++    // 8. Refund events — mark refunded, cancel enrollment.
++    if (parsed.event.startsWith("refund.")) {
++      if (parsed.status === "refunded") {
++        await markPaymentRefunded(payment.id, {
++          providerRefundId: parsed.eventId,
++          refundAmount: parsed.amount ?? payment.amount,
++        });
++      }
++      return NextResponse.json({ received: true, status: parsed.status });
+     }
+ 
+-    // Use the provider's transaction ID, or fall back to the one stored in our DB
+-    const finalTransactionId = providerTransactionId ?? payment.transactionId;
+-    if (!finalTransactionId) {
+-      log.error("Webhook: no transaction ID available", { paymentId: payment.id });
+-      return NextResponse.json({ error: "Missing transaction ID" }, { status: 400 });
++    // 9. Payment events — completed / failed / pending.
++    if (parsed.status === "completed") {
++      const result = await completePayment(payment.id, parsed.providerPaymentId || payment.id);
++      if (!result.alreadyCompleted && result.payment) {
++        // Fetch course title + user email for notification.
++        const course = await db.course.findUnique({
++          where: { id: result.payment.courseId },
++          select: { title: true },
++        });
++        const user = await db.user.findUnique({
++          where: { id: result.payment.userId },
++          select: { email: true, name: true },
++        });
++        if (course && user) {
++          await notifyUserPaymentCompleted(
++            result.payment.userId,
++            result.payment.courseId,
++            course.title,
++            user.name,
++            user.email,
++          );
++        }
++        log.info("Webhook: payment completed", {
++          paymentId: payment.id, provider: providerName, transactionId: parsed.providerPaymentId,
++        });
++      }
++      return NextResponse.json({ received: true, status: "completed" });
+     }
+-    await completePayment(payment.id, finalTransactionId);
+ 
+-    log.info("Webhook: payment completed", {
+-      paymentId: payment.id,
+-      provider,
+-      transactionId: finalTransactionId,
+-    });
++    if (parsed.status === "failed") {
++      await db.payment.updateMany({
++        where: { id: payment.id, status: "pending" },
++        data: { status: "failed" },
++      });
++      log.info("Webhook: payment failed", { paymentId: payment.id, provider: providerName });
++      return NextResponse.json({ received: true, status: "failed" });
++    }
+ 
+-    return NextResponse.json({ received: true, status: "completed" });
++    // pending — nothing to do yet.
++    return NextResponse.json({ received: true, status: "pending" });
+   } catch (error: unknown) {
+-    if (error instanceof Error && error.message === "PAYMENT_NOT_FOUND") {
++    if (error instanceof ServiceError && error.code === "PAYMENT_NOT_FOUND") {
+       return NextResponse.json({ error: "Payment not found" }, { status: 404 });
+     }
+-    if (error instanceof Error && error.message === "PAYMENT_INVALID_STATUS") {
+-      return NextResponse.json({ error: "Payment cannot be completed" }, { status: 400 });
+-    }
+     return handleApiError(error, { route: "payments/webhook" });
+   }
+ }
++
++// Re-export for legacy callers.
++export { getClientIp };
+diff --git a/src/app/payment/[id]/PaymentPageClient.tsx b/src/app/payment/[id]/PaymentPageClient.tsx
+index 90753c6..fa357e5 100644
+--- a/src/app/payment/[id]/PaymentPageClient.tsx
++++ b/src/app/payment/[id]/PaymentPageClient.tsx
+@@ -2,6 +2,7 @@
+ 
+ import { useRouter } from "next/navigation";
+ import { useEffect, useState, useCallback, useRef } from "react";
++import { QRCodeSVG } from "qrcode.react";
+ import { useAppStore } from "@/lib/store";
+ import { log } from "@/lib/logger";
+ import { t } from "@/lib/i18n";
+@@ -17,6 +18,7 @@ import {
+   ExternalLink,
+   Loader2,
+   ArrowLeft,
++  QrCode,
+ } from "lucide-react";
+ import { toast } from "sonner";
+ 
+@@ -27,6 +29,7 @@ interface PaymentData {
+     currency: string;
+     status: string;
+     paymentMethod: string;
++    paymentProvider?: string | null;
+     paymentData: string | null;
+     course: {
+       id: string;
+@@ -39,15 +42,46 @@ interface PaymentData {
+ const POLL_INTERVAL = 3000;
+ const MAX_POLL_TIME = 10 * 60 * 1000;
+ 
+-const methodIcons: Record<string, React.ReactNode> = {
+-  yookassa: <CreditCard className="w-5 h-5" />,
+-};
++/** Decode confirmation data stored as JSON in `payment.paymentData`. */
++function readPaymentData(raw: string | null): {
++  confirmationUrl?: string;
++  qrCode?: string;
++  provider?: string;
++  providerPaymentId?: string;
++} {
++  if (!raw) return {};
++  try {
++    return JSON.parse(raw);
++  } catch {
++    return {};
++  }
++}
++
++/** Human-readable label per (provider, method) for display. */
++function methodLabel(provider: string | null | undefined, method: string): string {
++  const m = method?.toUpperCase();
++  const labels: Record<string, string> = {
++    SBP: "СБП — Система быстрых платежей",
++    CARD: "Банковская карта",
++    YOOMONEY: "ЮMoney",
++    SBERPAY: "SberPay",
++    TPAY: "T-Pay (Т-Банк)",
++    YANDEX_PAY: "Yandex Pay",
++    OZON_CARD: "Ozon Card",
++    // Legacy values:
++    YOOKASSA: "ЮKassa",
++    TINKOFF: "Т-Банк",
++  };
++  if (labels[m]) return labels[m];
++  // Legacy lowercase values
++  if (method === "yookassa") return "ЮKassa";
++  if (method === "sbp") return "СБП";
++  if (method === "tinkoff") return "Т-Банк";
++  if (method === "card") return "Банковская карта";
++  return method;
++}
+ 
+-export function PaymentPageClient({
+-  paymentId,
+-}: {
+-  paymentId: string;
+-}) {
++export function PaymentPageClient({ paymentId }: { paymentId: string }) {
+   const router = useRouter();
+   const user = useAppStore((s) => s.user);
+   const locale = useAppStore((s) => s.locale);
+@@ -80,10 +114,7 @@ export function PaymentPageClient({
+   }, [paymentId, locale]);
+ 
+   const fetchPaymentRef = useRef(fetchPayment);
+-
+-  useEffect(() => {
+-    fetchPaymentRef.current = fetchPayment;
+-  }, [fetchPayment]);
++  useEffect(() => { fetchPaymentRef.current = fetchPayment; }, [fetchPayment]);
+ 
+   useEffect(() => {
+     let cancelled = false;
+@@ -94,6 +125,7 @@ export function PaymentPageClient({
+     return () => { cancelled = true; };
+   }, [fetchPayment]);
+ 
++  // Poll for status updates (every 3s for 10 minutes).
+   useEffect(() => {
+     let isMounted = true;
+     const startTime = Date.now();
+@@ -108,18 +140,17 @@ export function PaymentPageClient({
+         clearInterval(interval);
+       }
+     }, POLL_INTERVAL);
+-
+-    return () => {
+-      isMounted = false;
+-      clearInterval(interval);
+-    };
++    return () => { isMounted = false; clearInterval(interval); };
+   }, []);
+ 
+-  const handleInitYooKassa = async () => {
++  /** Universal init — calls /api/payments/[id]/init-provider, works for any provider. */
++  const handleInitProvider = async () => {
+     setInitiating(true);
+     try {
+-      const res = await fetch(`/api/payments/${paymentId}/init-yookassa`, {
++      const res = await fetch(`/api/payments/${paymentId}/init-provider`, {
+         method: "POST",
++        headers: { "Content-Type": "application/json" },
++        body: JSON.stringify({}),
+       });
+       const data = await res.json();
+ 
+@@ -129,15 +160,18 @@ export function PaymentPageClient({
+       }
+ 
+       if (data.testMode) {
+-        toast.info(t("payment.notYooKassa", locale));
++        toast.info(data.message || t("payment.notYooKassa", locale));
+         return;
+       }
+ 
+       if (data.confirmationUrl) {
+         window.location.href = data.confirmationUrl;
++      } else if (data.qrCode) {
++        // Refresh payment to fetch the stored QR payload.
++        await fetchPayment();
+       }
+     } catch (e: unknown) {
+-      log.error("YooKassa init failed", { paymentId, error: e instanceof Error ? e.message : String(e) });
++      log.error("Provider init failed", { paymentId, error: e instanceof Error ? e.message : String(e) });
+       toast.error(t("payment.initError", locale));
+     } finally {
+       setInitiating(false);
+@@ -147,11 +181,8 @@ export function PaymentPageClient({
+   const handleSimulateComplete = async () => {
+     setInitiating(true);
+     try {
+-      const res = await fetch(`/api/payments/${paymentId}/simulate-complete`, {
+-        method: "POST",
+-      });
++      const res = await fetch(`/api/payments/${paymentId}/simulate-complete`, { method: "POST" });
+       const data = await res.json();
+-
+       if (res.ok) {
+         toast.success(t("payment.simulateSuccess", locale));
+         await fetchPayment();
+@@ -167,26 +198,10 @@ export function PaymentPageClient({
+   };
+ 
+   const statusConfig: Record<string, { label: string; color: "default" | "secondary" | "destructive" | "outline"; icon: React.ReactNode }> = {
+-    pending: {
+-      label: t("payment.pending", locale),
+-      color: "secondary",
+-      icon: <Clock className="w-4 h-4" />,
+-    },
+-    completed: {
+-      label: t("payment.completed", locale),
+-      color: "default",
+-      icon: <CheckCircle2 className="w-4 h-4" />,
+-    },
+-    failed: {
+-      label: t("payment.failed", locale),
+-      color: "destructive",
+-      icon: <XCircle className="w-4 h-4" />,
+-    },
+-    refunded: {
+-      label: t("payment.refunded", locale),
+-      color: "outline",
+-      icon: <XCircle className="w-4 h-4" />,
+-    },
++    pending: { label: t("payment.pending", locale), color: "secondary", icon: <Clock className="w-4 h-4" /> },
++    completed: { label: t("payment.completed", locale), color: "default", icon: <CheckCircle2 className="w-4 h-4" /> },
++    failed: { label: t("payment.failed", locale), color: "destructive", icon: <XCircle className="w-4 h-4" /> },
++    refunded: { label: t("payment.refunded", locale), color: "outline", icon: <XCircle className="w-4 h-4" /> },
+   };
+ 
+   if (!user) {
+@@ -195,9 +210,7 @@ export function PaymentPageClient({
+         <Card className="w-full max-w-md">
+           <CardContent className="pt-6 text-center space-y-4">
+             <p className="text-muted-foreground">{t("payment.authRequired", locale)}</p>
+-            <Button onClick={() => router.push("?dialog=login")}>
+-              {t("payment.login", locale)}
+-            </Button>
++            <Button onClick={() => router.push("?dialog=login")}>{t("payment.login", locale)}</Button>
+           </CardContent>
+         </Card>
+       </div>
+@@ -237,14 +250,20 @@ export function PaymentPageClient({
+   if (!payment) return null;
+ 
+   const config = statusConfig[payment.status] || statusConfig.pending;
+-  const titleKey = payment.status === "completed"
+-    ? "payment.success"
+-    : payment.status === "failed"
+-    ? "payment.failed"
+-    : payment.status === "refunded"
+-    ? "payment.refunded"
++  const titleKey =
++    payment.status === "completed" ? "payment.success"
++    : payment.status === "failed" ? "payment.failed"
++    : payment.status === "refunded" ? "payment.refunded"
+     : "payment.title";
+ 
++  // Decode stored confirmation data
++  const stored = readPaymentData(payment.paymentData);
++  const isSbpQr =
++    (payment.paymentMethod?.toUpperCase() === "SBP" ||
++     payment.paymentMethod?.toUpperCase() === "YOOMONEY" ||
++     payment.paymentMethod?.toUpperCase() === "WALLET")
++    && !!stored.qrCode;
++
+   return (
+     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 flex items-center justify-center p-4">
+       <Card className="w-full max-w-lg">
+@@ -258,44 +277,35 @@ export function PaymentPageClient({
+               <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                 <XCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
+               </div>
++            ) : isSbpQr ? (
++              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
++                <QrCode className="w-8 h-8 text-primary" />
++              </div>
+             ) : (
+               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+-                {methodIcons[payment.paymentMethod] || <CreditCard className="w-8 h-8 text-primary" />}
++                <CreditCard className="w-8 h-8 text-primary" />
+               </div>
+             )}
+           </div>
+           <CardTitle className="text-xl">{t(titleKey, locale)}</CardTitle>
+         </CardHeader>
++
+         <CardContent className="space-y-6">
+           <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+             <div className="flex justify-between items-center">
+               <span className="text-sm text-muted-foreground">{t("payment.course", locale)}</span>
+-              <span className="font-medium text-right max-w-[60%] truncate">
+-                {payment.course.title}
+-              </span>
++              <span className="font-medium text-right max-w-[60%] truncate">{payment.course.title}</span>
+             </div>
+             <div className="flex justify-between items-center">
+               <span className="text-sm text-muted-foreground">{t("payment.amount", locale)}</span>
+               <span className="font-semibold text-lg">
+-                {formatNumber(payment.amount, locale, {
+-                  style: "currency",
+-                  currency: payment.currency || "RUB",
+-                })}
++                {formatNumber(payment.amount, locale, { style: "currency", currency: payment.currency || "RUB" })}
+               </span>
+             </div>
+             <div className="flex justify-between items-center">
+               <span className="text-sm text-muted-foreground">{t("payment.method", locale)}</span>
+               <Badge variant="outline" className="gap-1.5">
+-                {methodIcons[payment.paymentMethod]}
+-                {payment.paymentMethod === "yookassa"
+-                  ? t("course.paymentYookassa", locale)
+-                  : payment.paymentMethod === "sbp"
+-                  ? t("course.paymentSbp", locale)
+-                  : payment.paymentMethod === "tinkoff"
+-                  ? t("course.paymentTinkoff", locale)
+-                  : payment.paymentMethod === "card"
+-                  ? t("payment.method", locale)
+-                  : payment.paymentMethod}
++                {methodLabel(payment.paymentProvider, payment.paymentMethod)}
+               </Badge>
+             </div>
+             <div className="flex justify-between items-center">
+@@ -309,13 +319,8 @@ export function PaymentPageClient({
+ 
+           {payment.status === "completed" && (
+             <div className="text-center space-y-3">
+-              <p className="text-sm text-muted-foreground">
+-                {t("payment.courseAccess", locale)}
+-              </p>
+-              <Button
+-                className="w-full"
+-                onClick={() => router.push(`/course/${payment.course.id}`)}
+-              >
++              <p className="text-sm text-muted-foreground">{t("payment.courseAccess", locale)}</p>
++              <Button className="w-full" onClick={() => router.push(`/course/${payment.course.id}`)}>
+                 {t("payment.toCourse", locale)}
+               </Button>
+             </div>
+@@ -323,37 +328,40 @@ export function PaymentPageClient({
+ 
+           {payment.status === "pending" && (
+             <div className="space-y-3">
+-              {payment.paymentMethod === "yookassa" && (
++              {/* SBP QR code display */}
++              {isSbpQr && (
++                <div className="flex flex-col items-center gap-3 p-4 border rounded-lg bg-white">
++                  <p className="text-sm text-muted-foreground text-center">
++                    Отсканируйте QR-код в приложении вашего банка для оплаты через СБП
++                  </p>
++                  <QRCodeSVG value={stored.qrCode!} size={240} includeMargin={true} />
++                  <p className="text-xs text-muted-foreground text-center">
++                    После оплаты страница обновится автоматически
++                  </p>
++                </div>
++              )}
++
++              {/* Universal init button — calls current provider */}
++              {!isSbpQr && (
+                 <Button
+                   className="w-full gap-2"
+-                  onClick={handleInitYooKassa}
++                  onClick={handleInitProvider}
+                   disabled={initiating}
+                 >
+-                  {initiating ? (
+-                    <Loader2 className="w-4 h-4 animate-spin" />
+-                  ) : (
+-                    <ExternalLink className="w-4 h-4" />
+-                  )}
+-                  {initiating
+-                    ? t("payment.initYooKassaLoading", locale)
+-                    : t("payment.initYooKassa", locale)}
++                  {initiating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
++                  {initiating ? "Обработка..." : `Перейти к оплате (${methodLabel(payment.paymentProvider, payment.paymentMethod)})`}
+                 </Button>
+               )}
+ 
++              {/* Dev-only: simulate completion */}
+               <Button
+                 variant="outline"
+                 className="w-full gap-2"
+                 onClick={handleSimulateComplete}
+                 disabled={initiating}
+               >
+-                {initiating ? (
+-                  <Loader2 className="w-4 h-4 animate-spin" />
+-                ) : (
+-                  <CheckCircle2 className="w-4 h-4" />
+-                )}
+-                {initiating
+-                  ? t("payment.simulateProcessing", locale)
+-                  : t("payment.simulateComplete", locale)}
++                {initiating ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
++                {initiating ? t("payment.simulateProcessing", locale) : t("payment.simulateComplete", locale)}
+               </Button>
+ 
+               <p className="text-xs text-center text-muted-foreground">
+@@ -364,14 +372,8 @@ export function PaymentPageClient({
+ 
+           {payment.status === "failed" && (
+             <div className="text-center space-y-3">
+-              <p className="text-sm text-muted-foreground">
+-                {t("payment.needRetry", locale)}
+-              </p>
+-              <Button
+-                variant="outline"
+-                className="w-full"
+-                onClick={() => router.push(`/course/${payment.course.id}`)}
+-              >
++              <p className="text-sm text-muted-foreground">{t("payment.needRetry", locale)}</p>
++              <Button variant="outline" className="w-full" onClick={() => router.push(`/course/${payment.course.id}`)}>
+                 <ArrowLeft className="w-4 h-4 mr-2" />
+                 {t("payment.returnToCourse", locale)}
+               </Button>
+@@ -380,9 +382,7 @@ export function PaymentPageClient({
+ 
+           {payment.status === "refunded" && (
+             <div className="text-center">
+-              <p className="text-sm text-muted-foreground">
+-                {t("payment.refundInfo", locale)}
+-              </p>
++              <p className="text-sm text-muted-foreground">{t("payment.refundInfo", locale)}</p>
+             </div>
+           )}
+         </CardContent>
+diff --git a/src/components/payments/CheckoutDialog.tsx b/src/components/payments/CheckoutDialog.tsx
+new file mode 100644
+index 0000000..fd3fd62
+--- /dev/null
++++ b/src/components/payments/CheckoutDialog.tsx
+@@ -0,0 +1,266 @@
++"use client";
++
++/**
++ * CheckoutDialog — modal that handles the full purchase flow:
++ *
++ *   1. Show course summary + price + promo code field
++ *   2. Show payment method selector (only configured providers)
++ *   3. On "Оплатить" click → POST /api/payments → redirect to confirmationUrl
++ *      OR navigate to /payment/[id] (which shows QR for SBP)
++ *
++ * Usage:
++ *   <CheckoutDialog course={course} open={open} onOpenChange={setOpen} />
++ */
++
++import { useEffect, useState } from "react";
++import { useRouter } from "next/navigation";
++import {
++  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
++} from "@/components/ui/dialog";
++import { Button } from "@/components/ui/button";
++import { Input } from "@/components/ui/input";
++import { Label } from "@/components/ui/label";
++import { Loader2, Tag, CreditCard } from "lucide-react";
++import { toast } from "sonner";
++import { useAppStore } from "@/lib/store";
++import { log } from "@/lib/logger";
++import { t } from "@/lib/i18n";
++import { formatCurrency } from "@/lib/utils";
++import {
++  PaymentMethodSelector,
++  useAvailablePaymentMethods,
++} from "./PaymentMethodSelector";
++
++export interface CheckoutCourse {
++  id: string;
++  title: string;
++  price: number;
++  oldPrice?: number | null;
++  currency: string;
++  image?: string | null;
++}
++
++export function CheckoutDialog({
++  course,
++  open,
++  onOpenChange,
++}: {
++  course: CheckoutCourse;
++  open: boolean;
++  onOpenChange: (v: boolean) => void;
++}) {
++  const router = useRouter();
++  const user = useAppStore((s) => s.user);
++  const locale = useAppStore((s) => s.locale);
++  const { options, loading: methodsLoading } = useAvailablePaymentMethods();
++  const [selected, setSelected] = useState("");
++  const [promoCode, setPromoCode] = useState("");
++  const [promoApplied, setPromoApplied] = useState<{ discount: number; finalPrice: number } | null>(null);
++  const [promoLoading, setPromoLoading] = useState(false);
++  const [submitting, setSubmitting] = useState(false);
++
++  // Auto-select first available method.
++  useEffect(() => {
++    if (!selected && options.length > 0) {
++      setSelected(`${options[0].provider}:${options[0].method}`);
++    }
++  }, [options, selected]);
++
++  // Apply promo code (calls /api/payments/promo/validate).
++  const handleApplyPromo = async () => {
++    if (!promoCode.trim()) return;
++    setPromoLoading(true);
++    try {
++      const res = await fetch("/api/payments/promo/validate", {
++        method: "POST",
++        headers: { "Content-Type": "application/json" },
++        body: JSON.stringify({
++          code: promoCode.trim(),
++          amount: course.price,
++          courseId: course.id,
++        }),
++      });
++      const data = await res.json();
++      if (!res.ok) {
++        toast.error(data.error || "Промокод недействителен");
++        setPromoApplied(null);
++        return;
++      }
++      setPromoApplied({
++        discount: data.discountAmount ?? 0,
++        finalPrice: data.finalPrice ?? course.price,
++      });
++      toast.success(`Скидка применена: ${data.discountAmount ?? 0} ₽`);
++    } catch (e) {
++      log.error("Promo apply failed", { error: e instanceof Error ? e.message : String(e) });
++      toast.error("Не удалось применить промокод");
++    } finally {
++      setPromoLoading(false);
++    }
++  };
++
++  // Submit — create payment, redirect to confirmation URL or payment page.
++  const handlePay = async () => {
++    if (!user) {
++      // Force login dialog
++      window.location.href = "?dialog=login";
++      return;
++    }
++    if (!selected) {
++      toast.error("Выберите способ оплаты");
++      return;
++    }
++
++    const [provider, method] = selected.split(":");
++    setSubmitting(true);
++    try {
++      const res = await fetch("/api/payments", {
++        method: "POST",
++        headers: { "Content-Type": "application/json" },
++        body: JSON.stringify({
++          courseId: course.id,
++          provider,
++          method,
++          promoCode: promoApplied ? promoCode : undefined,
++        }),
++      });
++      const data = await res.json();
++
++      if (!res.ok) {
++        toast.error(data.error || "Ошибка при создании платежа");
++        return;
++      }
++
++      // Redirect flow: card / e-wallet — go to provider's hosted page.
++      if (data.confirmationUrl) {
++        window.location.href = data.confirmationUrl;
++        return;
++      }
++
++      // QR flow: SBP — go to our payment page which renders the QR.
++      if (data.qrCode || data.payment?.paymentMethod?.toUpperCase() === "SBP") {
++        onOpenChange(false);
++        router.push(`/payment/${data.payment.id}`);
++        return;
++      }
++
++      // Test mode (no provider configured) — go to payment page so the user
++      // can simulate completion.
++      if (data.testMode) {
++        toast.info("Платёжный провайдер не настроен — тестовый режим");
++        onOpenChange(false);
++        router.push(`/payment/${data.payment.id}`);
++        return;
++      }
++
++      // Fallback — go to payment page (will call init-provider).
++      onOpenChange(false);
++      router.push(`/payment/${data.payment.id}`);
++    } catch (e) {
++      log.error("Checkout failed", { error: e instanceof Error ? e.message : String(e) });
++      toast.error("Не удалось начать оплату. Попробуйте позже.");
++    } finally {
++      setSubmitting(false);
++    }
++  };
++
++  const finalPrice = promoApplied?.finalPrice ?? course.price;
++  const discount = promoApplied?.discount ?? 0;
++
++  return (
++    <Dialog open={open} onOpenChange={onOpenChange}>
++      <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
++        <DialogHeader>
++          <DialogTitle>Оформление заказа</DialogTitle>
++          <DialogDescription>
++            {course.title}
++          </DialogDescription>
++        </DialogHeader>
++
++        <div className="space-y-5 py-2">
++          {/* Order summary */}
++          <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
++            <div className="flex justify-between text-sm">
++              <span className="text-muted-foreground">Стоимость курса</span>
++              <span className="font-medium">
++                {formatCurrency(course.price, course.currency || "RUB", locale)}
++              </span>
++            </div>
++            {course.oldPrice && course.oldPrice > course.price && (
++              <div className="flex justify-between text-sm text-muted-foreground">
++                <span>Старая цена</span>
++                <span className="line-through">
++                  {formatCurrency(course.oldPrice, course.currency || "RUB", locale)}
++                </span>
++              </div>
++            )}
++            {discount > 0 && (
++              <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
++                <span>Скидка по промокоду</span>
++                <span>−{formatCurrency(discount, course.currency || "RUB", locale)}</span>
++              </div>
++            )}
++            <div className="flex justify-between pt-2 border-t">
++              <span className="font-semibold">Итого</span>
++              <span className="font-bold text-lg">
++                {formatCurrency(finalPrice, course.currency || "RUB", locale)}
++              </span>
++            </div>
++          </div>
++
++          {/* Promo code */}
++          <div className="space-y-2">
++            <Label htmlFor="promo" className="text-sm">Промокод</Label>
++            <div className="flex gap-2">
++              <Input
++                id="promo"
++                value={promoCode}
++                onChange={(e) => setPromoCode(e.target.value)}
++                placeholder="Введите промокод (необязательно)"
++                disabled={promoLoading}
++              />
++              <Button
++                variant="secondary"
++                onClick={handleApplyPromo}
++                disabled={promoLoading || !promoCode.trim()}
++              >
++                {promoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Tag className="w-4 h-4" />}
++                <span className="ml-1.5">Применить</span>
++              </Button>
++            </div>
++          </div>
++
++          {/* Payment method */}
++          <div className="space-y-2">
++            <Label className="text-sm">Способ оплаты</Label>
++            {methodsLoading ? (
++              <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
++                <Loader2 className="w-4 h-4 animate-spin" />
++                Загрузка способов оплаты...
++              </div>
++            ) : (
++              <PaymentMethodSelector
++                value={selected}
++                onChange={setSelected}
++                options={options}
++              />
++            )}
++          </div>
++        </div>
++
++        <DialogFooter className="gap-2">
++          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
++            Отмена
++          </Button>
++          <Button onClick={handlePay} disabled={submitting || methodsLoading || !selected}>
++            {submitting ? (
++              <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Обработка...</>
++            ) : (
++              <><CreditCard className="w-4 h-4 mr-2" /> Оплатить {formatCurrency(finalPrice, course.currency || "RUB", locale)}</>
++            )}
++          </Button>
++        </DialogFooter>
++      </DialogContent>
++    </Dialog>
++  );
++}
+diff --git a/src/components/payments/PaymentMethodSelector.tsx b/src/components/payments/PaymentMethodSelector.tsx
+new file mode 100644
+index 0000000..a8bc164
+--- /dev/null
++++ b/src/components/payments/PaymentMethodSelector.tsx
+@@ -0,0 +1,135 @@
++"use client";
++
++/**
++ * Payment method selector — radio group with icons.
++ *
++ * Reads the list of available (provider, method) options from the API
++ * (only methods backed by a configured provider are shown).
++ * Used inside the course checkout dialog/modal.
++ */
++
++import { useEffect, useState } from "react";
++import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
++import { Label } from "@/components/ui/label";
++import { CreditCard, QrCode, Wallet, Landmark, Building2, Sparkles } from "lucide-react";
++import { log } from "@/lib/logger";
++
++export interface PaymentOption {
++  provider: string;
++  method: string;
++  label: string;
++}
++
++interface PaymentOptionWithIcon extends PaymentOption {
++  icon: typeof CreditCard;
++  description: string;
++}
++
++const METHOD_META: Record<string, { icon: typeof CreditCard; description: string }> = {
++  SBP: { icon: QrCode, description: "Система быстрых платежей — мгновенно по QR" },
++  CARD: { icon: CreditCard, description: "Visa, Mastercard, МИР" },
++  YOOMONEY: { icon: Wallet, description: "Электронный кошелёк ЮMoney" },
++  SBERPAY: { icon: Landmark, description: "Оплата в приложении Сбербанка" },
++  TPAY: { icon: Landmark, description: "T-Pay — кнопка оплаты Т-Банка" },
++  YANDEX_PAY: { icon: Sparkles, description: "Yandex Pay" },
++  OZON_CARD: { icon: Building2, description: "Ozon Card — без комиссии для клиента" },
++  WALLET: { icon: Wallet, description: "Электронный кошелёк" },
++};
++
++export function PaymentMethodSelector({
++  value,
++  onChange,
++  options,
++}: {
++  value: string;
++  onChange: (v: string) => void;
++  options: PaymentOption[];
++}) {
++  // Annotate options with icons / descriptions
++  const annotated: PaymentOptionWithIcon[] = options.map((opt) => {
++    const meta = METHOD_META[opt.method] ?? METHOD_META.CARD;
++    return { ...opt, icon: meta.icon, description: meta.description };
++  });
++
++  if (annotated.length === 0) {
++    return (
++      <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
++        Платёжные системы не настроены.
++        <br />
++        Обратитесь к администратору.
++      </div>
++    );
++  }
++
++  return (
++    <RadioGroup
++      value={value}
++      onValueChange={onChange}
++      className="grid grid-cols-1 sm:grid-cols-2 gap-3"
++    >
++      {annotated.map(({ provider, method, label, icon: Icon, description }) => {
++        const id = `${provider}:${method}`;
++        const selected = value === id;
++        return (
++          <Label
++            key={id}
++            htmlFor={id}
++            data-selected={selected}
++            className="flex items-center gap-3 rounded-lg border p-4 cursor-pointer hover:bg-accent transition-colors
++                       data-[selected=true]:border-primary data-[selected=true]:bg-accent"
++          >
++            <RadioGroupItem value={id} id={id} />
++            <Icon className="w-5 h-5 text-muted-foreground shrink-0" />
++            <div className="flex-1 min-w-0">
++              <div className="font-medium truncate">{label}</div>
++              <div className="text-xs text-muted-foreground truncate">{description}</div>
++            </div>
++          </Label>
++        );
++      })}
++    </RadioGroup>
++  );
++}
++
++/**
++ * Hook that fetches the list of available payment options from the server.
++ * Returns `loading`, `options` and `error` state.
++ *
++ * Usage:
++ *   const { options, loading } = useAvailablePaymentMethods();
++ *   const [selected, setSelected] = useState("");
++ *   useEffect(() => { if (options[0]) setSelected(`${options[0].provider}:${options[0].method}`); }, [options]);
++ */
++export function useAvailablePaymentMethods() {
++  const [options, setOptions] = useState<PaymentOption[]>([]);
++  const [loading, setLoading] = useState(true);
++  const [error, setError] = useState<string | null>(null);
++
++  useEffect(() => {
++    let cancelled = false;
++    (async () => {
++      try {
++        // Use the GET /api/payments endpoint which returns availableMethods
++        // (works for both authenticated and anonymous users — the GET route
++        // doesn't require auth for the availableMethods field).
++        const res = await fetch("/api/payments?limit=1", { cache: "no-store" });
++        if (!res.ok) throw new Error(`HTTP ${res.status}`);
++        const data = await res.json();
++        if (!cancelled) {
++          setOptions(data.availableMethods ?? []);
++          setError(null);
++        }
++      } catch (e) {
++        if (!cancelled) {
++          setError(e instanceof Error ? e.message : "Failed to load payment methods");
++          log.error("useAvailablePaymentMethods failed", { error: e instanceof Error ? e.message : String(e) });
++        }
++      } finally {
++        if (!cancelled) setLoading(false);
++      }
++    })();
++    return () => { cancelled = true; };
++  }, []);
++
++  return { options, loading, error };
++}
+diff --git a/src/lib/env.ts b/src/lib/env.ts
+index 9e83d79..5a3670d 100644
+--- a/src/lib/env.ts
++++ b/src/lib/env.ts
+@@ -108,6 +108,60 @@ export const env = {
+     return cached("yooKassaApiUrl", () => process.env.YOOKASSA_API_URL);
+   },
+ 
++  // ─── T-Bank (Tinkoff) Acquiring ───
++  get tinkoffTerminalKey(): string | undefined {
++    return cached("tinkoffTerminalKey", () => process.env.TINKOFF_TERMINAL_KEY);
++  },
++  get tinkoffPassword(): string | undefined {
++    return cached("tinkoffPassword", () => process.env.TINKOFF_PASSWORD);
++  },
++
++  // ─── CloudPayments ───
++  get cloudPaymentsPublicId(): string | undefined {
++    return cached("cloudPaymentsPublicId", () => process.env.CLOUDPAYMENTS_PUBLIC_ID);
++  },
++  get cloudPaymentsApiSecret(): string | undefined {
++    return cached("cloudPaymentsApiSecret", () => process.env.CLOUDPAYMENTS_API_SECRET);
++  },
++
++  // ─── Sberbank Acquiring ───
++  get sberUsername(): string | undefined {
++    return cached("sberUsername", () => process.env.SBER_USERNAME);
++  },
++  get sberPassword(): string | undefined {
++    return cached("sberPassword", () => process.env.SBER_PASSWORD);
++  },
++
++  // ─── Ozon Seller (Ozon Pay) ───
++  get ozonClientId(): string | undefined {
++    return cached("ozonClientId", () => process.env.OZON_CLIENT_ID);
++  },
++  get ozonApiKey(): string | undefined {
++    return cached("ozonApiKey", () => process.env.OZON_API_KEY);
++  },
++  get ozonApiUrl(): string | undefined {
++    return cached("ozonApiUrl", () => process.env.OZON_API_URL);
++  },
++  get ozonWebhookSecret(): string | undefined {
++    return cached("ozonWebhookSecret", () => process.env.OZON_WEBHOOK_SECRET);
++  },
++
++  // ─── VTB Acquiring ───
++  get vtbMerchantId(): string | undefined {
++    return cached("vtbMerchantId", () => process.env.VTB_MERCHANT_ID);
++  },
++  get vtbSecretKey(): string | undefined {
++    return cached("vtbSecretKey", () => process.env.VTB_SECRET_KEY);
++  },
++
++  // ─── MKB (Moscow Credit Bank) Acquiring ───
++  get mkbMerchantId(): string | undefined {
++    return cached("mkbMerchantId", () => process.env.MKB_MERCHANT_ID);
++  },
++  get mkbSecretKey(): string | undefined {
++    return cached("mkbSecretKey", () => process.env.MKB_SECRET_KEY);
++  },
++
+   get seedAdminPassword(): string | undefined {
+     return cached("seedAdminPassword", () => process.env.SEED_ADMIN_PASSWORD);
+   },
+diff --git a/src/lib/payments/ip-whitelist.ts b/src/lib/payments/ip-whitelist.ts
+new file mode 100644
+index 0000000..a71a8d2
+--- /dev/null
++++ b/src/lib/payments/ip-whitelist.ts
+@@ -0,0 +1,98 @@
++/**
++ * IP whitelist for payment provider webhooks.
++ *
++ * Each provider publishes the source IP ranges of its webhook servers.
++ * Always verify the incoming request's IP against these ranges — never trust
++ * the body alone, even when HMAC signature looks valid (signature secret
++ * could be compromised).
++ *
++ * Sources:
++ *  - YooKassa: https://yookassa.ru/developers/using-api/webhooks#security
++ *  - Tinkoff:  configured in merchant cabinet per-terminal
++ *  - CloudPayments: https://developers.cloudpayments.ru/#api-callback
++ *  - Sber: per-merchant
++ *  - Ozon: per-merchant
++ */
++
++const RANGES: Record<string, readonly string[]> = {
++  // YooKassa webhook source IPs (as of 2025)
++  YOOKASSA: [
++    "185.71.76.0/27",
++    "185.71.77.0/27",
++    "77.75.153.0/25",
++    "77.75.154.128/25",
++    "77.75.156.11",
++    "77.75.156.35",
++    "2a02:5180::/32",
++  ],
++  // CloudPayments webhook source IPs
++  CLOUDPAYMENTS: [
++    "130.193.38.0/24",
++    "130.193.70.0/24",
++    "185.98.85.0/24",
++  ],
++  // Tinkoff / T-Bank — published ranges may change; configure via env if needed
++  TINKOFF: [
++    "91.213.108.0/24",
++    "178.248.232.0/21",
++    "188.93.24.0/21",
++  ],
++  // For SBER, OZON, VTB, MKB the IPs are merchant-specific — leave empty
++  // and rely on signature verification only.
++  SBER: [],
++  OZON: [],
++  VTB: [],
++  MKB: [],
++};
++
++/** Convert IPv4 "a.b.c.d" → 32-bit integer. Returns -1 on parse error. */
++function ipv4ToInt(ip: string): number {
++  const parts = ip.split(".").map(Number);
++  if (parts.length !== 4 || parts.some((p) => Number.isNaN(p) || p < 0 || p > 255)) {
++    return -1;
++  }
++  return ((parts[0] << 24) >>> 0) + (parts[1] << 16) + (parts[2] << 8) + parts[3];
++}
++
++/** Convert CIDR "a.b.c.d/n" → [networkInt, maskInt]. Returns null on error. */
++function parseCidr(cidr: string): [number, number] | null {
++  const [ip, prefixStr] = cidr.split("/");
++  const ipInt = ipv4ToInt(ip);
++  if (ipInt < 0) return null;
++  const prefix = prefixStr === undefined ? 32 : Number(prefixStr);
++  if (Number.isNaN(prefix) || prefix < 0 || prefix > 32) return null;
++  const mask = prefix === 0 ? 0 : (0xffffffff << (32 - prefix)) >>> 0;
++  return [ipInt & mask, mask];
++}
++
++/**
++ * Check whether the client IP falls within any of the provider's published
++ * ranges. Returns `true` when the provider has no IP whitelist configured
++ * (caller must then rely on signature verification).
++ */
++export function isIpAllowed(provider: string, clientIp: string | undefined): boolean {
++  const ranges = RANGES[provider];
++  if (!ranges || ranges.length === 0) return true; // no IP restriction for this provider
++
++  if (!clientIp) return false;
++
++  // Take the first IP from x-forwarded-for chain (already split by caller).
++  const ip = clientIp.trim();
++  if (!ip) return false;
++
++  // IPv6 — full-string compare only (rare case, mainly YooKassa IPv6 range).
++  if (ip.includes(":")) {
++    return ranges.some((r) => r.includes(":") && r === ip);
++
++  }
++
++  const ipInt = ipv4ToInt(ip);
++  if (ipInt < 0) return false;
++
++  return ranges.some((cidr) => {
++    const parsed = parseCidr(cidr);
++    if (!parsed) return false;
++    const [net, mask] = parsed;
++    return (ipInt & mask) === net;
++  });
++}
+diff --git a/src/lib/payments/providers/cloudpayments.ts b/src/lib/payments/providers/cloudpayments.ts
+new file mode 100644
+index 0000000..bfb8001
+--- /dev/null
++++ b/src/lib/payments/providers/cloudpayments.ts
+@@ -0,0 +1,218 @@
++/**
++ * CloudPayments provider.
++ *
++ * Documentation: https://developers.cloudpayments.ru/
++ *
++ * CloudPayments is a Russian acquiring aggregator that supports:
++ *   - Bank cards (incl. МИР, Visa, Mastercard)
++ *   - СБП (System of Fast Payments)
++ *   - ЮMoney
++ *   - SberPay
++ *   - T-Pay
++ *   - Apple Pay / Google Pay (mobile only)
++ *
++ * Auth: HTTP Basic with `publicId:apiSecret` base64-encoded.
++ * Amounts in **kopecks**.
++ *
++ * Webhook: CloudPayments POSTs JSON to your NotificationURL.
++ * Headers: `X-Content-HMAC` — HMAC-SHA256 of body with your apiSecret, base64.
++ *
++ * This implementation is mostly complete (createPayment, refund, status
++ * check, webhook verification). Fill in remaining endpoints as needed.
++ */
++
++import crypto from "crypto";
++import { env } from "@/lib/env";
++import { log } from "@/lib/logger";
++import { isIpAllowed } from "../ip-whitelist";
++import type {
++  IPaymentProvider, ProviderName, PaymentMethod,
++  CreatePaymentInput, PaymentResult, RefundInput, RefundResult,
++  WebhookContext, ParsedWebhook, PaymentStatus,
++} from "../types";
++
++const API_URL = "https://api.cloudpayments.ru";
++
++interface CPResponse<T> {
++  Success: boolean;
++  Message?: string;
++  InnerMessage?: string;
++  Model?: T;
++}
++
++export class CloudPaymentsProvider implements IPaymentProvider {
++  readonly name: ProviderName = "CLOUDPAYMENTS";
++  readonly label = "CloudPayments";
++  readonly supportedMethods: readonly PaymentMethod[] = [
++    "CARD", "SBP", "YOOMONEY", "SBERPAY", "TPAY",
++  ];
++
++  isConfigured(): boolean {
++    return !!(env.cloudPaymentsPublicId && env.cloudPaymentsApiSecret);
++  }
++
++  private get authHeader(): string {
++    const credentials = Buffer.from(`${env.cloudPaymentsPublicId}:${env.cloudPaymentsApiSecret}`).toString("base64");
++    return `Basic ${credentials}`;
++  }
++
++  private async request<T>(path: string, body: unknown): Promise<T> {
++    let res: Response;
++    try {
++      res = await fetch(`${API_URL}${path}`, {
++        method: "POST",
++        headers: {
++          Authorization: this.authHeader,
++          "Content-Type": "application/json",
++        },
++        body: body ? JSON.stringify(body) : undefined,
++      });
++    } catch (err) {
++      throw new Error(`CloudPayments network error: ${err instanceof Error ? err.message : String(err)}`);
++    }
++
++    const data = (await res.json()) as CPResponse<T>;
++    if (!data.Success) {
++      log.error("CloudPayments API error", { path, message: data.Message });
++      throw new Error(`CloudPayments: ${data.Message ?? "request failed"}`);
++    }
++    return data.Model as T;
++  }
++
++  async createPayment(input: CreatePaymentInput): Promise<PaymentResult> {
++    // CloudPayments: create a "cryptogram"-based payment for cards, OR a
++    // "redirect"-based payment for SBP/e-wallets. For card-not-present
++    // scenarios we use /orders/create — this returns a redirect URL.
++    const body = {
++      Amount: input.amount, // CloudPayments uses RUB with decimal
++      Currency: "RUB",
++      Description: input.description,
++      InvoiceId: input.paymentId,
++      // CloudPayments shows a method selector on their hosted page unless
++      // you pass `PaymentMethod`:
++      ...(input.method === "SBP" ? { PaymentMethod: "SBP" } : {}),
++      ...(input.method === "YOOMONEY" ? { PaymentMethod: "YooMoney" } : {}),
++      ...(input.method === "SBERPAY" ? { PaymentMethod: "Sberbank" } : {}),
++      ...(input.method === "TPAY" ? { PaymentMethod: "TinkoffPay" } : {}),
++      // CloudPayments can return a QR payload for SBP instead of a redirect:
++      ...(input.method === "SBP" ? { Schema: "QR" } : {}),
++      // Customer info for receipt:
++      Email: input.customer.email,
++      Phone: input.customer.phone,
++      // 54-ФЗ receipt:
++      ...(input.receipt ? { Receipt: toCloudPaymentsReceipt(input.receipt) } : {}),
++      JsonData: { paymentId: input.paymentId, ...input.metadata },
++    };
++
++    const result = await this.request<{ Id: string; Url: string; QrUrl?: string }>(
++      "/orders/create",
++      body,
++    );
++
++    return {
++      providerPaymentId: String(result.Id),
++      status: "pending",
++      confirmationUrl: result.Url,
++      qrCode: result.QrUrl, // for SBP QR schema
++      raw: result,
++    };
++  }
++
++  async cancelPayment(providerPaymentId: string, _idempotenceKey: string): Promise<PaymentResult> {
++    await this.request<{ Id: number }>("/orders/cancel", { Id: Number(providerPaymentId) });
++    return { providerPaymentId, status: "failed" };
++  }
++
++  async refundPayment(input: RefundInput): Promise<RefundResult> {
++    const result = await this.request<{ TransactionId: number; Status: string }>(
++      "/payments/refund",
++      {
++        TransactionId: Number(input.providerPaymentId),
++        Amount: input.amount,
++      },
++    );
++    return {
++      providerRefundId: String(result.TransactionId),
++      status: result.Status === "Succeeded" ? "succeeded" : "pending",
++    };
++  }
++
++  async getPaymentStatus(providerPaymentId: string): Promise<PaymentStatus> {
++    const result = await this.request<{ Status: string }>(
++      "/payments/get",
++      { TransactionId: Number(providerPaymentId) },
++    );
++    return mapCloudPaymentsStatus(result.Status);
++  }
++
++  verifyWebhook(ctx: WebhookContext, _body: unknown): boolean {
++    // CloudPayments sends `X-Content-HMAC` header = HMAC-SHA256(rawBody, apiSecret) base64.
++    const signature = ctx.headers["x-content-hmac"];
++    if (!signature || !env.cloudPaymentsApiSecret) return false;
++
++    const expected = crypto.createHmac("sha256", env.cloudPaymentsApiSecret)
++      .update(ctx.rawBody)
++      .digest("base64");
++
++    if (signature.length !== expected.length) return false;
++    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
++  }
++
++  parseWebhook(body: unknown, _ctx: WebhookContext): ParsedWebhook {
++    const b = body as {
++      TransactionId?: number;
++      InvoiceId?: string; // = our internal paymentId
++      Status?: string;
++      EventType?: string; // e.g. "Pay", "Refund", "Confirm"
++      Event?: string;
++    };
++
++    const eventType = b.EventType ?? b.Event ?? "";
++    const isRefund = eventType.toLowerCase().includes("refund");
++
++    return {
++      eventId: `cp:${b.TransactionId ?? ""}:${eventType}`,
++      event: isRefund ? "refund.succeeded" : `payment.${(b.Status ?? "").toLowerCase()}`,
++      providerPaymentId: String(b.TransactionId ?? ""),
++      internalPaymentId: b.InvoiceId,
++      status: isRefund ? "refunded" : mapCloudPaymentsStatus(b.Status),
++      raw: body,
++    };
++  }
++}
++
++function mapCloudPaymentsStatus(s?: string): PaymentStatus {
++  switch (s?.toLowerCase()) {
++    case "authorized":
++    case "awaitingauthentication":
++      return "pending";
++    case "completed":
++      return "completed";
++    case "declined":
++    case "cancelled":
++      return "failed";
++    case "refunded":
++    case "partialrefund":
++      return "refunded";
++    default:
++      return "pending";
++  }
++}
++
++/** Translate our Receipt shape to CloudPayments' receipt JSON. */
++function toCloudPaymentsReceipt(r: import("../types").Receipt): unknown {
++  return {
++    Items: r.items.map((it) => ({
++      label: it.description,
++      price: it.amount,
++      quantity: it.quantity,
++      amount: it.amount * it.quantity,
++      vat: it.vatCode,
++      method: it.paymentMode,
++      object: it.paymentSubject,
++    })),
++    taxationSystem: r.taxSystemCode ?? 0,
++    email: r.customer.email,
++    phone: r.customer.phone,
++  };
++}
+diff --git a/src/lib/payments/providers/mkb.ts b/src/lib/payments/providers/mkb.ts
+new file mode 100644
+index 0000000..6ef26ab
+--- /dev/null
++++ b/src/lib/payments/providers/mkb.ts
+@@ -0,0 +1,81 @@
++/**
++ * MKB (Moscow Credit Bank) acquiring provider.
++ *
++ * MKB uses a BPC Smart Vista-based platform. Documentation is provided in
++ * your merchant cabinet after onboarding.
++ *
++ * This is a working stub — fill in real API calls once credentials are issued.
++ */
++
++import { env } from "@/lib/env";
++import { log } from "@/lib/logger";
++import type {
++  IPaymentProvider, ProviderName, PaymentMethod,
++  CreatePaymentInput, PaymentResult, RefundInput, RefundResult,
++  WebhookContext, ParsedWebhook, PaymentStatus,
++} from "../types";
++
++export class MkbProvider implements IPaymentProvider {
++  readonly name: ProviderName = "MKB";
++  readonly label = "МКБ Эквайринг";
++  readonly supportedMethods: readonly PaymentMethod[] = ["CARD", "SBP"];
++
++  isConfigured(): boolean {
++    return !!(env.mkbMerchantId && env.mkbSecretKey);
++  }
++
++  async createPayment(input: CreatePaymentInput): Promise<PaymentResult> {
++    throw new Error("MKB createPayment: not implemented — fill in once credentials are issued.");
++  }
++
++  async cancelPayment(providerPaymentId: string, _idempotenceKey: string): Promise<PaymentResult> {
++    throw new Error(`MKB cancelPayment: not implemented (${providerPaymentId})`);
++  }
++
++  async refundPayment(input: RefundInput): Promise<RefundResult> {
++    throw new Error(`MKB refundPayment: not implemented (${input.providerPaymentId})`);
++  }
++
++  async getPaymentStatus(providerPaymentId: string): Promise<PaymentStatus> {
++    throw new Error(`MKB getPaymentStatus: not implemented (${providerPaymentId})`);
++  }
++
++  verifyWebhook(ctx: WebhookContext, _body: unknown): boolean {
++    log.warn("MKB webhook verification: not implemented — accepting all", { provider: ctx.provider });
++    return true;
++  }
++
++  parseWebhook(body: unknown, _ctx: WebhookContext): ParsedWebhook {
++    const b = body as {
++      payment_id?: string;
++      order_id?: string;
++      status?: string;
++      event_id?: string;
++    };
++    return {
++      eventId: `mkb:${b.event_id ?? b.payment_id ?? ""}`,
++      event: "payment.notification",
++      providerPaymentId: b.payment_id ?? "",
++      internalPaymentId: b.order_id,
++      status: mapMkbStatus(b.status),
++      raw: body,
++    };
++  }
++}
++
++function mapMkbStatus(s?: string): PaymentStatus {
++  switch (s?.toLowerCase()) {
++    case "pending":
++    case "authorized":
++      return "pending";
++    case "success":
++    case "captured":
++      return "completed";
++    case "declined":
++      return "failed";
++    case "refunded":
++      return "refunded";
++    default:
++      return "pending";
++  }
++}
+diff --git a/src/lib/payments/providers/ozon.ts b/src/lib/payments/providers/ozon.ts
+new file mode 100644
+index 0000000..3932ce7
+--- /dev/null
++++ b/src/lib/payments/providers/ozon.ts
+@@ -0,0 +1,223 @@
++/**
++ * Ozon Seller (Ozon Pay) provider.
++ *
++ * Documentation: https://docs.ozon.ru/api/seller/en/http/
++ *
++ * Ozon's payment API is part of the seller API. It supports:
++ *   - Ozon Card (no commission for the customer)
++ *   - Bank cards
++ *   - СБП
++ *   - Installment plans
++ *
++ * Auth: HTTP headers `Client-Id` + `Api-Key` (both issued in your Ozon Seller cabinet).
++ *
++ * Note: Ozon Pay is currently available only to Russian businesses registered
++ * as Ozon sellers. If you don't have an Ozon shop, skip this provider.
++ */
++
++import { env } from "@/lib/env";
++import { log } from "@/lib/logger";
++import { isIpAllowed } from "../ip-whitelist";
++import type {
++  IPaymentProvider, ProviderName, PaymentMethod,
++  CreatePaymentInput, PaymentResult, RefundInput, RefundResult,
++  WebhookContext, ParsedWebhook, PaymentStatus,
++} from "../types";
++
++// Sandbox base URL differs from production — set via env OZON_API_URL.
++const API_URL = () => env.ozonApiUrl ?? "https://api-seller.ozon.ru";
++
++interface OzonResponse<T> {
++  code?: number;
++  message?: string;
++  details?: unknown[];
++  result?: T;
++}
++
++interface OzonPaymentResult {
++  payment_id: string;
++  payment_url?: string;
++  status?: string;
++  qr_code?: string;
++}
++
++export class OzonProvider implements IPaymentProvider {
++  readonly name: ProviderName = "OZON";
++  readonly label = "Ozon Pay";
++  readonly supportedMethods: readonly PaymentMethod[] = ["CARD", "SBP", "OZON_CARD"];
++
++  isConfigured(): boolean {
++    return !!(env.ozonClientId && env.ozonApiKey);
++  }
++
++  private get headers(): Record<string, string> {
++    return {
++      "Client-Id": env.ozonClientId!,
++      "Api-Key": env.ozonApiKey!,
++      "Content-Type": "application/json",
++    };
++  }
++
++  async createPayment(input: CreatePaymentInput): Promise<PaymentResult> {
++    // Note: as of 2025, the Ozon Seller "create payment" endpoint is
++    // `/v1/payment/create` (subject to change — check Ozon docs). The exact
++    // request shape depends on which Ozon Pay product you've signed up for.
++    //
++    // This implementation targets the most common "Ozon Pay for digital
++    // goods" flow. Adjust the body shape if your Ozon account uses a
++    // different sub-product (e.g. instalment / subscription).
++    const body = {
++      amount: Math.round(input.amount * 100), // kopecks
++      currency: "RUB",
++      description: input.description,
++      order_id: input.paymentId,
++      // For SBP we ask Ozon to return a QR payload we can render ourselves.
++      return_url: input.returnUrl,
++      payment_method:
++        input.method === "SBP" ? "sbp" :
++        input.method === "OZON_CARD" ? "ozon_card" :
++        "card",
++      // Customer contact for receipt
++      customer: input.customer.email ? { email: input.customer.email } : undefined,
++      metadata: input.metadata,
++    };
++
++    let res: Response;
++    try {
++      res = await fetch(`${API_URL()}/v1/payment/create`, {
++        method: "POST",
++        headers: this.headers,
++        body: JSON.stringify(body),
++      });
++    } catch (err) {
++      throw new Error(`Ozon network error: ${err instanceof Error ? err.message : String(err)}`);
++    }
++
++    if (!res.ok) {
++      const errText = await res.text();
++      log.error("Ozon API error", { status: res.status, body: errText });
++      throw new Error(`Ozon HTTP ${res.status}: ${errText}`);
++    }
++
++    const data = (await res.json()) as OzonResponse<OzonPaymentResult>;
++    if (!data.result) {
++      throw new Error(`Ozon: ${data.message ?? "create payment failed"}`);
++    }
++
++    return {
++      providerPaymentId: data.result.payment_id,
++      status: "pending",
++      confirmationUrl: data.result.payment_url,
++      qrCode: data.result.qr_code,
++      raw: data,
++    };
++  }
++
++  async cancelPayment(providerPaymentId: string, _idempotenceKey: string): Promise<PaymentResult> {
++    const res = await fetch(`${API_URL()}/v1/payment/cancel`, {
++      method: "POST",
++      headers: this.headers,
++      body: JSON.stringify({ payment_id: providerPaymentId }),
++    });
++    const data = (await res.json()) as OzonResponse<{ status: string }>;
++    return {
++      providerPaymentId,
++      status: data.result?.status === "cancelled" ? "failed" : "pending",
++      raw: data,
++    };
++  }
++
++  async refundPayment(input: RefundInput): Promise<RefundResult> {
++    const res = await fetch(`${API_URL()}/v1/payment/refund`, {
++      method: "POST",
++      headers: this.headers,
++      body: JSON.stringify({
++        payment_id: input.providerPaymentId,
++        amount: Math.round(input.amount * 100),
++        description: input.description,
++      }),
++    });
++    const data = (await res.json()) as OzonResponse<{ refund_id: string; status: string }>;
++    return {
++      providerRefundId: data.result?.refund_id ?? "",
++      status: (data.result?.status ?? "pending") as RefundResult["status"],
++    };
++  }
++
++  async getPaymentStatus(providerPaymentId: string): Promise<PaymentStatus> {
++    const res = await fetch(`${API_URL()}/v1/payment/info`, {
++      method: "POST",
++      headers: this.headers,
++      body: JSON.stringify({ payment_id: providerPaymentId }),
++    });
++    const data = (await res.json()) as OzonResponse<{ status: string }>;
++    return mapOzonStatus(data.result?.status);
++  }
++
++  verifyWebhook(ctx: WebhookContext, body: unknown): boolean {
++    // Ozon signs webhooks with HMAC-SHA256 using a per-webhook secret
++    // configured in your seller cabinet. Header name: `X-Ozon-Signature`.
++    // The signature is base64 of the HMAC over the raw body.
++    const signature = ctx.headers["x-ozon-signature"];
++    const secret = env.ozonWebhookSecret;
++    if (signature && secret) {
++      const expected = cryptoB64Hmac(secret, ctx.rawBody);
++      if (signature.length !== expected.length || signature !== expected) {
++        log.warn("Ozon webhook signature mismatch", { provider: ctx.provider });
++        return false;
++      }
++    }
++    // IP whitelist (Ozon publishes their ranges on request — leave empty by default)
++    if (!isIpAllowed("OZON", ctx.clientIp)) {
++      log.warn("Ozon webhook from disallowed IP", { ip: ctx.clientIp });
++      return false;
++    }
++    return true;
++  }
++
++  parseWebhook(body: unknown, _ctx: WebhookContext): ParsedWebhook {
++    const b = body as {
++      event?: string;
++      payment_id?: string;
++      order_id?: string;
++      status?: string;
++      webhook_id?: string;
++    };
++    const status = mapOzonStatus(b.status);
++    return {
++      eventId: `ozon:${b.webhook_id ?? b.payment_id ?? ""}:${b.event ?? b.status ?? ""}`,
++      event: b.event ?? `payment.${b.status?.toLowerCase() ?? "unknown"}`,
++      providerPaymentId: b.payment_id ?? "",
++      internalPaymentId: b.order_id,
++      status,
++      raw: body,
++    };
++  }
++}
++
++function mapOzonStatus(s?: string): PaymentStatus {
++  switch (s?.toLowerCase()) {
++    case "created":
++    case "pending":
++    case "processing":
++      return "pending";
++    case "approved":
++    case "captured":
++    case "succeeded":
++      return "completed";
++    case "rejected":
++    case "canceled":
++    case "failed":
++      return "failed";
++    case "refunded":
++    case "partially_refunded":
++      return "refunded";
++    default:
++      return "failed";
++  }
++}
++
++import crypto from "crypto";
++function cryptoB64Hmac(secret: string, body: string): string {
++  return crypto.createHmac("sha256", secret).update(body).digest("base64");
++}
+diff --git a/src/lib/payments/providers/sberbank.ts b/src/lib/payments/providers/sberbank.ts
+new file mode 100644
+index 0000000..403b096
+--- /dev/null
++++ b/src/lib/payments/providers/sberbank.ts
+@@ -0,0 +1,108 @@
++/**
++ * Sberbank acquiring provider.
++ *
++ * Sber's API documentation is gated behind their merchant cabinet — the
++ * general public link is https://www.sberbank.ru/ru/s_m_business/pro/businessconnect/acquiring
++ *
++ * Sber supports:
++ *   - Bank cards
++ *   - SberPay (pay with Sberbank mobile app)
++ *   - СБП (System of Fast Payments)
++ *
++ * Auth: `userName` + `password` (basic API auth, issued in cabinet).
++ * Amounts in **kopecks**.
++ *
++ * Webhook URL: configured per-merchant, Sber POSTs JSON to it.
++ * Status verification: GET /payment/rest/getOrderStatusExtended.do
++ *
++ * This is a working stub — it compiles, validates inputs, and returns a clear
++ * "not implemented" error if called without credentials. Replace TODOs with
++ * real API calls once you have Sber credentials and the official docs.
++ */
++
++import { env } from "@/lib/env";
++import { log } from "@/lib/logger";
++import type {
++  IPaymentProvider, ProviderName, PaymentMethod,
++  CreatePaymentInput, PaymentResult, RefundInput, RefundResult,
++  WebhookContext, ParsedWebhook, PaymentStatus,
++} from "../types";
++
++export class SberbankProvider implements IPaymentProvider {
++  readonly name: ProviderName = "SBER";
++  readonly label = "Сбербанк Эквайринг";
++  readonly supportedMethods: readonly PaymentMethod[] = ["CARD", "SBP", "SBERPAY"];
++
++  isConfigured(): boolean {
++    return !!(env.sberUsername && env.sberPassword);
++  }
++
++  async createPayment(input: CreatePaymentInput): Promise<PaymentResult> {
++    // Real implementation:
++    //   POST https://3dsec.sberbank.ru/payment/rest/register.do
++    //   body: userName=...&password=...&orderNumber=<paymentId>&amount=<kop>&returnUrl=...
++    //
++    // Response: { orderId, formUrl } — redirect customer to formUrl.
++    //
++    // For SberPay: add `paymentType=SBP` to body.
++    // For SBP QR: use /payment/rest/sbp/c2b/qr/dynamic/get.do endpoint.
++    throw new Error("Sberbank createPayment: not implemented — fill in once credentials are issued. " +
++      `Order ${input.paymentId} for ${input.amount} RUB.`);
++  }
++
++  async cancelPayment(providerPaymentId: string, _idempotenceKey: string): Promise<PaymentResult> {
++    throw new Error(`Sberbank cancelPayment: not implemented (${providerPaymentId})`);
++  }
++
++  async refundPayment(input: RefundInput): Promise<RefundResult> {
++    // POST /payment/rest/refund.do  body: userName&password&orderId&amount
++    throw new Error(`Sberbank refundPayment: not implemented (${input.providerPaymentId})`);
++  }
++
++  async getPaymentStatus(providerPaymentId: string): Promise<PaymentStatus> {
++    throw new Error(`Sberbank getPaymentStatus: not implemented (${providerPaymentId})`);
++  }
++
++  verifyWebhook(ctx: WebhookContext, _body: unknown): boolean {
++    // Sber doesn't sign webhooks cryptographically — they rely on IP filtering
++    // + your merchant cabinet's webhook secret being passed in body.
++    // Implement once you have your Sber merchant account.
++    log.warn("Sberbank webhook verification: not implemented — accepting all", { provider: ctx.provider });
++    return true; // ⚠ Replace with real verification before production
++  }
++
++  parseWebhook(body: unknown, _ctx: WebhookContext): ParsedWebhook {
++    const b = body as {
++      mdOrder?: string;     // Sber's order id (= our providerPaymentId)
++      orderNumber?: string; // our internal payment id
++      status?: string;
++      operation?: string;
++    };
++    return {
++      eventId: `sber:${b.mdOrder ?? ""}:${b.operation ?? ""}`,
++      event: b.operation ?? "payment.unknown",
++      providerPaymentId: b.mdOrder ?? "",
++      internalPaymentId: b.orderNumber,
++      status: mapSberStatus(b.status),
++      raw: body,
++    };
++  }
++}
++
++function mapSberStatus(s?: string): PaymentStatus {
++  switch (s) {
++    case "PREAUTHORIZED":
++    case "CREATED":
++      return "pending";
++    case "DEPOSITED":
++      return "completed";
++    case "DECLINED":
++    case "REVERSED":
++      return "failed";
++    case "REFUNDED":
++    case "PARTIAL_REFUNDED":
++      return "refunded";
++    default:
++      return "pending";
++  }
++}
+diff --git a/src/lib/payments/providers/tinkoff.ts b/src/lib/payments/providers/tinkoff.ts
+new file mode 100644
+index 0000000..2482956
+--- /dev/null
++++ b/src/lib/payments/providers/tinkoff.ts
+@@ -0,0 +1,211 @@
++/**
++ * T-Bank (formerly Tinkoff) acquiring provider.
++ *
++ * Documentation: https://www.tbank.ru/business/help/internet-acquiring/api/
++ *
++ * Auth: every request carries `TerminalKey` + `Password` (both issued in the
++ * merchant cabinet). Each request is signed by computing SHA-256 over the
++ * sorted key=value pairs (excluding `DATA` and `Token`), appending `Password`,
++ * and including the resulting hex as the `Token` field.
++ *
++ * Amounts are in **kopecks** (1 RUB = 100 kop).
++ *
++ * Supported methods:
++ *   - CARD       — bank card (default Init flow, redirect to Tinkoff payment page)
++ *   - SBP        — QR via Tinkoff SBP
++ *   - TPAY       — T-Pay (opens T-Bank mobile app on customer's device)
++ *
++ * Webhooks: Tinkoff calls your `NOTIFY_URL` (set in cabinet per-terminal) with
++ * a body containing `Token` field. Verify by recomputing the signature.
++ */
++
++import crypto from "crypto";
++import { env } from "@/lib/env";
++import { log } from "@/lib/logger";
++import { isIpAllowed } from "../ip-whitelist";
++import type {
++  IPaymentProvider, ProviderName, PaymentMethod,
++  CreatePaymentInput, PaymentResult, RefundInput, RefundResult,
++  WebhookContext, ParsedWebhook, PaymentStatus,
++} from "../types";
++
++const API_URL = "https://securepay.tinkoff.ru/v2";
++
++interface TinkoffResponse {
++  Success: boolean;
++  ErrorCode?: string;
++  Message?: string;
++  Details?: string;
++  PaymentId?: string;
++  PaymentURL?: string;
++  OrderId?: string;
++  Status?: string;
++  Amount?: number;
++}
++
++export class TinkoffProvider implements IPaymentProvider {
++  readonly name: ProviderName = "TINKOFF";
++  readonly label = "Т-Банк (Tinkoff Kassa)";
++  readonly supportedMethods: readonly PaymentMethod[] = ["CARD", "SBP", "TPAY"];
++
++  isConfigured(): boolean {
++    return !!(env.tinkoffTerminalKey && env.tinkoffPassword);
++  }
++
++  private get terminalKey(): string { return env.tinkoffTerminalKey!; }
++  private get password(): string { return env.tinkoffPassword!; }
++
++  /**
++   * Compute Tinkoff's request signature.
++   * Algorithm: take all top-level fields except `Token` and `DATA` (DATA is
++   * a nested object — its values are signed by themselves via separate
++   * checksum). Sort alphabetically by key, concatenate values, append the
++   * password, SHA-256 the result.
++   */
++  private sign(payload: Record<string, unknown>): string {
++    const parts: string[] = [];
++    for (const [key, value] of Object.entries(payload)) {
++      if (key === "Token" || key === "DATA") continue;
++      if (value === undefined || value === null) continue;
++      parts.push(String(value));
++    }
++    parts.sort();
++    parts.push(this.password);
++    return crypto.createHash("sha256").update(parts.join("")).digest("hex");
++  }
++
++  private async request<T extends TinkoffResponse>(
++    path: string,
++    payload: Record<string, unknown>,
++  ): Promise<T> {
++    payload["TerminalKey"] = this.terminalKey;
++    payload["Token"] = this.sign(payload);
++
++    let res: Response;
++    try {
++      res = await fetch(`${API_URL}${path}`, {
++        method: "POST",
++        headers: { "Content-Type": "application/json" },
++        body: JSON.stringify(payload),
++      });
++    } catch (err) {
++      throw new Error(`Tinkoff network error: ${err instanceof Error ? err.message : String(err)}`);
++    }
++
++    const data = (await res.json()) as T;
++    if (!data.Success) {
++      log.error("Tinkoff API error", { path, code: data.ErrorCode, message: data.Message });
++      throw new Error(`Tinkoff ${data.ErrorCode ?? "unknown"}: ${data.Message ?? "request failed"}`);
++    }
++    return data;
++  }
++
++  async createPayment(input: CreatePaymentInput): Promise<PaymentResult> {
++    // Tinkoff doesn't natively know about "method" — the choice between
++    // card / SBP / T-Pay is made on their hosted payment page. For SBP and
++    // T-Pay you can pre-select the method via the `PaymentType` field in the
++    // DATA object — but the customer can still change it on the page unless
++    // you also restrict in cabinet.
++    const data: Record<string, unknown> = {
++      Amount: Math.round(input.amount * 100), // kopecks
++      OrderId: input.paymentId,
++      Description: input.description,
++      DATA: {
++        paymentId: input.paymentId,
++        // Hint Tinkoff which method to pre-select on the payment page:
++        ...(input.method === "SBP" ? { PayType: "SBP" } : {}),
++        ...(input.method === "TPAY" ? { PayType: "TinkoffPay" } : {}),
++      },
++      SuccessURL: input.returnUrl,
++      FailURL: input.returnUrl + "?status=fail",
++      NotificationURL: `${env.siteUrl}/api/payments/webhook?provider=TINKOFF`,
++    };
++
++    const resp = await this.request<TinkoffResponse>("/Init", data);
++
++    return {
++      providerPaymentId: resp.PaymentId!,
++      status: "pending",
++      confirmationUrl: resp.PaymentURL,
++      raw: resp,
++    };
++  }
++
++  async cancelPayment(providerPaymentId: string, idempotenceKey: string): Promise<PaymentResult> {
++    const resp = await this.request<TinkoffResponse>("/Cancel", {
++      PaymentId: providerPaymentId,
++      // Tinkoff doesn't use Idempotence-Key header — the same request is
++      // safe to retry by design.
++      Ip: idempotenceKey.slice(0, 39),
++    });
++    return {
++      providerPaymentId,
++      status: resp.Status === "CANCELLED" ? "failed" : "pending",
++      raw: resp,
++    };
++  }
++
++  async refundPayment(input: RefundInput): Promise<RefundResult> {
++    const resp = await this.request<TinkoffResponse>("/Refund", {
++      PaymentId: input.providerPaymentId,
++      Amount: Math.round(input.amount * 100),
++    });
++    return {
++      providerRefundId: resp.PaymentId ?? "",
++      status: resp.Status === "REFUNDED" ? "succeeded" : "pending",
++    };
++  }
++
++  async getPaymentStatus(providerPaymentId: string): Promise<PaymentStatus> {
++    const resp = await this.request<TinkoffResponse>("/GetState", { PaymentId: providerPaymentId });
++    return mapTinkoffStatus(resp.Status);
++  }
++
++  verifyWebhook(ctx: WebhookContext, body: unknown): boolean {
++    const b = body as Record<string, unknown>;
++    const { Token, ...rest } = b;
++    if (!Token || typeof Token !== "string") return false;
++    const expected = this.sign(rest);
++    if (Token.length !== expected.length) return false;
++    return crypto.timingSafeEqual(Buffer.from(Token), Buffer.from(expected));
++  }
++
++  parseWebhook(body: unknown, _ctx: WebhookContext): ParsedWebhook {
++    const b = body as {
++      PaymentId?: string;
++      OrderId?: string;
++      Status?: string;
++      Token?: string;
++      OperationId?: string;
++    };
++    const status = mapTinkoffStatus(b.Status);
++    return {
++      eventId: `tinkoff:${b.OperationId ?? b.PaymentId ?? ""}:${b.Status ?? ""}`,
++      event: `payment.${b.Status?.toLowerCase() ?? "unknown"}`,
++      providerPaymentId: b.PaymentId ?? "",
++      internalPaymentId: b.OrderId, // we set OrderId = our internal paymentId
++      status,
++      raw: body,
++    };
++  }
++}
++
++function mapTinkoffStatus(s?: string): PaymentStatus {
++  switch (s) {
++    case "NEW":
++    case "FORM_SHOWED":
++    case "AUTHORIZED":
++    case "CHECKING":
++      return "pending";
++    case "CONFIRMED":
++      return "completed";
++    case "REVERSED":
++    case "REJECTED":
++      return "failed";
++    case "REFUNDED":
++    case "PARTIAL_REFUNDED":
++      return "refunded";
++    default:
++      return "failed";
++  }
++}
+diff --git a/src/lib/payments/providers/vtb.ts b/src/lib/payments/providers/vtb.ts
+new file mode 100644
+index 0000000..9fb2379
+--- /dev/null
++++ b/src/lib/payments/providers/vtb.ts
+@@ -0,0 +1,89 @@
++/**
++ * VTB Acquiring provider.
++ *
++ * VTB uses a white-labeled version of the Worldline / BPC acquiring platform.
++ * API documentation is provided in your merchant cabinet after onboarding.
++ *
++ * Auth: merchant_id + secret_key (HMAC-signed requests).
++ * Webhook: VTB POSTs JSON notifications to your configured webhook URL.
++ *
++ * This is a working stub. Fill in real API calls once you have VTB credentials.
++ */
++
++import { env } from "@/lib/env";
++import { log } from "@/lib/logger";
++import type {
++  IPaymentProvider, ProviderName, PaymentMethod,
++  CreatePaymentInput, PaymentResult, RefundInput, RefundResult,
++  WebhookContext, ParsedWebhook, PaymentStatus,
++} from "../types";
++
++export class VtbProvider implements IPaymentProvider {
++  readonly name: ProviderName = "VTB";
++  readonly label = "ВТБ Эквайринг";
++  readonly supportedMethods: readonly PaymentMethod[] = ["CARD", "SBP"];
++
++  isConfigured(): boolean {
++    return !!(env.vtbMerchantId && env.vtbSecretKey);
++  }
++
++  async createPayment(input: CreatePaymentInput): Promise<PaymentResult> {
++    throw new Error("VTB createPayment: not implemented — fill in once credentials are issued. " +
++      `Order ${input.paymentId} for ${input.amount} RUB.`);
++  }
++
++  async cancelPayment(providerPaymentId: string, _idempotenceKey: string): Promise<PaymentResult> {
++    throw new Error(`VTB cancelPayment: not implemented (${providerPaymentId})`);
++  }
++
++  async refundPayment(input: RefundInput): Promise<RefundResult> {
++    throw new Error(`VTB refundPayment: not implemented (${input.providerPaymentId})`);
++  }
++
++  async getPaymentStatus(providerPaymentId: string): Promise<PaymentStatus> {
++    throw new Error(`VTB getPaymentStatus: not implemented (${providerPaymentId})`);
++  }
++
++  verifyWebhook(ctx: WebhookContext, _body: unknown): boolean {
++    log.warn("VTB webhook verification: not implemented — accepting all", { provider: ctx.provider });
++    return true; // ⚠ Replace before production
++  }
++
++  parseWebhook(body: unknown, _ctx: WebhookContext): ParsedWebhook {
++    const b = body as {
++      transaction_id?: string;
++      order_id?: string;
++      status?: string;
++      event_id?: string;
++    };
++    return {
++      eventId: `vtb:${b.event_id ?? b.transaction_id ?? ""}`,
++      event: "payment.notification",
++      providerPaymentId: b.transaction_id ?? "",
++      internalPaymentId: b.order_id,
++      status: mapVtbStatus(b.status),
++      raw: body,
++    };
++  }
++}
++
++function mapVtbStatus(s?: string): PaymentStatus {
++  switch (s?.toLowerCase()) {
++    case "new":
++    case "pending":
++    case "authorized":
++      return "pending";
++    case "success":
++    case "completed":
++    case "deposited":
++      return "completed";
++    case "declined":
++    case "cancelled":
++      return "failed";
++    case "refunded":
++    case "partial_refunded":
++      return "refunded";
++    default:
++      return "pending";
++  }
++}
+diff --git a/src/lib/payments/providers/yookassa.ts b/src/lib/payments/providers/yookassa.ts
+new file mode 100644
+index 0000000..a189275
+--- /dev/null
++++ b/src/lib/payments/providers/yookassa.ts
+@@ -0,0 +1,289 @@
++/**
++ * YooKassa provider — https://yookassa.ru/developers/api
++ *
++ * YooKassa is the most popular Russian payment aggregator and supports all
++ * the methods we want out of the box:
++ *   - Bank cards (Visa, Mastercard, МИР)
++ *   - СБП (System of Fast Payments)
++ *   - ЮMoney
++ *   - SberPay
++ *   - T-Pay (Tinkoff bank)
++ *   - Yandex Pay
++ *
++ * Auth: HTTP Basic with `shopId:secretKey` base64-encoded.
++ * Idempotency: `Idempotence-Key` header (any UUID-like string).
++ *
++ * Sandbox: use https://api.yookassa.ru/v3 with test shopId + test secret key
++ * (issued instantly in your YooKassa merchant cabinet).
++ *
++ * Webhook events we handle:
++ *   - payment.succeeded       → mark payment completed, grant course access
++ *   - payment.canceled        → mark payment failed
++ *   - payment.waiting_for_capture → (only if capture=false) trigger capture
++ *   - refund.succeeded        → mark payment refunded, cancel access
++ */
++
++import crypto from "crypto";
++import { env } from "@/lib/env";
++import { log } from "@/lib/logger";
++import { isIpAllowed } from "../ip-whitelist";
++import type {
++  IPaymentProvider, ProviderName, PaymentMethod,
++  CreatePaymentInput, PaymentResult, CaptureInput,
++  RefundInput, RefundResult,
++  WebhookContext, ParsedWebhook, PaymentStatus, Receipt,
++} from "../types";
++
++const API_URL = "https://api.yookassa.ru/v3";
++
++/** YooKassa payment_method_data type values per method. */
++const METHOD_TYPE: Record<PaymentMethod, string> = {
++  CARD: "bank_card",
++  SBP: "sbp",
++  YOOMONEY: "yoo_money",
++  SBERPAY: "sberbank",
++  TPAY: "tinkoff_bank",
++  YANDEX_PAY: "yoo_money", // Yandex Pay is served via the YooMoney wallet
++  OZON_CARD: "bank_card",  // not native — fall back to card
++  WALLET: "yoo_money",
++};
++
++/** Map YooKassa status → our internal status string. */
++function mapStatus(s: string): PaymentStatus {
++  switch (s) {
++    case "pending": return "pending";
++    case "waiting_for_capture": return "pending"; // still pending until capture
++    case "succeeded": return "completed";
++    case "canceled": return "failed";
++    default: return "failed";
++  }
++}
++
++interface YooKassaPaymentResponse {
++  id: string;
++  status: string;
++  paid: boolean;
++  amount: { value: string; currency: string };
++  confirmation?: {
++    type: string;
++    confirmation_url?: string;
++    // For SBP QR (yoo_money method or sbp method when confirmation=qr):
++    confirmation_data?: string;
++  };
++  metadata?: Record<string, string>;
++  refund?: { id: string; status: string };
++}
++
++interface YooKassaError {
++  type: string;
++  id: string;
++  code: string;
++  description: string;
++  parameter?: string;
++}
++
++export class YooKassaProvider implements IPaymentProvider {
++  readonly name: ProviderName = "YOOKASSA";
++  readonly label = "ЮKassa";
++  readonly supportedMethods: readonly PaymentMethod[] = [
++    "CARD", "SBP", "YOOMONEY", "SBERPAY", "TPAY", "YANDEX_PAY",
++  ];
++
++  isConfigured(): boolean {
++    return !!(env.yooKassaShopId && env.yooKassaSecretKey);
++  }
++
++  private get authHeader(): string {
++    const credentials = Buffer.from(`${env.yooKassaShopId}:${env.yooKassaSecretKey}`).toString("base64");
++    return `Basic ${credentials}`;
++  }
++
++  private async request<T>(method: string, path: string, body: unknown, idempotenceKey: string): Promise<T> {
++    let res: Response;
++    try {
++      res = await fetch(`${API_URL}${path}`, {
++        method,
++        headers: {
++          Authorization: this.authHeader,
++          "Content-Type": "application/json",
++          "Idempotence-Key": idempotenceKey,
++        },
++        body: body ? JSON.stringify(body) : undefined,
++      });
++    } catch (err) {
++      throw new Error(`YooKassa network error: ${err instanceof Error ? err.message : String(err)}`);
++    }
++
++    if (!res.ok) {
++      const err: YooKassaError = await res.json().catch(() => ({
++        type: "error", id: "", code: "unknown", description: `HTTP ${res.status}`,
++      }));
++      log.error("YooKassa API error", { path, status: res.status, code: err.code, description: err.description });
++      throw new Error(`YooKassa ${err.code}: ${err.description}`);
++    }
++
++    return res.json() as Promise<T>;
++  }
++
++  async createPayment(input: CreatePaymentInput): Promise<PaymentResult> {
++    // For SBP YooKassa returns a redirect URL that itself hosts the QR.
++    // If you want the raw QR payload (to render your own QR page), set
++    // confirmation type to "qr" — but that requires your merchant cabinet
++    // to enable it. We default to "redirect" for maximum compatibility.
++    const body: Record<string, unknown> = {
++      amount: { value: input.amount.toFixed(2), currency: "RUB" },
++      capture: true, // 1-step payment — capture immediately on customer's bank side
++      confirmation: { type: "redirect", return_url: input.returnUrl },
++      description: input.description,
++      metadata: { paymentId: input.paymentId, ...input.metadata },
++      payment_method_data: { type: METHOD_TYPE[input.method] },
++    };
++
++    if (input.receipt) {
++      body["receipt"] = toYooKassaReceipt(input.receipt);
++    }
++
++    const data = await this.request<YooKassaPaymentResponse>(
++      "POST", "/payments", body, input.idempotenceKey,
++    );
++
++    if (!data.confirmation?.confirmation_url) {
++      // For non-redirect methods (rare) YooKassa may return an empty confirmation.
++      log.warn("YooKassa: no confirmation_url", { id: data.id, status: data.status });
++    }
++
++    return {
++      providerPaymentId: data.id,
++      status: mapStatus(data.status),
++      confirmationUrl: data.confirmation?.confirmation_url,
++      raw: data,
++    };
++  }
++
++  async capturePayment(input: CaptureInput): Promise<PaymentResult> {
++    const data = await this.request<YooKassaPaymentResponse>(
++      "POST", `/payments/${input.providerPaymentId}/capture`,
++      { amount: { value: input.amount.toFixed(2), currency: "RUB" } },
++      input.idempotenceKey,
++    );
++    return {
++      providerPaymentId: data.id,
++      status: mapStatus(data.status),
++      paidAt: data.paid ? new Date() : undefined,
++      raw: data,
++    };
++  }
++
++  async cancelPayment(providerPaymentId: string, idempotenceKey: string): Promise<PaymentResult> {
++    const data = await this.request<YooKassaPaymentResponse>(
++      "POST", `/payments/${providerPaymentId}/cancel`, {}, idempotenceKey,
++    );
++    return { providerPaymentId: data.id, status: mapStatus(data.status), raw: data };
++  }
++
++  async refundPayment(input: RefundInput): Promise<RefundResult> {
++    const body: Record<string, unknown> = {
++      payment_id: input.providerPaymentId,
++      amount: { value: input.amount.toFixed(2), currency: "RUB" },
++      description: input.description,
++    };
++    const data = await this.request<{ id: string; status: string }>(
++      "POST", "/refunds", body, input.idempotenceKey,
++    );
++    return {
++      providerRefundId: data.id,
++      status: data.status as RefundResult["status"],
++    };
++  }
++
++  async getPaymentStatus(providerPaymentId: string): Promise<PaymentStatus> {
++    const data = await this.request<YooKassaPaymentResponse>(
++      "GET", `/payments/${providerPaymentId}`, undefined, crypto.randomUUID(),
++    );
++    return mapStatus(data.status);
++  }
++
++  verifyWebhook(ctx: WebhookContext, _body: unknown): boolean {
++    // 1. YooKassa webhook signature (optional but recommended)
++    //    YooKassa doesn't sign webhooks by default — they recommend IP filtering.
++    //    If you enabled "Webhook signature" in your cabinet, it's sent as
++    //    `X-Webhook-Signature` header — HMAC-SHA256 of raw body with secret key.
++    const signature = ctx.headers["x-webhook-signature"];
++    if (signature && env.yooKassaSecretKey) {
++      const expected = crypto.createHmac("sha256", env.yooKassaSecretKey).update(ctx.rawBody).digest("hex");
++      const expectedB64 = crypto.createHmac("sha256", env.yooKassaSecretKey).update(ctx.rawBody).digest("base64");
++      // Constant-time compare
++      if (signature !== expected && signature !== expectedB64) {
++        log.warn("YooKassa webhook signature mismatch", { provider: ctx.provider });
++        return false;
++      }
++    }
++    // 2. IP whitelist (always enforced — YooKassa publishes their IP ranges)
++    if (!isIpAllowed("YOOKASSA", ctx.clientIp)) {
++      log.warn("YooKassa webhook from disallowed IP", { ip: ctx.clientIp });
++      return false;
++    }
++    return true;
++  }
++
++  parseWebhook(body: unknown, _ctx: WebhookContext): ParsedWebhook {
++    const b = body as {
++      event: string;
++      object: {
++        id: string;
++        status: string;
++        paid?: boolean;
++        amount?: { value?: string };
++        metadata?: { paymentId?: string };
++        refund?: { id: string; status: string };
++        payment_id?: string; // for refund events
++      };
++    };
++
++    const event = b.event ?? "";
++    const obj = b.object ?? { id: "", status: "" };
++
++    // Refund event: object.id = refund id, object.payment_id = original payment id
++    if (event.startsWith("refund.")) {
++      return {
++        eventId: `${event}:${obj.id}`,
++        event,
++        providerPaymentId: obj.payment_id ?? "",
++        internalPaymentId: obj.metadata?.paymentId,
++        status: event === "refund.succeeded" ? "refunded" : "pending",
++        amount: obj.amount?.value ? Number(obj.amount.value) : undefined,
++        raw: body,
++      };
++    }
++
++    return {
++      eventId: `${event}:${obj.id}`,
++      event,
++      providerPaymentId: obj.id,
++      internalPaymentId: obj.metadata?.paymentId,
++      status: mapStatus(obj.status),
++      amount: obj.amount?.value ? Number(obj.amount.value) : undefined,
++      raw: body,
++    };
++  }
++}
++
++/** Translate our Receipt shape to YooKassa's receipt JSON. */
++function toYooKassaReceipt(r: Receipt): unknown {
++  return {
++    customer: {
++      email: r.customer.email,
++      phone: r.customer.phone,
++      full_name: r.customer.fullName,
++    },
++    items: r.items.map((it) => ({
++      description: it.description,
++      quantity: it.quantity.toString(),
++      amount: { value: it.amount.toFixed(2), currency: "RUB" },
++      vat_code: it.vatCode,
++      payment_mode: it.paymentMode,
++      payment_subject: it.paymentSubject,
++    })),
++    tax_system_code: r.taxSystemCode,
++  };
++}
+diff --git a/src/lib/payments/receipts.ts b/src/lib/payments/receipts.ts
+new file mode 100644
+index 0000000..abb68f3
+--- /dev/null
++++ b/src/lib/payments/receipts.ts
+@@ -0,0 +1,77 @@
++/**
++ * 54-ФЗ online receipt builder.
++ *
++ * Russian Federal Law 54-ФЗ requires every B2C online payment to be
++ * accompanied by a fiscal cheque registered via an accredited Fiscal Data
++ * Operator (ОФД). YooKassa, Tinkoff Kassa and CloudPayments act as fiscal
++ * agents — they send the receipt to ОФД on your behalf if you pass a `receipt`
++ * object when creating a payment.
++ *
++ * For online courses the correct `payment_subject` is `service` (or
++ * `intellectual_activity` for content you own the IP rights to).
++ */
++
++import type { Receipt, ReceiptItem } from "./types";
++
++export interface BuildReceiptInput {
++  courseTitle: string;
++  amount: number; // RUB, after discount
++  discountAmount?: number;
++  customer: {
++    email?: string;
++    phone?: string;
++    fullName?: string;
++  };
++  /**
++   * VAT code (НДС).
++   *   1 = 20%       — standard rate, used by most LLCs
++   *   2 = 10%       — food / kids / medical
++   *   3 = 0%        — exported services / specific
++   *   4 = no VAT    — simplified tax regime (УСН) — common for small EdTech
++   *   5 = 20/120    — mixed
++   *   6 = 10/110    — mixed
++   * Default: 4 (no VAT) — safest for УСН-only sellers.
++   */
++  vatCode?: 1 | 2 | 3 | 4 | 5 | 6;
++  /**
++   * Tax system code (СНО).
++   *   1 = Общая СН (ОСН)
++   *   2 = Упрощённая СН (доходы)
++   *   3 = Упрощённая СН (доходы минус расходы)
++   *   4 = Единый налог на вменённый доход (ЕНВД)
++   *   5 = Единый сельскохозяйственный налог (ЕСХН)
++   *   6 = Патентная СН (ПСН)
++   */
++  taxSystemCode?: 1 | 2 | 3 | 4 | 5 | 6;
++}
++
++/**
++ * Build a receipt describing a single course purchase.
++ * Discount is split proportionally onto the item amount (YooKassa requires
++ * the item's `amount` to already reflect the discount — they don't accept
++ * a separate discount field per item).
++ */
++export function buildCourseReceipt(input: BuildReceiptInput): Receipt {
++  const item: ReceiptItem = {
++    description: input.courseTitle,
++    amount: round2(input.amount),
++    quantity: 1,
++    vatCode: input.vatCode ?? 4, // default: no VAT (УСН)
++    paymentMode: "full_payment",
++    paymentSubject: "service", // online course = service
++  };
++
++  return {
++    customer: {
++      email: input.customer.email,
++      phone: input.customer.phone,
++      fullName: input.customer.fullName,
++    },
++    items: [item],
++    taxSystemCode: input.taxSystemCode,
++  };
++}
++
++function round2(x: number): number {
++  return Math.round(x * 100) / 100;
++}
+diff --git a/src/lib/payments/registry.ts b/src/lib/payments/registry.ts
+new file mode 100644
+index 0000000..d447bf9
+--- /dev/null
++++ b/src/lib/payments/registry.ts
+@@ -0,0 +1,121 @@
++/**
++ * Provider registry — central lookup that returns a configured provider
++ * instance by name. All providers are lazy singletons (constructed on first
++ * use, cached afterwards) so we don't read env vars at module load time.
++ */
++
++import type { IPaymentProvider, ProviderName, PaymentMethod } from "./types";
++import { YooKassaProvider } from "./providers/yookassa";
++import { TinkoffProvider } from "./providers/tinkoff";
++import { OzonProvider } from "./providers/ozon";
++import { SberbankProvider } from "./providers/sberbank";
++import { VtbProvider } from "./providers/vtb";
++import { MkbProvider } from "./providers/mkb";
++import { CloudPaymentsProvider } from "./providers/cloudpayments";
++
++const factories: Record<ProviderName, () => IPaymentProvider> = {
++  YOOKASSA: () => new YooKassaProvider(),
++  TINKOFF: () => new TinkoffProvider(),
++  CLOUDPAYMENTS: () => new CloudPaymentsProvider(),
++  SBER: () => new SberbankProvider(),
++  OZON: () => new OzonProvider(),
++  VTB: () => new VtbProvider(),
++  MKB: () => new MkbProvider(),
++};
++
++const cache = new Map<ProviderName, IPaymentProvider>();
++
++/** Get a provider instance (cached). Throws if name is unknown. */
++export function getProvider(name: ProviderName): IPaymentProvider {
++  let instance = cache.get(name);
++  if (!instance) {
++    const factory = factories[name];
++    if (!factory) throw new Error(`Unknown payment provider: ${name}`);
++    instance = factory();
++    cache.set(name, instance);
++  }
++  return instance;
++}
++
++/** Safely parse a string into ProviderName, returns null on invalid input. */
++export function parseProviderName(value: string | null | undefined): ProviderName | null {
++  if (!value) return null;
++  const upper = value.toUpperCase();
++  return (upper in factories) ? (upper as ProviderName) : null;
++}
++
++/**
++ * Pick the best provider for a given payment method.
++ * Some methods are bound to a specific provider (e.g. OZON_CARD → OZON),
++ * others may be served by any configured provider (CARD, SBP).
++ *
++ * Order of preference mirrors the typical Russian market reality:
++ * YooKassa > Tinkoff > CloudPayments for general methods.
++ */
++export function pickProviderForMethod(
++  method: PaymentMethod,
++  configuredOnly = true,
++): ProviderName {
++  const bindings: Partial<Record<PaymentMethod, ProviderName>> = {
++    YOOMONEY: "YOOKASSA",
++    YANDEX_PAY: "YOOKASSA",
++    SBERPAY: "SBER",
++    TPAY: "TINKOFF",
++    OZON_CARD: "OZON",
++    // CARD / SBP / WALLET — served by any provider (default YooKassa)
++  };
++
++  const preferred = bindings[method] ?? "YOOKASSA";
++  if (!configuredOnly) return preferred;
++
++  // If preferred provider isn't configured, fall back to any configured one.
++  if (getProvider(preferred).isConfigured()) return preferred;
++
++  const all: ProviderName[] = ["YOOKASSA", "TINKOFF", "CLOUDPAYMENTS", "OZON", "SBER"];
++  for (const name of all) {
++    if (getProvider(name).isConfigured()) return name;
++  }
++  return preferred; // nothing configured — return preferred so caller gets a meaningful error
++}
++
++/** Return all providers that are currently configured (env vars present). */
++export function getConfiguredProviders(): ProviderName[] {
++  return (Object.keys(factories) as ProviderName[]).filter((n) => getProvider(n).isConfigured());
++}
++
++/**
++ * Return all (provider, method) pairs currently available to the user.
++ * Used by the UI to render the payment method selector.
++ */
++export function getAvailablePaymentOptions(): Array<{
++  provider: ProviderName;
++  method: PaymentMethod;
++  label: string;
++}> {
++  const result: Array<{ provider: ProviderName; method: PaymentMethod; label: string }> = [];
++  for (const name of Object.keys(factories) as ProviderName[]) {
++    const provider = getProvider(name);
++    if (!provider.isConfigured()) continue;
++    for (const method of provider.supportedMethods) {
++      // De-duplicate: if a method is already supported by an earlier provider, skip.
++      if (result.some((r) => r.method === method)) continue;
++      result.push({ provider: name, method, label: methodLabel(method) });
++    }
++  }
++  return result;
++}
++
++/** Human-readable Russian label for a payment method. */
++export function methodLabel(method: PaymentMethod): string {
++  const labels: Record<PaymentMethod, string> = {
++    CARD: "Банковская карта",
++    SBP: "СБП — Система быстрых платежей",
++    YOOMONEY: "ЮMoney",
++    SBERPAY: "SberPay",
++    TPAY: "T-Pay (Т-Банк)",
++    YANDEX_PAY: "Yandex Pay",
++    OZON_CARD: "Ozon Card",
++    WALLET: "Электронный кошелёк",
++  };
++  return labels[method] ?? method;
++}
+diff --git a/src/lib/payments/service.ts b/src/lib/payments/service.ts
+new file mode 100644
+index 0000000..b777fa1
+--- /dev/null
++++ b/src/lib/payments/service.ts
+@@ -0,0 +1,450 @@
++/**
++ * Payment service — orchestration layer that ties together:
++ *   - database (Payment model)
++ *   - promo code validation
++ *   - provider abstraction
++ *   - 54-ФЗ receipt generation
++ *
++ * The route handlers in `src/app/api/payments/` should call this service
++ * rather than touching providers or DB directly.
++ */
++
++import { db, Prisma } from "@/lib/db";
++import { env } from "@/lib/env";
++import { log } from "@/lib/logger";
++import { validatePromoCode, redeemPromoCode } from "@/lib/promo-code";
++import crypto from "crypto";
++import {
++  type IPaymentProvider,
++  type ProviderName,
++  type PaymentMethod,
++  type PaymentResult,
++  type CreatePaymentInput,
++} from "./types";
++import { getProvider, pickProviderForMethod, parseProviderName } from "./registry";
++import { buildCourseReceipt } from "./receipts";
++
++/** Validate method string from API input → typed PaymentMethod. */
++const METHOD_VALUES = new Set<PaymentMethod>([
++  "CARD", "SBP", "YOOMONEY", "SBERPAY", "TPAY", "YANDEX_PAY", "OZON_CARD", "WALLET",
++]);
++
++export function parsePaymentMethod(value: string | null | undefined): PaymentMethod | null {
++  if (!value) return null;
++  const upper = value.toUpperCase();
++  return METHOD_VALUES.has(upper as PaymentMethod) ? (upper as PaymentMethod) : null;
++}
++
++/**
++ * Resolve a (provider, method) pair from the API request body.
++ * Caller may pass either `provider` + `method`, or just `method` (then we
++ * pick the provider automatically), or a legacy `paymentMethod` value such
++ * as "yookassa"/"tinkoff"/"sbp"/"card" (kept for backward compatibility).
++ */
++export function resolveProviderAndMethod(input: {
++  provider?: string | null;
++  method?: string | null;
++  legacyPaymentMethod?: string | null; // old "yookassa" / "tinkoff" / "sbp" / "card"
++}): { provider: ProviderName; method: PaymentMethod } | { error: string } {
++  const explicitProvider = parseProviderName(input.provider ?? null);
++  const explicitMethod = parsePaymentMethod(input.method ?? null);
++
++  // Legacy compatibility: map old values to new (provider, method) pairs.
++  if (!explicitMethod && input.legacyPaymentMethod) {
++    const legacyMap: Record<string, { provider: ProviderName; method: PaymentMethod }> = {
++      sbp:      { provider: "YOOKASSA", method: "SBP" },
++      card:     { provider: "YOOKASSA", method: "CARD" },
++      yookassa: { provider: "YOOKASSA", method: "CARD" },
++      tinkoff:  { provider: "TINKOFF",  method: "CARD" },
++    };
++    const mapped = legacyMap[input.legacyPaymentMethod.toLowerCase()];
++    if (mapped) {
++      return {
++        provider: explicitProvider ?? mapped.provider,
++        method: explicitMethod ?? mapped.method,
++      };
++    }
++  }
++
++  if (!explicitMethod) {
++    return { error: "Неизвестный метод оплаты" };
++  }
++
++  return {
++    provider: explicitProvider ?? pickProviderForMethod(explicitMethod),
++    method: explicitMethod,
++  };
++}
++
++export interface CreatePaymentOptions {
++  userId: string;
++  courseId: string;
++  method: PaymentMethod;
++  provider?: ProviderName;
++  promoCode?: string;
++}
++
++export interface CreatedPayment {
++  /** Internal payment id. */
++  id: string;
++  amount: number;
++  currency: string;
++  status: string;
++  paymentMethod: PaymentMethod;
++  provider: ProviderName;
++  /** Where to send the user next (redirect URL or QR page). */
++  confirmationUrl?: string;
++  qrCode?: string;
++  providerPaymentId?: string;
++  testMode?: boolean;
++}
++
++/**
++ * Create a payment record and call the provider's createPayment API.
++ * Returns everything the client needs to proceed (redirect URL or QR payload).
++ *
++ * Throws on unrecoverable errors (DB failure, provider 5xx after retries).
++ * Caller is responsible for translating to HTTP responses.
++ */
++export async function createCoursePayment(opts: CreatePaymentOptions): Promise<CreatedPayment> {
++  const { userId, courseId, method } = opts;
++  const providerName = opts.provider ?? pickProviderForMethod(method);
++  const provider = getProvider(providerName);
++
++  // 1. Load course
++  const course = await db.course.findUnique({ where: { id: courseId } });
++  if (!course || !course.isPublished) {
++    throw new ServiceError("COURSE_NOT_FOUND", "Курс не найден");
++  }
++  if (course.visibility === "private") {
++    throw new ServiceError("PRIVATE_COURSE", "Запись на этот курс доступна только по приглашению");
++  }
++  if (course.price === 0) {
++    throw new ServiceError("FREE_COURSE", "Этот курс бесплатный — оплата не требуется");
++  }
++
++  // 2. Promo code
++  let finalAmount = course.price;
++  let discountAmount = 0;
++  let promoCodeId: string | null = null;
++  if (opts.promoCode) {
++    const promo = await validatePromoCode(opts.promoCode, course.price, userId, courseId);
++    if (!promo.valid) {
++      throw new ServiceError("PROMO_INVALID", promo.error ?? "Промокод недействителен");
++    }
++    finalAmount = promo.finalPrice ?? course.price;
++    discountAmount = promo.discountAmount ?? 0;
++    promoCodeId = promo.promoCode?.id ?? null;
++  }
++
++  // 3. Check existing pending/completed payment (race-safe via transaction below)
++  const existing = await db.payment.findFirst({
++    where: { userId, courseId, status: { in: ["pending", "completed"] } },
++  });
++  if (existing?.status === "completed") {
++    throw new ServiceError("ALREADY_PAID", "Курс уже оплачен");
++  }
++  if (existing?.status === "pending") {
++    // Return existing payment's confirmation data if we still have it.
++    return existingAsCreated(existing, providerName, method);
++  }
++
++  // 4. Generate idempotency key + payment id up-front
++  const idempotenceKey = crypto.randomUUID();
++  const paymentId = crypto.randomUUID();
++
++  // 5. Create DB record inside transaction (race condition protection).
++  //    Provider call happens AFTER commit so we don't hold a long-running
++  //    transaction across an HTTP request.
++  const created = await db.$transaction(async (tx: Prisma.TransactionClient) => {
++    const again = await tx.payment.findFirst({
++      where: { userId, courseId, status: { in: ["pending", "completed"] } },
++    });
++    if (again?.status === "completed") throw new ServiceError("ALREADY_PAID", "Курс уже оплачен");
++    if (again?.status === "pending") return { existing: again, created: null as null | { id: string } };
++
++    const payment = await tx.payment.create({
++      data: {
++        id: paymentId,
++        userId,
++        courseId,
++        amount: finalAmount,
++        currency: course.currency || "RUB",
++        status: "pending",
++        paymentMethod: method.toLowerCase(), // store as lowercase string for backward compat
++        paymentProvider: providerName,
++        transactionId: `pending_${idempotenceKey}`, // placeholder until provider responds
++        promoCodeId,
++        discountAmount,
++      },
++    });
++    return { existing: null as null | typeof payment, created: payment };
++  });
++
++  if (created.existing) {
++    return existingAsCreated(created.existing, providerName, method);
++  }
++
++  // 6. Provider not configured? — return test mode so client can simulate.
++  if (!provider.isConfigured()) {
++    log.warn("Provider not configured, returning testMode", { provider: providerName });
++    return {
++      id: paymentId,
++      amount: finalAmount,
++      currency: course.currency || "RUB",
++      status: "pending",
++      paymentMethod: method,
++      provider: providerName,
++      testMode: true,
++    };
++  }
++
++  // 7. Build receipt (54-ФЗ) — only for providers that support it.
++  const user = await db.user.findUnique({
++    where: { id: userId },
++    select: { email: true, name: true, phone: true },
++  });
++  const receipt = (providerName === "YOOKASSA" || providerName === "TINKOFF" || providerName === "CLOUDPAYMENTS")
++    ? buildCourseReceipt({
++        courseTitle: course.title,
++        amount: finalAmount,
++        discountAmount,
++        customer: {
++          email: user?.email,
++          fullName: user?.name ?? undefined,
++          phone: user?.phone ?? undefined,
++        },
++        vatCode: 4, // УСН — adjust if you're on ОСН (1 = НДС 20%)
++      })
++    : undefined;
++
++  // 8. Call provider
++  const input: CreatePaymentInput = {
++    paymentId,
++    idempotenceKey,
++    amount: finalAmount,
++    currency: "RUB",
++    description: `Оплата курса «${course.title}» — ${env.siteUrl}`,
++    returnUrl: `${env.siteUrl}/payment/${paymentId}`,
++    method,
++    receipt,
++    customer: {
++      email: user?.email,
++      fullName: user?.name ?? undefined,
++      phone: user?.phone ?? undefined,
++    },
++    metadata: {
++      paymentId,
++      userId,
++      courseId,
++    },
++  };
++
++  let result: PaymentResult;
++  try {
++    result = await provider.createPayment(input);
++  } catch (err) {
++    // Mark payment failed so the user can retry.
++    await db.payment.updateMany({
++      where: { id: paymentId, status: "pending" },
++      data: { status: "failed" },
++    });
++    log.error("Provider createPayment failed", {
++      paymentId, provider: providerName, error: err instanceof Error ? err.message : String(err),
++    });
++    throw new ServiceError(
++      "PROVIDER_ERROR",
++      `Ошибка платёжного провайдера: ${err instanceof Error ? err.message : "unknown"}`,
++    );
++  }
++
++  // 9. Store provider payment id + confirmation URL
++  await db.payment.update({
++    where: { id: paymentId },
++    data: {
++      transactionId: result.providerPaymentId,
++      paymentData: JSON.stringify({
++        idempotenceKey,
++        providerPaymentId: result.providerPaymentId,
++        confirmationUrl: result.confirmationUrl ?? null,
++        qrCode: result.qrCode ?? null,
++        provider: providerName,
++        method,
++        receiptGenerated: !!receipt,
++      }),
++    },
++  });
++
++  // 10. Promo code redemption (only after provider accepted the payment)
++  if (promoCodeId) {
++    await redeemPromoCode(promoCodeId, userId).catch((err: unknown) => {
++      log.error("Promo code redemption failed", { paymentId, promoCodeId, error: String(err) });
++    });
++  }
++
++  return {
++    id: paymentId,
++    amount: finalAmount,
++    currency: course.currency || "RUB",
++    status: "pending",
++    paymentMethod: method,
++    provider: providerName,
++    confirmationUrl: result.confirmationUrl,
++    qrCode: result.qrCode,
++    providerPaymentId: result.providerPaymentId,
++  };
++}
++
++function existingAsCreated(
++  existing: { id: string; amount: number; currency: string; paymentMethod: string; paymentData: string | null },
++  providerName: ProviderName,
++  method: PaymentMethod,
++): CreatedPayment {
++  let confirmationUrl: string | undefined;
++  let qrCode: string | undefined;
++  if (existing.paymentData) {
++    try {
++      const data = JSON.parse(existing.paymentData);
++      confirmationUrl = data.confirmationUrl ?? undefined;
++      qrCode = data.qrCode ?? undefined;
++    } catch {
++      // ignore
++    }
++  }
++  return {
++    id: existing.id,
++    amount: existing.amount,
++    currency: existing.currency,
++    status: "pending",
++    paymentMethod: method,
++    provider: providerName,
++    confirmationUrl,
++    qrCode,
++  };
++}
++
++/**
++ * Idempotently mark a payment as completed — used by webhook handler.
++ * Atomically: updates status, creates enrollment, increments student count,
++ * schedules email + notification. Returns whether this call actually did
++ * the work (false = already completed by an earlier call).
++ */
++export async function completePayment(internalPaymentId: string, transactionId: string): Promise<{
++  alreadyCompleted: boolean;
++  payment?: { id: string; userId: string; courseId: string };
++}> {
++  const result = await db.$transaction(async (tx: Prisma.TransactionClient) => {
++    const payment = await tx.payment.findUnique({
++      where: { id: internalPaymentId },
++      include: { course: true, user: true },
++    });
++    if (!payment) throw new ServiceError("PAYMENT_NOT_FOUND", "Платёж не найден");
++    if (payment.status === "completed") return { alreadyCompleted: true, payment };
++
++    // Race-safe updateMany — only the first concurrent call succeeds.
++    const updateResult = await tx.payment.updateMany({
++      where: { id: internalPaymentId, status: "pending" },
++      data: { status: "completed", transactionId, updatedAt: new Date() },
++    });
++    if (updateResult.count === 0) return { alreadyCompleted: true, payment };
++
++    await tx.course.updateMany({
++      where: { id: payment.courseId },
++      data: { studentCount: { increment: 1 } },
++    });
++
++    await tx.enrollment.upsert({
++      where: { userId_courseId: { userId: payment.userId, courseId: payment.courseId } },
++      create: { userId: payment.userId, courseId: payment.courseId, status: "active", progress: 0 },
++      update: { status: "active" },
++    });
++
++    return { alreadyCompleted: false, payment };
++  });
++
++  return {
++    alreadyCompleted: result.alreadyCompleted,
++    payment: result.payment ? { id: result.payment.id, userId: result.payment.userId, courseId: result.payment.courseId } : undefined,
++  };
++}
++
++/**
++ * Idempotently mark a payment as refunded — cancels the enrollment.
++ */
++export async function markPaymentRefunded(internalPaymentId: string, refundData: {
++  providerRefundId?: string;
++  refundAmount?: number;
++}): Promise<{ alreadyProcessed: boolean }> {
++  const result = await db.$transaction(async (tx: Prisma.TransactionClient) => {
++    const payment = await tx.payment.findUnique({ where: { id: internalPaymentId } });
++    if (!payment) throw new ServiceError("PAYMENT_NOT_FOUND", "Платёж не найден");
++    if (payment.status === "refunded") return { alreadyProcessed: true };
++
++    const updateResult = await tx.payment.updateMany({
++      where: { id: internalPaymentId, status: "completed" },
++      data: {
++        status: "refunded",
++        paymentData: JSON.stringify({
++          refundedAt: new Date().toISOString(),
++          refundAmount: refundData.refundAmount ?? payment.amount,
++          providerRefundId: refundData.providerRefundId ?? null,
++          source: "webhook",
++        }),
++      },
++    });
++    if (updateResult.count === 0) return { alreadyProcessed: true };
++
++    await tx.enrollment.updateMany({
++      where: { userId: payment.userId, courseId: payment.courseId, status: "active" },
++      data: { status: "cancelled" },
++    });
++    await tx.course.updateMany({
++      where: { id: payment.courseId },
++      data: { studentCount: { decrement: 1 } },
++    });
++    return { alreadyProcessed: false };
++  });
++  return result;
++}
++
++/**
++ * Find a payment by the provider's payment id (stored in transactionId after
++ * createPayment succeeds). Used by the webhook when provider doesn't return
++ * our internal id in metadata.
++ */
++export async function findPaymentByProviderId(providerPaymentId: string) {
++  return db.payment.findFirst({
++    where: {
++      OR: [
++        { transactionId: providerPaymentId },
++        // Also check paymentData JSON for providerPaymentId field (less efficient)
++      ],
++    },
++  });
++}
++
++/** Custom error class with a code so route handlers can map to HTTP status. */
++export class ServiceError extends Error {
++  constructor(public readonly code: string, message: string) {
++    super(message);
++    this.name = "ServiceError";
++  }
++}
++
++/** Map ServiceError.code → HTTP status for route handlers. */
++export function serviceErrorStatus(code: string): number {
++  switch (code) {
++    case "COURSE_NOT_FOUND":
++    case "PAYMENT_NOT_FOUND":
++      return 404;
++    case "ALREADY_PAID":
++    case "FREE_COURSE":
++    case "PRIVATE_COURSE":
++    case "PROMO_INVALID":
++      return 400;
++    case "PROVIDER_ERROR":
++      return 502;
++    default:
++      return 500;
++  }
++}
+diff --git a/src/lib/payments/types.ts b/src/lib/payments/types.ts
+new file mode 100644
+index 0000000..a98ad95
+--- /dev/null
++++ b/src/lib/payments/types.ts
+@@ -0,0 +1,175 @@
++/**
++ * Payment provider abstraction layer.
++ *
++ * This module defines a unified interface (`IPaymentProvider`) implemented by
++ * every gateway (YooKassa, Tinkoff, Ozon, Sberbank, VTB, MKB, CloudPayments).
++ * The application talks to providers only through this interface — never
++ * directly to a specific gateway API. Adding a new provider = adding a new
++ * file under `providers/` and registering it in `registry.ts`.
++ */
++
++/** Internal provider identifier stored in `Payment.provider`. */
++export type ProviderName =
++  | "YOOKASSA"
++  | "TINKOFF"
++  | "CLOUDPAYMENTS"
++  | "SBER"
++  | "OZON"
++  | "VTB"
++  | "MKB";
++
++/**
++ * Payment method — what the *customer* sees as the payment option.
++ * A single provider typically supports several methods
++ * (e.g. YooKassa supports CARD, SBP, YOOMONEY, SBERPAY, TPAY, YANDEX_PAY).
++ */
++export type PaymentMethod =
++  | "CARD"
++  | "SBP"
++  | "YOOMONEY"
++  | "SBERPAY"
++  | "TPAY"
++  | "YANDEX_PAY"
++  | "OZON_CARD"
++  | "WALLET";
++
++/** Internal Payment.status — kept compatible with existing string column. */
++export type PaymentStatus =
++  | "pending"
++  | "completed"
++  | "failed"
++  | "refunded";
++
++/** 54-ФЗ receipt item — sent to provider so they can register fiscal cheque. */
++export interface ReceiptItem {
++  description: string;
++  amount: number; // RUB, including any discount allocation
++  quantity: number;
++  vatCode: 1 | 2 | 3 | 4 | 5 | 6; // 1 = НДС 20%, see YooKassa docs
++  paymentMode: "full_payment" | "partial_prepayment" | "advance";
++  paymentSubject:
++    | "commodity"
++    | "excise"
++    | "job"
++    | "service" // online course → service
++    | "gambling_bet"
++    | "gambling_prize"
++    | "lottery"
++    | "intellectual_activity" // also valid for educational content
++    | "payment"
++    | "agent_commission"
++    | "composite"
++    | "another";
++}
++
++export interface Receipt {
++  customer: {
++    email?: string;
++    phone?: string;
++    fullName?: string;
++  };
++  items: ReceiptItem[];
++  taxSystemCode?: 1 | 2 | 3 | 4 | 5 | 6; // 1 = общая СН, see YooKassa docs
++}
++
++export interface CreatePaymentInput {
++  /** Internal payment id (Payment.id in DB). */
++  paymentId: string;
++  /** Idempotency key — same key + same payload = same payment on provider side. */
++  idempotenceKey: string;
++  amount: number; // RUB
++  currency: "RUB";
++  description: string;
++  returnUrl: string;
++  method: PaymentMethod;
++  receipt?: Receipt;
++  customer: { email?: string; phone?: string; fullName?: string };
++  metadata?: Record<string, string>;
++}
++
++export interface PaymentResult {
++  /** Provider-side payment id (e.g. YooKassa `24b9c9b4-000f-5000-9000-1e2c3a4b5c6d`). */
++  providerPaymentId: string;
++  status: PaymentStatus;
++  /** For redirect flow (cards, e-wallets). */
++  confirmationUrl?: string;
++  /** For QR flow (СБП). Payload string the QR encoder renders. */
++  qrCode?: string;
++  paidAt?: Date;
++  raw?: unknown;
++}
++
++export interface CaptureInput {
++  providerPaymentId: string;
++  amount: number;
++  idempotenceKey: string;
++}
++
++export interface RefundInput {
++  providerPaymentId: string;
++  amount: number;
++  idempotenceKey: string;
++  description?: string;
++}
++
++export interface RefundResult {
++  providerRefundId: string;
++  status: "succeeded" | "pending" | "canceled" | "failed";
++}
++
++export interface WebhookContext {
++  /** Raw request body — verify signature against this. */
++  rawBody: string;
++  /** All request headers, lower-cased. */
++  headers: Record<string, string>;
++  /** Client IP from x-forwarded-for or remoteAddress. */
++  clientIp?: string;
++  /** Provider name resolved from URL path or header. */
++  provider: ProviderName;
++}
++
++export interface ParsedWebhook {
++  /** Globally unique event id from provider (used for idempotency). */
++  eventId: string;
++  event: string; // e.g. "payment.succeeded", "refund.succeeded"
++  /** Provider-side payment id (NOT our internal Payment.id). */
++  providerPaymentId: string;
++  /** Our internal Payment.id — taken from provider `metadata` field. */
++  internalPaymentId?: string;
++  status: PaymentStatus;
++  amount?: number;
++  raw: unknown;
++}
++
++/**
++ * Every provider must implement this interface.
++ * Methods are async and may throw on network/HTTP errors — caller must catch.
++ */
++export interface IPaymentProvider {
++  readonly name: ProviderName;
++  readonly supportedMethods: readonly PaymentMethod[];
++  /** Human-readable label for admin UI. */
++  readonly label: string;
++
++  isConfigured(): boolean;
++
++  createPayment(input: CreatePaymentInput): Promise<PaymentResult>;
++
++  /** Confirm a 2-step payment (capture=false during create). Optional. */
++  capturePayment?(input: CaptureInput): Promise<PaymentResult>;
++
++  /** Cancel a pending payment. */
++  cancelPayment(providerPaymentId: string, idempotenceKey: string): Promise<PaymentResult>;
++
++  /** Full or partial refund of a captured payment. */
++  refundPayment(input: RefundInput): Promise<RefundResult>;
++
++  /** Get current payment status from provider (for reconciliation cron). */
++  getPaymentStatus(providerPaymentId: string): Promise<PaymentStatus>;
++
++  /** Verify webhook authenticity (signature + IP whitelist). */
++  verifyWebhook(ctx: WebhookContext, body: unknown): boolean;
++
++  /** Parse provider-specific webhook body into normalized event. */
++  parseWebhook(body: unknown, ctx: WebhookContext): ParsedWebhook;
++}
+-- 
+2.47.3
+

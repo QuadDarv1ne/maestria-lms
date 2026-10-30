@@ -355,10 +355,10 @@ model Payment {
   amount          Float
   currency        String   @default("RUB")
   status          String   @default("pending") // pending, completed, failed, refunded
-  paymentMethod   String   // sbp, yookassa, tinkoff, card
-  paymentProvider String?
-  transactionId   String?
-  paymentData     String?  // JSON: additional payment data
+  paymentMethod   String   // legacy: sbp/yookassa/tinkoff/card. New: card|sbp|yoomoney|sberpay|tpay|yandex_pay|ozon_card|wallet
+  paymentProvider String?  // YOOKASSA | TINKOFF | CLOUDPAYMENTS | SBER | OZON | VTB | MKB
+  transactionId   String?  // provider-side payment id (set after createPayment)
+  paymentData     String?  // JSON: idempotenceKey, confirmationUrl, qrCode, ...
   promoCodeId     String?
   promoCode       PromoCode? @relation(fields: [promoCodeId], references: [id], onDelete: SetNull)
   discountAmount  Float    @default(0) // amount discounted by promo code
@@ -366,6 +366,9 @@ model Payment {
   course          Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  // Linked webhook events (audit trail + idempotency).
+  webhookEvents   PaymentWebhookEvent[]
 
   @@index([userId])
   @@index([courseId])
@@ -375,7 +378,28 @@ model Payment {
   // Additional composite indexes for analytics
   @@index([status, createdAt])
   @@index([paymentMethod, status])
+  @@index([paymentProvider, status])
   @@index([createdAt])
+}
+
+// ============ PAYMENT WEBHOOK EVENTS (idempotency + audit) ============
+// Stores every webhook we receive from any provider. The unique eventId
+// guarantees at-most-once processing: duplicate delivery from the provider
+// is rejected by the DB unique constraint.
+
+model PaymentWebhookEvent {
+  id            String   @id @default(uuid())
+  paymentId     String?  // null until payment is identified
+  payment       Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  provider      String   // YOOKASSA | TINKOFF | CLOUDPAYMENTS | ...
+  eventId       String   @unique // globally unique event id from provider
+  event         String   // e.g. "payment.succeeded", "refund.succeeded"
+  payload       String   // raw JSON payload
+  processedAt   DateTime @default(now())
+
+  @@index([paymentId])
+  @@index([provider, event])
+  @@index([processedAt])
 }
 
 // ============ NOTIFICATIONS ============

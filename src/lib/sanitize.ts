@@ -29,7 +29,7 @@ const DEFAULT_ALLOWED_ATTRIBUTES: Record<string, string[]> = {
   pre: ["class"],
   th: ["scope", "rowspan", "colspan"],
   td: ["rowspan", "colspan"],
-  "*": ["id", "class", "title", "data-*", "aria-*", "role"],
+  "*": ["id", "class", "data-*", "aria-*", "role"],
 };
 
 const IFRAME_ALLOWED_ATTRIBUTES = [

@@ -108,6 +108,60 @@ export const env = {
     return cached("yooKassaApiUrl", () => process.env.YOOKASSA_API_URL);
   },
 
+  // ─── T-Bank (Tinkoff) Acquiring ───
+  get tinkoffTerminalKey(): string | undefined {
+    return cached("tinkoffTerminalKey", () => process.env.TINKOFF_TERMINAL_KEY);
+  },
+  get tinkoffPassword(): string | undefined {
+    return cached("tinkoffPassword", () => process.env.TINKOFF_PASSWORD);
+  },
+
+  // ─── CloudPayments ───
+  get cloudPaymentsPublicId(): string | undefined {
+    return cached("cloudPaymentsPublicId", () => process.env.CLOUDPAYMENTS_PUBLIC_ID);
+  },
+  get cloudPaymentsApiSecret(): string | undefined {
+    return cached("cloudPaymentsApiSecret", () => process.env.CLOUDPAYMENTS_API_SECRET);
+  },
+
+  // ─── Sberbank Acquiring ───
+  get sberUsername(): string | undefined {
+    return cached("sberUsername", () => process.env.SBER_USERNAME);
+  },
+  get sberPassword(): string | undefined {
+    return cached("sberPassword", () => process.env.SBER_PASSWORD);
+  },
+
+  // ─── Ozon Seller (Ozon Pay) ───
+  get ozonClientId(): string | undefined {
+    return cached("ozonClientId", () => process.env.OZON_CLIENT_ID);
+  },
+  get ozonApiKey(): string | undefined {
+    return cached("ozonApiKey", () => process.env.OZON_API_KEY);
+  },
+  get ozonApiUrl(): string | undefined {
+    return cached("ozonApiUrl", () => process.env.OZON_API_URL);
+  },
+  get ozonWebhookSecret(): string | undefined {
+    return cached("ozonWebhookSecret", () => process.env.OZON_WEBHOOK_SECRET);
+  },
+
+  // ─── VTB Acquiring ───
+  get vtbMerchantId(): string | undefined {
+    return cached("vtbMerchantId", () => process.env.VTB_MERCHANT_ID);
+  },
+  get vtbSecretKey(): string | undefined {
+    return cached("vtbSecretKey", () => process.env.VTB_SECRET_KEY);
+  },
+
+  // ─── MKB (Moscow Credit Bank) Acquiring ───
+  get mkbMerchantId(): string | undefined {
+    return cached("mkbMerchantId", () => process.env.MKB_MERCHANT_ID);
+  },
+  get mkbSecretKey(): string | undefined {
+    return cached("mkbSecretKey", () => process.env.MKB_SECRET_KEY);
+  },
+
   get seedAdminPassword(): string | undefined {
     return cached("seedAdminPassword", () => process.env.SEED_ADMIN_PASSWORD);
   },

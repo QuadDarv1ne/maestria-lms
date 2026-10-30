@@ -1,0 +1,238 @@
+import { resolveDatabaseProvider } from "@/lib/db-provider";
+
+/**
+ * Centralized environment configuration with validation.
+ * Provides type-safe access to environment variables across the application.
+ * Values are lazily cached on first access — env vars don't change at runtime.
+ */
+
+/* eslint-disable no-console */
+
+const cache = new Map<string, unknown>();
+
+function cached<T>(key: string, compute: () => T): T {
+  if (cache.has(key)) return cache.get(key) as T;
+  const value = compute();
+  cache.set(key, value);
+  return value;
+}
+
+function getRequiredEnv(key: string): string {
+  const value = process.env[key];
+  if (!value) throw new Error(`Missing required environment variable: ${key}`);
+  return value;
+}
+
+function warn(message: string): void {
+  if (typeof console !== "undefined" && typeof console.warn === "function") {
+    console.warn(`[env] ${message}`);
+  }
+}
+
+export const env = {
+  get siteUrl(): string {
+    return cached("siteUrl", () => {
+      return (
+        process.env.NEXT_PUBLIC_SITE_URL ??
+        process.env.NEXTAUTH_URL ??
+        "http://localhost:3000"
+      );
+    });
+  },
+
+  get databaseUrl(): string {
+    return cached("databaseUrl", () => getRequiredEnv("DATABASE_URL"));
+  },
+
+  get nextAuthSecret(): string | undefined {
+    return cached("nextAuthSecret", () => process.env.NEXTAUTH_SECRET);
+  },
+
+  get nextAuthUrl(): string | undefined {
+    return cached("nextAuthUrl", () => process.env.NEXTAUTH_URL);
+  },
+
+  get resendApiKey(): string | undefined {
+    return cached("resendApiKey", () => process.env.RESEND_API_KEY);
+  },
+
+  get emailFrom(): string {
+    return cached("emailFrom", () => process.env.EMAIL_FROM ?? "Maestria LMS <noreply@maestria.edu>");
+  },
+
+  get redisUrl(): string | undefined {
+    return cached("redisUrl", () => process.env.REDIS_URL);
+  },
+
+  get s3Endpoint(): string | undefined {
+    return cached("s3Endpoint", () => process.env.S3_ENDPOINT);
+  },
+
+  get s3AccessKeyId(): string | undefined {
+    return cached("s3AccessKeyId", () => process.env.S3_ACCESS_KEY_ID);
+  },
+
+  get s3SecretAccessKey(): string | undefined {
+    return cached("s3SecretAccessKey", () => process.env.S3_SECRET_ACCESS_KEY);
+  },
+
+  get s3BucketName(): string | undefined {
+    return cached("s3BucketName", () => process.env.S3_BUCKET_NAME);
+  },
+
+  get s3Region(): string {
+    return cached("s3Region", () => process.env.S3_REGION ?? "auto");
+  },
+
+  get cdnUrl(): string | undefined {
+    return cached("cdnUrl", () => process.env.NEXT_PUBLIC_CDN_URL);
+  },
+
+  get logLevel(): string {
+    return cached("logLevel", () => process.env.LOG_LEVEL ?? "info");
+  },
+
+  get paymentWebhookSecret(): string | undefined {
+    return cached("paymentWebhookSecret", () => process.env.PAYMENT_WEBHOOK_SECRET);
+  },
+
+  get yooKassaShopId(): string | undefined {
+    return cached("yooKassaShopId", () => process.env.YOOKASSA_SHOP_ID);
+  },
+
+  get yooKassaSecretKey(): string | undefined {
+    return cached("yooKassaSecretKey", () => process.env.YOOKASSA_SECRET_KEY);
+  },
+
+  get yooKassaApiUrl(): string | undefined {
+    return cached("yooKassaApiUrl", () => process.env.YOOKASSA_API_URL);
+  },
+
+  // ─── T-Bank (Tinkoff) Acquiring ───
+  get tinkoffTerminalKey(): string | undefined {
+    return cached("tinkoffTerminalKey", () => process.env.TINKOFF_TERMINAL_KEY);
+  },
+  get tinkoffPassword(): string | undefined {
+    return cached("tinkoffPassword", () => process.env.TINKOFF_PASSWORD);
+  },
+
+  // ─── CloudPayments ───
+  get cloudPaymentsPublicId(): string | undefined {
+    return cached("cloudPaymentsPublicId", () => process.env.CLOUDPAYMENTS_PUBLIC_ID);
+  },
+  get cloudPaymentsApiSecret(): string | undefined {
+    return cached("cloudPaymentsApiSecret", () => process.env.CLOUDPAYMENTS_API_SECRET);
+  },
+
+  // ─── Sberbank Acquiring ───
+  get sberUsername(): string | undefined {
+    return cached("sberUsername", () => process.env.SBER_USERNAME);
+  },
+  get sberPassword(): string | undefined {
+    return cached("sberPassword", () => process.env.SBER_PASSWORD);
+  },
+
+  // ─── Ozon Seller (Ozon Pay) ───
+  get ozonClientId(): string | undefined {
+    return cached("ozonClientId", () => process.env.OZON_CLIENT_ID);
+  },
+  get ozonApiKey(): string | undefined {
+    return cached("ozonApiKey", () => process.env.OZON_API_KEY);
+  },
+  get ozonApiUrl(): string | undefined {
+    return cached("ozonApiUrl", () => process.env.OZON_API_URL);
+  },
+  get ozonWebhookSecret(): string | undefined {
+    return cached("ozonWebhookSecret", () => process.env.OZON_WEBHOOK_SECRET);
+  },
+
+  // ─── VTB Acquiring ───
+  get vtbMerchantId(): string | undefined {
+    return cached("vtbMerchantId", () => process.env.VTB_MERCHANT_ID);
+  },
+  get vtbSecretKey(): string | undefined {
+    return cached("vtbSecretKey", () => process.env.VTB_SECRET_KEY);
+  },
+
+  // ─── MKB (Moscow Credit Bank) Acquiring ───
+  get mkbMerchantId(): string | undefined {
+    return cached("mkbMerchantId", () => process.env.MKB_MERCHANT_ID);
+  },
+  get mkbSecretKey(): string | undefined {
+    return cached("mkbSecretKey", () => process.env.MKB_SECRET_KEY);
+  },
+
+  get seedAdminPassword(): string | undefined {
+    return cached("seedAdminPassword", () => process.env.SEED_ADMIN_PASSWORD);
+  },
+
+  get seedTeacherPassword(): string | undefined {
+    return cached("seedTeacherPassword", () => process.env.SEED_TEACHER_PASSWORD);
+  },
+
+  get allowSeedData(): boolean {
+    return cached("allowSeedData", () => process.env.ALLOW_SEED_DATA === "true");
+  },
+
+  get databaseProvider(): string {
+    // Same precedence as the runtime client: the URL decides, DATABASE_PROVIDER
+    // is the fallback. Defaulting to "sqlite" here used to shadow DATABASE_URL
+    // detection for every consumer, including the Prisma client factory.
+    return cached("databaseProvider", () =>
+      resolveDatabaseProvider({
+        url: process.env.DATABASE_URL,
+        declared: process.env.DATABASE_PROVIDER,
+      }).provider,
+    );
+  },
+
+  get nodeEnv(): string {
+    return cached("nodeEnv", () => process.env.NODE_ENV || "development");
+  },
+
+  get isDevelopment(): boolean {
+    return cached("isDevelopment", () => this.nodeEnv === "development");
+  },
+
+  get isProduction(): boolean {
+    return cached("isProduction", () => this.nodeEnv === "production");
+  },
+
+  get isTest(): boolean {
+    return cached("isTest", () => this.nodeEnv === "test");
+  },
+
+  get nextPhase(): string | undefined {
+    return cached("nextPhase", () => process.env.NEXT_PHASE);
+  },
+
+  /**
+   * Validate required environment variables for production.
+   * Logs warnings for missing vars but doesn't throw (to avoid blocking startup).
+   */
+  validate(): void {
+    if (!this.isProduction) return;
+
+    const required = ["DATABASE_URL"];
+    const optional = ["NEXTAUTH_SECRET", "RESEND_API_KEY", "REDIS_URL"];
+
+    for (const key of required) {
+      if (!process.env[key]) {
+        warn(`Missing required environment variable in production: ${key}`);
+      }
+    }
+
+    for (const key of optional) {
+      if (!process.env[key]) {
+        warn(`Optional environment variable not set: ${key}`);
+      }
+    }
+  },
+};
+
+/**
+ * Clear the env cache. Only needed in tests that modify process.env.
+ */
+export function clearEnvCache(): void {
+  cache.clear();
+}

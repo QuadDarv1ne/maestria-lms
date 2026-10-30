@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, Prisma } from "@/lib/db";
+import { db } from "@/lib/db";
 import { createNotification } from "@/lib/notifications";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
@@ -10,54 +10,33 @@ import { rateLimit } from "@/lib/rate-limit";
 import { sendEmail } from "@/lib/email";
 import { coursePurchaseEmail } from "@/lib/emails";
 import { getRedisClient } from "@/lib/redis";
+import { getProvider, parseProviderName } from "@/lib/payments/registry";
+import type { WebhookContext, ParsedWebhook } from "@/lib/payments/types";
+import { completePayment, markPaymentRefunded, ServiceError } from "@/lib/payments/service";
 
 export const runtime = "nodejs";
 
-const webhookBodySchema = z.object({
-  eventId: z.string().optional(),
-  event: z.string().optional(),
-  type: z.string().optional(),
-  status: z.string(),
-  object: z.object({
-    id: z.string().optional(),
-    paymentId: z.string().optional(),
-    payment_id: z.string().optional(),
-    transactionId: z.string().optional(),
-    status: z.string().optional(),
-    metadata: z.object({
-      paymentId: z.string().optional(),
-    }).optional(),
-    amount: z.object({
-      value: z.string().optional(),
-      currency: z.string().optional(),
-    }).optional(),
-  }).passthrough().optional(),
-});
-
-// Idempotency: use Redis with in-memory fallback for multi-instance deployments
-const IDEMPOTENCY_TTL = 24 * 60 * 60; // 24 hours in seconds
-// Local fallback for when Redis is unavailable
+// ─── Idempotency layer (Redis + in-memory fallback) ─────────────────────────
+// Same as the original implementation — kept unchanged. The new
+// PaymentWebhookEvent table provides an additional durable idempotency layer.
+const IDEMPOTENCY_TTL = 24 * 60 * 60;
 const processedWebhooks = new Map<string, { status: string; timestamp: number }>();
 const MAX_IDEMPOTENCY_ENTRIES = 10000;
 
 async function checkIdempotency(key: string): Promise<string | null> {
-  // Try Redis first
   const redis = getRedisClient();
   if (redis) {
     try {
       const existing = await redis.get(`wh:${key}`);
       if (existing) return existing;
-      // Set with NX (only if not exists) and EX (TTL)
       const ok = await redis.set(`wh:${key}`, key, "EX", IDEMPOTENCY_TTL, "NX");
-      if (ok) return null; // newly set, not processed
-      return key; // already exists
+      if (ok) return null;
+      return key;
     } catch {
-      // Redis unavailable — fall through to in-memory
       log.warn("Redis unavailable for webhook idempotency, using in-memory fallback");
     }
   }
 
-  // In-memory fallback
   const now = Date.now();
   const processed = processedWebhooks.get(key);
   if (processed) return processed.status;
@@ -70,341 +49,238 @@ async function checkIdempotency(key: string): Promise<string | null> {
   return null;
 }
 
-async function completePayment(paymentId: string, transactionId: string) {
-  const result = await db.$transaction(async (tx: Prisma.TransactionClient) => {
-    const payment = await tx.payment.findUnique({
-      where: { id: paymentId },
-      include: { course: true, user: true },
-    });
+// ─── Helper: build WebhookContext from NextRequest ──────────────────────────
 
-    if (!payment) {
-      throw new Error("PAYMENT_NOT_FOUND");
-    }
-
-    if (payment.status === "completed") {
-      return { alreadyCompleted: true, payment };
-    }
-
-    if (payment.status !== "pending") {
-      throw new Error("PAYMENT_INVALID_STATUS");
-    }
-
-    // Атомарное обновление: updateMany с where status="pending" гарантирует,
-    // что только первый concurrent запрос обработает платёж (race condition fix)
-    const updateResult = await tx.payment.updateMany({
-      where: { id: paymentId, status: "pending" },
-      data: {
-        status: "completed",
-        transactionId,
-        updatedAt: new Date(),
-      },
-    });
-
-    if (updateResult.count === 0) {
-      return { alreadyCompleted: true, payment };
-    }
-
-    // Increment course studentCount atomically
-    await tx.course.updateMany({
-      where: { id: payment.courseId },
-      data: { studentCount: { increment: 1 } },
-    });
-
-    // Create enrollment
-    const enrollment = await tx.enrollment.upsert({
-      where: {
-        userId_courseId: {
-          userId: payment.userId,
-          courseId: payment.courseId,
-        },
-      },
-      create: {
-        userId: payment.userId,
-        courseId: payment.courseId,
-        status: "active",
-        progress: 0,
-      },
-      update: {
-        status: "active",
-      },
-    });
-
-    return { alreadyCompleted: false, payment, enrollment };
+function buildContext(req: NextRequest, rawBody: string, providerName: string): WebhookContext {
+  // Collect headers (lowercased)
+  const headers: Record<string, string> = {};
+  req.headers.forEach((value, key) => {
+    headers[key.toLowerCase()] = value;
   });
 
-  // Send notification + email outside transaction
-  if (!result.alreadyCompleted) {
-    const { payment } = result;
-    createNotification({
-      userId: payment.userId,
-      type: "payment",
-      title: "Оплата прошла успешно",
-      message: `Оплата курса "${payment.course.title}" подтверждена. Добро пожаловать!`,
-      link: `/course/${payment.courseId}`,
-    }).catch((err: unknown) => log.error("Failed to send payment notification", { error: err }));
+  // Client IP — take first from x-forwarded-for chain (typical for Amvera /
+  // Vercel / nginx reverse proxies)
+  const xff = headers["x-forwarded-for"];
+  const clientIp = xff ? xff.split(",")[0].trim() : undefined;
 
-    const siteUrl = env.siteUrl;
-    sendEmail({
-      to: payment.user.email,
-      ...coursePurchaseEmail(
-        payment.user.name || "пользователь",
-        payment.course.title,
-        `${siteUrl}/course/${payment.courseId}`,
-      ),
-    }).catch((err: unknown) => log.error("Failed to send purchase email", { error: err }));
-  }
-
-  return result;
+  return {
+    rawBody,
+    headers,
+    clientIp,
+    provider: providerName as WebhookContext["provider"],
+  };
 }
+
+// ─── Helper: extract client IP for legacy path (where we don't have ctx) ────
+function getClientIp(req: NextRequest): string | undefined {
+  const xff = req.headers.get("x-forwarded-for");
+  if (xff) return xff.split(",")[0].trim();
+  return undefined;
+}
+
+// ─── Send notification + email after successful completion ──────────────────
+async function notifyUserPaymentCompleted(
+  userId: string,
+  courseId: string,
+  courseTitle: string,
+  userName: string | null,
+  userEmail: string,
+) {
+  createNotification({
+    userId,
+    type: "payment",
+    title: "Оплата прошла успешно",
+    message: `Оплата курса "${courseTitle}" подтверждена. Добро пожаловать!`,
+    link: `/course/${courseId}`,
+  }).catch((err: unknown) => log.error("Failed to send payment notification", { error: err }));
+
+  const siteUrl = env.siteUrl;
+  sendEmail({
+    to: userEmail,
+    ...coursePurchaseEmail(
+      userName || "пользователь",
+      courseTitle,
+      `${siteUrl}/course/${courseId}`,
+    ),
+  }).catch((err: unknown) => log.error("Failed to send purchase email", { error: err }));
+}
+
+// ─── POST handler ───────────────────────────────────────────────────────────
 
 const checkWebhookRateLimit = rateLimit("webhook", { windowMs: 60_000, maxRequests: 100 });
-
-/**
- * Process refund webhook events (e.g. YooKassa `refund.succeeded`).
- * Finds the payment by the provider payment id, marks it refunded and
- * cancels the enrollment — atomically and idempotently.
- */
-async function processRefundWebhook(data: {
-  paymentId?: string;
-  refundId?: string;
-  status?: string;
-}) {
-  const providerPaymentId = data.paymentId;
-  if (!providerPaymentId) {
-    log.warn("Refund webhook: missing provider payment id");
-    return { received: true, message: "Missing provider payment id" };
-  }
-
-  // Find the payment by the provider's payment id (stored in transactionId
-  // after a completed capture) or fall back to our internal id.
-  const payment = await db.payment.findFirst({
-    where: { OR: [{ transactionId: providerPaymentId }, { id: providerPaymentId }] },
-  });
-
-  if (!payment) {
-    log.warn("Refund webhook: payment not found", { providerPaymentId });
-    return { received: true, message: "Payment not found" };
-  }
-
-  const refundStatus = data.status?.toLowerCase();
-  // Only finalize on a successful refund; failed/canceled refunds leave the
-  // payment as-is.
-  if (refundStatus !== "succeeded" && refundStatus !== "completed" && refundStatus !== "done") {
-    log.info("Refund webhook: non-terminal status, ignoring", {
-      paymentId: payment.id,
-      refundStatus,
-    });
-    return { received: true, status: refundStatus };
-  }
-
-  // Mark refunded + cancel enrollment + decrement studentCount atomically.
-  const result = await db.$transaction(async (tx: Prisma.TransactionClient) => {
-    const updateResult = await tx.payment.updateMany({
-      where: { id: payment.id, status: "completed" },
-      data: {
-        status: "refunded",
-        paymentData: JSON.stringify({
-          refundedAt: new Date().toISOString(),
-          refundAmount: payment.amount,
-          refundCurrency: payment.currency,
-          providerRefundId: data.refundId ?? null,
-          source: "webhook",
-        }),
-      },
-    });
-
-    if (updateResult.count === 0) {
-      return { alreadyProcessed: true };
-    }
-
-    const cancelled = await tx.enrollment.updateMany({
-      where: {
-        userId: payment.userId,
-        courseId: payment.courseId,
-        status: "active",
-      },
-      data: { status: "cancelled" },
-    });
-
-    if (cancelled.count > 0) {
-      await tx.course.update({
-        where: { id: payment.courseId },
-        data: { studentCount: { decrement: 1 } },
-      });
-    }
-
-    return { alreadyProcessed: false };
-  });
-
-  if (result.alreadyProcessed) {
-    return { received: true, status: "refunded", idempotent: true };
-  }
-
-  log.info("Webhook: payment refunded", {
-    paymentId: payment.id,
-    providerRefundId: data.refundId,
-  });
-
-  return { received: true, status: "refunded" };
-}
 
 export async function POST(request: NextRequest) {
   const blocked = checkWebhookRateLimit(request);
   if (blocked) return blocked;
+
   try {
-    const provider = request.headers.get("x-payment-provider")?.toLowerCase();
+    // 1. Determine provider from header or ?provider= query param.
+    const providerHeader = request.headers.get("x-payment-provider");
+    const url = new URL(request.url);
+    const providerQuery = url.searchParams.get("provider");
+    const providerName = parseProviderName(providerHeader ?? providerQuery);
+
+    if (!providerName) {
+      log.warn("Webhook: no provider header/param", { header: providerHeader, query: providerQuery });
+      return NextResponse.json({ error: "Provider not specified" }, { status: 400 });
+    }
+
+    const provider = getProvider(providerName);
     const rawBody = await request.text();
-    const signature =
-      request.headers.get("x-webhook-signature") ||
-      request.headers.get("x-signature");
+    const ctx = buildContext(request, rawBody, providerName);
 
-    // Verify HMAC signature — reject unauthenticated requests when secret is missing
-    const webhookSecret = env.paymentWebhookSecret;
-    if (!webhookSecret) {
-      log.error("Webhook secret is not configured — rejecting request", { provider });
-      return NextResponse.json({ error: "Webhook not configured" }, { status: 501 });
-    }
-    const { valid, algorithm } = verifyWebhookSignature({
-      rawBody,
-      signature,
-      secret: webhookSecret,
-    });
-
-    if (!valid) {
-      log.warn("Webhook signature verification failed", { provider, algorithm });
-      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
-    }
-
-    // Parse JSON body after signature verification
+    // 2. Verify webhook signature + IP. Each provider implements its own
+    //    verification logic (HMAC, signature header, IP whitelist).
     let body: unknown;
     try {
       body = JSON.parse(rawBody);
     } catch {
-      log.warn("Invalid webhook JSON payload", { provider });
+      log.warn("Invalid webhook JSON payload", { provider: providerName });
       return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
     }
 
-    // Validate webhook payload
-    const validation = webhookBodySchema.safeParse(body);
-    if (!validation.success) {
-      log.warn("Invalid webhook payload", { provider, error: validation.error.message });
-      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    const verified = provider.verifyWebhook(ctx, body);
+    if (!verified) {
+      log.warn("Webhook verification failed", { provider: providerName, ip: ctx.clientIp });
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
-    const data = validation.data;
+    // 3. Parse provider-specific body into normalized event.
+    let parsed: ParsedWebhook;
+    try {
+      parsed = provider.parseWebhook(body, ctx);
+    } catch (err) {
+      log.warn("Webhook parse failed", {
+        provider: providerName,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      return NextResponse.json({ error: "Invalid payload structure" }, { status: 400 });
+    }
 
-    // Idempotency check: skip duplicate webhooks
-    // Use eventId as the idempotency key (if available), otherwise fall back to paymentId
-    const idempotencyKey = data.eventId || data.object?.paymentId || data.object?.id;
-    if (idempotencyKey) {
-      const existingStatus = await checkIdempotency(idempotencyKey);
-      if (existingStatus) {
-        log.info("Duplicate webhook received, skipping", {
-          idempotencyKey,
-          provider,
-          status: data.status,
+    // 4. Idempotency check #1 — Redis + in-memory cache (fast path).
+    if (parsed.eventId) {
+      const existing = await checkIdempotency(parsed.eventId);
+      if (existing) {
+        log.info("Duplicate webhook (Redis/in-mem), skipping", {
+          eventId: parsed.eventId,
+          provider: providerName,
         });
-        return NextResponse.json({ received: true, status: data.status, idempotent: true });
+        return NextResponse.json({ received: true, status: parsed.status, idempotent: true });
       }
     }
 
-    // ── Refund events (e.g. YooKassa `refund.succeeded` / `refund.canceled`) ──
-    const eventType = (data.event || data.type || "").toLowerCase();
-    const isRefundEvent = eventType.startsWith("refund.");
-
-    if (isRefundEvent) {
-      const result = await processRefundWebhook({
-        paymentId: data.object?.payment_id ?? data.object?.paymentId,
-        refundId: data.object?.id ?? idempotencyKey,
-        status: data.object?.status ?? data.status,
+    // 5. Idempotency check #2 — durable via PaymentWebhookEvent table.
+    //    This catches duplicates that survive Redis eviction / server restart.
+    try {
+      await db.paymentWebhookEvent.create({
+        data: {
+          provider: providerName,
+          eventId: parsed.eventId,
+          event: parsed.event,
+          payload: rawBody.slice(0, 65535), // cap payload size
+          paymentId: parsed.internalPaymentId ?? null,
+        },
       });
-      return NextResponse.json(result);
+    } catch (err: unknown) {
+      // Unique constraint violation = duplicate event. Reply OK.
+      log.info("Duplicate webhook (DB), skipping", { eventId: parsed.eventId, provider: providerName });
+      return NextResponse.json({ received: true, status: parsed.status, idempotent: true });
     }
 
-    // Map provider-specific status values
-    const statusMap: Record<string, string> = {
-      succeeded: "completed",
-      paid: "completed",
-      completed: "completed",
-      canceled: "failed",
-      failed: "failed",
-      refunded: "refunded",
-    };
+    // 6. Find our internal payment by providerPaymentId (stored in transactionId
+    //    after createPayment succeeds) or by internalPaymentId from metadata.
+    let payment: { id: string; userId: string; courseId: string; amount: number; status: string } | null = null;
 
-    const rawStatus = data.status.trim().toLowerCase();
-    const normalizedStatus = statusMap[rawStatus] ?? rawStatus;
-
-    if (normalizedStatus === "pending") {
-      // Initial state notification — nothing to process yet
-      return NextResponse.json({ received: true, status: normalizedStatus });
-    }
-
-    if (normalizedStatus !== "completed") {
-      // Update payment to failed/refunded status
-      const paymentId = data.object?.id ?? data.object?.paymentId;
-      if (!paymentId) {
-        log.warn("Webhook: cannot identify payment for non-completed status", { status: normalizedStatus });
-        return NextResponse.json({ error: "Payment not identified" }, { status: 400 });
-      }
-      await db.payment.updateMany({
-        where: { id: paymentId, status: "pending" },
-        data: { status: normalizedStatus === "failed" ? "failed" : "refunded" },
+    if (parsed.internalPaymentId) {
+      payment = await db.payment.findUnique({
+        where: { id: parsed.internalPaymentId },
+        select: { id: true, userId: true, courseId: true, amount: true, status: true },
       });
-      return NextResponse.json({ received: true, status: normalizedStatus });
     }
 
-    // Find payment by metadata.paymentId (set during payment creation),
-    // then fall back to provider's transaction ID or object ID
-    const providerTransactionId = data.object?.transactionId;
-    const providerObjectId = data.object?.id;
-    const metaPaymentId = data.object?.metadata?.paymentId;
-    let payment = null;
-
-    if (metaPaymentId) {
+    if (!payment && parsed.providerPaymentId) {
       payment = await db.payment.findFirst({
-        where: { id: metaPaymentId, status: "pending" },
-      });
-    }
-
-    if (!payment && providerTransactionId) {
-      payment = await db.payment.findFirst({
-        where: { transactionId: providerTransactionId, status: "pending" },
-      });
-    }
-
-    if (!payment && providerObjectId) {
-      payment = await db.payment.findFirst({
-        where: { id: providerObjectId, status: "pending" },
+        where: { transactionId: parsed.providerPaymentId },
+        select: { id: true, userId: true, courseId: true, amount: true, status: true },
       });
     }
 
     if (!payment) {
-      log.warn("Webhook: payment not found", { transactionId: providerTransactionId, objectId: providerObjectId });
-      return NextResponse.json({ error: "Payment not found" }, { status: 404 });
+      log.warn("Webhook: payment not found", {
+        provider: providerName,
+        providerPaymentId: parsed.providerPaymentId,
+        internalPaymentId: parsed.internalPaymentId,
+      });
+      // WebhookEvent row is already created (audit), respond OK so provider stops retrying.
+      return NextResponse.json({ received: true, status: "payment_not_found" });
     }
 
-    // Use the provider's transaction ID, or fall back to the one stored in our DB
-    const finalTransactionId = providerTransactionId ?? payment.transactionId;
-    if (!finalTransactionId) {
-      log.error("Webhook: no transaction ID available", { paymentId: payment.id });
-      return NextResponse.json({ error: "Missing transaction ID" }, { status: 400 });
+    // 7. Link webhook event to the payment (now that we know the paymentId).
+    if (!parsed.internalPaymentId) {
+      await db.paymentWebhookEvent.updateMany({
+        where: { eventId: parsed.eventId },
+        data: { paymentId: payment.id },
+      });
     }
-    await completePayment(payment.id, finalTransactionId);
 
-    log.info("Webhook: payment completed", {
-      paymentId: payment.id,
-      provider,
-      transactionId: finalTransactionId,
-    });
+    // 8. Refund events — mark refunded, cancel enrollment.
+    if (parsed.event.startsWith("refund.")) {
+      if (parsed.status === "refunded") {
+        await markPaymentRefunded(payment.id, {
+          providerRefundId: parsed.eventId,
+          refundAmount: parsed.amount ?? payment.amount,
+        });
+      }
+      return NextResponse.json({ received: true, status: parsed.status });
+    }
 
-    return NextResponse.json({ received: true, status: "completed" });
+    // 9. Payment events — completed / failed / pending.
+    if (parsed.status === "completed") {
+      const result = await completePayment(payment.id, parsed.providerPaymentId || payment.id);
+      if (!result.alreadyCompleted && result.payment) {
+        // Fetch course title + user email for notification.
+        const course = await db.course.findUnique({
+          where: { id: result.payment.courseId },
+          select: { title: true },
+        });
+        const user = await db.user.findUnique({
+          where: { id: result.payment.userId },
+          select: { email: true, name: true },
+        });
+        if (course && user) {
+          await notifyUserPaymentCompleted(
+            result.payment.userId,
+            result.payment.courseId,
+            course.title,
+            user.name,
+            user.email,
+          );
+        }
+        log.info("Webhook: payment completed", {
+          paymentId: payment.id, provider: providerName, transactionId: parsed.providerPaymentId,
+        });
+      }
+      return NextResponse.json({ received: true, status: "completed" });
+    }
+
+    if (parsed.status === "failed") {
+      await db.payment.updateMany({
+        where: { id: payment.id, status: "pending" },
+        data: { status: "failed" },
+      });
+      log.info("Webhook: payment failed", { paymentId: payment.id, provider: providerName });
+      return NextResponse.json({ received: true, status: "failed" });
+    }
+
+    // pending — nothing to do yet.
+    return NextResponse.json({ received: true, status: "pending" });
   } catch (error: unknown) {
-    if (error instanceof Error && error.message === "PAYMENT_NOT_FOUND") {
+    if (error instanceof ServiceError && error.code === "PAYMENT_NOT_FOUND") {
       return NextResponse.json({ error: "Payment not found" }, { status: 404 });
-    }
-    if (error instanceof Error && error.message === "PAYMENT_INVALID_STATUS") {
-      return NextResponse.json({ error: "Payment cannot be completed" }, { status: 400 });
     }
     return handleApiError(error, { route: "payments/webhook" });
   }
 }
+
+// Re-export for legacy callers.
+export { getClientIp };

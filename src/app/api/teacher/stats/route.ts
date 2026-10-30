@@ -215,8 +215,6 @@ export async function GET(request: NextRequest) {
     const weeklyActivity = Array.from({ length: 7 }, (_, i) => {
       const day = new Date(now);
       day.setUTCDate(day.getUTCDate() - (6 - i));
-      const dayStart = new Date(Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate()));
-      const dayEnd = new Date(dayStart.getTime() + MS.DAY);
 
       return {
         date: day.toISOString().split("T")[0],

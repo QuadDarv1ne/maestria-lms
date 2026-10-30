@@ -1,19 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, Prisma } from "@/lib/db";
+import { db } from "@/lib/db";
 import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { parsePagination } from "@/lib/utils";
-import { validatePromoCode, redeemPromoCode } from "@/lib/promo-code";
+import {
+  createCoursePayment,
+  resolveProviderAndMethod,
+  ServiceError,
+  serviceErrorStatus,
+} from "@/lib/payments/service";
+import { getAvailablePaymentOptions } from "@/lib/payments/registry";
 
 export const runtime = "nodejs";
 
+// Accept both legacy (sbp/yookassa/tinkoff/card) and new (CARD/SBP/YOOMONEY/...)
+// method values. The service layer normalizes them to the (provider, method) pair.
 const createPaymentSchema = z.object({
   courseId: z.string().min(1, "ID курса обязателен"),
-  paymentMethod: z.enum(["sbp", "yookassa", "tinkoff", "card"]),
+  // New API: explicit provider + method
+  provider: z.string().optional(),
+  method: z.string().optional(),
+  // Legacy API: paymentMethod enum
+  paymentMethod: z.enum(["sbp", "yookassa", "tinkoff", "card"]).optional(),
   promoCode: z.string().optional(),
-});
+}).refine(
+  (d) => d.method || d.paymentMethod,
+  { message: "Укажите method (CARD/SBP/YOOMONEY/...) или paymentMethod (legacy)" },
+);
 
 const checkRateLimit = rateLimit("payments", RATE_LIMITS.payments);
 const checkPaymentsGetRateLimit = rateLimit("paymentsGet", RATE_LIMITS.payments);
@@ -38,179 +53,53 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { courseId, paymentMethod, promoCode: promoCodeInput } = validation.data;
+    const { courseId, provider, method, paymentMethod: legacyMethod, promoCode: promoCodeInput } = validation.data;
 
-    // Проверяем курс
-    const course = await db.course.findUnique({
-      where: { id: courseId },
+    // Resolve to (provider, method). Throws on unknown method.
+    const resolved = resolveProviderAndMethod({
+      provider: provider ?? null,
+      method: method ?? null,
+      legacyPaymentMethod: legacyMethod ?? null,
     });
-
-    if (!course || !course.isPublished) {
-      return NextResponse.json(
-        { error: "Курс не найден" },
-        { status: 404 }
-      );
+    if ("error" in resolved) {
+      return NextResponse.json({ error: resolved.error }, { status: 400 });
     }
 
-    // Private ("invite-only") courses are rejected by the enroll endpoint;
-    // selling them here would create a payment that enrollment must refuse.
-    if (course.visibility === "private") {
-      return NextResponse.json(
-        { error: "Запись на этот курс доступна только по приглашению" },
-        { status: 403 }
-      );
-    }
-
-    if (course.price === 0) {
-      return NextResponse.json(
-        { error: "Этот курс бесплатный — оплата не требуется" },
-        { status: 400 }
-      );
-    }
-
-    // Validate promo code if provided
-    let promoResult: Awaited<ReturnType<typeof validatePromoCode>> | null = null;
-    let finalAmount = course.price;
-    let discountAmount = 0;
-    let promoCodeId: string | null = null;
-
-    if (promoCodeInput) {
-      promoResult = await validatePromoCode(promoCodeInput, course.price, userId, courseId);
-      if (!promoResult.valid) {
-        return NextResponse.json(
-          { error: promoResult.error },
-          { status: 400 }
-        );
-      }
-      finalAmount = promoResult.finalPrice ?? course.price;
-      discountAmount = promoResult.discountAmount ?? 0;
-      promoCodeId = promoResult.promoCode?.id ?? null;
-    }
-
-    // Проверяем, не оплачен ли уже
-    const existingPayment = await db.payment.findFirst({
-      where: {
-        userId,
-        courseId,
-        status: { in: ["pending", "completed"] },
-      },
+    // Create payment via service — calls provider, stores providerPaymentId, etc.
+    const created = await createCoursePayment({
+      userId,
+      courseId,
+      method: resolved.method,
+      provider: resolved.provider,
+      promoCode: promoCodeInput,
     });
-
-    if (existingPayment?.status === "completed") {
-      return NextResponse.json(
-        { error: "Курс уже оплачен" },
-        { status: 400 }
-      );
-    }
-
-    if (existingPayment?.status === "pending") {
-      return NextResponse.json(
-        {
-          message: "У вас уже есть ожидающий платёж",
-          paymentId: existingPayment.id,
-          amount: existingPayment.amount,
-          currency: existingPayment.currency,
-        },
-        { status: 200 }
-      );
-    }
-
-    // Определяем провайдера на основе метода оплаты
-    const providerMap: Record<string, string> = {
-      sbp: "СБП",
-      yookassa: "ЮKassa",
-      tinkoff: "Тинькофф",
-      card: "Эквайринг",
-    };
-
-    // Wrap check and creation in a transaction to prevent race conditions
-    // where concurrent requests could create duplicate payments
-    const result = await db.$transaction(async (tx: Prisma.TransactionClient) => {
-      // Check for existing payment INSIDE transaction to prevent race conditions
-      const existingPayment = await tx.payment.findFirst({
-        where: {
-          userId,
-          courseId,
-          status: { in: ["pending", "completed"] },
-        },
-      });
-
-      if (existingPayment?.status === "completed") {
-        throw new Error("COURSE_ALREADY_PAID");
-      }
-
-      if (existingPayment?.status === "pending") {
-        return {
-          existing: true,
-          payment: {
-            id: existingPayment.id,
-            amount: existingPayment.amount,
-            currency: existingPayment.currency,
-            status: existingPayment.status,
-            paymentMethod: existingPayment.paymentMethod,
-            paymentProvider: existingPayment.paymentProvider,
-            transactionId: existingPayment.transactionId,
-            createdAt: existingPayment.createdAt,
-          },
-        };
-      }
-
-      // Create new payment
-      const payment = await tx.payment.create({
-        data: {
-          userId,
-          courseId,
-          amount: finalAmount,
-          currency: course.currency,
-          status: "pending",
-          paymentMethod,
-          paymentProvider: providerMap[paymentMethod] || paymentMethod,
-          transactionId: `txn_${Date.now()}_${crypto.randomUUID()}`,
-          promoCodeId: promoCodeId,
-          discountAmount: discountAmount,
-        },
-      });
-
-      return {
-        existing: false,
-        payment: {
-          id: payment.id,
-          amount: payment.amount,
-          currency: payment.currency,
-          status: payment.status,
-          paymentMethod: payment.paymentMethod,
-          paymentProvider: payment.paymentProvider,
-          transactionId: payment.transactionId,
-          createdAt: payment.createdAt,
-        },
-      };
-    });
-
-    // Redeem promo code after successful transaction
-    if (!result.existing && promoCodeId) {
-      await redeemPromoCode(promoCodeId, userId);
-    }
-
-    if (result.existing) {
-      return NextResponse.json(
-        {
-          message: "У вас уже есть ожидающий платёж",
-          paymentId: result.payment.id,
-          amount: result.payment.amount,
-          currency: result.payment.currency,
-        },
-        { status: 200 }
-      );
-    }
 
     return NextResponse.json(
       {
-        message: "Платёж создан",
-        payment: result.payment,
+        message: created.testMode ? "Платёж создан в тестовом режиме" : "Платёж создан",
+        payment: {
+          id: created.id,
+          amount: created.amount,
+          currency: created.currency,
+          status: created.status,
+          paymentMethod: created.paymentMethod,
+          paymentProvider: created.provider,
+          testMode: created.testMode ?? false,
+        },
+        // Convenience fields for the client (so it doesn't have to call /init-yookassa separately):
+        confirmationUrl: created.confirmationUrl,
+        qrCode: created.qrCode,
+        providerPaymentId: created.providerPaymentId,
       },
       { status: 201 }
     );
   } catch (error: unknown) {
+    if (error instanceof ServiceError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: serviceErrorStatus(error.code) }
+      );
+    }
     if (error instanceof Error && error.message === "COURSE_ALREADY_PAID") {
       return NextResponse.json(
         { error: "Курс уже оплачен" },
@@ -261,8 +150,11 @@ export async function GET(request: NextRequest) {
         total,
         totalPages: Math.ceil(total / limit),
       },
+      // Available payment options (only for configured providers) — useful for the UI.
+      availableMethods: getAvailablePaymentOptions(),
     }, { status: 200 });
   } catch (error: unknown) {
     return handleApiError(error, { route: "payments GET" });
   }
 }
+

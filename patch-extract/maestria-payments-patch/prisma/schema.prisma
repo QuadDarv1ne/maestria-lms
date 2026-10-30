@@ -1,0 +1,531 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+// Current provider: postgresql (default for production)
+// Change to "mysql" or "sqlite" as needed
+datasource db {
+  provider = "sqlite"
+}
+
+// ============ AUTH (NextAuth.js) ============
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  name          String?
+  passwordHash  String?
+  image         String?
+  role          String    @default("student") // student, teacher, admin
+  bio           String?
+  phone         String?
+  twoFactorEnabled  Boolean @default(false)
+  twoFactorSecret   String?
+  pendingTwoFactorSecret String?
+  emailVerified     DateTime?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  enrollments   Enrollment[]
+  reviews       Review[]
+  certificates  Certificate[]
+  payments      Payment[]
+  progress      Progress[]
+  teacherCourses Course[]  @relation("TeacherCourses")
+  notifications  Notification[]
+  gradedSubmissions AssignmentSubmission[] @relation("GradedSubmissions")
+  assignmentSubmissions AssignmentSubmission[]
+  articles      Article[]
+  lessonComments LessonComment[]
+  lessonAttachments LessonAttachment[]
+
+  @@index([role])
+  @@index([isActive])
+  @@index([role, isActive])
+  @@index([createdAt])
+}
+
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expires])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@index([identifier])
+  @@index([expires])
+}
+
+// ============ COURSES ============
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  icon        String?
+  color       String?
+  sortOrder   Int      @default(0)
+  courses     Course[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Course {
+  id          String   @id @default(uuid())
+  title       String
+  slug        String   @unique
+  description String
+  shortDesc   String?
+  image       String?
+  price       Float    @default(0)
+  oldPrice    Float?
+  currency    String   @default("RUB")
+  level       String   @default("beginner") // beginner, intermediate, advanced
+  duration    String?  // e.g. "8 недель"
+  language    String   @default("ru")
+  isPublished Boolean  @default(false)
+  isFeatured  Boolean  @default(false)
+  hasCertificate Boolean @default(true)
+  rating      Float    @default(0)
+  reviewCount Int      @default(0)
+  studentCount Int     @default(0)
+  tags        String?  // comma-separated
+  requirements String? // JSON array string
+  whatYouLearn String? // JSON array string
+  startDate   DateTime?
+  endDate     DateTime?
+  visibility  String   @default("public") // public, private, unlisted
+  maxStudents Int?
+  prerequisites String? // JSON array of course IDs
+
+  categoryId  String?
+  category    Category?  @relation(fields: [categoryId], references: [id])
+  teacherId   String?
+  teacher     User?      @relation("TeacherCourses", fields: [teacherId], references: [id])
+  modules     Module[]
+  enrollments Enrollment[]
+  reviews     Review[]
+  payments    Payment[]
+  certificates Certificate[]
+  promoCodes   PromoCode[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isPublished])
+  @@index([isFeatured, createdAt])
+  @@index([categoryId])
+  @@index([teacherId])
+  // Composite indexes for common query patterns
+  @@index([isPublished, level, createdAt])
+  @@index([isPublished, categoryId, createdAt])
+  @@index([isPublished, isFeatured, rating])
+  @@index([isPublished, price])
+  @@index([slug])
+  @@index([teacherId, isPublished])
+  @@index([isPublished, studentCount])
+  @@index([isPublished, language])
+}
+
+model Module {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  sortOrder   Int      @default(0)
+  courseId     String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons     Lesson[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([courseId])
+  @@index([courseId, sortOrder])
+}
+
+model Lesson {
+  id          String   @id @default(uuid())
+  title       String
+  type        String   @default("video") // video, text, quiz, coding, assignment
+  content     String?  // HTML/Markdown content
+  videoUrl    String?
+  duration    Int      @default(0) // minutes
+  sortOrder   Int      @default(0)
+  isFree      Boolean  @default(false)
+  moduleId    String
+  module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  assignments Assignment[]
+  progress    Progress[]
+  comments    LessonComment[]
+  attachments LessonAttachment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([moduleId])
+  @@index([moduleId, sortOrder])
+}
+
+model LessonAttachment {
+  id        String   @id @default(uuid())
+  lessonId  String
+  name      String   // original filename
+  key       String   // S3 key
+  url       String   // CDN URL
+  size      Int      // bytes
+  type      String   // MIME type
+  addedById String
+  createdAt DateTime @default(now())
+
+  lesson  Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  addedBy User   @relation(fields: [addedById], references: [id], onDelete: Cascade)
+
+  @@index([lessonId])
+}
+
+model LessonComment {
+  id        String   @id @default(uuid())
+  lessonId  String
+  userId    String
+  content   String
+  parentId  String?
+  isEdited  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lesson   Lesson          @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent   LessonComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  LessonComment[] @relation("CommentReplies")
+
+  @@index([lessonId, createdAt])
+  @@index([parentId])
+  @@index([userId])
+  @@index([lessonId, userId])
+}
+
+model Assignment {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  type        String   @default("quiz") // quiz, coding, text, matching, ordering, file_upload, essay, drag_drop
+  options     String?  // JSON: quiz options, matching pairs, ordering items, etc.
+  correctAnswer String?
+  points      Int      @default(10)
+  maxAttempts Int      @default(0) // 0 = unlimited attempts
+  timeLimit   Int?     // minutes; null = no time limit
+  lessonId    String
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  submissions AssignmentSubmission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([lessonId])
+}
+
+model AssignmentSubmission {
+  id          String   @id @default(uuid())
+  assignmentId String
+  userId      String
+  answer      String   // JSON or text: student's answer
+  score       Int?
+  maxScore    Int      @default(100)
+  grade       String?  // grade letter or feedback
+  feedback    String?  // teacher feedback
+  status      String   @default("submitted") // draft, submitted, graded, failed
+  submittedAt DateTime @default(now())
+  gradedAt    DateTime?
+  gradedBy    String?  // teacher ID
+  grader      User?    @relation("GradedSubmissions", fields: [gradedBy], references: [id])
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([assignmentId, userId])
+  @@index([userId, status])
+  @@index([gradedBy])
+}
+
+// ============ ENROLLMENT & PROGRESS ============
+
+model Enrollment {
+  id        String   @id @default(uuid())
+  userId    String
+  courseId  String
+  status    String   @default("active") // active, completed, cancelled
+  progress  Float    @default(0) // percentage 0-100
+  enrolledAt DateTime @default(now())
+  completedAt DateTime?
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+
+  @@index([courseId])
+  @@index([status])
+  @@index([userId, status])
+  @@index([userId, enrolledAt])
+}
+
+model Progress {
+  id          String   @id @default(uuid())
+  userId      String
+  lessonId    String
+  completed   Boolean  @default(false)
+  score       Int?
+  timeSpent   Int      @default(0) // seconds
+  lastAccessed DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([userId, completed])
+  @@index([lessonId, completed])
+  @@index([userId, lastAccessed])
+  @@index([userId, score])
+}
+
+// ============ REVIEWS ============
+
+model Review {
+  id        String   @id @default(uuid())
+  rating    Int      // 1-5
+  comment   String?
+  userId    String
+  courseId  String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, courseId])
+  @@index([courseId, createdAt])
+}
+
+// ============ PAYMENTS ============
+
+model Payment {
+  id              String   @id @default(uuid())
+  userId          String
+  courseId        String
+  amount          Float
+  currency        String   @default("RUB")
+  status          String   @default("pending") // pending, completed, failed, refunded
+  paymentMethod   String   // legacy: sbp/yookassa/tinkoff/card. New: card|sbp|yoomoney|sberpay|tpay|yandex_pay|ozon_card|wallet
+  paymentProvider String?  // YOOKASSA | TINKOFF | CLOUDPAYMENTS | SBER | OZON | VTB | MKB
+  transactionId   String?  // provider-side payment id (set after createPayment)
+  paymentData     String?  // JSON: idempotenceKey, confirmationUrl, qrCode, ...
+  promoCodeId     String?
+  promoCode       PromoCode? @relation(fields: [promoCodeId], references: [id], onDelete: SetNull)
+  discountAmount  Float    @default(0) // amount discounted by promo code
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course          Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Linked webhook events (audit trail + idempotency).
+  webhookEvents   PaymentWebhookEvent[]
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([status])
+  @@index([transactionId])
+  @@index([userId, courseId, status])
+  // Additional composite indexes for analytics
+  @@index([status, createdAt])
+  @@index([paymentMethod, status])
+  @@index([paymentProvider, status])
+  @@index([createdAt])
+}
+
+// ============ PAYMENT WEBHOOK EVENTS (idempotency + audit) ============
+// Stores every webhook we receive from any provider. The unique eventId
+// guarantees at-most-once processing: duplicate delivery from the provider
+// is rejected by the DB unique constraint.
+
+model PaymentWebhookEvent {
+  id            String   @id @default(uuid())
+  paymentId     String?  // null until payment is identified
+  payment       Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  provider      String   // YOOKASSA | TINKOFF | CLOUDPAYMENTS | ...
+  eventId       String   @unique // globally unique event id from provider
+  event         String   // e.g. "payment.succeeded", "refund.succeeded"
+  payload       String   // raw JSON payload
+  processedAt   DateTime @default(now())
+
+  @@index([paymentId])
+  @@index([provider, event])
+  @@index([processedAt])
+}
+
+// ============ NOTIFICATIONS ============
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String   // enrollment, completion, achievement, review, system, payment, comment
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+  @@index([userId, read, createdAt])
+  @@index([type, createdAt])
+  @@index([read, createdAt])
+}
+
+model Certificate {
+  id          String   @id @default(uuid())
+  userId      String
+  courseId    String
+  certificateNumber String @unique
+  issuedAt    DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+  @@index([issuedAt])
+}
+
+// ============ BLOG / ARTICLES ============
+
+model Article {
+  id          String   @id @default(uuid())
+  title       String
+  slug        String   @unique
+  content     String   // HTML/Markdown content
+  excerpt     String?  // Short preview text
+  image       String?  // Cover image URL
+  category    String   // development, testing, databases, ai, 3d-modeling, security, devops, career
+  tags        String?  // comma-separated tags
+  readTime    Int      @default(5) // estimated reading time in minutes
+  views       Int      @default(0)
+  isPublished Boolean  @default(false)
+  isFeatured  Boolean  @default(false)
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isPublished])
+  @@index([category])
+  @@index([authorId])
+  @@index([isFeatured, createdAt])
+  @@index([slug])
+  // Composite indexes for common query patterns
+  @@index([isPublished, category, createdAt])
+  @@index([isPublished, isFeatured, views])
+}
+
+// ============ PROMO CODES ============
+
+model PromoCode {
+  id              String   @id @default(uuid())
+  code            String   @unique
+  description     String?
+  // Discount type: "percentage" or "fixed"
+  discountType    String   @default("percentage")
+  // Discount value: percentage (1-100) or fixed amount in RUB
+  discountValue   Float
+  // Minimum order amount to apply promo code (0 = no minimum)
+  minAmount       Float    @default(0)
+  // Maximum discount amount for percentage codes (null = no cap)
+  maxDiscount     Float?
+  // Usage limits
+  maxUses         Int      @default(0) // 0 = unlimited
+  usedCount       Int      @default(0)
+  maxUsesPerUser  Int      @default(1)
+  // Validity period
+  validFrom       DateTime @default(now())
+  validUntil      DateTime?
+  isActive        Boolean  @default(true)
+  // Optional: restrict to specific course (null = any course)
+  courseId        String?
+  course          Course?  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  // Track which user used the code (JSON array of userIds)
+  usedBy          String?  // JSON array of userIds
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  payments        Payment[]
+
+  @@index([code])
+  @@index([isActive])
+  @@index([courseId])
+  @@index([validUntil])
+}
+
+// ============ WEBHOOK EVENTS ============
+
+model WebhookEvent {
+  id            String    @id @default(uuid())
+  type          String
+  payload       Json
+  status        String    @default("pending") // pending, processing, completed, failed
+  attempts      Int       @default(0)
+  maxAttempts   Int       @default(5)
+  lastAttemptAt DateTime?
+  nextRetryAt   DateTime?
+  errorMessage  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, nextRetryAt])
+  @@index([type])
+  @@index([createdAt])
+}

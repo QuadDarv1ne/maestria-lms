@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback, useRef } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { useAppStore } from "@/lib/store";
 import { log } from "@/lib/logger";
 import { t } from "@/lib/i18n";
@@ -17,6 +18,7 @@ import {
   ExternalLink,
   Loader2,
   ArrowLeft,
+  QrCode,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -27,6 +29,7 @@ interface PaymentData {
     currency: string;
     status: string;
     paymentMethod: string;
+    paymentProvider?: string | null;
     paymentData: string | null;
     course: {
       id: string;
@@ -39,15 +42,46 @@ interface PaymentData {
 const POLL_INTERVAL = 3000;
 const MAX_POLL_TIME = 10 * 60 * 1000;
 
-const methodIcons: Record<string, React.ReactNode> = {
-  yookassa: <CreditCard className="w-5 h-5" />,
-};
+/** Decode confirmation data stored as JSON in `payment.paymentData`. */
+function readPaymentData(raw: string | null): {
+  confirmationUrl?: string;
+  qrCode?: string;
+  provider?: string;
+  providerPaymentId?: string;
+} {
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
 
-export function PaymentPageClient({
-  paymentId,
-}: {
-  paymentId: string;
-}) {
+/** Human-readable label per (provider, method) for display. */
+function methodLabel(provider: string | null | undefined, method: string): string {
+  const m = method?.toUpperCase();
+  const labels: Record<string, string> = {
+    SBP: "СБП — Система быстрых платежей",
+    CARD: "Банковская карта",
+    YOOMONEY: "ЮMoney",
+    SBERPAY: "SberPay",
+    TPAY: "T-Pay (Т-Банк)",
+    YANDEX_PAY: "Yandex Pay",
+    OZON_CARD: "Ozon Card",
+    // Legacy values:
+    YOOKASSA: "ЮKassa",
+    TINKOFF: "Т-Банк",
+  };
+  if (labels[m]) return labels[m];
+  // Legacy lowercase values
+  if (method === "yookassa") return "ЮKassa";
+  if (method === "sbp") return "СБП";
+  if (method === "tinkoff") return "Т-Банк";
+  if (method === "card") return "Банковская карта";
+  return method;
+}
+
+export function PaymentPageClient({ paymentId }: { paymentId: string }) {
   const router = useRouter();
   const user = useAppStore((s) => s.user);
   const locale = useAppStore((s) => s.locale);
@@ -80,10 +114,7 @@ export function PaymentPageClient({
   }, [paymentId, locale]);
 
   const fetchPaymentRef = useRef(fetchPayment);
-
-  useEffect(() => {
-    fetchPaymentRef.current = fetchPayment;
-  }, [fetchPayment]);
+  useEffect(() => { fetchPaymentRef.current = fetchPayment; }, [fetchPayment]);
 
   useEffect(() => {
     let cancelled = false;
@@ -94,6 +125,7 @@ export function PaymentPageClient({
     return () => { cancelled = true; };
   }, [fetchPayment]);
 
+  // Poll for status updates (every 3s for 10 minutes).
   useEffect(() => {
     let isMounted = true;
     const startTime = Date.now();
@@ -108,18 +140,17 @@ export function PaymentPageClient({
         clearInterval(interval);
       }
     }, POLL_INTERVAL);
-
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
+    return () => { isMounted = false; clearInterval(interval); };
   }, []);
 
-  const handleInitYooKassa = async () => {
+  /** Universal init — calls /api/payments/[id]/init-provider, works for any provider. */
+  const handleInitProvider = async () => {
     setInitiating(true);
     try {
-      const res = await fetch(`/api/payments/${paymentId}/init-yookassa`, {
+      const res = await fetch(`/api/payments/${paymentId}/init-provider`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
       });
       const data = await res.json();
 
@@ -129,15 +160,18 @@ export function PaymentPageClient({
       }
 
       if (data.testMode) {
-        toast.info(t("payment.notYooKassa", locale));
+        toast.info(data.message || t("payment.notYooKassa", locale));
         return;
       }
 
       if (data.confirmationUrl) {
         window.location.href = data.confirmationUrl;
+      } else if (data.qrCode) {
+        // Refresh payment to fetch the stored QR payload.
+        await fetchPayment();
       }
     } catch (e: unknown) {
-      log.error("YooKassa init failed", { paymentId, error: e instanceof Error ? e.message : String(e) });
+      log.error("Provider init failed", { paymentId, error: e instanceof Error ? e.message : String(e) });
       toast.error(t("payment.initError", locale));
     } finally {
       setInitiating(false);
@@ -147,11 +181,8 @@ export function PaymentPageClient({
   const handleSimulateComplete = async () => {
     setInitiating(true);
     try {
-      const res = await fetch(`/api/payments/${paymentId}/simulate-complete`, {
-        method: "POST",
-      });
+      const res = await fetch(`/api/payments/${paymentId}/simulate-complete`, { method: "POST" });
       const data = await res.json();
-
       if (res.ok) {
         toast.success(t("payment.simulateSuccess", locale));
         await fetchPayment();
@@ -167,26 +198,10 @@ export function PaymentPageClient({
   };
 
   const statusConfig: Record<string, { label: string; color: "default" | "secondary" | "destructive" | "outline"; icon: React.ReactNode }> = {
-    pending: {
-      label: t("payment.pending", locale),
-      color: "secondary",
-      icon: <Clock className="w-4 h-4" />,
-    },
-    completed: {
-      label: t("payment.completed", locale),
-      color: "default",
-      icon: <CheckCircle2 className="w-4 h-4" />,
-    },
-    failed: {
-      label: t("payment.failed", locale),
-      color: "destructive",
-      icon: <XCircle className="w-4 h-4" />,
-    },
-    refunded: {
-      label: t("payment.refunded", locale),
-      color: "outline",
-      icon: <XCircle className="w-4 h-4" />,
-    },
+    pending: { label: t("payment.pending", locale), color: "secondary", icon: <Clock className="w-4 h-4" /> },
+    completed: { label: t("payment.completed", locale), color: "default", icon: <CheckCircle2 className="w-4 h-4" /> },
+    failed: { label: t("payment.failed", locale), color: "destructive", icon: <XCircle className="w-4 h-4" /> },
+    refunded: { label: t("payment.refunded", locale), color: "outline", icon: <XCircle className="w-4 h-4" /> },
   };
 
   if (!user) {
@@ -195,9 +210,7 @@ export function PaymentPageClient({
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 text-center space-y-4">
             <p className="text-muted-foreground">{t("payment.authRequired", locale)}</p>
-            <Button onClick={() => router.push("?dialog=login")}>
-              {t("payment.login", locale)}
-            </Button>
+            <Button onClick={() => router.push("?dialog=login")}>{t("payment.login", locale)}</Button>
           </CardContent>
         </Card>
       </div>
@@ -237,13 +250,19 @@ export function PaymentPageClient({
   if (!payment) return null;
 
   const config = statusConfig[payment.status] || statusConfig.pending;
-  const titleKey = payment.status === "completed"
-    ? "payment.success"
-    : payment.status === "failed"
-    ? "payment.failed"
-    : payment.status === "refunded"
-    ? "payment.refunded"
+  const titleKey =
+    payment.status === "completed" ? "payment.success"
+    : payment.status === "failed" ? "payment.failed"
+    : payment.status === "refunded" ? "payment.refunded"
     : "payment.title";
+
+  // Decode stored confirmation data
+  const stored = readPaymentData(payment.paymentData);
+  const isSbpQr =
+    (payment.paymentMethod?.toUpperCase() === "SBP" ||
+     payment.paymentMethod?.toUpperCase() === "YOOMONEY" ||
+     payment.paymentMethod?.toUpperCase() === "WALLET")
+    && !!stored.qrCode;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 flex items-center justify-center p-4">
@@ -258,44 +277,35 @@ export function PaymentPageClient({
               <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
                 <XCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
               </div>
+            ) : isSbpQr ? (
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <QrCode className="w-8 h-8 text-primary" />
+              </div>
             ) : (
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                {methodIcons[payment.paymentMethod] || <CreditCard className="w-8 h-8 text-primary" />}
+                <CreditCard className="w-8 h-8 text-primary" />
               </div>
             )}
           </div>
           <CardTitle className="text-xl">{t(titleKey, locale)}</CardTitle>
         </CardHeader>
+
         <CardContent className="space-y-6">
           <div className="bg-muted/50 rounded-lg p-4 space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">{t("payment.course", locale)}</span>
-              <span className="font-medium text-right max-w-[60%] truncate">
-                {payment.course.title}
-              </span>
+              <span className="font-medium text-right max-w-[60%] truncate">{payment.course.title}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">{t("payment.amount", locale)}</span>
               <span className="font-semibold text-lg">
-                {formatNumber(payment.amount, locale, {
-                  style: "currency",
-                  currency: payment.currency || "RUB",
-                })}
+                {formatNumber(payment.amount, locale, { style: "currency", currency: payment.currency || "RUB" })}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">{t("payment.method", locale)}</span>
               <Badge variant="outline" className="gap-1.5">
-                {methodIcons[payment.paymentMethod]}
-                {payment.paymentMethod === "yookassa"
-                  ? t("course.paymentYookassa", locale)
-                  : payment.paymentMethod === "sbp"
-                  ? t("course.paymentSbp", locale)
-                  : payment.paymentMethod === "tinkoff"
-                  ? t("course.paymentTinkoff", locale)
-                  : payment.paymentMethod === "card"
-                  ? t("payment.method", locale)
-                  : payment.paymentMethod}
+                {methodLabel(payment.paymentProvider, payment.paymentMethod)}
               </Badge>
             </div>
             <div className="flex justify-between items-center">
@@ -309,13 +319,8 @@ export function PaymentPageClient({
 
           {payment.status === "completed" && (
             <div className="text-center space-y-3">
-              <p className="text-sm text-muted-foreground">
-                {t("payment.courseAccess", locale)}
-              </p>
-              <Button
-                className="w-full"
-                onClick={() => router.push(`/course/${payment.course.id}`)}
-              >
+              <p className="text-sm text-muted-foreground">{t("payment.courseAccess", locale)}</p>
+              <Button className="w-full" onClick={() => router.push(`/course/${payment.course.id}`)}>
                 {t("payment.toCourse", locale)}
               </Button>
             </div>
@@ -323,37 +328,40 @@ export function PaymentPageClient({
 
           {payment.status === "pending" && (
             <div className="space-y-3">
-              {payment.paymentMethod === "yookassa" && (
+              {/* SBP QR code display */}
+              {isSbpQr && (
+                <div className="flex flex-col items-center gap-3 p-4 border rounded-lg bg-white">
+                  <p className="text-sm text-muted-foreground text-center">
+                    Отсканируйте QR-код в приложении вашего банка для оплаты через СБП
+                  </p>
+                  <QRCodeSVG value={stored.qrCode!} size={240} includeMargin={true} />
+                  <p className="text-xs text-muted-foreground text-center">
+                    После оплаты страница обновится автоматически
+                  </p>
+                </div>
+              )}
+
+              {/* Universal init button — calls current provider */}
+              {!isSbpQr && (
                 <Button
                   className="w-full gap-2"
-                  onClick={handleInitYooKassa}
+                  onClick={handleInitProvider}
                   disabled={initiating}
                 >
-                  {initiating ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <ExternalLink className="w-4 h-4" />
-                  )}
-                  {initiating
-                    ? t("payment.initYooKassaLoading", locale)
-                    : t("payment.initYooKassa", locale)}
+                  {initiating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
+                  {initiating ? "Обработка..." : `Перейти к оплате (${methodLabel(payment.paymentProvider, payment.paymentMethod)})`}
                 </Button>
               )}
 
+              {/* Dev-only: simulate completion */}
               <Button
                 variant="outline"
                 className="w-full gap-2"
                 onClick={handleSimulateComplete}
                 disabled={initiating}
               >
-                {initiating ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <CheckCircle2 className="w-4 h-4" />
-                )}
-                {initiating
-                  ? t("payment.simulateProcessing", locale)
-                  : t("payment.simulateComplete", locale)}
+                {initiating ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                {initiating ? t("payment.simulateProcessing", locale) : t("payment.simulateComplete", locale)}
               </Button>
 
               <p className="text-xs text-center text-muted-foreground">
@@ -364,14 +372,8 @@ export function PaymentPageClient({
 
           {payment.status === "failed" && (
             <div className="text-center space-y-3">
-              <p className="text-sm text-muted-foreground">
-                {t("payment.needRetry", locale)}
-              </p>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => router.push(`/course/${payment.course.id}`)}
-              >
+              <p className="text-sm text-muted-foreground">{t("payment.needRetry", locale)}</p>
+              <Button variant="outline" className="w-full" onClick={() => router.push(`/course/${payment.course.id}`)}>
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 {t("payment.returnToCourse", locale)}
               </Button>
@@ -380,9 +382,7 @@ export function PaymentPageClient({
 
           {payment.status === "refunded" && (
             <div className="text-center">
-              <p className="text-sm text-muted-foreground">
-                {t("payment.refundInfo", locale)}
-              </p>
+              <p className="text-sm text-muted-foreground">{t("payment.refundInfo", locale)}</p>
             </div>
           )}
         </CardContent>

@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
   BookOpen, PlayCircle, Clock, Trophy, Flame,
@@ -39,15 +38,6 @@ interface ActivityStats {
   continueCourses: ContinueCourse[];
 }
 
-function getDayShort(date: Date, locale: string): string {
-  const days: Record<string, string[]> = {
-    ru: ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"],
-    en: ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
-    zh: ["日", "一", "二", "三", "四", "五", "六"],
-  };
-  return (days[locale] || days.en)[date.getDay()];
-}
-
 export function StudentDashboard() {
   const router = useRouter();
   const locale = useAppStore((s) => s.locale);
@@ -56,7 +46,7 @@ export function StudentDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) { setLoading(false); return; }
+    if (!user) return;
     let cancelled = false;
 
     async function fetchDashboard() {
@@ -82,7 +72,8 @@ export function StudentDashboard() {
     return Math.max(60, ...stats.weeklyActivity.map((d) => d.minutes));
   }, [stats]);
 
-  if (loading) {
+  // Без авторизованного пользователя запрос не выполняется — скелетон не нужен.
+  if (loading && user) {
     return (
       <div className="animate-pulse space-y-4 mb-8">
         <div className="h-32 bg-muted rounded-xl" />
@@ -211,7 +202,7 @@ export function StudentDashboard() {
                   <div key={idx} className="flex flex-col items-center flex-1 gap-1">
                     <div
                       className={cn(
-                        "w-full max-w-[32px] rounded-t-md transition-all",
+                        "w-full max-w-8 rounded-t-md transition-all",
                         day.isToday
                           ? "bg-linear-to-t from-violet-600 to-blue-500"
                           : day.minutes > 0
