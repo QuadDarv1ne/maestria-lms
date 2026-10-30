@@ -147,22 +147,32 @@ export async function POST(
         })
       : undefined;
 
-    const result = await provider.createPayment({
-      paymentId: payment.id,
-      idempotenceKey,
-      amount: payment.amount,
-      currency: "RUB",
-      description: `Оплата курса «${payment.course.title}»`,
-      returnUrl: `${env.siteUrl}/payment/${payment.id}`,
-      method,
-      receipt,
-      customer: {
-        email: user?.email,
-        fullName: user?.name ?? undefined,
-        phone: user?.phone ?? undefined,
-      },
-      metadata: { paymentId: payment.id, userId: payment.userId, courseId: payment.courseId },
-    });
+    let result;
+    try {
+      result = await provider.createPayment({
+        paymentId: payment.id,
+        idempotenceKey,
+        amount: payment.amount,
+        currency: "RUB",
+        description: `Оплата курса «${payment.course.title}»`,
+        returnUrl: `${env.siteUrl}/payment/${payment.id}`,
+        method,
+        receipt,
+        customer: {
+          email: user?.email,
+          fullName: user?.name ?? undefined,
+          phone: user?.phone ?? undefined,
+        },
+        metadata: { paymentId: payment.id, userId: payment.userId, courseId: payment.courseId },
+      });
+    } catch (err) {
+      // Mark payment as failed so the user can start a new one.
+      await db.payment.updateMany({
+        where: { id, status: "pending" },
+        data: { status: "failed" },
+      }).catch(() => {});
+      throw err;
+    }
 
     await db.payment.update({
       where: { id },
@@ -194,7 +204,9 @@ export async function POST(
         { status: 501 },
       );
     }
-    if (error instanceof Error && (error.message.startsWith("YooKassa") || error.message.startsWith("Tinkoff") || error.message.startsWith("Ozon"))) {
+    if (error instanceof Error && (
+      /(?:YooKassa|Tinkoff|Ozon|CloudPayments|Sber|VTB|MKB|Provider|network)/i.test(error.message)
+    )) {
       log.error("Provider init failed", { paymentId: id, error: error.message });
       return NextResponse.json(
         { error: "Ошибка при создании платежа у провайдера. Попробуйте позже." },

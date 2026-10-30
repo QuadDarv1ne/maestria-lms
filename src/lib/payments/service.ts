@@ -427,7 +427,7 @@ export async function findPaymentByProviderId(providerPaymentId: string) {
     where: {
       OR: [
         { transactionId: providerPaymentId },
-        // Also check paymentData JSON for providerPaymentId field (less efficient)
+        { paymentData: { contains: providerPaymentId } },
       ],
     },
   });

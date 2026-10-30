@@ -165,14 +165,25 @@ export class OzonProvider implements IPaymentProvider {
     // The signature is base64 of the HMAC over the raw body.
     const signature = ctx.headers["x-ozon-signature"];
     const secret = env.ozonWebhookSecret;
-    if (signature && secret) {
+
+    // Without a webhook secret we cannot authenticate the request at all —
+    // reject rather than fall through to an (likely empty) IP whitelist.
+    if (!secret) {
+      log.warn("Ozon webhook rejected: OZON_WEBHOOK_SECRET is not configured");
+      return false;
+    }
+
+    if (signature) {
       const expected = cryptoB64Hmac(secret, ctx.rawBody);
       if (signature.length !== expected.length || signature !== expected) {
         log.warn("Ozon webhook signature mismatch", { provider: ctx.provider });
         return false;
       }
+      // Signature verified — IP check is optional.
+      return true;
     }
-    // IP whitelist (Ozon publishes their ranges on request — leave empty by default)
+
+    // No signature header but secret is configured — try IP whitelist.
     if (!isIpAllowed("OZON", ctx.clientIp)) {
       log.warn("Ozon webhook from disallowed IP", { ip: ctx.clientIp });
       return false;

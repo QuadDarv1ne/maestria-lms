@@ -231,6 +231,9 @@ export async function POST(request: NextRequest) {
 
     // 5. Idempotency check #2 — durable via PaymentWebhookEvent table.
     //    This catches duplicates that survive Redis eviction / server restart.
+    //    From this point on the event is "claimed"; if downstream handling fails
+    //    for a transient reason the catch block releases it so the retry works.
+    inFlightEventId = eventId;
     try {
       await db.paymentWebhookEvent.create({
         data: {
@@ -254,6 +257,11 @@ export async function POST(request: NextRequest) {
         provider: providerName,
         error: err instanceof Error ? err.message : String(err),
       });
+      // Release idempotency so the provider's retry is not silently dropped.
+      if (inFlightEventId) {
+        await releaseIdempotency(inFlightEventId);
+        inFlightEventId = null;
+      }
     }
 
     // 6. Find our internal payment by providerPaymentId (stored in transactionId
@@ -349,6 +357,15 @@ export async function POST(request: NextRequest) {
   } catch (error: unknown) {
     if (error instanceof ServiceError && error.code === "PAYMENT_NOT_FOUND") {
       return NextResponse.json({ error: "Payment not found" }, { status: 404 });
+    }
+    // Transient/unknown failure: release the claim and drop the audit row so
+    // the provider's retry can complete the payment instead of being treated
+    // as a duplicate forever.
+    if (inFlightEventId) {
+      await releaseIdempotency(inFlightEventId).catch(() => {});
+      await db.paymentWebhookEvent
+        .deleteMany({ where: { eventId: inFlightEventId } })
+        .catch(() => {});
     }
     return handleApiError(error, { route: "payments/webhook" });
   }
