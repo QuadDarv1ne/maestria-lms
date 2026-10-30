@@ -217,8 +217,17 @@ export class YooKassaProvider implements IPaymentProvider {
         log.warn("YooKassa webhook signature mismatch", { provider: ctx.provider });
         return false;
       }
+      // Подпись проверена — IP-фильтр уже не нужен.
+      return true;
     }
-    // 2. IP whitelist (always enforced — YooKassa publishes their IP ranges)
+
+    // 2. IP whitelist — YooKassa публикует диапазоны своих вебхук-серверов.
+    //    Если IP неизвестен (запрос пришёл не через прокси и не подписан),
+    //    проверить подлинность нельзя — отклоняем.
+    if (!ctx.clientIp) {
+      log.warn("YooKassa webhook without signature and client IP — rejected", { provider: ctx.provider });
+      return false;
+    }
     if (!isIpAllowed("YOOKASSA", ctx.clientIp)) {
       log.warn("YooKassa webhook from disallowed IP", { ip: ctx.clientIp });
       return false;
@@ -228,7 +237,10 @@ export class YooKassaProvider implements IPaymentProvider {
 
   parseWebhook(body: unknown, _ctx: WebhookContext): ParsedWebhook {
     const b = body as {
-      event: string;
+      event?: string;
+      eventId?: string;
+      status?: string;
+      type?: string;
       object: {
         id: string;
         status: string;
@@ -237,19 +249,31 @@ export class YooKassaProvider implements IPaymentProvider {
         metadata?: { paymentId?: string };
         refund?: { id: string; status: string };
         payment_id?: string; // for refund events
+        transactionId?: string; // legacy generic payload
+        paymentId?: string; // legacy generic payload
       };
     };
 
-    const event = b.event ?? "";
     const obj = b.object ?? { id: "", status: "" };
+    // ЮKassa всегда присылает `event`, но старый generic-формат (и часть
+    // интеграций) передаёт только `status` — поддерживаем оба варианта.
+    const event = b.event ?? legacyEventName(obj.status ?? b.status);
+    const status = obj.status ?? b.status;
+
+    if (!event && !status) {
+      throw new Error("YooKassa webhook: missing event/status");
+    }
+
+    const internalPaymentId = obj.metadata?.paymentId ?? obj.paymentId;
+    const eventId = b.eventId ?? `${event}:${obj.id}`;
 
     // Refund event: object.id = refund id, object.payment_id = original payment id
     if (event.startsWith("refund.")) {
       return {
-        eventId: `${event}:${obj.id}`,
+        eventId,
         event,
         providerPaymentId: obj.payment_id ?? "",
-        internalPaymentId: obj.metadata?.paymentId,
+        internalPaymentId,
         status: event === "refund.succeeded" ? "refunded" : "pending",
         amount: obj.amount?.value ? Number(obj.amount.value) : undefined,
         raw: body,
@@ -257,14 +281,25 @@ export class YooKassaProvider implements IPaymentProvider {
     }
 
     return {
-      eventId: `${event}:${obj.id}`,
+      eventId,
       event,
-      providerPaymentId: obj.id,
-      internalPaymentId: obj.metadata?.paymentId,
-      status: mapStatus(obj.status),
+      providerPaymentId: obj.id ?? obj.transactionId ?? "",
+      internalPaymentId,
+      status: mapStatus(status ?? ""),
       amount: obj.amount?.value ? Number(obj.amount.value) : undefined,
       raw: body,
     };
+  }
+}
+
+/** Derive the ЮKassa event name from a bare status (legacy payloads). */
+function legacyEventName(status?: string): string {
+  switch (status) {
+    case "succeeded": return "payment.succeeded";
+    case "canceled": return "payment.canceled";
+    case "waiting_for_capture": return "payment.waiting_for_capture";
+    case "pending": return "payment.pending";
+    default: return "";
   }
 }
 

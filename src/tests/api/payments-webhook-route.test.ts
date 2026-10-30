@@ -11,7 +11,10 @@ import crypto from "node:crypto";
 
 const { mockDb, mockEnv, mockHandleApiError, mockCreateNotification, mockSendEmail } = vi.hoisted(() => ({
   mockDb: {
-    payment: { findFirst: vi.fn(), updateMany: vi.fn() },
+    payment: { findFirst: vi.fn(), findUnique: vi.fn(), updateMany: vi.fn() },
+    paymentWebhookEvent: { create: vi.fn(), updateMany: vi.fn(), deleteMany: vi.fn() },
+    course: { findUnique: vi.fn() },
+    user: { findUnique: vi.fn() },
     $transaction: vi.fn(),
   },
   mockEnv: {
@@ -89,7 +92,13 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockEnv.paymentWebhookSecret = SECRET;
   mockDb.payment.findFirst.mockResolvedValue(pendingPayment);
+  mockDb.payment.findUnique.mockResolvedValue(pendingPayment);
   mockDb.payment.updateMany.mockResolvedValue({ count: 1 });
+  mockDb.paymentWebhookEvent.create.mockResolvedValue({ id: "event-1" });
+  mockDb.paymentWebhookEvent.updateMany.mockResolvedValue({ count: 1 });
+  mockDb.paymentWebhookEvent.deleteMany.mockResolvedValue({ count: 1 });
+  mockDb.course.findUnique.mockResolvedValue({ id: "course-1", title: "Курс" });
+  mockDb.user.findUnique.mockResolvedValue({ id: "user-1", email: "student@example.com", name: "Студент" });
   mockCreateNotification.mockResolvedValue({ id: "notif-1" });
   mockSendEmail.mockResolvedValue(true);
   mockHandleApiError.mockReturnValue(new Response(JSON.stringify({ error: "internal" }), { status: 500 }));

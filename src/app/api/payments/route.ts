@@ -74,6 +74,24 @@ export async function POST(request: NextRequest) {
       promoCode: promoCodeInput,
     });
 
+    // Legacy contract: an already pending payment is reported with 200 so
+    // clients can resume it instead of treating the call as a new purchase.
+    if (created.existing) {
+      return NextResponse.json(
+        {
+          message: "У вас уже есть ожидающий платёж",
+          paymentId: created.id,
+          amount: created.amount,
+          currency: created.currency,
+          paymentMethod: created.paymentMethod,
+          paymentProvider: created.provider,
+          confirmationUrl: created.confirmationUrl,
+          qrCode: created.qrCode,
+        },
+        { status: 200 }
+      );
+    }
+
     return NextResponse.json(
       {
         message: created.testMode ? "Платёж создан в тестовом режиме" : "Платёж создан",

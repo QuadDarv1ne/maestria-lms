@@ -97,6 +97,8 @@ export interface CreatedPayment {
   qrCode?: string;
   providerPaymentId?: string;
   testMode?: boolean;
+  /** True when a pending payment already existed — nothing new was created. */
+  existing?: boolean;
 }
 
 /**
@@ -185,11 +187,19 @@ export async function createCoursePayment(opts: CreatePaymentOptions): Promise<C
     return existingAsCreated(created.existing, providerName, method);
   }
 
+  // Use the id of the row that was actually persisted (matters when the
+  // database assigns/defaults ids).
+  const record = created.created;
+  if (!record) {
+    throw new ServiceError("PAYMENT_NOT_FOUND", "Не удалось создать платёж");
+  }
+  const createdPaymentId = record.id;
+
   // 6. Provider not configured? — return test mode so client can simulate.
   if (!provider.isConfigured()) {
     log.warn("Provider not configured, returning testMode", { provider: providerName });
     return {
-      id: paymentId,
+      id: createdPaymentId,
       amount: finalAmount,
       currency: course.currency || "RUB",
       status: "pending",
@@ -220,12 +230,12 @@ export async function createCoursePayment(opts: CreatePaymentOptions): Promise<C
 
   // 8. Call provider
   const input: CreatePaymentInput = {
-    paymentId,
+    paymentId: createdPaymentId,
     idempotenceKey,
     amount: finalAmount,
     currency: "RUB",
     description: `Оплата курса «${course.title}» — ${env.siteUrl}`,
-    returnUrl: `${env.siteUrl}/payment/${paymentId}`,
+    returnUrl: `${env.siteUrl}/payment/${createdPaymentId}`,
     method,
     receipt,
     customer: {
@@ -234,7 +244,7 @@ export async function createCoursePayment(opts: CreatePaymentOptions): Promise<C
       phone: user?.phone ?? undefined,
     },
     metadata: {
-      paymentId,
+      paymentId: createdPaymentId,
       userId,
       courseId,
     },
@@ -246,11 +256,11 @@ export async function createCoursePayment(opts: CreatePaymentOptions): Promise<C
   } catch (err) {
     // Mark payment failed so the user can retry.
     await db.payment.updateMany({
-      where: { id: paymentId, status: "pending" },
+      where: { id: createdPaymentId, status: "pending" },
       data: { status: "failed" },
     });
     log.error("Provider createPayment failed", {
-      paymentId, provider: providerName, error: err instanceof Error ? err.message : String(err),
+      paymentId: createdPaymentId, provider: providerName, error: err instanceof Error ? err.message : String(err),
     });
     throw new ServiceError(
       "PROVIDER_ERROR",
@@ -260,7 +270,7 @@ export async function createCoursePayment(opts: CreatePaymentOptions): Promise<C
 
   // 9. Store provider payment id + confirmation URL
   await db.payment.update({
-    where: { id: paymentId },
+    where: { id: createdPaymentId },
     data: {
       transactionId: result.providerPaymentId,
       paymentData: JSON.stringify({
@@ -278,12 +288,12 @@ export async function createCoursePayment(opts: CreatePaymentOptions): Promise<C
   // 10. Promo code redemption (only after provider accepted the payment)
   if (promoCodeId) {
     await redeemPromoCode(promoCodeId, userId).catch((err: unknown) => {
-      log.error("Promo code redemption failed", { paymentId, promoCodeId, error: String(err) });
+      log.error("Promo code redemption failed", { paymentId: createdPaymentId, promoCodeId, error: String(err) });
     });
   }
 
   return {
-    id: paymentId,
+    id: createdPaymentId,
     amount: finalAmount,
     currency: course.currency || "RUB",
     status: "pending",
@@ -320,6 +330,7 @@ function existingAsCreated(
     provider: providerName,
     confirmationUrl,
     qrCode,
+    existing: true,
   };
 }
 

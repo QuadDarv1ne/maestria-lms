@@ -64,11 +64,11 @@ export class SberbankProvider implements IPaymentProvider {
   }
 
   verifyWebhook(ctx: WebhookContext, _body: unknown): boolean {
-    // Sber doesn't sign webhooks cryptographically — they rely on IP filtering
-    // + your merchant cabinet's webhook secret being passed in body.
-    // Implement once you have your Sber merchant account.
-    log.warn("Sberbank webhook verification: not implemented — accepting all", { provider: ctx.provider });
-    return true; // ⚠ Replace with real verification before production
+    // Сбербанк не подписывает вебхуки криптографически — проверка опирается
+    // на IP-фильтрацию и секрет мерчанта. Реализовать после подключения
+    // эквайринга; до этого момента отклоняем все уведомления.
+    log.warn("Sberbank webhook rejected: verification not implemented yet", { provider: ctx.provider });
+    return false;
   }
 
   parseWebhook(body: unknown, _ctx: WebhookContext): ParsedWebhook {

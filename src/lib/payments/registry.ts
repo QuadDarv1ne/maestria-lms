@@ -119,3 +119,46 @@ export function methodLabel(method: PaymentMethod): string {
   };
   return labels[method] ?? method;
 }
+
+/**
+ * Determine which provider sent a webhook when the request has no
+ * `x-payment-provider` header and no `?provider=` query param.
+ *
+ * Most gateways post to the same URL without identifying themselves, so we
+ * have to recognise their payload shape. Returns null when the body doesn't
+ * match any known provider.
+ */
+export function detectProviderFromWebhook(
+  headers: Record<string, string>,
+  body: unknown,
+): ProviderName | null {
+  if (headers["x-content-hmac"]) return "CLOUDPAYMENTS";
+  if (headers["x-ozon-signature"]) return "OZON";
+
+  if (!body || typeof body !== "object") return null;
+  const b = body as Record<string, unknown>;
+
+  // T-Bank: every notification carries TerminalKey + Token.
+  if (typeof b.TerminalKey === "string" && typeof b.Token === "string") return "TINKOFF";
+
+  // CloudPayments: InvoiceId (our payment id) + Status/TransactionId.
+  if (typeof b.InvoiceId === "string" && (b.Status !== undefined || b.TransactionId !== undefined)) {
+    return "CLOUDPAYMENTS";
+  }
+
+  // Ozon Pay: snake_case payload with payment_id.
+  if (typeof b.payment_id === "string" && (b.webhook_id !== undefined || b.order_id !== undefined)) {
+    return "OZON";
+  }
+
+  // Sberbank: mdOrder (provider order id) + orderNumber (our payment id).
+  if (typeof b.mdOrder === "string") return "SBER";
+
+  // ВТБ / МКБ — merchant-specific payloads, only reachable via ?provider=.
+  if (typeof b.transaction_id === "string" && typeof b.order_id === "string") return "VTB";
+
+  // ЮKassa (и legacy-формат `{ status, object }`) — единственный с полем object.
+  if (b.object && typeof b.object === "object") return "YOOKASSA";
+
+  return null;
+}

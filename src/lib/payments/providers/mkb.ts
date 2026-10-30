@@ -41,8 +41,10 @@ export class MkbProvider implements IPaymentProvider {
   }
 
   verifyWebhook(ctx: WebhookContext, _body: unknown): boolean {
-    log.warn("MKB webhook verification: not implemented — accepting all", { provider: ctx.provider });
-    return true;
+    // МКБ подписывает уведомления, но алгоритм доступен только после
+    // подключения эквайринга. До этого момента отклоняем все вебхуки.
+    log.warn("MKB webhook rejected: verification not implemented yet", { provider: ctx.provider });
+    return false;
   }
 
   parseWebhook(body: unknown, _ctx: WebhookContext): ParsedWebhook {

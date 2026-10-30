@@ -1,0 +1,4 @@
+M:\GitHub\maestria-lms\calculator_flet.py:495: DeprecationWarning: TextField.border_radius property is deprecated since version 1.0.0 and will be removed in version 1.3.0. Use border=OutlineInputBorder(border_radius=...) instead.
+  page.add(
+M:\GitHub\maestria-lms\calculator_flet.py:495: DeprecationWarning: TextField.border_color property is deprecated since version 1.0.0 and will be removed in version 1.3.0. Use border=OutlineInputBorder(side=BorderSide(color=...)) instead.
+  page.add(

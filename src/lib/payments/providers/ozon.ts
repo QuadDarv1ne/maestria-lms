@@ -51,9 +51,14 @@ export class OzonProvider implements IPaymentProvider {
   }
 
   private get headers(): Record<string, string> {
+    const clientId = env.ozonClientId;
+    const apiKey = env.ozonApiKey;
+    if (!clientId || !apiKey) {
+      throw new Error("Ozon Pay credentials are not configured (OZON_CLIENT_ID / OZON_API_KEY)");
+    }
     return {
-      "Client-Id": env.ozonClientId!,
-      "Api-Key": env.ozonApiKey!,
+      "Client-Id": clientId,
+      "Api-Key": apiKey,
       "Content-Type": "application/json",
     };
   }

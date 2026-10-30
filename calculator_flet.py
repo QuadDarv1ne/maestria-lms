@@ -151,15 +151,17 @@ def main(page: ft.Page):
     max_history = 15
 
     # --- Виджеты ---
+    def make_display_border(color):
+        return ft.OutlineInputBorder(side=ft.BorderSide(color=color), border_radius=8)
+
     display = ft.TextField(
         value="",
         text_size=24,
         text_align=ft.TextAlign.RIGHT,
-        border_radius=8,
+        border=make_display_border(ft.Colors.GREEN_600),
         expand=True,
         content_padding=12,
         on_change=lambda e: on_display_changed(e),
-        border_color=ft.Colors.GREEN_600,
     )
 
     status_text = ft.Text("Готов к работе", size=12, color=ft.Colors.GREY_400, expand=True)
@@ -239,7 +241,7 @@ def main(page: ft.Page):
             msg = "Недопустимые символы"
 
         color = ft.Colors.GREEN_600 if ok else ft.Colors.RED_400
-        display.border_color = color
+        display.border = make_display_border(color)
         status_text.color = ft.Colors.GREEN_600 if ok else ft.Colors.RED_400
         page.update()
         return ok, msg
@@ -375,7 +377,7 @@ def main(page: ft.Page):
                 expand=True,
                 read_only=True,
                 height=300,
-                border_radius=8,
+                border=ft.OutlineInputBorder(border_radius=8),
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
             ),
             actions=[ft.TextButton("Закрыть", on_click=lambda _: page.pop_dialog())]
@@ -518,6 +520,7 @@ if __name__ == "__main__":
     ft.run(main)
 
 '''
+~ python -m pip install flet
 Программист: Дуплей Максим Игоревич
 Дата: 30.10.2026
 Версия: 1.0

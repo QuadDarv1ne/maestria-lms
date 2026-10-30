@@ -52,8 +52,17 @@ export class TinkoffProvider implements IPaymentProvider {
     return !!(env.tinkoffTerminalKey && env.tinkoffPassword);
   }
 
-  private get terminalKey(): string { return env.tinkoffTerminalKey!; }
-  private get password(): string { return env.tinkoffPassword!; }
+  private get terminalKey(): string {
+    const key = env.tinkoffTerminalKey;
+    if (!key) throw new Error("TINKOFF_TERMINAL_KEY is not configured");
+    return key;
+  }
+
+  private get password(): string {
+    const password = env.tinkoffPassword;
+    if (!password) throw new Error("TINKOFF_PASSWORD is not configured");
+    return password;
+  }
 
   /**
    * Compute Tinkoff's request signature.
@@ -123,8 +132,12 @@ export class TinkoffProvider implements IPaymentProvider {
 
     const resp = await this.request<TinkoffResponse>("/Init", data);
 
+    if (!resp.PaymentId) {
+      throw new Error(`Tinkoff /Init returned no PaymentId: ${resp.Message ?? "unknown error"}`);
+    }
+
     return {
-      providerPaymentId: resp.PaymentId!,
+      providerPaymentId: resp.PaymentId,
       status: "pending",
       confirmationUrl: resp.PaymentURL,
       raw: resp,

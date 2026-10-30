@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "node:crypto";
 import { db } from "@/lib/db";
 import { createNotification } from "@/lib/notifications";
 import { handleApiError } from "@/lib/api-errors";
@@ -10,7 +11,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { sendEmail } from "@/lib/email";
 import { coursePurchaseEmail } from "@/lib/emails";
 import { getRedisClient } from "@/lib/redis";
-import { getProvider, parseProviderName } from "@/lib/payments/registry";
+import { getProvider, parseProviderName, detectProviderFromWebhook } from "@/lib/payments/registry";
 import type { WebhookContext, ParsedWebhook } from "@/lib/payments/types";
 import { completePayment, markPaymentRefunded, ServiceError } from "@/lib/payments/service";
 
@@ -47,6 +48,15 @@ async function checkIdempotency(key: string): Promise<string | null> {
   }
   processedWebhooks.set(key, { status: "pending", timestamp: now });
   return null;
+}
+
+// ─── Helper: detect a unique-constraint violation (Prisma P2002) ────────────
+function isUniqueViolation(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    (err as { code?: unknown }).code === "P2002"
+  );
 }
 
 // ─── Helper: build WebhookContext from NextRequest ──────────────────────────
@@ -114,32 +124,63 @@ export async function POST(request: NextRequest) {
   if (blocked) return blocked;
 
   try {
-    // 1. Determine provider from header or ?provider= query param.
+    // 1. Determine provider: explicit header / query param wins, otherwise
+    //    recognise the payload shape (gateways don't send a provider header).
     const providerHeader = request.headers.get("x-payment-provider");
     const url = new URL(request.url);
     const providerQuery = url.searchParams.get("provider");
-    const providerName = parseProviderName(providerHeader ?? providerQuery);
-
-    if (!providerName) {
-      log.warn("Webhook: no provider header/param", { header: providerHeader, query: providerQuery });
-      return NextResponse.json({ error: "Provider not specified" }, { status: 400 });
-    }
-
-    const provider = getProvider(providerName);
     const rawBody = await request.text();
-    const ctx = buildContext(request, rawBody, providerName);
 
-    // 2. Verify webhook signature + IP. Each provider implements its own
-    //    verification logic (HMAC, signature header, IP whitelist).
     let body: unknown;
     try {
       body = JSON.parse(rawBody);
     } catch {
-      log.warn("Invalid webhook JSON payload", { provider: providerName });
+      log.warn("Invalid webhook JSON payload", { header: providerHeader, query: providerQuery });
       return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
     }
 
-    const verified = provider.verifyWebhook(ctx, body);
+    const headers: Record<string, string> = {};
+    request.headers.forEach((value, key) => {
+      headers[key.toLowerCase()] = value;
+    });
+
+    const legacySecret = env.paymentWebhookSecret;
+    const signature = headers["x-webhook-signature"] ?? null;
+
+    // 2. Authenticate the request.
+    //    a) Legacy path: HMAC over the raw body with PAYMENT_WEBHOOK_SECRET
+    //       (used by integrations configured before the multi-gateway layer).
+    //    b) Provider-native verification (signature header / IP whitelist).
+    const legacyVerified =
+      !!legacySecret &&
+      !!signature &&
+      verifyWebhookSignature({ rawBody, signature, secret: legacySecret }).valid;
+
+    let providerName =
+      parseProviderName(providerHeader ?? providerQuery) ??
+      detectProviderFromWebhook(headers, body);
+
+    // Payloads we can't recognise are only accepted through the legacy
+    // HMAC-signed path; historically those were ЮKassa notifications.
+    if (!providerName) {
+      if (!legacySecret) {
+        log.warn("Webhook secret is not configured", { header: providerHeader, query: providerQuery });
+        return NextResponse.json({ error: "Webhook secret is not configured" }, { status: 501 });
+      }
+      if (!legacyVerified) {
+        log.warn("Webhook: unable to determine provider and signature invalid", {
+          header: providerHeader,
+          query: providerQuery,
+        });
+        return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+      }
+      providerName = "YOOKASSA";
+    }
+
+    const provider = getProvider(providerName);
+    const ctx = buildContext(request, rawBody, providerName);
+
+    const verified = legacyVerified || provider.verifyWebhook(ctx, body);
     if (!verified) {
       log.warn("Webhook verification failed", { provider: providerName, ip: ctx.clientIp });
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
@@ -158,15 +199,14 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Idempotency check #1 — Redis + in-memory cache (fast path).
-    if (parsed.eventId) {
-      const existing = await checkIdempotency(parsed.eventId);
-      if (existing) {
-        log.info("Duplicate webhook (Redis/in-mem), skipping", {
-          eventId: parsed.eventId,
-          provider: providerName,
-        });
-        return NextResponse.json({ received: true, status: parsed.status, idempotent: true });
-      }
+    const eventId = parsed.eventId || `${providerName}:${crypto.randomUUID()}`;
+    const existing = await checkIdempotency(eventId);
+    if (existing) {
+      log.info("Duplicate webhook (Redis/in-mem), skipping", {
+        eventId,
+        provider: providerName,
+      });
+      return NextResponse.json({ received: true, status: parsed.status, idempotent: true });
     }
 
     // 5. Idempotency check #2 — durable via PaymentWebhookEvent table.
@@ -175,16 +215,25 @@ export async function POST(request: NextRequest) {
       await db.paymentWebhookEvent.create({
         data: {
           provider: providerName,
-          eventId: parsed.eventId,
-          event: parsed.event,
+          eventId,
+          event: parsed.event || "unknown",
           payload: rawBody.slice(0, 65535), // cap payload size
           paymentId: parsed.internalPaymentId ?? null,
         },
       });
     } catch (err: unknown) {
-      // Unique constraint violation = duplicate event. Reply OK.
-      log.info("Duplicate webhook (DB), skipping", { eventId: parsed.eventId, provider: providerName });
-      return NextResponse.json({ received: true, status: parsed.status, idempotent: true });
+      // Only a unique-constraint violation means "duplicate event". Any other
+      // failure (e.g. a missing table) must not silently drop the payment —
+      // log it and keep processing, since completion is idempotent anyway.
+      if (isUniqueViolation(err)) {
+        log.info("Duplicate webhook (DB), skipping", { eventId, provider: providerName });
+        return NextResponse.json({ received: true, status: parsed.status, idempotent: true });
+      }
+      log.error("Failed to persist webhook event", {
+        eventId,
+        provider: providerName,
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
 
     // 6. Find our internal payment by providerPaymentId (stored in transactionId
@@ -211,14 +260,17 @@ export async function POST(request: NextRequest) {
         providerPaymentId: parsed.providerPaymentId,
         internalPaymentId: parsed.internalPaymentId,
       });
-      // WebhookEvent row is already created (audit), respond OK so provider stops retrying.
-      return NextResponse.json({ received: true, status: "payment_not_found" });
+      // Drop the audit row so the provider's retry can be processed once the
+      // payment record actually exists (otherwise the unique eventId would
+      // make every retry look like a duplicate).
+      await db.paymentWebhookEvent.deleteMany({ where: { eventId } }).catch(() => {});
+      return NextResponse.json({ error: "Payment not found" }, { status: 404 });
     }
 
     // 7. Link webhook event to the payment (now that we know the paymentId).
     if (!parsed.internalPaymentId) {
       await db.paymentWebhookEvent.updateMany({
-        where: { eventId: parsed.eventId },
+        where: { eventId },
         data: { paymentId: payment.id },
       });
     }
@@ -227,7 +279,7 @@ export async function POST(request: NextRequest) {
     if (parsed.event.startsWith("refund.")) {
       if (parsed.status === "refunded") {
         await markPaymentRefunded(payment.id, {
-          providerRefundId: parsed.eventId,
+          providerRefundId: eventId,
           refundAmount: parsed.amount ?? payment.amount,
         });
       }
