@@ -258,14 +258,15 @@ export function PaymentPageClient({ paymentId }: { paymentId: string }) {
 
   // Decode stored confirmation data
   const stored = readPaymentData(payment.paymentData);
+  const qrPayload = stored.qrCode;
   const isSbpQr =
     (payment.paymentMethod?.toUpperCase() === "SBP" ||
      payment.paymentMethod?.toUpperCase() === "YOOMONEY" ||
      payment.paymentMethod?.toUpperCase() === "WALLET")
-    && !!stored.qrCode;
+    && !!qrPayload;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-b from-background to-muted/30 flex items-center justify-center p-4">
       <Card className="w-full max-w-lg">
         <CardHeader className="text-center pb-2">
           <div className="flex justify-center mb-4">
@@ -329,12 +330,12 @@ export function PaymentPageClient({ paymentId }: { paymentId: string }) {
           {payment.status === "pending" && (
             <div className="space-y-3">
               {/* SBP QR code display */}
-              {isSbpQr && (
+              {isSbpQr && qrPayload && (
                 <div className="flex flex-col items-center gap-3 p-4 border rounded-lg bg-white">
                   <p className="text-sm text-muted-foreground text-center">
                     Отсканируйте QR-код в приложении вашего банка для оплаты через СБП
                   </p>
-                  <QRCodeSVG value={stored.qrCode!} size={240} includeMargin={true} />
+                  <QRCodeSVG value={qrPayload} size={240} includeMargin={true} />
                   <p className="text-xs text-muted-foreground text-center">
                     После оплаты страница обновится автоматически
                   </p>

@@ -5,7 +5,6 @@ import { createNotification } from "@/lib/notifications";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
 import { env } from "@/lib/env";
-import { z } from "zod";
 import { verifyWebhookSignature } from "@/lib/webhook-verify";
 import { rateLimit } from "@/lib/rate-limit";
 import { sendEmail } from "@/lib/email";
@@ -48,6 +47,23 @@ async function checkIdempotency(key: string): Promise<string | null> {
   }
   processedWebhooks.set(key, { status: "pending", timestamp: now });
   return null;
+}
+
+/**
+ * Drop the idempotency markers for an event so the provider's retry can be
+ * processed again. Called when handling failed for a transient reason —
+ * otherwise the event would stay "seen" forever and the payment would never
+ * be completed.
+ */
+async function releaseIdempotency(key: string): Promise<void> {
+  processedWebhooks.delete(key);
+  const redis = getRedisClient();
+  if (!redis) return;
+  try {
+    await redis.del(`wh:${key}`);
+  } catch {
+    log.warn("Failed to release Redis idempotency key", { key });
+  }
 }
 
 // ─── Helper: detect a unique-constraint violation (Prisma P2002) ────────────
@@ -122,6 +138,10 @@ const checkWebhookRateLimit = rateLimit("webhook", { windowMs: 60_000, maxReques
 export async function POST(request: NextRequest) {
   const blocked = checkWebhookRateLimit(request);
   if (blocked) return blocked;
+
+  // Tracked so a transient failure can release both idempotency layers and
+  // let the provider's retry be processed.
+  let inFlightEventId: string | null = null;
 
   try {
     // 1. Determine provider: explicit header / query param wins, otherwise

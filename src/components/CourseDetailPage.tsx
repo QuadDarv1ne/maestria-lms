@@ -29,9 +29,6 @@ import {
   CheckCircle2,
   ArrowLeft,
   Loader2,
-  CreditCard,
-  Smartphone,
-  Building,
   Heart,
   Share2,
   FileCheck,
@@ -48,15 +45,14 @@ import {
   PaginationLink,
   PaginationEllipsis,
 } from "@/components/ui/pagination";
-import {
-  RadioGroup,
-  RadioGroupItem,
-} from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import { CourseImage } from "@/components/CourseImage";
 import { formatDate, formatCurrency, getInitials } from "@/lib/utils";
 import { levelLabels, levelColors } from "@/lib/constants";
 import { useCourse, useCourseReviews } from "@/hooks/useCourses";
+import {
+  PaymentMethodSelector,
+  useAvailablePaymentMethods,
+} from "@/components/payments/PaymentMethodSelector";
 import { useQueryClient } from "@tanstack/react-query";
 import { CourseDetailSkeleton } from "@/components/skeletons/CourseDetailSkeleton";
 interface LessonItem {
@@ -138,7 +134,12 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
   const locale = useAppStore((s) => s.locale);
   const queryClient = useQueryClient();
   const [enrolling, setEnrolling] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<string>("sbp");
+  const [paymentMethod, setPaymentMethod] = useState<string>("");
+  const { options: paymentOptions, loading: paymentOptionsLoading } = useAvailablePaymentMethods();
+  // Первый доступный способ оплаты выбирается вычислением, а не эффектом.
+  const selectedPayment = paymentMethod || (paymentOptions[0]
+    ? `${paymentOptions[0].provider}:${paymentOptions[0].method}`
+    : "");
   const [promoCode, setPromoCode] = useState("");
   const [promoCodeValid, setPromoCodeValid] = useState<boolean | null>(null);
   const [promoLoading, setPromoLoading] = useState(false);
@@ -262,10 +263,15 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
     }
     setEnrolling(true);
     try {
+      const [provider, method] = selectedPayment.split(":");
       const res = await fetch(`/api/courses/${courseId}/enroll`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paymentMethod, promoCode: promoCodeValid ? promoCode : undefined }),
+        body: JSON.stringify({
+          provider: provider || undefined,
+          method: method || undefined,
+          promoCode: promoCodeValid ? promoCode : undefined,
+        }),
       });
       const data = await res.json();
 
@@ -568,31 +574,18 @@ export function CourseDetailPage({ courseId }: { courseId: string }) {
                       {course.price > 0 && (
                         <div className="space-y-3 mb-4">
                           <p className="text-sm font-medium">{t("course.paymentMethod", locale)}</p>
-                          <RadioGroup
-                            value={paymentMethod}
-                            onValueChange={setPaymentMethod}
-                            className="gap-2"
-                          >
-                            {[
-                              { id: "sbp", label: t("course.paymentSbp", locale), icon: <Smartphone className="w-4 h-4" /> },
-                              { id: "yookassa", label: t("course.paymentYookassa", locale), icon: <CreditCard className="w-4 h-4" /> },
-                              { id: "tinkoff", label: t("course.paymentTinkoff", locale), icon: <Building className="w-4 h-4" /> },
-                            ].map((method) => (
-                              <Label
-                                key={method.id}
-                                htmlFor={`payment-${method.id}`}
-                                className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer border transition-all ${
-                                  paymentMethod === method.id
-                                    ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-400 shadow-sm"
-                                    : "border-border hover:border-blue-200 dark:hover:border-blue-800"
-                                }`}
-                              >
-                                <RadioGroupItem value={method.id} id={`payment-${method.id}`} />
-                                <span className="text-muted-foreground">{method.icon}</span>
-                                <span className="text-sm font-medium">{method.label}</span>
-                              </Label>
-                            ))}
-                          </RadioGroup>
+                          {paymentOptionsLoading ? (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground py-3">
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              {t("common.loading", locale)}
+                            </div>
+                          ) : (
+                            <PaymentMethodSelector
+                              value={selectedPayment}
+                              onChange={setPaymentMethod}
+                              options={paymentOptions}
+                            />
+                          )}
                         </div>
                       )}
 

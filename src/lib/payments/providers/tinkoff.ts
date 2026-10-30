@@ -22,7 +22,6 @@
 import crypto from "crypto";
 import { env } from "@/lib/env";
 import { log } from "@/lib/logger";
-import { isIpAllowed } from "../ip-whitelist";
 import type {
   IPaymentProvider, ProviderName, PaymentMethod,
   CreatePaymentInput, PaymentResult, RefundInput, RefundResult,

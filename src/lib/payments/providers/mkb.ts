@@ -24,7 +24,7 @@ export class MkbProvider implements IPaymentProvider {
     return !!(env.mkbMerchantId && env.mkbSecretKey);
   }
 
-  async createPayment(input: CreatePaymentInput): Promise<PaymentResult> {
+  async createPayment(_input: CreatePaymentInput): Promise<PaymentResult> {
     throw new Error("MKB createPayment: not implemented — fill in once credentials are issued.");
   }
 

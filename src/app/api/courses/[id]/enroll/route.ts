@@ -10,6 +10,7 @@ import { log } from "@/lib/logger";
 import { env } from "@/lib/env";
 import { formatDate } from "@/lib/utils";
 import { validatePromoCode, redeemPromoCode } from "@/lib/promo-code";
+import { resolveProviderAndMethod } from "@/lib/payments/service";
 import { validateParams, idOrSlugSchema } from "@/lib/request-validation";
 import { z } from "zod";
 
@@ -20,7 +21,6 @@ const checkRateLimit = rateLimit("enrollment", RATE_LIMITS.enrollment);
 const paymentMethodSchema = z
   .enum(["card", "sbp", "yookassa", "tinkoff"])
   .default("sbp");
-
 // POST: Записаться на курс
 export async function POST(
   request: NextRequest,
@@ -132,21 +132,33 @@ export async function POST(
     // Use resolved course.id for all DB operations (courseId param could be a slug)
     const resolvedCourseId = course.id;
 
-    // Read optional paymentMethod and promoCode from request body
-    let paymentMethod = "sbp";
+    // Read optional payment selection and promoCode from the request body.
+    // Legacy clients send `paymentMethod` (sbp/card/yookassa/tinkoff); the new
+    // checkout sends `provider` + `method` (CARD/SBP/YOOMONEY/...).
+    let legacyMethod: string | undefined;
+    let providerInput: string | undefined;
+    let methodInput: string | undefined;
     let promoCodeInput: string | undefined;
     try {
       const body = await request.json();
       const parsed = paymentMethodSchema.safeParse(body?.paymentMethod);
-      if (parsed.success) {
-        paymentMethod = parsed.data;
-      }
+      if (parsed.success) legacyMethod = parsed.data;
+      if (typeof body?.provider === "string" && body.provider.trim()) providerInput = body.provider;
+      if (typeof body?.method === "string" && body.method.trim()) methodInput = body.method;
       if (typeof body?.promoCode === "string" && body.promoCode.trim().length > 0) {
         promoCodeInput = body.promoCode;
       }
     } catch (err: unknown) {
       log.warn("Malformed request body for enroll, using default payment method", { error: err });
     }
+
+    const resolvedPayment = resolveProviderAndMethod({
+      provider: providerInput ?? null,
+      method: methodInput ?? null,
+      legacyPaymentMethod: legacyMethod ?? "sbp",
+    });
+    const paymentProvider = "error" in resolvedPayment ? "YOOKASSA" : resolvedPayment.provider;
+    const paymentMethod = ("error" in resolvedPayment ? "SBP" : resolvedPayment.method).toLowerCase();
 
     // Validate promo code if provided (paid courses only)
     let promoResult: Awaited<ReturnType<typeof validatePromoCode>> | null = null;
@@ -205,12 +217,15 @@ export async function POST(
                 currency: txCourse.currency,
                 status: "pending",
                 paymentMethod,
+                paymentProvider,
               },
             });
             return {
               message: "Для повторной записи на платный курс необходимо оплатить",
               requiresPayment: true,
               paymentId: payment.id,
+              paymentProvider,
+              paymentMethod,
               status: 200 as const,
             };
           }
@@ -293,6 +308,7 @@ export async function POST(
           currency: txCourse.currency,
           status: "pending",
           paymentMethod,
+          paymentProvider,
         },
       });
 
@@ -300,6 +316,8 @@ export async function POST(
         message: "Для записи на платный курс необходимо оплатить",
         requiresPayment: true,
         paymentId: payment.id,
+        paymentProvider,
+        paymentMethod,
         amount: finalAmount,
         currency: txCourse.currency,
         status: 200 as const,

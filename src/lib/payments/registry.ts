@@ -86,13 +86,24 @@ export function getConfiguredProviders(): ProviderName[] {
 /**
  * Return all (provider, method) pairs currently available to the user.
  * Used by the UI to render the payment method selector.
+ *
+ * When no provider is configured at all (local dev without keys) we still
+ * expose a single test-mode option: `createCoursePayment` then creates a
+ * pending payment the developer can complete via `simulate-complete`.
+ * Without this the checkout dialog would be unusable on a fresh clone.
  */
 export function getAvailablePaymentOptions(): Array<{
   provider: ProviderName;
   method: PaymentMethod;
   label: string;
+  testMode?: boolean;
 }> {
-  const result: Array<{ provider: ProviderName; method: PaymentMethod; label: string }> = [];
+  const result: Array<{
+    provider: ProviderName;
+    method: PaymentMethod;
+    label: string;
+    testMode?: boolean;
+  }> = [];
   for (const name of Object.keys(factories) as ProviderName[]) {
     const provider = getProvider(name);
     if (!provider.isConfigured()) continue;
@@ -102,6 +113,16 @@ export function getAvailablePaymentOptions(): Array<{
       result.push({ provider: name, method, label: methodLabel(method) });
     }
   }
+
+  if (result.length === 0) {
+    result.push({
+      provider: "YOOKASSA",
+      method: "CARD",
+      label: `${methodLabel("CARD")} (тестовый режим)`,
+      testMode: true,
+    });
+  }
+
   return result;
 }
 

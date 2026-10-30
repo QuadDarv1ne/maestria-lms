@@ -109,14 +109,13 @@ export function useAvailablePaymentMethods() {
     let cancelled = false;
     (async () => {
       try {
-        // Use the GET /api/payments endpoint which returns availableMethods
-        // (works for both authenticated and anonymous users — the GET route
-        // doesn't require auth for the availableMethods field).
-        const res = await fetch("/api/payments?limit=1", { cache: "no-store" });
+        // Публичный эндпоинт: список методов не требует авторизации, поэтому
+        // гости тоже видят доступные способы оплаты.
+        const res = await fetch("/api/payments/methods", { cache: "no-store" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         if (!cancelled) {
-          setOptions(data.availableMethods ?? []);
+          setOptions(data.methods ?? []);
           setError(null);
         }
       } catch (e) {

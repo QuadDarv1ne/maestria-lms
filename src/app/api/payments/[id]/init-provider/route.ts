@@ -22,7 +22,7 @@ import { env } from "@/lib/env";
 import { validateParams, uuidSchema } from "@/lib/request-validation";
 import { z } from "zod";
 import { getProvider, parseProviderName } from "@/lib/payments/registry";
-import type { PaymentMethod } from "@/lib/payments/types";
+import { resolveProviderAndMethod } from "@/lib/payments/service";
 import { buildCourseReceipt } from "@/lib/payments/receipts";
 
 export const runtime = "nodejs";
@@ -74,15 +74,30 @@ export async function POST(
       }
     }
 
-    // Determine provider: from body, or from payment.paymentProvider, or auto-pick.
-    const providerName = parseProviderName(body.provider ?? null)
-      ?? parseProviderName(payment.paymentProvider ?? null)
-      ?? "YOOKASSA";
+    // Determine provider and method. Payments created by the legacy
+    // /api/courses/[id]/enroll route only carry `paymentMethod`
+    // (sbp/card/yookassa/tinkoff), so normalise those values too.
+    const explicitProvider =
+      parseProviderName(body.provider ?? null) ??
+      parseProviderName(payment.paymentProvider ?? null);
+    const resolved = resolveProviderAndMethod({
+      provider: explicitProvider,
+      method: payment.paymentMethod,
+      legacyPaymentMethod: payment.paymentMethod,
+    });
+    const providerName = explicitProvider ?? ("error" in resolved ? "YOOKASSA" : resolved.provider);
+    const method = "error" in resolved ? "CARD" : resolved.method;
     const provider = getProvider(providerName);
 
     // Check if we already have a confirmation URL stored — return it without
     // re-calling the provider (idempotency).
-    let existingData: { confirmationUrl?: string; qrCode?: string; yooKassaId?: string; providerPaymentId?: string } | null = null;
+    let existingData: {
+      confirmationUrl?: string;
+      qrCode?: string;
+      yooKassaId?: string;
+      providerPaymentId?: string;
+      idempotenceKey?: string;
+    } | null = null;
     if (payment.paymentData) {
       try {
         existingData = JSON.parse(payment.paymentData);
@@ -109,12 +124,10 @@ export async function POST(
 
     // Call provider to create payment (this happens after /api/payments has
     // already created the DB row). The provider call is idempotent via
-    // Idempotence-Key — we reuse the one stored in paymentData.
-    const idempotenceKey = existingData?.providerPaymentId
-      ? (existingData?.providerPaymentId ?? crypto.randomUUID())
-      : crypto.randomUUID();
-
-    const method = (payment.paymentMethod?.toUpperCase() ?? "CARD") as PaymentMethod;
+    // Idempotence-Key — reuse the stored one when present.
+    const idempotenceKey =
+      (typeof existingData?.idempotenceKey === "string" && existingData.idempotenceKey) ||
+      crypto.randomUUID();
 
     const user = await db.user.findUnique({
       where: { id: payment.userId },

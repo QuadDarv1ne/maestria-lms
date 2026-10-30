@@ -12,7 +12,7 @@
  *   <CheckoutDialog course={course} open={open} onOpenChange={setOpen} />
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -24,7 +24,6 @@ import { Loader2, Tag, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { useAppStore } from "@/lib/store";
 import { log } from "@/lib/logger";
-import { t } from "@/lib/i18n";
 import { formatCurrency } from "@/lib/utils";
 import {
   PaymentMethodSelector,
@@ -59,12 +58,12 @@ export function CheckoutDialog({
   const [promoLoading, setPromoLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Auto-select first available method.
-  useEffect(() => {
-    if (!selected && options.length > 0) {
-      setSelected(`${options[0].provider}:${options[0].method}`);
-    }
-  }, [options, selected]);
+  // Первый доступный метод выбирается без эффекта: значение вычисляется из
+  // списка опций, пока пользователь не выбрал что-то сам.
+  const defaultOption = options[0]
+    ? `${options[0].provider}:${options[0].method}`
+    : "";
+  const effectiveSelected = selected || defaultOption;
 
   // Apply promo code (calls /api/payments/promo/validate).
   const handleApplyPromo = async () => {
@@ -103,15 +102,16 @@ export function CheckoutDialog({
   const handlePay = async () => {
     if (!user) {
       // Force login dialog
-      window.location.href = "?dialog=login";
+      onOpenChange(false);
+      router.push("?dialog=login");
       return;
     }
-    if (!selected) {
+    if (!effectiveSelected) {
       toast.error("Выберите способ оплаты");
       return;
     }
 
-    const [provider, method] = selected.split(":");
+    const [provider, method] = effectiveSelected.split(":");
     setSubmitting(true);
     try {
       const res = await fetch("/api/payments", {
@@ -131,6 +131,11 @@ export function CheckoutDialog({
         return;
       }
 
+      // Новый ответ отдаёт объект payment, legacy-ответ (уже есть pending
+      // платёж) — плоские поля paymentId/paymentMethod.
+      const paymentId: string | undefined = data.payment?.id ?? data.paymentId;
+      const paymentMethod: string | undefined = data.payment?.paymentMethod ?? data.paymentMethod;
+
       // Redirect flow: card / e-wallet — go to provider's hosted page.
       if (data.confirmationUrl) {
         window.location.href = data.confirmationUrl;
@@ -138,24 +143,21 @@ export function CheckoutDialog({
       }
 
       // QR flow: SBP — go to our payment page which renders the QR.
-      if (data.qrCode || data.payment?.paymentMethod?.toUpperCase() === "SBP") {
+      if (data.qrCode || paymentMethod?.toUpperCase() === "SBP") {
         onOpenChange(false);
-        router.push(`/payment/${data.payment.id}`);
+        if (paymentId) router.push(`/payment/${paymentId}`);
         return;
       }
 
       // Test mode (no provider configured) — go to payment page so the user
       // can simulate completion.
-      if (data.testMode) {
+      if (data.testMode || data.payment?.testMode) {
         toast.info("Платёжный провайдер не настроен — тестовый режим");
-        onOpenChange(false);
-        router.push(`/payment/${data.payment.id}`);
-        return;
       }
 
       // Fallback — go to payment page (will call init-provider).
       onOpenChange(false);
-      router.push(`/payment/${data.payment.id}`);
+      if (paymentId) router.push(`/payment/${paymentId}`);
     } catch (e) {
       log.error("Checkout failed", { error: e instanceof Error ? e.message : String(e) });
       toast.error("Не удалось начать оплату. Попробуйте позже.");
@@ -169,7 +171,7 @@ export function CheckoutDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-140 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Оформление заказа</DialogTitle>
           <DialogDescription>
@@ -240,7 +242,7 @@ export function CheckoutDialog({
               </div>
             ) : (
               <PaymentMethodSelector
-                value={selected}
+                value={effectiveSelected}
                 onChange={setSelected}
                 options={options}
               />
@@ -252,7 +254,7 @@ export function CheckoutDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             Отмена
           </Button>
-          <Button onClick={handlePay} disabled={submitting || methodsLoading || !selected}>
+          <Button onClick={handlePay} disabled={submitting || methodsLoading || !effectiveSelected}>
             {submitting ? (
               <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Обработка...</>
             ) : (

@@ -15,7 +15,6 @@ import { log } from "@/lib/logger";
 import { validatePromoCode, redeemPromoCode } from "@/lib/promo-code";
 import crypto from "crypto";
 import {
-  type IPaymentProvider,
   type ProviderName,
   type PaymentMethod,
   type PaymentResult,

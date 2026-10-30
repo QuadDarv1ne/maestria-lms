@@ -159,7 +159,7 @@ export class OzonProvider implements IPaymentProvider {
     return mapOzonStatus(data.result?.status);
   }
 
-  verifyWebhook(ctx: WebhookContext, body: unknown): boolean {
+  verifyWebhook(ctx: WebhookContext, _body: unknown): boolean {
     // Ozon signs webhooks with HMAC-SHA256 using a per-webhook secret
     // configured in your seller cabinet. Header name: `X-Ozon-Signature`.
     // The signature is base64 of the HMAC over the raw body.
