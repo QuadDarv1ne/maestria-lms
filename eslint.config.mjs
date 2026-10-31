@@ -58,7 +58,9 @@ const eslintConfig = [...nextCoreWebVitals, ...nextTypescript, {
     "@typescript-eslint/no-non-null-assertion": "error",
   },
 }, {
-  ignores: ["src/generated/**", "node_modules/**", ".next/**", "out/**", "build/**", "next-env.d.ts", "examples/**", "skills", "eslint.config.mjs", "scripts/**", "prisma/seed.js", "prisma/seed.mjs", "check-db.js", "server-with-csp.js", "public/sw.js", "coverage/**", ".venv-stepik/**"]
+  // patch-extract/ is the unpacked reference archive of the payments patch —
+  // a read-only snapshot, not part of the build. Linting it only adds noise.
+  ignores: ["src/generated/**", "node_modules/**", ".next/**", "out/**", "build/**", "next-env.d.ts", "examples/**", "skills", "eslint.config.mjs", "scripts/**", "prisma/seed.js", "prisma/seed.mjs", "check-db.js", "server-with-csp.js", "public/sw.js", "coverage/**", ".venv-stepik/**", "patch-extract/**"]
 }];
 
 export default eslintConfig;
