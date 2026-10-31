@@ -2,6 +2,13 @@
 
 This project supports multiple databases through Prisma ORM: **PostgreSQL**, **MySQL**, and **SQLite**.
 
+> **What actually runs today.** Only **SQLite** and **PostgreSQL** are wired end to end.
+> `mysql` and `mongodb` URLs are recognised by the detection layer, but the
+> application cannot open them: MySQL needs `@prisma/adapter-mariadb` plus a
+> `mysql` branch in `src/lib/db.ts`, and Prisma ORM 7 has no MongoDB support at
+> all. The setup scripts refuse to configure either one instead of reporting a
+> false success. See `PROVIDER_CAPABILITIES` in `src/lib/db-provider.ts`.
+
 ## Quick Start
 
 ### SQLite (Default - Development)
@@ -24,17 +31,13 @@ npm run db:setup:sqlite
    npm run db:setup:pg
    ```
 
-### MySQL (Alternative Production Option)
+### MySQL (not runnable yet)
 
-1. Start MySQL server (e.g., via Docker):
-   ```bash
-   docker-compose -f docker-compose.db.yml up -d mysql
-   ```
-
-2. Setup the database:
-   ```bash
-   npm run db:setup:mysql
-   ```
+`npm run db:setup:mysql` exits with an explanation instead of configuring an
+engine the app cannot open. To enable it you must install
+`@prisma/adapter-mariadb`, add the adapter branch in `src/lib/db.ts`, and switch
+deployment from `migrate deploy` to `db push` (the migration history is
+PostgreSQL-only).
 
 ## Automatic Provider Detection
 
@@ -76,7 +79,43 @@ DATABASE_URL="mysql://user:password@localhost:3306/database"
 | `npm run db:reset` | Reset database and rerun migrations |
 | `npm run db:studio` | Open Prisma Studio (GUI) |
 | `npm run db:switch` | Interactive database switcher |
+| `npm run db:use` | Show the active database profile |
+| `npm run db:use:local` | Activate `DATABASE_URL_LOCAL` (SQLite) |
+| `npm run db:use:remote` | Activate `DATABASE_URL_REMOTE` (PostgreSQL) |
 | `npm run db:info` | Show current database configuration |
+
+### Switching between a local and a remote database
+
+Keep both URLs in `.env` and switch with one command:
+
+```env
+DATABASE_URL_REMOTE=postgresql://user:password@host:5432/db?sslmode=verify-full
+DATABASE_URL_LOCAL=file:./prisma/data.db
+```
+
+```bash
+npm run db:use:local    # SQLite file
+npm run db:use:remote   # managed PostgreSQL
+npm run db:use          # which profile is active?
+```
+
+Prisma bakes the engine into the generated client, so `db:use` also regenerates
+it. Editing `DATABASE_URL` by hand without regenerating produces the misleading
+error `Driver Adapter ... is not compatible with the provider ...`.
+
+### TLS
+
+Put `sslmode` in the URL: `verify-full` for a valid certificate, `no-verify` for
+a self-signed one. `DATABASE_SSL=true` only takes effect when the URL has no
+`sslmode`, because URL parameters take precedence over it.
+
+### Safety on remote databases
+
+`npm run dev`, `db:setup` and `db-setup.js` skip `prisma db push` and
+`migrate reset` when `DATABASE_URL` points at a remote host, because `db push`
+can drop columns on a database other environments share. Use migrations there
+(`node scripts/prisma-auto.js migrate deploy`); pass `--allow-remote` only when
+you deliberately want to force the schema.
 
 ## Database Comparison
 
