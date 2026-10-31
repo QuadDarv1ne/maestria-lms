@@ -114,6 +114,7 @@ beforeEach(() => {
         update: vi.fn().mockResolvedValue({}),
       },
       enrollment: {
+        findUnique: vi.fn().mockResolvedValue(null),
         upsert: vi.fn().mockResolvedValue({ id: "enroll-1", status: "active" }),
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
@@ -269,6 +270,70 @@ describe("POST /api/payments/webhook", () => {
     const payload = await res.json();
     expect(payload.status).toBe("pending");
     expect(mockDb.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("does not double-count studentCount when the learner was already enrolled", async () => {
+    // Free enrollment (or a re-purchase after a refund) leaves an enrollment
+    // row behind. Completing the payment must not increment the counter again.
+    const tx = {
+      payment: {
+        findUnique: vi.fn().mockResolvedValue(pendingPayment),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      course: {
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        update: vi.fn().mockResolvedValue({}),
+      },
+      enrollment: {
+        findUnique: vi.fn().mockResolvedValue({ id: "enroll-existing" }),
+        upsert: vi.fn().mockResolvedValue({ id: "enroll-existing", status: "active" }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+    };
+    mockDb.$transaction.mockImplementation(async (fn: (t: unknown) => unknown) => fn(tx));
+
+    const body = JSON.stringify({
+      eventId: "evt-already-enrolled-1",
+      status: "succeeded",
+      object: { id: "payment-1", transactionId: "txn-1", metadata: { paymentId: "payment-1" } },
+    });
+
+    const res = await POST(webhookRequest(body, sign(body)));
+    expect(res.status).toBe(200);
+    expect(tx.course.updateMany).not.toHaveBeenCalled();
+    expect(tx.enrollment.upsert).toHaveBeenCalledTimes(1);
+  });
+
+  it("increments studentCount when the payment creates the first enrollment", async () => {
+    const tx = {
+      payment: {
+        findUnique: vi.fn().mockResolvedValue(pendingPayment),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      course: {
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        update: vi.fn().mockResolvedValue({}),
+      },
+      enrollment: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        upsert: vi.fn().mockResolvedValue({ id: "enroll-1", status: "active" }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+    };
+    mockDb.$transaction.mockImplementation(async (fn: (t: unknown) => unknown) => fn(tx));
+
+    const body = JSON.stringify({
+      eventId: "evt-first-enroll-1",
+      status: "succeeded",
+      object: { id: "payment-1", transactionId: "txn-1", metadata: { paymentId: "payment-1" } },
+    });
+
+    const res = await POST(webhookRequest(body, sign(body)));
+    expect(res.status).toBe(200);
+    expect(tx.course.updateMany).toHaveBeenCalledWith({
+      where: { id: "course-1" },
+      data: { studentCount: { increment: 1 } },
+    });
   });
 
   it("stays idempotent when the payment was already completed", async () => {

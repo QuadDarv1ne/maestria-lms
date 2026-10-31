@@ -51,27 +51,45 @@ async function main() {
   // Match the cost used by hashPassword() in src/lib/auth.ts (12); the seed used
   // to hash with 10, so seeded accounts were cheaper to brute-force.
   const demoPassword = await bcrypt.hash(demoCredentials.password, 12);
-  const user = await db.user.upsert({
-    where: { email: 'demo@maestria.lms' },
-    // Rotate only when a password is supplied explicitly. A freshly generated
-    // one must not overwrite a credential the operator already replaced.
-    update: demoCredentials.source === 'env' ? { passwordHash: demoPassword } : {},
-    create: {
-      email: 'demo@maestria.lms',
-      name: 'Demo Teacher',
-      passwordHash: demoPassword,
-      role: 'teacher',
-      bio: 'Преподаватель Maestria LMS',
-    },
-  });
+  const demoEmail = 'demo@maestria.lms';
 
-  if (demoCredentials.source === 'generated') {
-    console.log(
-      `[seed] demo@maestria.lms — generated password (shown once, save it now): ${demoCredentials.password}`,
-    );
+  // The account is created once, then left alone. An upsert with an empty
+  // `update` looked equivalent but was not: on every deploy it still generated a
+  // fresh password and printed it, so the logs advertised a credential that was
+  // never stored. Branching explicitly keeps the printed password truthful.
+  const existingDemo = await db.user.findUnique({ where: { email: demoEmail } });
+  let user;
+
+  if (!existingDemo) {
+    user = await db.user.create({
+      data: {
+        email: demoEmail,
+        name: 'Demo Teacher',
+        passwordHash: demoPassword,
+        role: 'teacher',
+        bio: 'Преподаватель Maestria LMS',
+      },
+    });
+    if (demoCredentials.source === 'generated') {
+      console.log(
+        `[seed] demo account created — generated password (shown once, save it now): ${demoCredentials.password}`,
+      );
+    } else {
+      console.log('[seed] demo account created with the password from SEED_DEMO_PASSWORD');
+    }
+  } else if (demoCredentials.source === 'env') {
+    user = await db.user.update({
+      where: { email: demoEmail },
+      data: { passwordHash: demoPassword },
+    });
+    console.log('[seed] demo account exists — password rotated from SEED_DEMO_PASSWORD');
   } else {
-    console.log('[seed] demo@maestria.lms — password taken from SEED_DEMO_PASSWORD');
+    user = existingDemo;
+    console.log(
+      '[seed] demo account exists — password left unchanged (set SEED_DEMO_PASSWORD to rotate it)',
+    );
   }
+
   console.log(`[seed] demo account: ${user.email} (role: ${user.role})`);
 
   // Categories

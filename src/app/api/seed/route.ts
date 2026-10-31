@@ -847,6 +847,20 @@ export async function POST(request: NextRequest) {
       categories: categories.length,
       courses: courses.length,
       users: 4, // admin + 3 teachers
+      // Returned only when generated: this route is admin-only and blocked in
+      // production, so the operator needs the one-time credential here.
+      generatedPasswords: {
+        ...(adminCredentials.source === "generated"
+          ? { "admin@maestro7it.ru": adminPassword }
+          : {}),
+        ...(teacherCredentials.source === "generated"
+          ? {
+              "teacher@maestro7it.ru": teacherPassword,
+              "ivanova@maestro7it.ru": teacherPassword,
+              "sidorov@maestro7it.ru": teacherPassword,
+            }
+          : {}),
+      },
     },
   }, { status: 201 });
   } catch (error: unknown) {

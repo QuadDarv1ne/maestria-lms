@@ -15,8 +15,13 @@ import type { Receipt, ReceiptItem } from "./types";
 
 export interface BuildReceiptInput {
   courseTitle: string;
-  amount: number; // RUB, after discount
-  discountAmount?: number;
+  /**
+   * RUB, the amount actually charged — i.e. already net of any promo-code
+   * discount. YooKassa and friends have no per-item discount field, so the
+   * caller must pass the discounted figure; a separate `discountAmount` would
+   * only invite receipts whose total disagrees with the money captured.
+   */
+  amount: number;
   customer: {
     email?: string;
     phone?: string;

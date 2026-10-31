@@ -24,7 +24,10 @@ export const MIN_GENERATED_PASSWORD_LENGTH = 16;
 const UPPERCASE = "ABCDEFGHJKLMNPQRSTUVWXYZ";
 const LOWERCASE = "abcdefghijkmnopqrstuvwxyz";
 const DIGITS = "23456789";
-const SYMBOLS = "!@#$%^&*-_=+";
+// Symbols are limited to characters that survive every place a generated
+// password is copied through: .env files (a bare "#" starts a comment), shell
+// interpolation ("$", backticks) and cmd.exe separators ("&", "%").
+const SYMBOLS = "!@*-_=+";
 
 const ALL_CHARACTERS = UPPERCASE + LOWERCASE + DIGITS + SYMBOLS;
 

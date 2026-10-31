@@ -217,7 +217,6 @@ export async function createCoursePayment(opts: CreatePaymentOptions): Promise<C
     ? buildCourseReceipt({
         courseTitle: course.title,
         amount: finalAmount,
-        discountAmount,
         customer: {
           email: user?.email,
           fullName: user?.name ?? undefined,
@@ -358,10 +357,22 @@ export async function completePayment(internalPaymentId: string, transactionId: 
     });
     if (updateResult.count === 0) return { alreadyCompleted: true, payment };
 
-    await tx.course.updateMany({
-      where: { id: payment.courseId },
-      data: { studentCount: { increment: 1 } },
+    // studentCount tracks distinct enrollments, so it moves only when the
+    // enrollment row is actually created. An unconditional increment
+    // double-counts a learner who was enrolled for free before paying, or who
+    // re-purchases after a refund. This mirrors the guard in
+    // /api/payments/[id]/simulate-complete — the two completion paths must not
+    // disagree about the same counter.
+    const existingEnrollment = await tx.enrollment.findUnique({
+      where: { userId_courseId: { userId: payment.userId, courseId: payment.courseId } },
+      select: { id: true },
     });
+    if (!existingEnrollment) {
+      await tx.course.updateMany({
+        where: { id: payment.courseId },
+        data: { studentCount: { increment: 1 } },
+      });
+    }
 
     await tx.enrollment.upsert({
       where: { userId_courseId: { userId: payment.userId, courseId: payment.courseId } },
@@ -390,11 +401,27 @@ export async function markPaymentRefunded(internalPaymentId: string, refundData:
     if (!payment) throw new ServiceError("PAYMENT_NOT_FOUND", "Платёж не найден");
     if (payment.status === "refunded") return { alreadyProcessed: true };
 
+    // paymentData also carries idempotenceKey / providerPaymentId /
+    // confirmationUrl, which reconciliation and support still need after a
+    // refund — merge instead of overwriting the whole JSON blob.
+    let previousData: Record<string, unknown> = {};
+    if (payment.paymentData) {
+      try {
+        const parsed: unknown = JSON.parse(payment.paymentData);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          previousData = parsed as Record<string, unknown>;
+        }
+      } catch {
+        log.warn("Corrupted paymentData on refund, replacing it", { paymentId: internalPaymentId });
+      }
+    }
+
     const updateResult = await tx.payment.updateMany({
       where: { id: internalPaymentId, status: "completed" },
       data: {
         status: "refunded",
         paymentData: JSON.stringify({
+          ...previousData,
           refundedAt: new Date().toISOString(),
           refundAmount: refundData.refundAmount ?? payment.amount,
           providerRefundId: refundData.providerRefundId ?? null,
@@ -404,33 +431,22 @@ export async function markPaymentRefunded(internalPaymentId: string, refundData:
     });
     if (updateResult.count === 0) return { alreadyProcessed: true };
 
-    await tx.enrollment.updateMany({
+    // Mirror of completePayment: studentCount only decreases when an active
+    // enrollment actually existed, otherwise a refund for a learner whose
+    // enrollment was already cancelled would push the counter below zero.
+    const cancelled = await tx.enrollment.updateMany({
       where: { userId: payment.userId, courseId: payment.courseId, status: "active" },
       data: { status: "cancelled" },
     });
-    await tx.course.updateMany({
-      where: { id: payment.courseId },
-      data: { studentCount: { decrement: 1 } },
-    });
+    if (cancelled.count > 0) {
+      await tx.course.updateMany({
+        where: { id: payment.courseId, studentCount: { gt: 0 } },
+        data: { studentCount: { decrement: 1 } },
+      });
+    }
     return { alreadyProcessed: false };
   });
   return result;
-}
-
-/**
- * Find a payment by the provider's payment id (stored in transactionId after
- * createPayment succeeds). Used by the webhook when provider doesn't return
- * our internal id in metadata.
- */
-export async function findPaymentByProviderId(providerPaymentId: string) {
-  return db.payment.findFirst({
-    where: {
-      OR: [
-        { transactionId: providerPaymentId },
-        { paymentData: { contains: providerPaymentId } },
-      ],
-    },
-  });
 }
 
 /** Custom error class with a code so route handlers can map to HTTP status. */
