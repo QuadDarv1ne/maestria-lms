@@ -86,6 +86,25 @@ ALLOW_SEED_DATA=true
 }
 
 /**
+ * True when DATABASE_URL points at a server this machine does not own
+ * (managed provider, remote VPS). Local convenience steps that mutate the
+ * schema or start a competing local cluster must be skipped for those:
+ * `prisma db push` would rewrite a shared/production database, and starting
+ * Docker PostgreSQL would silently mislead the developer into thinking the
+ * remote cluster was used.
+ */
+function isRemoteDatabase(url) {
+  if (!url || url.startsWith("file:") || url.startsWith("mongodb")) return false;
+  const localHosts = new Set(["localhost", "127.0.0.1", "0.0.0.0", "::1", "[::1]"]);
+  try {
+    const parsed = new URL(url);
+    return !!parsed.hostname && !localHosts.has(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Warn if .env.local overrides critical DATABASE_* keys differently from .env
  */
 function checkEnvConflict() {
@@ -169,8 +188,13 @@ async function validateAndGenerateEnv(ports, forcedProvider) {
     console.log(ok("Generated NEXTAUTH_SECRET in .env.local"));
   }
 
-  // Generate .env.example
-  fs.writeFileSync(ENV_EXAMPLE_FILE, generateEnvExample(ports.app), "utf8");
+  // Generate .env.example only when it is missing. The tracked file carries the
+  // full payment-provider configuration, which this template does not know
+  // about; overwriting it silently dropped those documented keys from the repo.
+  if (!fs.existsSync(ENV_EXAMPLE_FILE)) {
+    fs.writeFileSync(ENV_EXAMPLE_FILE, generateEnvExample(ports.app), "utf8");
+    console.log(ok("Created .env.example"));
+  }
 
   // Conflict check
   checkEnvConflict();
@@ -193,7 +217,7 @@ function runCommand(cmd, label, cwd = ROOT) {
   }
 }
 
-function runPrerequisites(pm, provider) {
+function runPrerequisites(pm, provider, remote) {
   runCommand(`${pm.cmd} install`, "Installing dependencies");
 
   if (provider === "mongodb") {
@@ -202,6 +226,19 @@ function runPrerequisites(pm, provider) {
   }
 
   runCommand(`${pm.cmd} run db:generate`, "Generating Prisma client");
+
+  if (remote) {
+    // `db push` syncs the schema by force and can drop columns on a database
+    // that other environments share. Migrations are the safe path there.
+    console.log(
+      warn(
+        "Remote database detected — skipping 'prisma db push'. " +
+          "Use npm run db:migrate (or apply migrations on deploy) instead."
+      )
+    );
+    return;
+  }
+
   runCommand(`${pm.cmd} run db:push`, "Pushing schema to database");
 }
 
@@ -360,14 +397,33 @@ async function main() {
   }
 
   const dbConfig = await validateAndGenerateEnv(ports, forcedProvider);
+  const remote = isRemoteDatabase(dbConfig.url);
+  if (remote) {
+    const host = (() => {
+      try {
+        return new URL(dbConfig.url).host;
+      } catch {
+        return "remote host";
+      }
+    })();
+    console.log(
+      warn(
+        `DATABASE_URL points to a remote database (${host}) — local Docker ` +
+          "cluster and 'db push' are disabled for this run."
+      )
+    );
+  }
 
   // Docker setup for PostgreSQL / MongoDB
-  if (dbConfig.docker || (dbConfig.provider === "postgresql" && env.checkDocker())) {
+  if (
+    !remote &&
+    (dbConfig.docker || (dbConfig.provider === "postgresql" && env.checkDocker()))
+  ) {
     ensureDockerCompose(ports);
     startDockerServices(dbConfig.provider);
   }
 
-  runPrerequisites(pm, dbConfig.provider);
+  runPrerequisites(pm, dbConfig.provider, remote);
   startDevServer(pm, ports.app);
 }
 
