@@ -232,10 +232,19 @@ function detectProvider(databaseUrl) {
   if (!databaseUrl) return null;
   const url = databaseUrl.toLowerCase();
 
-  if (url.startsWith("file:") || url.endsWith(".db") || url.endsWith(".sqlite")) {
+  if (
+    url.startsWith("file:") ||
+    url.endsWith(".db") ||
+    url.endsWith(".sqlite") ||
+    url.endsWith(".sqlite3")
+  ) {
     return "sqlite";
   }
   if (url.startsWith("postgresql://") || url.startsWith("postgres://")) {
+    return "postgresql";
+  }
+  // CockroachDB speaks the PostgreSQL wire protocol and runs on the pg adapter.
+  if (url.startsWith("cockroachdb://") || url.startsWith("cockroach://")) {
     return "postgresql";
   }
   if (url.startsWith("mysql://") || url.startsWith("mariadb://")) {
@@ -245,6 +254,71 @@ function detectProvider(databaseUrl) {
     return "mongodb";
   }
   return null;
+}
+
+/**
+ * Providers this installation can actually open.
+ *
+ * Mirrors PROVIDER_CAPABILITIES in src/lib/db-provider.ts (kept in sync by
+ * src/lib/db-provider-parity.test.ts). Detection says which engine a URL names;
+ * capability says whether the app can run against it — a URL alone must never
+ * make a script report a successful setup.
+ */
+const PROVIDER_CAPABILITIES = {
+  sqlite: { status: "runnable", detail: "Prisma with @prisma/adapter-better-sqlite3" },
+  postgresql: {
+    status: "runnable",
+    detail: "Prisma with @prisma/adapter-pg (production default)",
+  },
+  mysql: {
+    status: "missing-dependency",
+    detail:
+      'needs "@prisma/adapter-mariadb" plus a mysql branch in src/lib/db.ts; ' +
+      "prisma/migrations is PostgreSQL-only",
+  },
+  mongodb: {
+    status: "unsupported",
+    detail:
+      "Prisma ORM 7 does not support MongoDB; using it means rewriting the data layer",
+  },
+};
+
+function isRunnableProvider(provider) {
+  return PROVIDER_CAPABILITIES[provider]?.status === "runnable";
+}
+
+/**
+ * True when the URL names a server this machine does not own (managed provider,
+ * remote VPS). Local convenience steps that mutate schema or start a competing
+ * cluster must be skipped for those: `prisma db push` would rewrite a shared or
+ * production database, and a local Docker cluster would silently mask the fact
+ * that the app is talking to the remote one.
+ */
+function isRemoteDatabaseUrl(url) {
+  if (!url || url.startsWith("file:") || url.startsWith("mongodb")) return false;
+  const localHosts = new Set(["localhost", "127.0.0.1", "0.0.0.0", "::1", "[::1]"]);
+  try {
+    const parsed = new URL(url);
+    return !!parsed.hostname && !localHosts.has(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Redact the password of a connection URL so setup logs and CI output do not
+ * spread live credentials. Returns the input unchanged when it is not a URL.
+ */
+function maskDatabaseUrl(url) {
+  if (!url) return url;
+  try {
+    const parsed = new URL(url);
+    if (!parsed.password) return url;
+    parsed.password = "***";
+    return parsed.toString();
+  } catch {
+    return url;
+  }
 }
 
 /**
@@ -292,15 +366,15 @@ function validateDatabaseUrl(url, provider) {
 
 /**
  * Detect the optimal database configuration for the current environment.
- * Priority: Docker PostgreSQL → local PostgreSQL → local MongoDB → SQLite.
+ * Priority: Docker PostgreSQL → local PostgreSQL → SQLite.
  * @param {PortConfig} [ports]
  * @returns {DbConfig}
  */
 function detectOptimalConfig(ports) {
   const isWindows = os.platform() === "win32";
   const hasDocker = checkDocker();
+  // Local PostgreSQL CLI tools suggest a reachable server we can talk to.
   const hasPostgres = checkCommand("pg_isready") || checkCommand("psql");
-  const hasMongo = checkCommand("mongosh") || checkCommand("mongo");
 
   // 1. Docker available → PostgreSQL (production parity)
   if (hasDocker) {
@@ -323,17 +397,7 @@ function detectOptimalConfig(ports) {
     };
   }
 
-  // 3. Local MongoDB
-  if (hasMongo) {
-    return {
-      provider: "mongodb",
-      url: getUrlTemplate("mongodb", ports?.mongodb),
-      port: ports?.mongodb || 27017,
-      reason: "MongoDB detected locally",
-    };
-  }
-
-  // 4. Windows without Docker → SQLite
+  // 3. Windows without Docker → SQLite
   if (isWindows) {
     return {
       provider: "sqlite",
@@ -342,7 +406,11 @@ function detectOptimalConfig(ports) {
     };
   }
 
-  // 5. Default fallback → SQLite
+  // 4. Default fallback → SQLite
+  //
+  // MongoDB is deliberately NOT recommended even when mongosh is on PATH:
+  // Prisma ORM 7 has no MongoDB support, so an auto-selected mongo URL would
+  // produce a configured-but-dead application. See PROVIDER_CAPABILITIES above.
   return {
     provider: "sqlite",
     url: getUrlTemplate("sqlite"),
@@ -416,4 +484,8 @@ module.exports = {
   getUrlTemplate,
   validateDatabaseUrl,
   detectOptimalConfig,
+  PROVIDER_CAPABILITIES,
+  isRunnableProvider,
+  isRemoteDatabaseUrl,
+  maskDatabaseUrl,
 };

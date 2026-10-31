@@ -3,14 +3,22 @@
  * Usage: node scripts/db-setup.js [setup|switch|info]
  *
  * Automatically detects database provider from DATABASE_URL
- * Supports: sqlite, postgresql, mysql, mongodb
+ * Supported engines: sqlite, postgresql
+ * Recognised but not runnable here: mysql (missing adapter), mongodb (Prisma 7 has no support)
+ *
+ * Provider detection, URL templates and the capability matrix come from
+ * scripts/lib/env-manager.js — the single source of truth shared with
+ * scripts/setup.js. Duplicating them here previously let the two scripts drift
+ * (this file accepted cockroachdb://, env-manager did not) and let setup report
+ * success for an engine the application cannot open.
  */
 
 const { execSync } = require('child_process')
 const fs = require('fs')
 const path = require('path')
 const readline = require('readline')
-const os = require('os')
+
+const env = require('./lib/env-manager')
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -36,157 +44,32 @@ function run(command, options = {}) {
 }
 
 /**
- * Automatically detect database provider from URL
+ * Provider detection, URL templates, optimal-config detection and the
+ * capability matrix are delegated to scripts/lib/env-manager.js so that this
+ * file, scripts/setup.js and scripts/prisma-auto.js cannot disagree about which
+ * engine a URL names.
  */
-function detectProvider(databaseUrl) {
-  if (!databaseUrl) return null
+const detectProvider = env.detectProvider
+const getUrlTemplate = env.getUrlTemplate
+const detectOptimalConfig = env.detectOptimalConfig
 
-  const url = databaseUrl.toLowerCase()
-
-  if (url.startsWith('file:') || url.endsWith('.db') || url.endsWith('.sqlite') || url.endsWith('.sqlite3')) {
-    return 'sqlite'
-  }
-  if (url.startsWith('postgresql://') || url.startsWith('postgres://')) {
-    return 'postgresql'
-  }
-  if (url.startsWith('mysql://') || url.startsWith('mariadb://')) {
-    return 'mysql'
-  }
-  if (url.startsWith('mongodb://') || url.startsWith('mongodb+srv://')) {
-    return 'mongodb'
-  }
-  if (url.startsWith('sqlserver://')) {
-    return 'sqlserver'
-  }
-  if (url.startsWith('cockroachdb://') || url.startsWith('cockroach://')) {
-    return 'postgresql'
-  }
-
-  return null
-}
-
-/**
- * Get connection URL template for a provider
- */
-function getUrlTemplate(provider) {
-  const templates = {
-    sqlite: 'file:./prisma/data.db',
-    postgresql: 'postgresql://postgres:password@localhost:5432/maestria_lms?schema=public',
-    mysql: 'mysql://root:password@localhost:3306/maestria_lms',
-    mongodb: 'mongodb://localhost:27017/maestria_lms'
-  }
-  return templates[provider]
-}
-
-/**
- * Detect optimal database configuration based on environment
- */
-function detectOptimalConfig() {
-  const recommendations = {
-    provider: 'sqlite',
-    reason: 'Local development with zero configuration'
-  }
-
-  const platform = os.platform()
-  const isWindows = platform === 'win32'
-  const isDockerAvailable = checkDocker()
-
-  // Check if PostgreSQL is available locally
-  const hasPostgresLocal = checkCommand('pg_isready') || checkCommand('psql')
-  const hasMongoLocal = checkCommand('mongosh') || checkCommand('mongo')
-
-  if (isWindows && !isDockerAvailable) {
-    recommendations.provider = 'sqlite'
-    recommendations.reason = 'Windows without Docker — SQLite is simplest for development'
-    return recommendations
-  }
-
-  if (isDockerAvailable) {
-    recommendations.provider = 'postgresql'
-    recommendations.reason = 'Docker available — PostgreSQL is recommended for production parity'
-    recommendations.useDocker = true
-    return recommendations
-  }
-
-  if (hasPostgresLocal) {
-    recommendations.provider = 'postgresql'
-    recommendations.reason = 'PostgreSQL installed locally'
-    return recommendations
-  }
-
-  if (hasMongoLocal) {
-    recommendations.provider = 'mongodb'
-    recommendations.reason = 'MongoDB installed locally'
-    return recommendations
-  }
-
-  // Default fallback
-  recommendations.provider = 'sqlite'
-  recommendations.reason = 'No database server detected — SQLite is simplest for development'
-  return recommendations
-}
-
-function checkCommand(cmd) {
-  try {
-    execSync(`${cmd} --version`, { stdio: 'pipe', timeout: 3000 })
-    return true
-  } catch {
-    return false
-  }
-}
-
-function checkDocker() {
-  try {
-    execSync('docker --version', { stdio: 'pipe', timeout: 3000 })
-    execSync('docker compose version', { stdio: 'pipe', timeout: 3000 })
-    return true
-  } catch {
-    return false
-  }
+/** Current DATABASE_URL and friends from .env */
+function readEnvFile() {
+  return env.parseEnv(envFile)
 }
 
 /**
  * Update the datasource in schema.prisma (only for Prisma providers)
  */
 function updateSchemaProvider(provider) {
-  if (provider === 'mongodb') {
-    // MongoDB doesn't use Prisma, but keep schema valid for other tools
-    log('MongoDB does not use Prisma — schema.prisma unchanged')
-    return
-  }
-
   const schema = fs.readFileSync(schemaFile, 'utf8')
 
-const newDatasource = `datasource db {
+  const newDatasource = `datasource db {
   provider = "${provider}"
 }`
 
   const updatedSchema = schema.replace(/datasource db \{[\s\S]*?\}/, newDatasource)
   fs.writeFileSync(schemaFile, updatedSchema)
-}
-
-/**
- * Read current DATABASE_URL from .env
- */
-function readEnvFile() {
-  if (!fs.existsSync(envFile)) {
-    return {}
-  }
-
-  const content = fs.readFileSync(envFile, 'utf8')
-  const env = {}
-
-  content.split('\n').forEach(line => {
-    line = line.trim()
-    if (line && !line.startsWith('#')) {
-      const [key, ...valueParts] = line.split('=')
-      if (key && valueParts.length > 0) {
-        env[key.trim()] = valueParts.join('=').trim()
-      }
-    }
-  })
-
-  return env
 }
 
 /**
@@ -226,13 +109,20 @@ function updateEnvFile(databaseUrl, provider) {
  * Setup database with automatic provider detection
  */
 async function setup(options = {}) {
-  const { provider: forcedProvider, seed = false, url: forcedUrl, force = false, auto = false } = options
+  const {
+    provider: forcedProvider,
+    seed = false,
+    url: forcedUrl,
+    force = false,
+    auto = false,
+    allowRemote = false,
+  } = options
 
   log('Starting database setup...', 'info')
 
   // Read current environment
-  const env = readEnvFile()
-  const currentUrl = env.DATABASE_URL
+  const envVars = readEnvFile()
+  const currentUrl = envVars.DATABASE_URL
 
   // Detect or use forced provider
   let provider = forcedProvider
@@ -259,11 +149,12 @@ async function setup(options = {}) {
 
   if (!provider) {
     log('No database provider specified or detected', 'warn')
-    log('Available options:', 'info')
+    log('This application can run on:', 'info')
     log('  1. sqlite - Local file database (development)', 'info')
     log('  2. postgresql - PostgreSQL (production)', 'info')
-    log('  3. mysql - MySQL (production)', 'info')
-    log('  4. mongodb - MongoDB (alternative)', 'info')
+    log('Recognised but not runnable here:', 'warn')
+    log('  3. mysql - needs @prisma/adapter-mariadb', 'warn')
+    log('  4. mongodb - Prisma ORM 7 has no MongoDB support', 'warn')
 
     const answer = await new Promise(resolve => {
       rl.question('\nSelect database (1-4): ', (ans) => resolve(ans))
@@ -277,36 +168,46 @@ async function setup(options = {}) {
     databaseUrl = getUrlTemplate(provider)
   }
 
-  // Verify provider is supported
-  if (!['sqlite', 'postgresql', 'mysql', 'mongodb'].includes(provider)) {
-    throw new Error(`Unsupported provider: ${provider}. Supported: sqlite, postgresql, mysql, mongodb`)
+  // Verify the provider is runnable BEFORE writing .env, schema.prisma or the
+  // generated client. The old order configured an engine the app cannot open,
+  // printed "setup complete", and the failure surfaced later as a 500.
+  const capability = env.PROVIDER_CAPABILITIES[provider]
+  if (!capability) {
+    throw new Error(
+      `Unknown provider: ${provider}. Known: ${Object.keys(env.PROVIDER_CAPABILITIES).join(', ')}`
+    )
+  }
+  if (!env.isRunnableProvider(provider)) {
+    throw new Error(
+      `Refusing to configure "${provider}": ${capability.detail}\n` +
+        `Runnable here: ${Object.keys(env.PROVIDER_CAPABILITIES).filter(env.isRunnableProvider).join(', ')}.`
+    )
   }
 
   log(`Configuring database for: ${provider}`, 'info')
-  log(`URL: ${databaseUrl}`, 'info')
+  // Never print the live password: setup logs end up in CI output and tickets.
+  log(`URL: ${env.maskDatabaseUrl(databaseUrl)}`, 'info')
 
-  // Update schema (only for Prisma providers)
-  if (provider !== 'mongodb') {
-    log('Updating Prisma schema...', 'info')
-    updateSchemaProvider(provider)
+  // Only runnable providers (sqlite, postgresql) reach this point, so the
+  // Prisma schema and client are always updated.
+  log('Updating Prisma schema...', 'info')
+  updateSchemaProvider(provider)
 
-    // Generate Prisma client
-    log('Generating Prisma client...', 'info')
-    run('npx prisma generate', { silent: true })
-  }
+  // Generate Prisma client
+  log('Generating Prisma client...', 'info')
+  run('npx prisma generate', { silent: true })
 
   // Update .env
   log('Updating environment variables...', 'info')
   updateEnvFile(databaseUrl, provider)
 
-  // For MongoDB, skip Prisma commands
-  if (provider === 'mongodb') {
-    log('MongoDB setup complete — no Prisma migration needed', 'success')
-    log('MongoDB collections will be created automatically on first use', 'info')
-
-    if (seed) {
-      log('Note: Seed data for MongoDB must be added separately', 'warn')
-    }
+  // `db push` rewrites the schema by force; `migrate reset` drops data. Both
+  // are destructive against a database other environments share, so a remote
+  // URL needs an explicit opt-in.
+  if (env.isRemoteDatabaseUrl(databaseUrl) && !allowRemote) {
+    log('Remote database detected — skipping "prisma db push"/reset.', 'warn')
+    log('Apply schema with migrations instead: node scripts/prisma-auto.js migrate deploy', 'info')
+    log('Override deliberately with --allow-remote (it can DROP COLUMNS on the target).', 'warn')
   } else {
     // Push schema to database
     log('Syncing schema with database...', 'info')
@@ -343,19 +244,19 @@ async function setup(options = {}) {
       }
       throw error
     }
+  }
 
-    // Seed if requested
-    if (seed) {
-      log('Seeding database...', 'info')
-      try {
-        run('npx prisma db seed')
-        log('Database seeded successfully!', 'success')
-      } catch (error) {
-        if (force) {
-          log('Seed failed, but database was reset', 'warn')
-        } else {
-          throw error
-        }
+  // Seed if requested
+  if (seed) {
+    log('Seeding database...', 'info')
+    try {
+      run('npx prisma db seed')
+      log('Database seeded successfully!', 'success')
+    } catch (error) {
+      if (force) {
+        log('Seed failed, but database was reset', 'warn')
+      } else {
+        throw error
       }
     }
   }
@@ -363,31 +264,31 @@ async function setup(options = {}) {
   log('', 'info')
   log(`Database setup complete for ${provider}!`, 'success')
   log('Start development server: npm run dev', 'info')
-  if (provider !== 'mongodb') {
-    log('Open Prisma Studio: npm run db:studio', 'info')
-  }
+  log('Open Prisma Studio: npm run db:studio', 'info')
 }
 
 /**
  * Show current database configuration
  */
 function info() {
-  const env = readEnvFile()
-  const url = env.DATABASE_URL
+  const envVars = readEnvFile()
+  const url = envVars.DATABASE_URL
   const provider = detectProvider(url)
 
   log('Current Database Configuration:', 'info')
   log(`  Provider: ${provider || 'unknown'}`, provider ? 'success' : 'warn')
-  log(`  URL: ${url || 'not set'}`, url ? 'success' : 'warn')
+  log(`  URL: ${url ? env.maskDatabaseUrl(url) : 'not set'}`, url ? 'success' : 'warn')
 
   if (provider) {
-    const schemas = {
-      sqlite: ['sqlite', 'postgresql', 'mysql', 'mongodb'],
-      postgresql: ['sqlite', 'postgresql', 'mysql', 'mongodb'],
-      mysql: ['sqlite', 'postgresql', 'mysql', 'mongodb'],
-      mongodb: ['sqlite', 'postgresql', 'mysql', 'mongodb']
+    const runnable = Object.keys(env.PROVIDER_CAPABILITIES).filter(env.isRunnableProvider)
+    const status = env.PROVIDER_CAPABILITIES[provider]
+    if (!status) {
+      log(`  Unknown provider "${provider}"`, 'warn')
+    } else if (status.status === 'runnable') {
+      log(`  Runnable here: yes (this build supports ${runnable.join(', ')})`, 'success')
+    } else {
+      log(`  Runnable here: NO — ${status.detail}`, 'error')
     }
-    log(`  Supported: ${schemas[provider]?.join(', ') || 'none'}`, 'info')
   }
 }
 
@@ -395,16 +296,16 @@ function info() {
  * Interactive switch database command
  */
 async function switchInteractive() {
-  const env = readEnvFile()
-  const currentUrl = env.DATABASE_URL
+  const envVars = readEnvFile()
+  const currentUrl = envVars.DATABASE_URL
   const currentProvider = detectProvider(currentUrl)
 
   log(`Current database: ${currentProvider || 'unknown'}`, 'info')
   log('Select new database:', 'info')
   log('  1. sqlite - Local file (development)', 'info')
   log('  2. postgresql - PostgreSQL (production)', 'info')
-  log('  3. mysql - MySQL (production)', 'info')
-  log('  4. mongodb - MongoDB (alternative)', 'info')
+  log('  3. mysql - NOT runnable here (needs @prisma/adapter-mariadb)', 'warn')
+  log('  4. mongodb - NOT runnable here (Prisma ORM 7 has no MongoDB support)', 'warn')
 
   const answer = await new Promise(resolve => {
     rl.question('\nSelect (1-4): ', (ans) => resolve(ans))
@@ -419,56 +320,68 @@ async function switchInteractive() {
     return
   }
 
-  const url = getUrlTemplate(provider)
-
-  await setup({ provider, url })
+  // setup() refuses a non-runnable provider; run it first so the operator sees
+  // the reason instead of a template URL that belongs to a different engine.
+  await setup({ provider, url: getUrlTemplate(provider) })
   rl.close()
+}
+
+/** Provider named on the command line, or null. */
+function providerArg(argv) {
+  const flagIndex = argv.indexOf('--provider')
+  const inline = argv[3]
+  if (flagIndex !== -1) return argv[flagIndex + 1] || null
+  if (inline && !inline.startsWith('--') && env.PROVIDER_CAPABILITIES[inline]) return inline
+  return null
 }
 
 // Main command handler
 async function main() {
   const command = process.argv[2] || 'setup'
+  const argv = process.argv.slice(3)
+  const allowRemote = argv.includes('--allow-remote')
 
   try {
     switch (command) {
-      case 'setup':
+      case 'setup': {
+        const urlFlag = argv.indexOf('--url')
         await setup({
-          seed: process.argv.includes('--seed') || process.argv.includes('-s'),
-          force: process.argv.includes('--force') || process.argv.includes('-f'),
-          auto: process.argv.includes('--auto') || process.argv.includes('-a'),
-          provider: process.argv[3] === '--provider' ? process.argv[4] : null,
-          url: process.argv[3] === '--url' ? process.argv[4] : null
+          seed: argv.includes('--seed') || argv.includes('-s'),
+          force: argv.includes('--force') || argv.includes('-f'),
+          auto: argv.includes('--auto') || argv.includes('-a'),
+          allowRemote,
+          provider: providerArg(argv),
+          url: urlFlag !== -1 ? argv[urlFlag + 1] : null,
         })
         break
+      }
 
-      case 'switch':
-        if (process.argv[3]) {
-          const provider = process.argv[3]
-          const url = getUrlTemplate(provider)
-          if (!url) {
-            throw new Error(`Unknown provider: ${provider}`)
-          }
-          await setup({ provider, url })
+      case 'switch': {
+        const provider = argv[0]
+        if (provider) {
+          await setup({ provider, url: getUrlTemplate(provider), allowRemote })
         } else {
           await switchInteractive()
         }
         break
+      }
 
       case 'info':
         info()
         break
 
       case 'auto':
-        await setup({ auto: true, seed: true, force: true })
+        await setup({ auto: true, seed: true, force: true, allowRemote })
         break
 
       default:
         log(`Unknown command: ${command}`, 'error')
         log('Usage:', 'info')
-        log('  node scripts/db-setup.js setup [--seed] [--provider sqlite|postgresql|mysql|mongodb] [--auto]', 'info')
-        log('  node scripts/db-setup.js switch [sqlite|postgresql|mysql|mongodb]', 'info')
+        log('  node scripts/db-setup.js setup [--provider sqlite|postgresql] [--url <url>] [--seed] [--force] [--auto] [--allow-remote]', 'info')
+        log('  node scripts/db-setup.js switch [sqlite|postgresql]', 'info')
         log('  node scripts/db-setup.js info', 'info')
         log('  node scripts/db-setup.js auto (auto-detect optimal config)', 'info')
+        log('  --allow-remote is required to let setup touch a remote database', 'warn')
         break
     }
 

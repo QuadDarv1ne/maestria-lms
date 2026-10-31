@@ -1,6 +1,10 @@
 import { PrismaClient, Prisma } from "@/generated/prisma/client";
 import { env } from "@/lib/env";
-import { resolveDatabaseProvider, type DatabaseProvider } from "@/lib/db-provider";
+import {
+  resolveDatabaseProvider,
+  describeUnrunnableProvider,
+  type DatabaseProvider,
+} from "@/lib/db-provider";
 import { types as nodeTypes } from "node:util";
 import path from "node:path";
 
@@ -81,9 +85,10 @@ async function createAdapter(provider: DatabaseProvider, url: string) {
       });
     }
     default: {
-      // Fail loudly instead of pointing the SQLite adapter at a mysql://-style
-      // URL: the old fallback produced a cryptic "cannot open database file".
-      throw new Error(`Unsupported database provider: ${provider}`);
+      // Fail with the reason and the fix instead of a bare "Unsupported": the
+      // tooling can resolve a MySQL or MongoDB URL, so the operator has to learn
+      // here whether the gap is one package or a rewrite of the data layer.
+      throw new Error(describeUnrunnableProvider(provider));
     }
   }
 }

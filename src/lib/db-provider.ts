@@ -31,10 +31,19 @@ const PROVIDER_ALIASES: Record<string, DatabaseProvider> = {
 export function detectProviderFromUrl(url: string | undefined | null): DatabaseProvider | null {
   if (!url) return null;
   const lower = url.trim().toLowerCase();
-  if (lower.startsWith("file:") || lower.endsWith(".db") || lower.endsWith(".sqlite")) {
+  if (
+    lower.startsWith("file:") ||
+    lower.endsWith(".db") ||
+    lower.endsWith(".sqlite") ||
+    lower.endsWith(".sqlite3")
+  ) {
     return "sqlite";
   }
   if (lower.startsWith("postgresql://") || lower.startsWith("postgres://")) {
+    return "postgresql";
+  }
+  // CockroachDB speaks the PostgreSQL wire protocol and runs on the pg adapter.
+  if (lower.startsWith("cockroachdb://") || lower.startsWith("cockroach://")) {
     return "postgresql";
   }
   if (lower.startsWith("mysql://") || lower.startsWith("mariadb://")) {
@@ -68,4 +77,57 @@ export function resolveDatabaseProvider(input: {
   }
 
   return { provider: "sqlite", source: "default" };
+}
+
+/**
+ * Whether a resolved provider can actually be opened by this installation.
+ *
+ * Detection answers "which engine does this URL name"; capability answers
+ * "can the application run against it". Conflating them is what made the
+ * tooling half-configure MongoDB and MySQL: the scripts wrote DATABASE_URL,
+ * reported success, and the first query then failed deep inside a route.
+ */
+export type ProviderStatus = "runnable" | "missing-dependency" | "unsupported";
+
+export interface ProviderCapability {
+  status: ProviderStatus;
+  /** What is required to make the provider work, or why it never will. */
+  detail: string;
+}
+
+export const PROVIDER_CAPABILITIES: Record<DatabaseProvider, ProviderCapability> = {
+  sqlite: {
+    status: "runnable",
+    detail: "Prisma with @prisma/adapter-better-sqlite3 (local development)",
+  },
+  postgresql: {
+    status: "runnable",
+    detail: "Prisma with @prisma/adapter-pg (production default; migration history targets it)",
+  },
+  mysql: {
+    status: "missing-dependency",
+    detail:
+      'Needs "@prisma/adapter-mariadb" installed and a mysql branch in src/lib/db.ts. ' +
+      "prisma/migrations is PostgreSQL-only, so migrate deploy would also have to be replaced by db push.",
+  },
+  mongodb: {
+    status: "unsupported",
+    detail:
+      "Prisma ORM 7 does not support MongoDB at all (driver adapters exist only for " +
+      "relational engines). Switching to MongoDB means rewriting the whole data layer " +
+      "in src/lib/db.ts and every db.<model> call site — it is not an environment-variable change.",
+  },
+};
+
+export function isRunnableProvider(provider: DatabaseProvider): boolean {
+  return PROVIDER_CAPABILITIES[provider].status === "runnable";
+}
+
+/** Actionable message for a provider the runtime cannot open. */
+export function describeUnrunnableProvider(provider: DatabaseProvider): string {
+  const capability = PROVIDER_CAPABILITIES[provider];
+  return (
+    `Database provider "${provider}" is not runnable in this build ` +
+    `(${capability.detail})`
+  );
 }
