@@ -13,6 +13,7 @@ require("dotenv/config");
 const { createJiti } = require("jiti");
 const fs = require("fs");
 const path = require("path");
+const { describeDatabaseError } = require("./lib/db-error");
 
 const ifEmpty = process.argv.includes("--if-empty");
 const force = process.argv.includes("--force");
@@ -103,7 +104,10 @@ async function shouldSeed() {
     console.log("[seed] database is empty — proceeding to seed");
     return true;
   } catch (error) {
-    console.error("[seed] database check failed:", error.message);
+    console.error(
+      "[seed] database check failed:",
+      describeDatabaseError(error, process.env.DATABASE_URL),
+    );
     // Fail CLOSED. prisma/seed.mjs starts with deleteMany() on 14 tables, so
     // seeding after a failed emptiness check destroys production content — the
     // one outcome --if-empty exists to prevent. A transient outage at container

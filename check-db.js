@@ -55,6 +55,10 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error("check-db failed:", (error && error.message) || error);
+  const { describeDatabaseError } = require("./scripts/lib/db-error");
+  console.error(
+    "check-db failed:",
+    describeDatabaseError(error, process.env.DATABASE_URL),
+  );
   process.exit(1);
 });
