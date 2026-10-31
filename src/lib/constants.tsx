@@ -40,6 +40,7 @@ export const CONTACT = {
   personalEmail: "maksimqwe42@mail.ru",
   website: "https://maestro7it.com",
   ownerName: "Дуплей Максим Игоревич",
+  inn: "503234333170",
   vkVideoUrl: "https://live.vkvideo.ru/quadd4rv1n7",
   rutubeUrl: "https://rutube.ru/channel/4218729/",
 } as const;
