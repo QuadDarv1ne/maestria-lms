@@ -104,9 +104,15 @@ async function shouldSeed() {
     return true;
   } catch (error) {
     console.error("[seed] database check failed:", error.message);
-    // On error, proceed to seed (safer than blocking deployment)
-    console.log("[seed] continuing to seed after check error");
-    return true;
+    // Fail CLOSED. prisma/seed.mjs starts with deleteMany() on 14 tables, so
+    // seeding after a failed emptiness check destroys production content — the
+    // one outcome --if-empty exists to prevent. A transient outage at container
+    // start (exactly what start.sh's retry loop suggests happens) used to fall
+    // through to a full wipe. Skipping the seed only means the demo content is
+    // missing, which is recoverable; wiping is not.
+    console.error("[seed] refusing to seed: database state is unknown, and seeding deletes existing data");
+    console.error("[seed] run the seed manually once the database is reachable: node scripts/seed.js --if-empty");
+    return false;
   }
 }
 

@@ -7,7 +7,15 @@ const databaseUrl = process.env.DATABASE_URL || 'file:./prisma/data.db';
 let adapter;
 if (databaseUrl.startsWith('postgresql') || databaseUrl.startsWith('postgres')) {
   const { PrismaPg } = await import('@prisma/adapter-pg');
-  adapter = new PrismaPg({ connectionString: databaseUrl });
+  // Honour DATABASE_SSL the same way src/lib/db.ts and scripts/seed.js do.
+  // It only matters when the URL carries no sslmode (URL parameters win), which
+  // is the documented way to reach a server with a self-signed certificate.
+  const ssl =
+    process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : undefined;
+  adapter = new PrismaPg({
+    connectionString: databaseUrl,
+    ...(ssl ? { ssl } : {}),
+  });
 } else {
   const { PrismaBetterSqlite3 } = await import('@prisma/adapter-better-sqlite3');
   // SQLite: extract file path from 'file:./path' or use as-is

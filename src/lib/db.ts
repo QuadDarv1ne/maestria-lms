@@ -55,6 +55,36 @@ export function getDatabaseProvider(): DatabaseProvider {
 }
 
 /**
+ * Load an adapter package, turning a missing optional dependency into an
+ * actionable message.
+ *
+ * SQLite is an optionalDependency and the production image installs with
+ * `npm ci --omit=dev --no-optional`, so pointing DATABASE_URL at a file: URL in
+ * a container fails with a bare "Cannot find module" that says nothing about
+ * the cause or the fix.
+ */
+async function loadAdapter<T>(
+  packageName: string,
+  provider: DatabaseProvider,
+  loader: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await loader();
+  } catch (error) {
+    const code = (error as { code?: string }).code;
+    if (code === "ERR_MODULE_NOT_FOUND" || code === "MODULE_NOT_FOUND") {
+      throw new Error(
+        `Database provider "${provider}" needs the "${packageName}" package, which is not ` +
+          `installed in this build. It is an optionalDependency, and the production image ` +
+          `installs without optional dependencies. Install it (npm install ${packageName}) ` +
+          `or point DATABASE_URL at PostgreSQL.`,
+      );
+    }
+    throw error;
+  }
+}
+
+/**
  * Create the appropriate Prisma driver adapter based on the database provider.
  * Prisma 7 requires driver adapters for all providers.
  * Uses dynamic imports to avoid loading unnecessary native modules.
@@ -62,14 +92,20 @@ export function getDatabaseProvider(): DatabaseProvider {
 async function createAdapter(provider: DatabaseProvider, url: string) {
   switch (provider) {
     case "sqlite": {
-      const { PrismaBetterSqlite3 } = await import("@prisma/adapter-better-sqlite3");
+      const { PrismaBetterSqlite3 } = await loadAdapter(
+        "@prisma/adapter-better-sqlite3",
+        provider,
+        () => import("@prisma/adapter-better-sqlite3"),
+      );
       // Normalize Prisma's "file:./path" format to an absolute filesystem path
       // that better-sqlite3 can properly resolve in the container
       const sqlitePath = normalizeSqliteUrl(url);
       return new PrismaBetterSqlite3({ url: sqlitePath });
     }
     case "postgresql": {
-      const { PrismaPg } = await import("@prisma/adapter-pg");
+      const { PrismaPg } = await loadAdapter("@prisma/adapter-pg", provider, () =>
+        import("@prisma/adapter-pg"),
+      );
       // TLS: previously hardcoded `ssl: false`, which broke managed PostgreSQL
       // that requires TLS and also masked an explicit `sslmode` in the URL.
       // Default is now to let the connection string decide; DATABASE_SSL=true
