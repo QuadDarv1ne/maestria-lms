@@ -5,6 +5,7 @@ import { handleApiError } from "@/lib/api-errors";
 import { env } from "@/lib/env";
 import { log } from "@/lib/logger";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { resolveSeedPassword } from "@/lib/demo-credentials";
 
 export const runtime = "nodejs";
 
@@ -139,16 +140,28 @@ export async function POST(request: NextRequest) {
   ]);
 
   // ============ ДЕМО-ПОЛЬЗОВАТЕЛИ ============
-  const seedAdminPassword = env.seedAdminPassword;
-  const seedTeacherPassword = env.seedTeacherPassword;
-  const adminPassword = seedAdminPassword || crypto.randomUUID().slice(0, 12);
-  const teacherPassword = seedTeacherPassword || crypto.randomUUID().slice(0, 12);
+  // Passwords come from SEED_ADMIN_PASSWORD / SEED_TEACHER_PASSWORD when set and
+  // strong enough; otherwise a cryptographically strong one is generated.
+  // crypto.randomUUID().slice(0, 12) was used here before: it never contains an
+  // uppercase letter, so it violated passwordStrengthSchema, and its 12
+  // characters carried less entropy than the length suggested.
+  const adminCredentials = resolveSeedPassword({
+    envValue: env.seedAdminPassword,
+    label: "SEED_ADMIN_PASSWORD",
+  });
+  const teacherCredentials = resolveSeedPassword({
+    envValue: env.seedTeacherPassword,
+    label: "SEED_TEACHER_PASSWORD",
+  });
 
-  if (!seedAdminPassword) {
-    log.info("SEED_ADMIN_PASSWORD not set — generated random password for admin@maestro7it.ru");
+  const adminPassword = adminCredentials.password;
+  const teacherPassword = teacherCredentials.password;
+
+  if (adminCredentials.source === "generated") {
+    log.warn("SEED_ADMIN_PASSWORD not set — generated a random password for admin@maestro7it.ru");
   }
-  if (!seedTeacherPassword) {
-    log.info("SEED_TEACHER_PASSWORD not set — generated random password for teacher@maestro7it.ru");
+  if (teacherCredentials.source === "generated") {
+    log.warn("SEED_TEACHER_PASSWORD not set — generated a random password for teacher@maestro7it.ru");
   }
 
   const adminPasswordHash = await hashPassword(adminPassword);

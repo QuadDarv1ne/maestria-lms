@@ -12,8 +12,10 @@ describe("env.validate", () => {
         delete (process.env as Record<string, string | undefined>)[key];
       }
     }
-    // Restore non-test env vars
-    Object.assign(process.env, originalEnv);
+    // No Object.assign(process.env, originalEnv) here: originalEnv is a full
+    // snapshot taken before any deletion, so restoring it would put the very
+    // vars we just removed (DATABASE_URL, NODE_ENV, ...) back in place.
+    // afterEach is responsible for restoring the real environment.
     clearEnvCache();
   });
 

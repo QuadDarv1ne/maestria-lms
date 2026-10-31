@@ -1,5 +1,6 @@
 import { PrismaClient } from '../src/generated/prisma/client.js';
 import bcrypt from 'bcryptjs';
+import { resolveSeedPassword } from '../src/lib/demo-credentials.js';
 
 // Detect provider and create appropriate adapter
 const databaseUrl = process.env.DATABASE_URL || 'file:./prisma/data.db';
@@ -38,10 +39,23 @@ async function main() {
   // Keep the demo user, don't delete
 
   // Demo user
-  const demoPassword = await bcrypt.hash('demo123', 10);
+  //
+  // The password is never hardcoded: it comes from SEED_DEMO_PASSWORD when set,
+  // otherwise a strong one is generated and printed exactly once. The previous
+  // hardcoded "demo123" is public in this repository's history, so any deployment
+  // seeded before this change must have its demo password rotated.
+  const demoCredentials = resolveSeedPassword({
+    envValue: process.env.SEED_DEMO_PASSWORD,
+    label: 'SEED_DEMO_PASSWORD',
+  });
+  // Match the cost used by hashPassword() in src/lib/auth.ts (12); the seed used
+  // to hash with 10, so seeded accounts were cheaper to brute-force.
+  const demoPassword = await bcrypt.hash(demoCredentials.password, 12);
   const user = await db.user.upsert({
     where: { email: 'demo@maestria.lms' },
-    update: {},
+    // Rotate only when a password is supplied explicitly. A freshly generated
+    // one must not overwrite a credential the operator already replaced.
+    update: demoCredentials.source === 'env' ? { passwordHash: demoPassword } : {},
     create: {
       email: 'demo@maestria.lms',
       name: 'Demo Teacher',
@@ -51,7 +65,14 @@ async function main() {
     },
   });
 
-  console.log(`Created user: ${user.email} (password: demo123)`);
+  if (demoCredentials.source === 'generated') {
+    console.log(
+      `[seed] demo@maestria.lms — generated password (shown once, save it now): ${demoCredentials.password}`,
+    );
+  } else {
+    console.log('[seed] demo@maestria.lms — password taken from SEED_DEMO_PASSWORD');
+  }
+  console.log(`[seed] demo account: ${user.email} (role: ${user.role})`);
 
   // Categories
   const categories = await Promise.all([
