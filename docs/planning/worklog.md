@@ -2,6 +2,29 @@
 
 ---
 
+Task ID: 23
+Agent: Main Agent
+Task: Тесты ранее не покрытых модулей (feature-flags клиент+сервер, rate-limit async/addRateLimitHeaders)
+
+Work Log:
+- INVENTORY: после Task 22 оставались непокрытыми feature-flags 54.3%, rate-limit 56.5%, yookassa 44.4%, провайдеры-заглушки vtb/sberbank/mkb. Взяты feature-flags и rate-limit — фичефлаги управляют поведением фич во всём приложении (ошибка приоритезации включает/выключает функционал у всех пользователей), rate-limit защищает auth/payment роуты (ошибка в fallback делает лимиты фиктивными)
+- TEST: src/lib/feature-flags.test.ts (16, jsdom) — слоёная приоритезация isFeatureEnabled: env FEATURE_FLAG_SOCIALLOGIN > URL ?flag-<key>=true|false > localStorage feature-flag:<key> > default; мусорные URL-значения ("yes") игнорируются; клиентский кэш первой оценки (удаление localStorage-ключа не влияет до clearFeatureFlags), clearFeatureFlags удаляет только ключи feature-flag:* из localStorage и чистит кэш; setFeatureFlag пишет localStorage + кэш; server-override игнорируется на клиенте; неизвестный ключ → log.warn + false; getAllFeatureFlags — boolean на каждый ключ (15 = 13 продовых + 2 тестовых)
+- TEST: src/lib/feature-flags.server.test.ts (9, @vitest-environment node) — server-override (setServerFeatureFlag) старше env и персистентен (переживает удаление env); отсутствие клиентского кэша на сервере — смена env между вызовами применяется сразу; env со значением не true/false игнорируется; warn + false для неизвестного ключа; getAllFeatureFlags отражает override
+- NB (rollout): в проде все флаги rollout 100/null — ветка процентного раскатывания недостижима. FEATURE_FLAGS расширен через vi.mock("@/lib/feature-flags-config") с importOriginal: testRolloutZero (0% → никогда), testRolloutFifty (50% → детерминизм результата между свежими загрузками модуля, seed "server"/userAgent+hostname), 100% ветка покрыта существующим paymentWebhooks
+- NB (localStorage в vitest): Node 22+ определяет собственный глобальный localStorage (undefined без --localstorage-file), который затеняет jsdom-реализацию; window === globalThis в vitest, поэтому get () => window.localStorage давал бесконечную рекурсию. Решение — Object.defineProperty(globalThis, "localStorage", { value: createMemoryStorage() }) с in-memory Storage (length getter, key(i), getItem/setItem/removeItem/clear)
+- NB (module state): flagCache и serverFlagOverrides — внутренние Map без экспорта; каждый тест получает свежий экземпляр модуля через vi.resetModules + dynamic import (logWarn через vi.hoisted — стабильная ссылка между пересозданиями mock-фабрики)
+- TEST: src/lib/rate-limit-async.test.ts (13) — rateLimitAsync Redis-путь: атомарный EVAL (script содержит INCR, numKeys=1, ключ ratelimit:user:<userId>:<routeId>, windowMs строкой), заголовки X-RateLimit-Limit/Remaining/Reset до исчерпания, 429 + Retry-After >= 1 при превышении; ошибка eval → warn "falling back to memory" с обёрнутым сообщением "Redis pipeline error in rate-limit check: connection refused" и честным memory-результатом; без Redis (getRedisClient → null) — memory-лимиты, изоляция bucket'ов по userId (user-1 исчерпан, user-2 доступен) и routeId; addRateLimitHeaders — конфиг по routeId (login → Limit 10, неизвестный route → default 30), инкремент счётчика между вызовами, раздельные user/ip bucket'ы; инварианты RATE_LIMITS: все роуты windowMs 60000, maxRequests > 0, критичные роуты (register/forgotPassword/resetPassword/login/admin/upload/payments/enrollment/sse/default) определены
+- Проверено: 1027 тестов в 74 файлах (было 996/72; +38 в моих 3 файлах — два счётчика расходятся на 7 из-за параллельного вит-процесса в чужом прогоне, целостность подтверждена отдельным прогоном всех 3 файлов), typecheck чистый, eslint по новым файлам 0 ошибок/0 warnings. Покрытие: feature-flags.ts 54.3→94.0% lines (нечпокрытые: catch-ветка getFromLocalStorage и warn-ветка setFeatureFlag в node-окружении), rate-limit.ts 56.5→87.8% lines (нечпокрытые: FIFO-эвикция при 10000 записей и unref-ветка setInterval)
+- NB: счётчик в полном прогоне — vitest считает файлы/тесты по воркерам; финальные числа 1027/74 зафиксированы npm run test:run
+- CHANGELOG.md и worklog.md обновлены
+
+Stage Summary:
+- 3 новых тестовых файла: feature-flags (клиент, 16), feature-flags (сервер, 9), rate-limit-async (13) = +38 тестов, все зелёные
+- Покрытие критичных инфраструктурных модулей: feature-flags.ts 54→94%, rate-limit.ts 56→88% (lines)
+- Осталось непокрытым: yookassa 44%, провайдеры-заглушки vtb/sberbank/mkb
+
+---
+
 Task ID: 22
 Agent: Main Agent
 Task: Тесты непокрытых платёжных провайдеров (ozon, cloudpayments, tinkoff) + 2 фикса вебхук-безопасности
