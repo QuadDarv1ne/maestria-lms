@@ -1,0 +1,602 @@
+<!-- ============================================================
+     Maestro7IT — База знаний / FAQ (автономный блок для Tilda)
+     Сайт: https://school-maestro7it.ru/
+     Инструкция: вставьте весь этот код в блок T123 (HTML-код) на Tilda
+     ============================================================
+
+     ОСОБЕННОСТИ:
+     1. Живой поиск по вопросам и ответам (с debounce)
+     2. Фильтр по категориям
+     3. Нативные <details> — контент доступен для Ctrl+F и индексации
+     4. Глубокие ссылки: .../faq#m7k-a5 откроет нужный вопрос
+     5. Счётчик найденных ответов + состояние "ничего не найдено"
+
+     КАК ДОБАВИТЬ НОВЫЙ ВОПРОС:
+     Скопируйте блок <details class="m7k-item" data-cat="start">...</details>
+     и измените текст вопроса (summary) и ответ (m7k-a).
+     data-cat — ключ категории из M7K_CATEGORIES в скрипте.
+-->
+
+<div id="m7k-root">
+  <div class="m7k-top">
+    <div class="m7k-hdr">
+      <div class="m7k-logo-3d"><span class="m7k-logo-glyph">?</span></div>
+      <div class="m7k-hdr-txt">
+        <h3 class="m7k-hdr-title">База знаний</h3>
+        <p class="m7k-hdr-sub" id="m7kCnt">Частые вопросы об обучении, оплате и доступе</p>
+      </div>
+      <a class="m7k-link" href="https://school-maestro7it.ru/" target="_blank" rel="noopener">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        school-maestro7it.ru
+      </a>
+    </div>
+
+    <div class="m7k-meta">
+      <div class="m7k-switchers">
+        <div class="m7k-lang" id="m7kLang" role="group" aria-label="Language">
+          <button class="m7k-lang-btn" type="button" data-lang="ru">RU</button>
+          <button class="m7k-lang-btn" type="button" data-lang="en">EN</button>
+          <button class="m7k-lang-btn" type="button" data-lang="zh">中文</button>
+        </div>
+        <button class="m7k-theme-btn" id="m7kTheme" type="button" aria-label="Toggle theme">🌙</button>
+      </div>
+    </div>
+
+    <div class="m7k-search">
+      <svg class="m7k-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="m7k-search-input" id="m7kSearch" type="text" placeholder="Поиск по базе знаний..." aria-label="Поиск по базе знаний">
+      <button class="m7k-search-clear" id="m7kSearchClear" aria-label="Очистить поиск">&times;</button>
+    </div>
+
+    <div class="m7k-tabs" id="m7kTabs" role="tablist"></div>
+  </div>
+
+  <div class="m7k-list" id="m7kList" role="list">
+
+    <details class="m7k-item" id="m7k-a1" data-cat="start" role="listitem">
+      <summary class="m7k-q"><span class="m7k-badge">Начало</span>Как начать обучение в школе Maestro7IT?</summary>
+      <div class="m7k-a">1. Выберите курс в <a href="https://school-maestro7it.ru/" target="_blank" rel="noopener">коллекции курсов</a> и перейдите к оплате. 2. После оплаты на указанный e-mail придёт письмо с доступом (в течение 1 рабочего дня). 3. Проходите уроки в удобном темпе — доступ остаётся у вас на весь срок действия курса.</div>
+    </details>
+
+    <details class="m7k-item" id="m7k-a2" data-cat="start" role="listitem">
+      <summary class="m7k-q"><span class="m7k-badge">Начало</span>Нужны ли мне базовые знания, чтобы записаться на курс?</summary>
+      <div class="m7k-a">Большинство курсов стартуют с нуля: в описании каждого курса на Stepik указан уровень подготовки. Если курс для продвинутых — это всегда отмечено в описании. При сомнениях напишите в поддержку, мы подскажем подходящий стартовый курс.</div>
+    </details>
+
+    <details class="m7k-item" id="m7k-a3" data-cat="start" role="listitem">
+      <summary class="m7k-q"><span class="m7k-badge">Начало</span>Обучение проходит в прямом эфире или в записи?</summary>
+      <div class="m7k-a">Курсы Maestro7IT — самостоятельное обучение в записи. Вы изучаете материалы в удобное время, практикуетесь и проверяете себя автоматическими тестами. Это позволяет учиться без привязки к расписанию.</div>
+    </details>
+
+    <details class="m7k-item" id="m7k-a4" data-cat="pay" role="listitem">
+      <summary class="m7k-q"><span class="m7k-badge">Оплата</span>Какие способы оплаты доступны?</summary>
+      <div class="m7k-a">Оплата проходит через платёжные сервисы, подключённые на Сайте и на платформе Stepik: банковские карты, СБП и другие доступные способы из формы оплаты. Данные карты не сохраняются на наших серверах — платёж обрабатывает платёжный провайдер.</div>
+    </details>
+
+    <details class="m7k-item" id="m7k-a5" data-cat="pay" role="listitem">
+      <summary class="m7k-q"><span class="m7k-badge">Оплата</span>Я оплатил курс, но доступ не пришёл. Что делать?</summary>
+      <div class="m7k-a">Проверьте папку "Спам" в почтовом ящике. Если письма нет в течение рабочего дня — напишите на <a href="mailto:maksimqwe42@mail.ru">maksimqwe42@mail.ru</a> или позвоните: <a href="tel:+79150480249">+7 915 048-02-49</a>, <a href="tel:+79017065176">+7 901 706-51-76</a>. Приложите чек об оплате и укажите e-mail, использованный при оплате.</div>
+    </details>
+
+    <details class="m7k-item" id="m7k-a6" data-cat="pay" role="listitem">
+      <summary class="m7k-q"><span class="m7k-badge">Оплата</span>Можно ли вернуть деньги за курс?</summary>
+      <div class="m7k-a">Да, на условиях раздела 5 <a href="https://school-maestro7it.ru/offer" target="_blank" rel="noopener">Публичной оферты</a>: заявление на возврат направляется с почты, использованной при оплате. Возврат — в течение 10 рабочих дней, тем же способом, которым производилась оплата. Возврат не производится, если пройдено более 50% материалов или курс куплен по невозвратной акции.</div>
+    </details>
+
+    <details class="m7k-item" id="m7k-a7" data-cat="pay" role="listitem">
+      <summary class="m7k-q"><span class="m7k-badge">Оплата</span>Выдаёте ли вы закрывающие документы?</summary>
+      <div class="m7k-a">Да. По запросу на e-mail <a href="mailto:maksimqwe42@mail.ru">maksimqwe42@mail.ru</a> направляется чек об оплате (Оператор — плательщик НПД). Для юридических лиц возможна безналичная оплата по счёту — условия согласуем по почте.</div>
+    </details>
+
+    <details class="m7k-item" id="m7k-a8" data-cat="learn" role="listitem">
+      <summary class="m7k-q"><span class="m7k-badge">Обучение</span>Сколько времени занимает обучение?</summary>
+      <div class="m7k-a">Это зависит от курса и вашего темпа: ориентируйтесь на 20–60 часов суммарной работы для большинства курсов. Доступ действует не менее 12 месяцев, поэтому можно учиться без спешки и возвращаться к материалам повторно.</div>
+    </details>
+
+    <details class="m7k-item" id="m7k-a9" data-cat="learn" role="listitem">
+      <summary class="m7k-q"><span class="m7k-badge">Обучение</span>Выдаёте ли вы сертификат по окончании курса?</summary>
+      <div class="m7k-a">Курсы, размещённые на платформе Stepik, сопровождаются автоматически выдаваемым сертификатом Stepik при успешном прохождении тестов. Наличие сертификата всегда указано в описании конкретного курса.</div>
+    </details>
+
+    <details class="m7k-item" id="m7k-a10" data-cat="learn" role="listitem">
+      <summary class="m7k-q"><span class="m7k-badge">Обучение</span>Кто проверяет домашние задания?</summary>
+      <div class="m7k-a">Зависит от курса: в большинстве курсов задания проверяются автоматически тестами на платформе. Там, где предусмотрена обратная связь (указано в тарифе), вы отправляете решение на проверку и получаете комментарии.</div>
+    </details>
+
+    <details class="m7k-item" id="m7k-a11" data-cat="learn" role="listitem">
+      <summary class="m7k-q"><span class="m7k-badge">Обучение</span>Можно ли задавать вопросы преподавателю во время обучения?</summary>
+      <div class="m7k-a">Да, по материалам курсов можно писать в поддержку на <a href="mailto:maksimqwe42@mail.ru">maksimqwe42@mail.ru</a>. Объём консультационной поддержки зависит от тарифа курса — смотрите описание конкретного курса.</div>
+    </details>
+
+    <details class="m7k-item" id="m7k-a12" data-cat="tech" role="listitem">
+      <summary class="m7k-q"><span class="m7k-badge">Техн.</span>На каких устройствах можно проходить курсы?</summary>
+      <div class="m7k-a">Курсы на Stepik доступны с компьютера, планшета и смартфона — в браузере или в мобильном приложении Stepik. Для практических заданий по программированию (Linux, Docker, Go, C# и др.) нужен компьютер с доступом в интернет.</div>
+    </details>
+
+    <details class="m7k-item" id="m7k-a13" data-cat="tech" role="listitem">
+      <summary class="m7k-q"><span class="m7k-badge">Техн.</span>Видео не загружается / страница тормозит. Что делать?</summary>
+      <div class="m7k-a">Попробуйте: 1) обновить страницу и очистить кэш браузера; 2) проверить скорость интернета; 3) открыть курс в другом браузере (Chrome, Firefox); 4) отключить блокировщики рекламы для домена stepik.org. Если проблема сохраняется — напишите в поддержку с описанием и скриншотом.</div>
+    </details>
+
+    <details class="m7k-item" id="m7k-a14" data-cat="tech" role="listitem">
+      <summary class="m7k-q"><span class="m7k-badge">Техн.</span>Забыл пароль от Stepik / LMS. Как восстановить?</summary>
+      <div class="m7k-a">На странице входа Stepik нажмите "Восстановить пароль" и укажите e-mail, использованный при оплате. Если письмо не приходит или привязать доступ не удаётся — обращайтесь в поддержку, поможем восстановить доступ.</div>
+    </details>
+
+    <details class="m7k-item" id="m7k-a15" data-cat="tech" role="listitem">
+      <summary class="m7k-q"><span class="m7k-badge">Техн.</span>Можно ли скачивать видео и материалы курса?</summary>
+      <div class="m7k-a">Нет. Материалы курсов предоставляются для просмотра онлайн в рамках личного доступа. Скачивание, копирование и распространение материалов запрещены <a href="https://school-maestro7it.ru/terms" target="_blank" rel="noopener">Пользовательским соглашением</a> и защищены авторским правом.</div>
+    </details>
+
+  </div>
+
+  <div class="m7k-empty" id="m7kEmpty" style="display:none" role="status">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <p>Ничего не найдено</p>
+    <span>Попробуйте изменить запрос или категорию</span>
+  </div>
+
+  <div class="m7k-support">
+    <p class="m7k-support-t">Не нашли ответ?</p>
+    <p class="m7k-support-d">Напишите нам — ответим в рабочее время в течение дня.</p>
+    <div class="m7k-support-btns">
+      <a class="m7k-btn m7k-btn--main" href="mailto:maksimqwe42@mail.ru">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        maksimqwe42@mail.ru
+      </a>
+      <a class="m7k-btn" href="tel:+79150480249">+7 915 048-02-49</a>
+      <a class="m7k-btn" href="tel:+79017065176">+7 901 706-51-76</a>
+    </div>
+  </div>
+
+  <div class="m7k-footer-note">© Школа программирования Maestro7IT — <a href="https://school-maestro7it.ru/" target="_blank" rel="noopener">school-maestro7it.ru</a> · Все права защищены, 2026</div>
+</div>
+
+<style>
+/* === Break out of Tilda container === */
+#m7k-root{position:relative}
+#m7k-root[data-wide]{
+  width:100vw!important;
+  max-width:100vw!important;
+  margin-left:calc(-50vw + 50%)!important;
+  margin-right:calc(-50vw + 50%)!important;
+}
+
+/* === Scoped variables === */
+#m7k-root{
+  --a:#6c5ce7;--a2:#a29bfe;--bg:#0b0b1a;
+  --sf:rgba(255,255,255,.04);--sh:rgba(255,255,255,.08);
+  --bd:rgba(255,255,255,.07);--bh:rgba(255,255,255,.14);
+  --t1:#f0f0f5;--t2:rgba(255,255,255,.55);--t3:rgba(255,255,255,.3);
+  --r:12px;--rs:8px;
+  width:100%;margin:0 auto;
+  background:var(--bg);color:var(--t1);
+  font-family:'Inter','TildaSans',sans-serif;
+  box-sizing:border-box;padding:32px 40px 48px;position:relative
+}
+#m7k-root *,#m7k-root *::before,#m7k-root *::after{box-sizing:border-box}
+
+/* === Светлая тема (переопределение переменных) === */
+#m7k-root[data-theme="light"]{
+  --bg:#f4f5fa;
+  --sf:#ffffff;--sh:#eef0f8;
+  --bd:rgba(22,22,60,.10);--bh:rgba(22,22,60,.20);
+  --t1:#1c1c30;--t2:rgba(28,28,48,.68);--t3:rgba(28,28,48,.42);
+  --a:#5b4bd5;--a2:#5b4bd5;
+}
+#m7k-root[data-theme="light"] .m7k-badge,
+#m7k-root[data-theme="light"] .m7k-tab.m7k-on{background:rgba(91,75,213,.10);color:#5b4bd5;border-color:rgba(91,75,213,.25)}
+#m7k-root[data-theme="light"] .m7k-tab.m7k-on{background:var(--a);color:#fff}
+#m7k-root[data-theme="light"] .m7k-q:hover{background:rgba(91,75,213,.05)}
+#m7k-root[data-theme="light"] .m7k-support{background:rgba(91,75,213,.08);border-color:rgba(91,75,213,.18)}
+#m7k-root[data-theme="light"] .m7k-search-input:focus{background:rgba(91,75,213,.04)}
+
+/* === Switchers (тема + язык) === */
+#m7k-root .m7k-meta{display:flex;margin-bottom:14px}
+#m7k-root .m7k-switchers{margin-left:auto;display:flex;gap:8px;align-items:center}
+#m7k-root .m7k-lang{display:inline-flex;border-radius:20px;border:1px solid var(--bd);background:var(--sf);overflow:hidden}
+#m7k-root .m7k-lang-btn{padding:5px 11px;border:none;background:transparent;color:var(--t2);font-size:10.5px;font-weight:600;font-family:inherit;cursor:pointer;transition:.2s}
+#m7k-root .m7k-lang-btn:hover{color:var(--t1);background:var(--sh)}
+#m7k-root .m7k-lang-btn.m7k-on{background:var(--a);color:#fff}
+#m7k-root .m7k-theme-btn{width:30px;height:30px;border-radius:50%;border:1px solid var(--bd);background:var(--sf);cursor:pointer;font-size:13px;line-height:1;display:inline-flex;align-items:center;justify-content:center;transition:.2s;padding:0}
+#m7k-root .m7k-theme-btn:hover{background:var(--sh);border-color:var(--bh)}
+#m7k-root .m7k-lang-btn:focus-visible,#m7k-root .m7k-theme-btn:focus-visible{outline:2px solid var(--a);outline-offset:2px}
+@media(max-width:768px){
+  #m7k-root .m7k-switchers{margin-left:0}
+}
+
+/* === Header === */
+#m7k-root .m7k-top{margin-bottom:20px}
+#m7k-root .m7k-hdr{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+#m7k-root .m7k-logo-3d{width:44px;height:44px;border-radius:14px 14px 20px 20px;background:linear-gradient(145deg,#7c6cf7,#5b4bd5);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 0 #4a3ab5,0 7px 14px rgba(108,92,231,.4);transform:perspective(200px) rotateX(2deg);transition:transform .25s}
+#m7k-root .m7k-logo-3d:hover{transform:perspective(200px) rotateX(0) scale(1.05)}
+#m7k-root .m7k-logo-glyph{font-size:22px;font-weight:700;color:#fff;font-family:Georgia,'Times New Roman',serif}
+#m7k-root .m7k-hdr-title{font-size:22px;font-weight:600;margin:0;letter-spacing:-.5px}
+#m7k-root .m7k-hdr-sub{font-size:12px;color:var(--t3);margin:2px 0 0}
+#m7k-root .m7k-link{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--rs);background:var(--sf);border:1px solid var(--bd);color:var(--t2);font-size:11px;text-decoration:none;transition:.2s;white-space:nowrap}
+#m7k-root .m7k-link:hover{background:var(--sh);color:var(--t1);border-color:var(--bh)}
+
+/* === Search (как в блоке курсов) === */
+#m7k-root .m7k-search{position:relative;margin-bottom:14px}
+#m7k-root .m7k-search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--t3);pointer-events:none}
+#m7k-root .m7k-search-input{width:100%;padding:10px 36px;border-radius:10px;border:1px solid var(--bd);background:var(--sf);color:var(--t1);font-size:13px;font-family:inherit;outline:none;transition:.2s}
+#m7k-root .m7k-search-input::placeholder{color:var(--t3)}
+#m7k-root .m7k-search-input:focus{border-color:var(--a);background:rgba(108,92,231,.06)}
+#m7k-root .m7k-search-clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:50%;border:none;background:transparent;color:var(--t3);font-size:16px;cursor:pointer;display:none;align-items:center;justify-content:center;transition:.15s}
+#m7k-root .m7k-search-clear:hover{background:var(--sh);color:var(--t1)}
+#m7k-root .m7k-search-clear.m7k-show{display:flex}
+
+/* === Tabs === */
+#m7k-root .m7k-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+#m7k-root .m7k-tab{padding:7px 16px;border-radius:20px;border:1px solid var(--bd);background:transparent;color:var(--t2);font-size:12px;font-weight:500;font-family:inherit;cursor:pointer;transition:.2s;white-space:nowrap}
+#m7k-root .m7k-tab:hover{background:var(--sf);color:var(--t1)}
+#m7k-root .m7k-tab.m7k-on{background:var(--a);border-color:var(--a);color:#fff}
+#m7k-root .m7k-tab:focus-visible{outline:2px solid var(--a);outline-offset:2px}
+
+/* === FAQ items === */
+#m7k-root .m7k-list{display:flex;flex-direction:column;gap:8px}
+#m7k-root .m7k-item{border-radius:var(--r);border:1px solid var(--bd);background:var(--sf);overflow:hidden;transition:border-color .25s,background .25s;scroll-margin-top:80px}
+#m7k-root .m7k-item:hover{border-color:var(--bh)}
+#m7k-root .m7k-item[open]{background:var(--sh);border-color:var(--bh)}
+#m7k-root .m7k-item.m7k-hidden{display:none}
+
+#m7k-root .m7k-q{display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;list-style:none;-webkit-user-select:none;user-select:none;transition:background .2s;font-size:13.5px;font-weight:600;color:var(--t1);line-height:1.4}
+#m7k-root .m7k-q::-webkit-details-marker{display:none}
+#m7k-root .m7k-q::after{content:'';width:8px;height:8px;flex-shrink:0;margin-left:auto;border-right:1.5px solid var(--t3);border-bottom:1.5px solid var(--t3);transform:rotate(45deg);transition:transform .25s}
+#m7k-root .m7k-item[open] .m7k-q::after{transform:rotate(-135deg)}
+#m7k-root .m7k-q:hover{background:rgba(255,255,255,.03)}
+#m7k-root .m7k-q:focus-visible{outline:2px solid var(--a);outline-offset:-2px}
+#m7k-root .m7k-badge{display:inline-block;flex-shrink:0;padding:3px 10px;border-radius:10px;font-size:10px;font-weight:600;background:rgba(108,92,231,.14);color:var(--a2);border:1px solid rgba(108,92,231,.22);letter-spacing:.3px}
+
+#m7k-root .m7k-a{padding:2px 18px 16px;border-top:1px solid var(--bd);font-size:13px;line-height:1.65;color:var(--t2)}
+#m7k-root .m7k-a b{color:var(--t1);font-weight:600}
+#m7k-root .m7k-a a{color:var(--a2);text-decoration:none;border-bottom:1px solid rgba(162,155,254,.3);transition:.2s}
+#m7k-root .m7k-a a:hover{color:#fff;border-bottom-color:#fff}
+
+/* === Empty === */
+#m7k-root .m7k-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;text-align:center}
+#m7k-root .m7k-empty p{font-size:16px;font-weight:500;color:var(--t2);margin:12px 0 4px}
+#m7k-root .m7k-empty span{font-size:13px;color:var(--t3)}
+
+/* === Support === */
+#m7k-root .m7k-support{margin-top:22px;padding:20px;border-radius:var(--r);border:1px solid rgba(108,92,231,.22);background:rgba(108,92,231,.08);text-align:center}
+#m7k-root .m7k-support-t{font-size:15px;font-weight:600;color:var(--t1);margin:0 0 4px}
+#m7k-root .m7k-support-d{font-size:12.5px;color:var(--t2);margin:0 0 14px}
+#m7k-root .m7k-support-btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+#m7k-root .m7k-btn{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:10px;border:1px solid var(--bd);background:var(--sf);color:var(--t2);font-size:12px;font-weight:500;font-family:inherit;text-decoration:none;transition:.2s}
+#m7k-root .m7k-btn:hover{background:var(--sh);color:var(--t1);border-color:var(--bh)}
+#m7k-root .m7k-btn--main{background:linear-gradient(135deg,#6c5ce7,#a29bfe);border-color:transparent;color:#fff}
+#m7k-root .m7k-btn--main:hover{color:#fff;box-shadow:0 6px 20px rgba(108,92,231,.35)}
+#m7k-root .m7k-btn:focus-visible{outline:2px solid var(--a);outline-offset:2px}
+
+/* === Footer === */
+#m7k-root .m7k-footer-note{margin-top:22px;text-align:center;font-size:11px;color:var(--t3)}
+#m7k-root .m7k-footer-note a{color:var(--a2);text-decoration:none}
+#m7k-root .m7k-footer-note a:hover{text-decoration:underline}
+
+/* === Responsive === */
+@media(min-width:1440px){
+  #m7k-root{padding:40px 64px 60px}
+  #m7k-root .m7k-hdr-title{font-size:26px}
+}
+@media(max-width:768px){
+  #m7k-root{padding:24px 18px 40px}
+  #m7k-root .m7k-hdr{flex-direction:column;align-items:flex-start}
+  #m7k-root .m7k-link{margin-left:0}
+  #m7k-root .m7k-a{padding:2px 14px 16px}
+  #m7k-root .m7k-support-btns{flex-direction:column;align-items:stretch}
+}
+@media(max-width:480px){
+  #m7k-root{padding:20px 12px 32px}
+  #m7k-root .m7k-q{padding:12px 14px;gap:10px;font-size:12.5px}
+  #m7k-root .m7k-hdr-title{font-size:18px}
+  #m7k-root .m7k-tab{padding:5px 11px;font-size:11px}
+}
+
+/* === Print === */
+@media print{
+  #m7k-root{background:#fff!important;color:#111!important;padding:0}
+  #m7k-root .m7k-item{background:#fff!important;border-color:#ccc!important}
+  #m7k-root .m7k-q{color:#111!important;cursor:auto}
+  #m7k-root .m7k-a{display:block!important;color:#333!important}
+  #m7k-root .m7k-search,#m7k-root .m7k-tabs,#m7k-root .m7k-support{display:none!important}
+  #m7k-root .m7k-item b{color:#111!important}
+}
+</style>
+
+<script>
+(function(){
+'use strict';
+
+/* =====================================================
+   Категории базы знаний. Чтобы добавить категорию — добавьте ключ
+   сюда и используйте его в data-cat у <details class="m7k-item">
+   ===================================================== */
+var M7K_CATEGORIES = {
+  all:   {ru:"Все",en:"All",zh:"全部"},
+  start: {ru:"Начало",en:"Getting started",zh:"入门"},
+  pay:   {ru:"Оплата",en:"Payment",zh:"支付"},
+  learn: {ru:"Обучение",en:"Learning",zh:"学习"},
+  tech:  {ru:"Технические",en:"Technical",zh:"技术问题"}
+};
+
+var M7K_UI = {
+"hdr.sub":{ru:"Частые вопросы об обучении, оплате и доступе",en:"Frequently asked questions about learning, payment and access",zh:"关于学习、支付和访问的常见问题"},
+"faq.default":{ru:"Частые вопросы об обучении, оплате и доступе",en:"Frequently asked questions about learning, payment and access",zh:"关于学习、支付和访问的常见问题"},
+"faq.found":{en:"Found: {n} of {total}",ru:"Найдено: {n} из {total}",zh:"找到：{n}/{total}"},
+"search.ph":{ru:"Поиск по базе знаний...",en:"Search the knowledge base...",zh:"搜索知识库..."},
+"empty.t":{ru:"Ничего не найдено",en:"Nothing found",zh:"未找到结果"},
+"empty.d":{ru:"Попробуйте изменить запрос или категорию",en:"Try changing your query or category",zh:"请更改搜索词或分类"},
+"support.t":{ru:"Не нашли ответ?",en:"Didn't find an answer?",zh:"没有找到答案？"},
+"support.d":{ru:"Напишите нам — ответим в рабочее время в течение дня.",en:"Write to us — we will reply within one business day.",zh:"请给我们留言——我们将在一个工作日内回复。"},
+"support.aria":{ru:"Быстрая навигация по разделам",en:"Quick navigation",zh:"快速导航"},
+"footer.c":{en:"© Maestro7IT Programming School",zh:"© Maestro7IT 编程学校"},
+"footer.r":{en:"All rights reserved, 2026",zh:"版权所有，2026年"}
+};
+
+/* Вопросы/ответы: m7k-a1 ... m7k-a15 (ru = исходная разметка) */
+var M7K_ITEMS = {
+"m7k-a1":{
+ q:{en:"<span class=\"m7k-badge\">Getting started</span>How do I start learning at the Maestro7IT school?",zh:"<span class=\"m7k-badge\">入门</span>如何在 Maestro7IT 学校开始学习？"},
+ a:{en:"1. Choose a course in the <a href=\"https://school-maestro7it.ru/\" target=\"_blank\" rel=\"noopener\">course collection</a> and proceed to payment. 2. After payment, an e-mail with access will arrive at the e-mail address you specified (within 1 business day). 3. Study at your own pace — access remains yours for the entire validity period of the course.",zh:"1. 在<a href=\"https://school-maestro7it.ru/\" target=\"_blank\" rel=\"noopener\">课程合集</a>中选择课程并前往支付。2. 付款后，访问邮件将在1个工作日内发送至您指定的电子邮箱。3. 按自己的节奏学习——课程有效期内访问权一直有效。"}},
+"m7k-a2":{
+ q:{en:"<span class=\"m7k-badge\">Getting started</span>Do I need basic knowledge to enroll in a course?",zh:"<span class=\"m7k-badge\">入门</span>报名课程需要基础知识吗？"},
+ a:{en:"Most courses start from scratch: the description of each course on Stepik states the required level. Advanced courses are always marked in the description. If in doubt, write to support and we will suggest a suitable starting course.",zh:"大多数课程从零开始：Stepik上每门课程的说明中都注明了所需水平。高级课程会在说明中明确标注。如有疑问，请联系支持服务，我们会推荐合适的入门课程。"}},
+"m7k-a3":{
+ q:{en:"<span class=\"m7k-badge\">Getting started</span>Is the training live or recorded?",zh:"<span class=\"m7k-badge\">入门</span>培训是直播还是录播？"},
+ a:{en:"Maestro7IT courses are self-paced learning with recorded materials. You study the materials at a convenient time, practice and check yourself with automatic tests. This allows you to learn without being tied to a schedule.",zh:"Maestro7IT 课程为录播自学形式。您可以在方便的时间学习材料、进行练习并通过自动测试检验自己。学习不受时间表限制。"}},
+"m7k-a4":{
+ q:{en:"<span class=\"m7k-badge\">Payment</span>What payment methods are available?",zh:"<span class=\"m7k-badge\">支付</span>有哪些可用的支付方式？"},
+ a:{en:"Payment is processed via the payment services connected on the Website and on Stepik: bank cards, SBP and other methods available in the payment form. Card details are not stored on our servers — the payment is processed by the payment provider.",zh:"支付通过网站和Stepik接入的支付服务完成：银行卡、SBP快速支付系统以及付款表单中提供的其他方式。我们的服务器不保存银行卡信息——支付由支付服务方处理。"}},
+"m7k-a5":{
+ q:{en:"<span class=\"m7k-badge\">Payment</span>I paid for the course but did not receive access. What should I do?",zh:"<span class=\"m7k-badge\">支付</span>我已付款但未收到访问权限，怎么办？"},
+ a:{en:"Check the \"Spam\" folder in your mailbox. If there is no e-mail within a business day — write to <a href=\"mailto:maksimqwe42@mail.ru\">maksimqwe42@mail.ru</a> or call: <a href=\"tel:+79150480249\">+7 915 048-02-49</a>, <a href=\"tel:+79017065176\">+7 901 706-51-76</a>. Attach the payment receipt and indicate the e-mail used for payment.",zh:"请检查邮箱的\"垃圾邮件\"文件夹。如果1个工作日内仍未收到邮件——请致函 <a href=\"mailto:maksimqwe42@mail.ru\">maksimqwe42@mail.ru</a> 或致电：<a href=\"tel:+79150480249\">+7 915 048-02-49</a>、<a href=\"tel:+79017065176\">+7 901 706-51-76</a>。请附上付款收据并注明付款时使用的电子邮箱。"}},
+"m7k-a6":{
+ q:{en:"<span class=\"m7k-badge\">Payment</span>Can I get a refund for a course?",zh:"<span class=\"m7k-badge\">支付</span>课程费用可以退款吗？"},
+ a:{en:"Yes, under the terms of Section 5 of the <a href=\"https://school-maestro7it.ru/offer\" target=\"_blank\" rel=\"noopener\">Public Offer</a>: a refund request is sent from the e-mail used for payment. Refunds are issued within 10 business days, using the same payment method. No refund is made if more than 50% of the materials have been completed or the course was purchased under a non-refundable promotion.",zh:"可以，按<a href=\"https://school-maestro7it.ru/offer\" target=\"_blank\" rel=\"noopener\">公开要约</a>第5节的条款：退款申请须从付款时使用的电子邮箱发送。退款在10个工作日内按原付款方式退回。如已完成超过50%的课程材料，或课程以注明不可退款的促销价购买，则不予退款。"}},
+"m7k-a7":{
+ q:{en:"<span class=\"m7k-badge\">Payment</span>Do you provide supporting documents?",zh:"<span class=\"m7k-badge\">支付</span>是否提供结算凭证？"},
+ a:{en:"Yes. Upon request to <a href=\"mailto:maksimqwe42@mail.ru\">maksimqwe42@mail.ru</a>, a payment receipt is sent (the Operator is a professional income tax payer). For legal entities, non-cash payment by invoice is possible — we will agree on the terms by e-mail.",zh:"可以。致函 <a href=\"mailto:maksimqwe42@mail.ru\">maksimqwe42@mail.ru</a> 申请后，将发送付款收据（运营者为职业所得税纳税人）。法人可通过发票进行非现金支付——条件通过电子邮件协商。"}},
+"m7k-a8":{
+ q:{en:"<span class=\"m7k-badge\">Learning</span>How long does the training take?",zh:"<span class=\"m7k-badge\">学习</span>学习需要多长时间？"},
+ a:{en:"It depends on the course and your pace: most courses require about 20–60 hours of total work. Access is granted for at least 12 months, so you can study without rushing and return to the materials repeatedly.",zh:"取决于课程和您的节奏：大多数课程总计约需20–60小时。访问权至少授予12个月，因此您可以不慌不忙地学习并反复回顾材料。"}},
+"m7k-a9":{
+ q:{en:"<span class=\"m7k-badge\">Learning</span>Do you issue a certificate upon completion?",zh:"<span class=\"m7k-badge\">学习</span>结业后是否颁发证书？"},
+ a:{en:"Courses hosted on the Stepik platform come with an automatically issued Stepik certificate upon successful completion of the tests. The availability of a certificate is always stated in the description of the specific course.",zh:"托管在Stepik平台上的课程在成功通过测试后自动颁发Stepik证书。是否提供证书始终在具体课程说明中注明。"}},
+"m7k-a10":{
+ q:{en:"<span class=\"m7k-badge\">Learning</span>Who checks the homework assignments?",zh:"<span class=\"m7k-badge\">学习</span>谁批改课后作业？"},
+ a:{en:"It depends on the course: in most courses, assignments are checked automatically by tests on the platform. Where feedback is provided (stated in the plan), you submit your solution for review and receive comments.",zh:"取决于课程：大多数课程的作业由平台测试自动批改。提供反馈的套餐中（套餐中注明），您提交解答后可获得评语。"}},
+"m7k-a11":{
+ q:{en:"<span class=\"m7k-badge\">Learning</span>Can I ask the instructor questions during the training?",zh:"<span class=\"m7k-badge\">学习</span>学习期间可以向讲师提问吗？"},
+ a:{en:"Yes, you can write to support at <a href=\"mailto:maksimqwe42@mail.ru\">maksimqwe42@mail.ru</a> about the course materials. The scope of consulting support depends on the course plan — see the description of the specific course.",zh:"可以，就课程材料问题可致函支持邮箱 <a href=\"mailto:maksimqwe42@mail.ru\">maksimqwe42@mail.ru</a>。咨询支持的范围取决于课程套餐——请查看具体课程说明。"}},
+"m7k-a12":{
+ q:{en:"<span class=\"m7k-badge\">Technical</span>What devices can I use for the courses?",zh:"<span class=\"m7k-badge\">技术问题</span>可以使用哪些设备学习课程？"},
+ a:{en:"Stepik courses are available on a computer, tablet and smartphone — in a browser or in the Stepik mobile app. Practical programming assignments (Linux, Docker, Go, C#, etc.) require a computer with Internet access.",zh:"Stepik课程可在电脑、平板和智能手机上学习——通过浏览器或Stepik移动应用。编程实践作业（Linux、Docker、Go、C#等）需要一台可上网的电脑。"}},
+"m7k-a13":{
+ q:{en:"<span class=\"m7k-badge\">Technical</span>The video won't load / pages are slow. What should I do?",zh:"<span class=\"m7k-badge\">技术问题</span>视频无法加载/页面卡顿，怎么办？"},
+ a:{en:"Try: 1) refreshing the page and clearing the browser cache; 2) checking your Internet speed; 3) opening the course in another browser (Chrome, Firefox); 4) disabling ad blockers for the stepik.org domain. If the problem persists, write to support with a description and a screenshot.",zh:"请尝试：1）刷新页面并清除浏览器缓存；2）检查网速；3）在其他浏览器（Chrome、Firefox）中打开课程；4）对 stepik.org 域名禁用广告拦截器。如问题仍然存在，请附上说明和截图致函支持服务。"}},
+"m7k-a14":{
+ q:{en:"<span class=\"m7k-badge\">Technical</span>I forgot my Stepik / LMS password. How do I restore it?",zh:"<span class=\"m7k-badge\">技术问题</span>忘记了 Stepik / LMS 密码，如何恢复？"},
+ a:{en:"On the Stepik login page, click \"Restore password\" and enter the e-mail used for payment. If the e-mail does not arrive or access cannot be linked — contact support and we will help you restore access.",zh:"在Stepik登录页面点击\"恢复密码\"并输入付款时使用的电子邮箱。如果邮件未收到或无法关联访问权——请联系支持服务，我们将帮助您恢复访问。"}},
+"m7k-a15":{
+ q:{en:"<span class=\"m7k-badge\">Technical</span>Can I download the course videos and materials?",zh:"<span class=\"m7k-badge\">技术问题</span>可以下载课程视频和材料吗？"},
+ a:{en:"No. Course materials are provided for online viewing within the scope of personal access. Downloading, copying and distributing the materials is prohibited by the <a href=\"https://school-maestro7it.ru/terms\" target=\"_blank\" rel=\"noopener\">User Agreement</a> and protected by copyright.",zh:"不可以。课程材料仅限在个人访问权范围内在线观看。<a href=\"https://school-maestro7it.ru/terms\" target=\"_blank\" rel=\"noopener\">用户协议</a>禁止下载、复制和传播材料，材料受版权保护。"}}
+};
+
+/* === Загрузка шрифта Inter === */
+var link = document.createElement("link");
+link.rel = "stylesheet";
+link.href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap";
+document.head.appendChild(link);
+
+var root = document.getElementById("m7k-root");
+if (!root) return;
+
+var $ = function(id) { return document.getElementById(id); };
+var activeCat = "all";
+var query = "";
+var lang = "ru";
+
+var list = $("m7kList");
+var items = list ? list.querySelectorAll(".m7k-item") : [];
+var cnt = $("m7kCnt");
+var empty = $("m7kEmpty");
+var tabsEl = $("m7kTabs");
+var search = $("m7kSearch");
+var clearBtn = $("m7kSearchClear");
+
+/* === Хранилище настроек (общие ключи для всех блоков сайта) === */
+var THEME_KEY = "m7-theme", LANG_KEY = "m7-lang";
+var LANGS = ["ru","en","zh"];
+function store(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+function load(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+
+/* === Тема === */
+var themeBtn = $("m7kTheme");
+function applyTheme(t){
+  if (t === "light") root.setAttribute("data-theme","light");
+  else root.removeAttribute("data-theme");
+  if (themeBtn) themeBtn.textContent = (t === "light") ? "☀️" : "🌙";
+}
+if (themeBtn) themeBtn.addEventListener("click", function(){
+  var t = (root.getAttribute("data-theme") === "light") ? "dark" : "light";
+  applyTheme(t); store(THEME_KEY, t);
+});
+applyTheme(load(THEME_KEY) === "light" ? "light" : "dark");
+
+/* === Оригиналы (ru) === */
+var origItems = {};
+(function captureOriginals(){
+  for (var i = 0; i < items.length; i++) {
+    var el = items[i];
+    var q = el.querySelector(".m7k-q");
+    var a = el.querySelector(".m7k-a");
+    origItems[el.id] = { q: q ? q.innerHTML : "", a: a ? a.innerHTML : "" };
+  }
+})();
+var origSub = cnt ? cnt.innerHTML : "";
+var origFooter = null;
+(function captureFooter(){
+  var f = root.querySelector(".m7k-footer-note");
+  if (f) origFooter = f.innerHTML;
+})();
+var origSupport = {};
+(function captureSupport(){
+  var t = root.querySelector(".m7k-support-t");
+  var d = root.querySelector(".m7k-support-d");
+  var e = root.querySelector(".m7k-empty p");
+  var es = root.querySelector(".m7k-empty span");
+  if (t) origSupport.t = t.innerHTML;
+  if (d) origSupport.d = d.innerHTML;
+  if (e) origSupport.et = e.innerHTML;
+  if (es) origSupport.ed = es.innerHTML;
+})();
+
+/* === Tabs === */
+function buildTabs() {
+  if (!tabsEl) return;
+  tabsEl.innerHTML = "";
+  var frag = document.createDocumentFragment();
+  var keys = Object.keys(M7K_CATEGORIES);
+  for (var i = 0; i < keys.length; i++) {
+    var k = keys[i];
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "m7k-tab" + (activeCat === k ? " m7k-on" : "");
+    btn.textContent = M7K_CATEGORIES[k][lang];
+    btn.setAttribute("role", "tab");
+    btn.setAttribute("aria-selected", activeCat === k);
+    btn.onclick = (function(cat) {
+      return function() { activeCat = cat; buildTabs(); applyFilter(); };
+    })(k);
+    frag.appendChild(btn);
+  }
+  tabsEl.appendChild(frag);
+}
+
+/* === Filter (поиск + категория) === */
+function applyFilter() {
+  var q = query.toLowerCase();
+  var visible = 0;
+
+  for (var i = 0; i < items.length; i++) {
+    var el = items[i];
+    var cat = el.getAttribute("data-cat");
+    var text = (el.textContent || "").toLowerCase();
+
+    var okCat = (activeCat === "all" || cat === activeCat);
+    var okQuery = (!q || text.indexOf(q) > -1);
+    var show = okCat && okQuery;
+
+    el.classList.toggle("m7k-hidden", !show);
+    if (show) visible++;
+  }
+
+  if (cnt) {
+    if (visible === items.length) {
+      cnt.textContent = M7K_UI["faq.default"][lang];
+    } else {
+      cnt.textContent = M7K_UI["faq.found"][lang]
+        .replace("{n}", visible).replace("{total}", items.length);
+    }
+  }
+  if (empty) empty.style.display = visible === 0 ? "flex" : "none";
+}
+
+/* === Поиск (debounce) === */
+var timer;
+if (search) {
+  search.addEventListener("input", function() {
+    clearTimeout(timer);
+    timer = setTimeout(function() {
+      query = search.value.trim();
+      if (clearBtn) clearBtn.classList.toggle("m7k-show", query.length > 0);
+      applyFilter();
+    }, 150);
+  });
+}
+if (clearBtn) {
+  clearBtn.addEventListener("click", function() {
+    search.value = "";
+    query = "";
+    clearBtn.classList.remove("m7k-show");
+    applyFilter();
+    search.focus();
+  });
+}
+
+/* === Язык: русский = оригинальная разметка === */
+function applyLang(l){
+  lang = l; store(LANG_KEY, l);
+
+  for (var i = 0; i < items.length; i++) {
+    var el = items[i];
+    var q = el.querySelector(".m7k-q");
+    var a = el.querySelector(".m7k-a");
+    var dict = M7K_ITEMS[el.id];
+    if (l === "ru") {
+      if (q) q.innerHTML = origItems[el.id].q;
+      if (a) a.innerHTML = origItems[el.id].a;
+    } else if (dict) {
+      if (q && dict.q && dict.q[l]) q.innerHTML = dict.q[l];
+      if (a && dict.a && dict.a[l]) a.innerHTML = dict.a[l];
+    }
+  }
+
+  if (cnt) cnt.innerHTML = (l === "ru") ? origSub : M7K_UI["hdr.sub"][l];
+  if (search) search.placeholder = M7K_UI["search.ph"][l];
+
+  var st = root.querySelector(".m7k-support-t");
+  var sd = root.querySelector(".m7k-support-d");
+  var et = empty ? empty.querySelector("p") : null;
+  var ed = empty ? empty.querySelector("span") : null;
+  if (st) st.innerHTML = (l === "ru") ? origSupport.t : M7K_UI["support.t"][l];
+  if (sd) sd.innerHTML = (l === "ru") ? origSupport.d : M7K_UI["support.d"][l];
+  if (et) et.innerHTML = (l === "ru") ? origSupport.et : M7K_UI["empty.t"][l];
+  if (ed) ed.innerHTML = (l === "ru") ? origSupport.ed : M7K_UI["empty.d"][l];
+
+  var f = root.querySelector(".m7k-footer-note");
+  if (f) {
+    if (l === "ru") f.innerHTML = origFooter;
+    else f.innerHTML = M7K_UI["footer.c"][l] + " — <a href=\"https://school-maestro7it.ru/\" target=\"_blank\" rel=\"noopener\">school-maestro7it.ru</a> · " + M7K_UI["footer.r"][l];
+  }
+
+  document.documentElement.lang = l;
+  var btns = root.querySelectorAll(".m7k-lang-btn");
+  for (var j = 0; j < btns.length; j++) {
+    btns[j].classList.toggle("m7k-on", btns[j].getAttribute("data-lang") === l);
+  }
+  buildTabs();
+  applyFilter();
+}
+
+var langBox = $("m7kLang");
+if (langBox) {
+  langBox.addEventListener("click", function(e) {
+    var b = e.target.closest(".m7k-lang-btn");
+    if (b) applyLang(b.getAttribute("data-lang"));
+  });
+}
+
+/* === Глубокие ссылки: .../faq#m7k-a5 === */
+function openFromHash() {
+  if (!location.hash) return;
+  var target = root.querySelector(location.hash);
+  if (target && target.classList.contains("m7k-item")) {
+    target.open = true;
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
+var stored = load(LANG_KEY);
+applyLang(LANGS.indexOf(stored) === -1 ? "ru" : stored);
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", openFromHash);
+} else {
+  openFromHash();
+}
+window.addEventListener("hashchange", openFromHash);
+
+})();
+</script>

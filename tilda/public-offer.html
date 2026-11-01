@@ -1,0 +1,1074 @@
+<!-- ============================================================
+     Maestro7IT — Публичная оферта (автономный блок для Tilda)
+     Сайт: https://school-maestro7it.ru/
+     Инструкция: вставьте весь этот код в блок T123 (HTML-код) на Tilda
+     ============================================================
+
+     РЕКВИЗИТЫ: Самозанятый Дуплей Максим Игоревич, ИНН 503234333170
+
+     ВОЗМОЖНОСТИ:
+     1. Тёмная/светлая тема (SVG-иконки, учитывает prefers-color-scheme,
+        выбор запоминается — общий ключ m7-theme для всех страниц)
+     2. Языки RU / EN / 中文 (кнопки; выбор — ключ m7-lang)
+     3. Прогресс чтения сверху + липкая панель инструментов
+     4. Кнопка «Наверх», scroll-spy подсветка активного раздела в чипсах
+     5. Клавиатурная навигация: ↑/↓ (или j/k), Esc, Home/End
+     6. Карточка Исполнителя с бейджем ПЭП
+     7. Авто-расчёт «≈ N мин чтения» по объёму документа
+     8. Блок «Внести вклад» (ошибка/идея/отзыв/поделиться)
+     9. Одноразовое подтверждение согласия: клик → 5 сек обратный
+        отсчёт → кнопка исчезает навсегда (ключ m7o-accepted-final)
+     10. Тосты, плавное раскрытие секций (grid-анимация), стили печати
+
+     КАК ПЕРЕВЕСТИ/ПОПРАВИТЬ ТЕКСТЫ:
+     В скрипте словарь M7O_T: ключ = {en: "...", zh: "..."}.
+     Русский текст — исходная разметка (fallback при переключении на RU).
+-->
+
+<div id="m7o-root">
+  <div class="m7o-progress" id="m7oProgress" aria-hidden="true"><span></span></div>
+
+  <div class="m7o-top">
+    <div class="m7o-hdr">
+      <div class="m7o-logo-3d"><span class="m7o-logo-glyph">§</span></div>
+      <div class="m7o-hdr-txt">
+        <h3 class="m7o-hdr-title" data-i18n="hdr.title">Публичная оферта</h3>
+        <p class="m7o-hdr-sub" data-i18n="hdr.sub">Договор публичной оферты об оказании образовательных услуг онлайн-школы Maestro7IT</p>
+      </div>
+      <a class="m7o-link" href="https://school-maestro7it.ru/" target="_blank" rel="noopener">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        school-maestro7it.ru
+      </a>
+    </div>
+
+    <div class="m7o-meta">
+      <span class="m7o-badge" data-i18n="badge.edition">Редакция от 01.11.2026</span>
+      <span class="m7o-badge m7o-badge--ghost" data-i18n="badge.active">Действует с момента публикации</span>
+      <span class="m7o-badge m7o-badge--ghost m7o-badge--read">≈ 4 мин чтения</span>
+      <div class="m7o-switchers">
+        <div class="m7o-lang" id="m7oLang" role="group" aria-label="Language">
+          <button class="m7o-lang-btn" type="button" data-lang="ru">RU</button>
+          <button class="m7o-lang-btn" type="button" data-lang="en">EN</button>
+          <button class="m7o-lang-btn" type="button" data-lang="zh">中文</button>
+        </div>
+        <button class="m7o-theme-btn" id="m7oTheme" type="button" aria-label="Переключить тему">
+          <svg class="m7o-icon-sun" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+          <svg class="m7o-icon-moon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="m7o-author-card" role="note" aria-label="Исполнитель">
+      <div class="m7o-author-avatar" aria-hidden="true">ДМ</div>
+      <div class="m7o-author-info">
+        <div class="m7o-author-name" data-i18n="author.name">Самозанятый Дуплей Максим Игоревич</div>
+        <div class="m7o-author-meta">
+          <span class="m7o-author-inn"><span data-i18n="author.inn">ИНН</span> <b>503234333170</b></span>
+          <span class="m7o-author-sep" aria-hidden="true">·</span>
+          <span class="m7o-author-status" data-i18n="author.status">Плательщик НПД</span>
+          <span class="m7o-author-sep" aria-hidden="true">·</span>
+          <a class="m7o-author-link" href="https://school-maestro7it.ru/" target="_blank" rel="noopener">school-maestro7it.ru</a>
+        </div>
+      </div>
+      <div class="m7o-author-doc" aria-label="Документ подписан простой электронной подписью">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+        <span data-i18n="author.doc">Документ подписан ПЭП</span>
+      </div>
+    </div>
+
+    <div class="m7o-toolbar">
+      <div class="m7o-chips" id="m7oChips" role="navigation"></div>
+      <div class="m7o-actions">
+        <button class="m7o-btn" type="button" data-m7o-action="expand" data-i18n="btn.expand">Развернуть всё</button>
+        <button class="m7o-btn" type="button" data-m7o-action="collapse" data-i18n="btn.collapse">Свернуть всё</button>
+        <button class="m7o-btn" type="button" data-m7o-action="print">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          <span data-i18n="btn.print">Печать</span>
+        </button>
+        <span class="m7o-kbd-hint" aria-hidden="true" data-i18n="kbd.hint">Навигация: <kbd>↑</kbd> <kbd>↓</kbd></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="m7o-doc">
+
+    <details class="m7o-sec" id="m7o-s1" open>
+      <summary class="m7o-sec-head">
+        <span class="m7o-sec-num">1</span>
+        <span class="m7o-sec-title" data-i18n="s1.t">Общие положения и термины</span>
+        <span class="m7o-sec-arrow" aria-hidden="true"></span>
+      </summary>
+      <div class="m7o-sec-body" data-i18n="s1.b">
+        <p>1.1. Настоящий документ является публичной офертой (далее — "Оферта") Дуплей Максима Игоревича, налоговый статус — самозанятый (плательщик налога на профессиональный доход, ИНН 503234333170) (далее — "Исполнитель") и содержит все существенные условия оказания образовательных услуг онлайн-школы программирования Maestro7IT через сайт <a href="https://school-maestro7it.ru/" target="_blank" rel="noopener">school-maestro7it.ru</a> (далее — "Сайт").</p>
+        <p>1.2. В соответствии со статьёй 437 Гражданского кодекса РФ, оплата Услуг Покупателем означает акцепт настоящей Оферты на условиях, изложенных ниже. Акцепт Оферты является заключением договора на условиях, содержащихся в Оферте (далее — "Договор").</p>
+        <p>1.3. Акцептом Оферты является совершение Покупателем одного из следующих действий:</p>
+        <ul>
+          <li>оплата Услуг любым из способов, предусмотренных разделом 4 настоящей Оферты;</li>
+          <li>регистрация на Сайте с последующей оплатой Услуг;</li>
+          <li>начало использования материалов образовательного курса, полученного в рамках исполнения Договора.</li>
+        </ul>
+        <p>1.4. Термины, используемые в Оферте:</p>
+        <ul>
+          <li><b>Сайт</b> — совокупность страниц school-maestro7it.ru и связанных с ним ресурсов Исполнителя, включая LMS-платформу;</li>
+          <li><b>Курс</b> — авторский образовательный продукт (онлайн-курс), размещённый на Сайте и/или на платформе Stepik (stepik.org), включающий видеоуроки, текстовые и практические материалы;</li>
+          <li><b>Покупатель</b> — любое дееспособное физическое лицо, оплатившее Услуги, либо юридическое лицо, заключившее Договор;</li>
+          <li><b>Услуги</b> — образовательные услуги по предоставлению доступа к Курсам и сопутствующие консультации;</li>
+          <li><b>Доступ</b> — право Покупателя использовать материалы Курса в личных образовательных целях.</li>
+        </ul>
+        <p>1.5. Оферта вступает в силу с момента её публикации на Сайте и действует до момента её отзыва Исполнителем. Исполнитель вправе вносить изменения в Оферту с публикацией новой редакции на Сайте. Действующая редакция применяется к отношениям, возникшим после её публикации.</p>
+      </div>
+    </details>
+
+    <details class="m7o-sec" id="m7o-s2">
+      <summary class="m7o-sec-head">
+        <span class="m7o-sec-num">2</span>
+        <span class="m7o-sec-title" data-i18n="s2.t">Предмет договора</span>
+        <span class="m7o-sec-arrow" aria-hidden="true"></span>
+      </summary>
+      <div class="m7o-sec-body" data-i18n="s2.b">
+        <p>2.1. Исполнитель обязуется оказать Покупателю Услуги в объёме, соответствующем описанию выбранного Курса, опубликованному на Сайте и/или на платформе Stepik, а Покупатель обязуется оплатить Услуги в порядке и на условиях, предусмотренных настоящей Офертой.</p>
+        <p>2.2. В перечень Услуг входит:</p>
+        <ul>
+          <li>предоставление Покупателю персонального Доступа к материалам Курса на срок, указанный в описании Курса (если срок не указан — доступ предоставляется бессрочно в течение срока существования Курса, но не менее 12 месяцев с даты оплаты);</li>
+          <li>доступ к дополнительным материалам Курса (файлы, ссылки, чек-листы), если они предусмотрены описанием;</li>
+          <li>консультационная поддержка в объёме, предусмотренном тарифом Курса.</li>
+        </ul>
+        <p>2.3. Курс является авторским произведением. Все исключительные права на материалы Курсов (видео, тексты, презентации, упражнения) принадлежат Исполнителю. Материалы предоставляются Покупателю исключительно для личного некоммерческого использования.</p>
+        <p>2.4. Исполнитель вправе изменять состав и структуру Курса, обновлять материалы, если это не ухудшает заявленный объём Услуг на момент оплаты.</p>
+        <p>2.5. Услуги не включают: индивидуальное обучение "под ключ", трудоустройство, гарантию достижения какого-либо профессионального результата, если это прямо не указано в описании Курса.</p>
+      </div>
+    </details>
+
+    <details class="m7o-sec" id="m7o-s3">
+      <summary class="m7o-sec-head">
+        <span class="m7o-sec-num">3</span>
+        <span class="m7o-sec-title" data-i18n="s3.t">Порядок оформления заказа</span>
+        <span class="m7o-sec-arrow" aria-hidden="true"></span>
+      </summary>
+      <div class="m7o-sec-body" data-i18n="s3.b">
+        <p>3.1. Оформление заказа осуществляется Покупателем самостоятельно на Сайте и/или на странице Курса на платформе Stepik путём выбора Курса и нажатия кнопки оплаты.</p>
+        <p>3.2. До оплаты Покупатель обязуется ознакомиться с описанием Курса, стоимостью и настоящей Офертой. Оплата подтверждает согласие Покупателя со всеми условиями.</p>
+        <p>3.3. После успешной оплаты Покупателю на указанный при оплате e-mail направляется письмо с доступом к Курсу. Доступ открывается в течение <b>1 рабочего дня</b> с момента подтверждения платежа, если иное не указано в описании Курса.</p>
+        <p>3.4. Если Покупатель не получил письмо с доступом в указанный срок, необходимо обратиться в поддержку: <a href="mailto:maksimqwe42@mail.ru">maksimqwe42@mail.ru</a> или по телефонам <a href="tel:+79150480249">+7 915 048-02-49</a>, <a href="tel:+79017065176">+7 901 706-51-76</a>.</p>
+      </div>
+    </details>
+
+    <details class="m7o-sec" id="m7o-s4">
+      <summary class="m7o-sec-head">
+        <span class="m7o-sec-num">4</span>
+        <span class="m7o-sec-title" data-i18n="s4.t">Стоимость и порядок оплаты</span>
+        <span class="m7o-sec-arrow" aria-hidden="true"></span>
+      </summary>
+      <div class="m7o-sec-body" data-i18n="s4.b">
+        <p>4.1. Стоимость Услуг определяется ценами, указанными на Сайте и/или на странице соответствующего Курса на момент оформления заказа. Исполнитель вправе изменять цены; при этом изменение цены не распространяется на уже оплаченные заказы.</p>
+        <p>4.2. Оплата производится следующими способами:</p>
+        <ul>
+          <li>банковской картой через платёжные сервисы, подключённые на Сайте и/или Stepik;</li>
+          <li>платёжными системами (СБП и иными доступными способами, отображаемыми в форме оплаты).</li>
+        </ul>
+        <p>4.3. Обязательство Покупателя по оплате считается исполненным с момента зачисления денежных средств на счёт Исполнителя (либо соответствующего платёжного агента).</p>
+        <p>4.4. При оплате банковской картой обработка платежа осуществляется на стороне платёжного сервиса в соответствии с требованиями международных платёжных систем. Данные карты не сохраняются на Сайте.</p>
+        <p>4.5. По запросу Покупателя Исполнитель направляет закрывающие документы (чек / акт об оказанных услугах) на e-mail, указанный при оплате. Для юридических лиц возможна безналичная оплата по счёту — условия согласовываются по электронной почте.</p>
+      </div>
+    </details>
+
+    <details class="m7o-sec" id="m7o-s5">
+      <summary class="m7o-sec-head">
+        <span class="m7o-sec-num">5</span>
+        <span class="m7o-sec-title" data-i18n="s5.t">Возврат денежных средств</span>
+        <span class="m7o-sec-arrow" aria-hidden="true"></span>
+      </summary>
+      <div class="m7o-sec-body" data-i18n="s5.b">
+        <p>5.1. Покупатель — физическое лицо вправе отказаться от Услуг в любое время до начала их оказания и в период оказания при условии оплаты фактически понесённых Исполнителем расходов. Фактически понесёнными расходами признаётся стоимость фактически предоставленного к моменту отказа объёма Услуг (открытые/просмотренные уроки и материалы Курса).</p>
+        <p>5.2. Заявление на возврат направляется Покупателем на e-mail поддержки <a href="mailto:maksimqwe42@mail.ru">maksimqwe42@mail.ru</a> с адреса, указанного при оплате, и должно содержать: ФИО, название Курса, дату и сумму оплаты, причину возврата.</p>
+        <p>5.3. Денежные средства возвращаются в течение 10 (десяти) рабочих дней с момента получения заявления при отсутствии претензий по фактически оказанному объёму Услуг. Возврат производится тем же способом, которым была произведена оплата.</p>
+        <p>5.4. Возврат не производится, если:</p>
+        <ul>
+          <li>Покупателем пройдено более 50% материалов Курса;</li>
+          <li>Курс приобретён по акции/со скидкой, прямо указывающей на невозвратность, что согласовано Покупателем до оплаты;</li>
+          <li>Доступ к Курсу был передан третьим лицам либо нарушены условия использования материалов.</li>
+        </ul>
+        <p>5.5. Комиссии платёжных систем при возврате не возмещаются.</p>
+      </div>
+    </details>
+
+    <details class="m7o-sec" id="m7o-s6">
+      <summary class="m7o-sec-head">
+        <span class="m7o-sec-num">6</span>
+        <span class="m7o-sec-title" data-i18n="s6.t">Права и обязанности сторон</span>
+        <span class="m7o-sec-arrow" aria-hidden="true"></span>
+      </summary>
+      <div class="m7o-sec-body" data-i18n="s6.b">
+        <p>6.1. Исполнитель обязуется:</p>
+        <ul>
+          <li>оказать Услуги качественно и в объёме, соответствующем описанию Курса;</li>
+          <li>обеспечить работоспособность Сайта и доступов, за исключением случаев технических сбоев по независящим от Исполнителя причинам;</li>
+          <li>отвечать на обращения Покупателей в разумный срок.</li>
+        </ul>
+        <p>6.2. Исполнитель вправе:</p>
+        <ul>
+          <li>изменять структуру и материалы Курсов, обновлять контент;</li>
+          <li>ограничить Доступ Покупателя при выявлении нарушения условий Оферты (передача материалов третьим лицам, попытки взлома, оскорбления в чатах поддержки);</li>
+          <li>отправлять Покупателю информационные и сервисные сообщения, связанные с исполнением Договора.</li>
+        </ul>
+        <p>6.3. Покупатель обязуется:</p>
+        <ul>
+          <li>своевременно оплатить Услуги;</li>
+          <li>не передавать материалы Курса третьим лицам, не публиковать, не копировать и не использовать их в коммерческих целях;</li>
+          <li>не нарушать авторские права Исполнителя;</li>
+          <li>указывать корректные контактные данные при оплате.</li>
+        </ul>
+        <p>6.4. Покупатель вправе:</p>
+        <ul>
+          <li>получить Услуги в объёме и в сроки, предусмотренные Офертой и описанием Курса;</li>
+          <li>обратиться за возвратом на условиях раздела 5;</li>
+          <li>задавать вопросы по материалам Курса в объёме, предусмотренном тарифом.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="m7o-sec" id="m7o-s7">
+      <summary class="m7o-sec-head">
+        <span class="m7o-sec-num">7</span>
+        <span class="m7o-sec-title" data-i18n="s7.t">Персональные данные</span>
+        <span class="m7o-sec-arrow" aria-hidden="true"></span>
+      </summary>
+      <div class="m7o-sec-body" data-i18n="s7.b">
+        <p>7.1. Принимая Оферту, Покупатель даёт согласие на обработку своих персональных данных (ФИО, e-mail, телефон, данные об оплате и прохождении Курсов) в целях исполнения Договора, информирования о продуктах Исполнителя и улучшения качества Услуг, в соответствии с Федеральным законом № 152-ФЗ "О персональных данных".</p>
+        <p>7.2. Обработка включает сбор, запись, систематизацию, хранение, уточнение, использование, обезличивание, блокирование и удаление данных как с использованием средств автоматизации, так и без них.</p>
+        <p>7.3. Покупатель вправе отозвать согласие на обработку персональных данных, направив запрос на e-mail поддержки. После отзыва Исполнитель вправе продолжить обработку данных, необходимую для исполнения Договора и требований законодательства (включая хранение фискальных документов).</p>
+        <p>7.4. Исполнитель обязуется не передавать персональные данные третьим лицам, за исключением случаев, прямо предусмотренных законодательством РФ, и сервисов, обеспечивающих исполнение Договора (платёжные системы, платформа Stepik, сервисы рассылок), действующих на условиях конфиденциальности.</p>
+      </div>
+    </details>
+
+    <details class="m7o-sec" id="m7o-s8">
+      <summary class="m7o-sec-head">
+        <span class="m7o-sec-num">8</span>
+        <span class="m7o-sec-title" data-i18n="s8.t">Ответственность сторон</span>
+        <span class="m7o-sec-arrow" aria-hidden="true"></span>
+      </summary>
+      <div class="m7o-sec-body" data-i18n="s8.b">
+        <p>8.1. Стороны освобождаются от ответственности за частичное или полное неисполнение обязательств, если оно явилось следствием обстоятельств непреодолимой силы (форс-мажор): стихийных бедствий, военных действий, актов органов власти, массовых сбоев сетей связи и энергоснабжения, возникших после заключения Договора.</p>
+        <p>8.2. Услуги носят образовательный характер. Результат обучения зависит от личных усилий Покупателя; Исполнитель не гарантирует достижение конкретных профессиональных или финансовых результатов.</p>
+        <p>8.3. Исполнитель не несёт ответственности за невозможность доступа к Курсу, вызванную техническими проблемами на стороне Покупателя (устройство, браузер, скорость интернет-соединения) или третьих сервисов (Stepik, платёжные системы).</p>
+        <p>8.4. За нарушение авторских прав Исполнителя (распространение материалов Курса) Покупатель несёт ответственность в соответствии с законодательством РФ.</p>
+        <p>8.5. Совокупная ответственность Исполнителя по Договору ограничена суммой, фактически уплаченной Покупателем за соответствующий Курс.</p>
+      </div>
+    </details>
+
+    <details class="m7o-sec" id="m7o-s9">
+      <summary class="m7o-sec-head">
+        <span class="m7o-sec-num">9</span>
+        <span class="m7o-sec-title" data-i18n="s9.t">Разрешение споров. Заключительные положения</span>
+        <span class="m7o-sec-arrow" aria-hidden="true"></span>
+      </summary>
+      <div class="m7o-sec-body" data-i18n="s9.b">
+        <p>9.1. Все споры разрешаются путём переговоров. Досудебный порядок обязателен: претензия направляется на e-mail Исполнителя и рассматривается в течение 10 рабочих дней.</p>
+        <p>9.2. При недостижении согласия спор рассматривается в судебном порядке по месту нахождения Исполнителя в соответствии с законодательством РФ.</p>
+        <p>9.3. Признание судом какого-либо положения Оферты недействительным не влечёт недействительности Оферты в целом.</p>
+        <p>9.4. К отношениям Сторон применяется право Российской Федерации.</p>
+        <p>9.5. Оферта может быть отозвана Исполнителем в любое время, но не является основанием для расторжения Договоров, заключённых ранее.</p>
+      </div>
+    </details>
+
+    <details class="m7o-sec" id="m7o-s10">
+      <summary class="m7o-sec-head">
+        <span class="m7o-sec-num">10</span>
+        <span class="m7o-sec-title" data-i18n="s10.t">Реквизиты Исполнителя</span>
+        <span class="m7o-sec-arrow" aria-hidden="true"></span>
+      </summary>
+      <div class="m7o-sec-body" data-i18n="s10.b">
+        <div class="m7o-requisites">
+          <div class="m7o-req-row"><span data-i18n="req.name">Наименование</span><b>Школа программирования Maestro7IT</b></div>
+          <div class="m7o-req-row"><span data-i18n="req.exec">Исполнитель</span><b data-i18n="req.exec.v">Самозанятый Дуплей Максим Игоревич (плательщик НПД)</b></div>
+          <div class="m7o-req-row"><span data-i18n="req.inn">ИНН</span><b>503234333170</b></div>
+          <div class="m7o-req-row"><span>E-mail</span><b><a href="mailto:maksimqwe42@mail.ru">maksimqwe42@mail.ru</a></b></div>
+          <div class="m7o-req-row"><span data-i18n="req.phone">Телефон</span><b><a href="tel:+79150480249">+7 915 048-02-49</a>, <a href="tel:+79017065176">+7 901 706-51-76</a></b></div>
+          <div class="m7o-req-row"><span data-i18n="req.site">Сайт</span><b><a href="https://school-maestro7it.ru/" target="_blank" rel="noopener">school-maestro7it.ru</a></b></div>
+        </div>
+        <p class="m7o-note" data-i18n="note">Продолжая использование Сайта и оплачивая Услуги, Покупатель подтверждает, что ознакомлен и согласен с условиями настоящей Оферты в полном объёме.</p>
+      </div>
+    </details>
+
+  </div>
+
+  <button class="m7o-top-btn" type="button" id="m7oTopBtn" aria-label="Прокрутить наверх"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+
+  <div class="m7o-contribute" role="region">
+    <div class="m7o-contribute-head">
+      <div class="m7o-contribute-icon" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      </div>
+      <div>
+        <strong data-i18n="contrib.title">Внесите свой вклад в развитие платформы</strong>
+        <small data-i18n="contrib.sub">Ваши отзывы, замечания и предложения помогают делать обучение лучше для всех.</small>
+      </div>
+    </div>
+    <div class="m7o-contribute-grid">
+      <a class="m7o-contrib-item" href="mailto:maksimqwe42@mail.ru?subject=Ошибка%20в%20оферте%20Maestro7IT&body=Здравствуйте!%20Нашёл%20неточность%20в%20оферте:%0A%0AРаздел:%20%0AСуть:%20%0A%0A" data-m7o-contrib="bug">
+        <span class="m7o-contrib-ico" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2l1.88 1.88M14.12 3.88L16 2M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/><path d="M12 20v-7M9 13h.01M15 13h.01"/></svg>
+        </span>
+        <span class="m7o-contrib-txt">
+          <b data-i18n="contrib.bug.t">Нашли ошибку?</b>
+          <em data-i18n="contrib.bug.d">Сообщите о неточности в тексте документа</em>
+        </span>
+      </a>
+      <a class="m7o-contrib-item" href="mailto:maksimqwe42@mail.ru?subject=Предложение%20по%20оферте%20Maestro7IT&body=Здравствуйте!%20Хочу%20предложить%20улучшение:%0A%0A" data-m7o-contrib="idea">
+        <span class="m7o-contrib-ico" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2v.3h6v-.3c0-.7.4-1.5 1-2A7 7 0 0 0 12 2z"/></svg>
+        </span>
+        <span class="m7o-contrib-txt">
+          <b data-i18n="contrib.idea.t">Идея для улучшения</b>
+          <em data-i18n="contrib.idea.d">Предложите, как сделать курсы лучше</em>
+        </span>
+      </a>
+      <a class="m7o-contrib-item" href="mailto:maksimqwe42@mail.ru?subject=Отзыв%20о%20Maestro7IT" data-m7o-contrib="review">
+        <span class="m7o-contrib-ico" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        </span>
+        <span class="m7o-contrib-txt">
+          <b data-i18n="contrib.review.t">Оставить отзыв</b>
+          <em data-i18n="contrib.review.d">Поделитесь впечатлениями об обучении</em>
+        </span>
+      </a>
+      <a class="m7o-contrib-item" href="https://school-maestro7it.ru/" target="_blank" rel="noopener">
+        <span class="m7o-contrib-ico" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        </span>
+        <span class="m7o-contrib-txt">
+          <b data-i18n="contrib.share.t">Рассказать друзьям</b>
+          <em data-i18n="contrib.share.d">Поделитесь ссылкой на школу</em>
+        </span>
+      </a>
+    </div>
+  </div>
+
+  <div class="m7o-accept" role="region">
+    <div class="m7o-accept-txt">
+      <strong data-i18n="accept.t">Ознакомились с условиями оферты?</strong>
+      <small data-i18n="accept.d">Нажмите кнопку, чтобы зафиксировать согласие. Кнопка исчезнет через 5 секунд, после чего подтверждение станет необратимым.</small>
+    </div>
+    <button class="m7o-accept-btn" type="button" id="m7oAcceptBtn" aria-label="Подтвердить согласие с офертой">
+      <svg class="m7o-accept-icon-default" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      <svg class="m7o-accept-icon-done" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      <span class="m7o-accept-spinner" aria-hidden="true"></span>
+      <span class="m7o-accept-label" data-i18n="accept.btn">Подтверждаю согласие</span>
+    </button>
+    <div class="m7o-accept-final-msg" hidden>
+      <span class="m7o-accept-final-ico" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </span>
+      <span class="m7o-accept-final-info">
+        <strong data-i18n="accept.final.t">Согласие подтверждено навсегда</strong>
+        <small data-i18n="accept.final.d">Действие зафиксировано в вашем браузере и не может быть отменено.</small>
+      </span>
+    </div>
+  </div>
+
+  <div class="m7o-toast" id="m7oToast" role="status" aria-live="polite"></div>
+
+  <div class="m7l-footer-block">
+    <div class="m7l-footer-copyright" data-i18n="footer.copy">© Все права защищены, 2026</div>
+    <div class="m7l-footer-meta" data-i18n="footer.meta">Школа программирования Maestro7IT · Самозанятый Дуплей М.&nbsp;И. · ИНН&nbsp;503234333170</div>
+    <div class="m7l-footer-links"><a href="https://school-maestro7it.ru/" target="_blank" rel="noopener">school-maestro7it.ru</a></div>
+  </div>
+</div>
+
+<style>
+/* === Break out of Tilda container === */
+#m7o-root{position:relative}
+#m7o-root[data-wide]{
+  width:100vw!important;
+  max-width:100vw!important;
+  margin-left:calc(-50vw + 50%)!important;
+  margin-right:calc(-50vw + 50%)!important;
+}
+
+/* === Scoped variables (тёмная тема по умолчанию) === */
+#m7o-root{
+  --a:#6c5ce7;--a2:#a29bfe;--bg:#0b0b1a;
+  --sf:rgba(255,255,255,.04);--sh:rgba(255,255,255,.08);
+  --bd:rgba(255,255,255,.07);--bh:rgba(255,255,255,.14);
+  --t1:#f0f0f5;--t2:rgba(255,255,255,.55);--t3:rgba(255,255,255,.3);
+  --badge-bg:rgba(108,92,231,.14);--badge-bd:rgba(108,92,231,.25);
+  --req-stripe:rgba(255,255,255,.02);
+  --logo-shadow:0 4px 0 #4a3ab5,0 7px 14px rgba(108,92,231,.4);
+  --r:12px;--rs:8px;
+  width:100%;margin:0 auto;
+  background:var(--bg);color:var(--t1);
+  font-family:'Inter','TildaSans',sans-serif;
+  box-sizing:border-box;padding:32px 40px 48px;position:relative;
+  transition:background .35s ease,color .35s ease
+}
+#m7o-root *,#m7o-root *::before,#m7o-root *::after{box-sizing:border-box}
+
+/* === Светлая тема === */
+#m7o-root[data-theme="light"]{
+  --bg:#f4f5fa;
+  --sf:#ffffff;--sh:#eef0f8;
+  --bd:rgba(22,22,60,.10);--bh:rgba(22,22,60,.20);
+  --t1:#1c1c30;--t2:rgba(28,28,48,.68);--t3:rgba(28,28,48,.42);
+  --a:#5b4bd5;--a2:#5b4bd5;
+  --badge-bg:rgba(91,75,213,.10);--badge-bd:rgba(91,75,213,.25);
+  --req-stripe:rgba(28,28,48,.03);
+  --logo-shadow:0 4px 0 #4a3ab5,0 7px 14px rgba(91,75,213,.35);
+}
+
+/* === Header === */
+#m7o-root .m7o-top{margin-bottom:20px}
+#m7o-root .m7o-hdr{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+#m7o-root .m7o-logo-3d{width:44px;height:44px;border-radius:14px 14px 20px 20px;background:linear-gradient(145deg,#7c6cf7,#5b4bd5);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:var(--logo-shadow);transform:perspective(200px) rotateX(2deg);transition:transform .25s}
+#m7o-root .m7o-logo-3d:hover{transform:perspective(200px) rotateX(0) scale(1.05)}
+#m7o-root .m7o-logo-glyph{font-size:22px;font-weight:700;color:#fff;font-family:Georgia,'Times New Roman',serif}
+#m7o-root .m7o-hdr-title{font-size:22px;font-weight:600;margin:0;letter-spacing:-.5px;color:var(--t1)}
+#m7o-root .m7o-hdr-sub{font-size:12px;color:var(--t3);margin:2px 0 0;max-width:520px}
+#m7o-root .m7o-link{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--rs);background:var(--sf);border:1px solid var(--bd);color:var(--t2);font-size:11px;text-decoration:none;transition:.2s;white-space:nowrap}
+#m7o-root .m7o-link:hover{background:var(--sh);color:var(--t1);border-color:var(--bh)}
+
+/* === Badges + switchers === */
+#m7o-root .m7o-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+#m7o-root .m7o-badge{display:inline-block;padding:4px 12px;border-radius:12px;font-size:11px;font-weight:500;background:var(--badge-bg);color:var(--a2);border:1px solid var(--badge-bd)}
+#m7o-root .m7o-badge--ghost{background:var(--sf);color:var(--t2);border-color:var(--bd)}
+#m7o-root .m7o-switchers{margin-left:auto;display:flex;gap:8px;align-items:center}
+#m7o-root .m7o-lang{display:inline-flex;border-radius:20px;border:1px solid var(--bd);background:var(--sf);overflow:hidden}
+#m7o-root .m7o-lang-btn{padding:5px 11px;border:none;background:transparent;color:var(--t2);font-size:10.5px;font-weight:600;font-family:inherit;cursor:pointer;transition:.2s}
+#m7o-root .m7o-lang-btn:hover{color:var(--t1);background:var(--sh)}
+#m7o-root .m7o-lang-btn.m7o-on{background:var(--a);color:#fff}
+#m7o-root .m7o-theme-btn{width:30px;height:30px;border-radius:50%;border:1px solid var(--bd);background:var(--sf);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:.2s;padding:0;color:var(--t2)}
+#m7o-root .m7o-theme-btn:hover{background:var(--sh);border-color:var(--bh);color:var(--t1)}
+#m7o-root .m7o-theme-btn svg{transition:transform .35s ease}
+#m7o-root .m7o-theme-btn:hover svg{transform:rotate(20deg)}
+#m7o-root .m7o-icon-sun,#m7o-root .m7o-icon-moon{display:none}
+#m7o-root[data-theme="light"] .m7o-icon-moon{display:inline-block}
+#m7o-root[data-theme="dark"] .m7o-icon-sun{display:inline-block}
+#m7o-root .m7o-lang-btn:focus-visible,#m7o-root .m7o-theme-btn:focus-visible{outline:2px solid var(--a);outline-offset:2px}
+
+/* === Author card === */
+#m7o-root .m7o-author-card{margin:0 0 18px;padding:14px 16px;border-radius:var(--r);border:1px solid var(--bd);background:linear-gradient(135deg,rgba(108,92,231,.1),rgba(108,92,231,.02));display:flex;align-items:center;gap:14px;flex-wrap:wrap;transition:border-color .3s ease}
+#m7o-root[data-theme="light"] .m7o-author-card{background:linear-gradient(135deg,rgba(91,75,213,.06),rgba(91,75,213,.02))}
+#m7o-root .m7o-author-card:hover{border-color:var(--a)}
+#m7o-root .m7o-author-avatar{width:46px;height:46px;border-radius:14px;flex-shrink:0;background:linear-gradient(145deg,#7c6cf7,#5b4bd5);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;letter-spacing:.5px;box-shadow:0 3px 10px rgba(91,75,213,.28)}
+#m7o-root .m7o-author-info{flex:1;min-width:200px}
+#m7o-root .m7o-author-name{font-size:14px;font-weight:600;color:var(--t1);line-height:1.3;margin-bottom:3px;letter-spacing:-.2px}
+#m7o-root .m7o-author-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11.5px;color:var(--t2);line-height:1.4}
+#m7o-root .m7o-author-inn b{color:var(--t1);font-weight:600;font-family:'SF Mono','Consolas',monospace;font-size:11.5px;letter-spacing:.3px}
+#m7o-root .m7o-author-sep{color:var(--t3);opacity:.6}
+#m7o-root .m7o-author-status{padding:2px 8px;border-radius:8px;background:rgba(34,197,94,.18);color:#4ade80;font-size:10.5px;font-weight:600;border:1px solid rgba(34,197,94,.3)}
+#m7o-root[data-theme="light"] .m7o-author-status{background:rgba(34,197,94,.12);color:#16a34a;border-color:rgba(34,197,94,.22)}
+#m7o-root .m7o-author-link{color:var(--a2);text-decoration:none;border-bottom:1px dashed rgba(162,155,254,.3);transition:.2s;font-weight:500}
+#m7o-root .m7o-author-link:hover{border-bottom-style:solid}
+#m7o-root .m7o-author-doc{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:8px;background:var(--badge-bg);color:var(--a2);font-size:11px;font-weight:500;border:1px solid var(--badge-bd);white-space:nowrap}
+@media(max-width:480px){#m7o-root .m7o-author-card{padding:12px 14px;gap:10px}#m7o-root .m7o-author-avatar{width:40px;height:40px;font-size:13px}#m7o-root .m7o-author-doc{width:100%;justify-content:center}}
+
+/* === Toolbar (sticky) === */
+#m7o-root .m7o-toolbar{position:sticky;top:3px;z-index:25;background:var(--bg);display:flex;flex-direction:column;gap:12px;margin-bottom:20px;padding:6px 0 4px;border-radius:0 0 14px 14px;transition:box-shadow .25s ease,background .35s ease}
+#m7o-root .m7o-toolbar.m7o-stuck{box-shadow:0 8px 24px rgba(0,0,0,.5)}
+#m7o-root[data-theme="light"] .m7o-toolbar.m7o-stuck{box-shadow:0 8px 24px rgba(20,20,50,.08)}
+#m7o-root .m7o-chips{display:flex;gap:6px;flex-wrap:wrap}
+#m7o-root .m7o-chip{padding:6px 13px;border-radius:20px;border:1px solid var(--bd);background:transparent;color:var(--t2);font-size:11.5px;font-weight:500;font-family:inherit;cursor:pointer;transition:.2s;text-decoration:none;white-space:nowrap}
+#m7o-root .m7o-chip:hover{background:var(--sf);color:var(--t1);border-color:var(--bh)}
+#m7o-root .m7o-chip.m7o-active{color:#0b0b1a;background:var(--a2);border-color:var(--a2);box-shadow:0 2px 6px rgba(108,92,231,.3)}
+#m7o-root[data-theme="light"] .m7o-chip.m7o-active{color:#fff;background:var(--a);border-color:var(--a)}
+#m7o-root .m7o-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#m7o-root .m7o-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--rs);border:1px solid var(--bd);background:var(--sf);color:var(--t2);font-size:11.5px;font-weight:500;font-family:inherit;cursor:pointer;transition:.2s}
+#m7o-root .m7o-btn:hover{background:var(--sh);color:var(--t1);border-color:var(--bh)}
+#m7o-root .m7o-btn:focus-visible,#m7o-root .m7o-chip:focus-visible{outline:2px solid var(--a);outline-offset:2px}
+
+/* === Keyboard hint === */
+#m7o-root .m7o-kbd-hint{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;background:var(--sf);border:1px solid var(--bd);color:var(--t3);font-size:10.5px;line-height:1}
+#m7o-root .m7o-kbd-hint kbd{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:4px;background:var(--sh);border:1px solid var(--bd);color:var(--t2);font-family:inherit;font-size:10px;font-weight:600;line-height:1}
+@media(max-width:768px){#m7o-root .m7o-kbd-hint{display:none}}
+
+/* === Document sections === */
+#m7o-root .m7o-doc{display:flex;flex-direction:column;gap:10px}
+#m7o-root .m7o-sec{border-radius:var(--r);border:1px solid var(--bd);background:var(--sf);overflow:hidden;scroll-margin-top:80px;transition:border-color .25s,background .25s}
+#m7o-root .m7o-sec:hover{border-color:var(--bh)}
+#m7o-root .m7o-sec[open]{background:var(--sh);border-color:var(--bh)}
+
+#m7o-root .m7o-sec-head{display:flex;align-items:center;gap:12px;padding:15px 18px;cursor:pointer;list-style:none;-webkit-user-select:none;user-select:none;transition:background .2s}
+#m7o-root .m7o-sec-head::-webkit-details-marker{display:none}
+#m7o-root .m7o-sec-head:hover{background:rgba(108,92,231,.05)}
+#m7o-root .m7o-sec-head:focus-visible{outline:2px solid var(--a);outline-offset:-2px}
+
+#m7o-root .m7o-sec-num{width:28px;height:28px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:600;color:var(--a2);background:var(--badge-bg);border:1px solid var(--badge-bd)}
+#m7o-root .m7o-sec-title{font-size:14px;font-weight:600;color:var(--t1);line-height:1.35;flex:1}
+#m7o-root .m7o-sec-arrow{width:8px;height:8px;flex-shrink:0;border-right:1.5px solid var(--t3);border-bottom:1.5px solid var(--t3);transform:rotate(45deg);transition:transform .25s;margin-right:4px}
+#m7o-root .m7o-sec[open] .m7o-sec-arrow{transform:rotate(-135deg)}
+
+/* === Section body (плавное раскрытие через grid-rows) === */
+#m7o-root .m7o-sec-body{display:grid;grid-template-rows:0fr;padding:2px 20px 0;border-top:1px solid var(--bd);overflow:hidden;transition:grid-template-rows .35s cubic-bezier(.4,0,.2,1),padding-bottom .35s cubic-bezier(.4,0,.2,1)}
+#m7o-root .m7o-sec[open]>.m7o-sec-body{grid-template-rows:1fr;padding-bottom:18px}
+#m7o-root .m7o-sec-body-inner{min-height:0;overflow:hidden}
+@media(prefers-reduced-motion:reduce){#m7o-root .m7o-sec-body{transition:none}}
+#m7o-root .m7o-sec-body p{font-size:13px;line-height:1.65;color:var(--t2);margin:12px 0 0}
+#m7o-root .m7o-sec-body ul{margin:10px 0 0;padding-left:20px}
+#m7o-root .m7o-sec-body li{font-size:13px;line-height:1.65;color:var(--t2);margin-bottom:6px}
+#m7o-root .m7o-sec-body li::marker{color:var(--a2)}
+#m7o-root .m7o-sec-body b{color:var(--t1);font-weight:600}
+#m7o-root .m7o-sec-body a{color:var(--a2);text-decoration:none;border-bottom:1px solid rgba(162,155,254,.3);transition:.2s}
+#m7o-root .m7o-sec-body a:hover{color:var(--t1);border-bottom-color:var(--t1)}
+
+/* === Requisites === */
+#m7o-root .m7o-requisites{margin-top:14px;border:1px solid var(--bd);border-radius:var(--rs);overflow:hidden}
+#m7o-root .m7o-req-row{display:flex;gap:14px;padding:9px 14px;font-size:12.5px;border-bottom:1px solid var(--bd)}
+#m7o-root .m7o-req-row:last-child{border-bottom:none}
+#m7o-root .m7o-req-row:nth-child(odd){background:var(--req-stripe)}
+#m7o-root .m7o-req-row span{color:var(--t3);min-width:130px;flex-shrink:0}
+#m7o-root .m7o-req-row b{color:var(--t1);font-weight:500;word-break:break-word}
+#m7o-root .m7o-req-row a{color:var(--a2);text-decoration:none}
+#m7o-root .m7o-req-row a:hover{text-decoration:underline}
+
+/* === Note & footer === */
+#m7o-root .m7o-note{margin-top:14px!important;padding:12px 14px;border-radius:var(--rs);background:var(--badge-bg);border:1px solid var(--badge-bd);font-size:12.5px!important;color:var(--t2)}
+#m7o-root .m7l-footer-block{margin-top:24px;padding:18px 20px;border-radius:var(--r);border:1px solid var(--bd);background:var(--sf);text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px}
+#m7o-root .m7l-footer-copyright{font-size:12.5px;font-weight:600;color:var(--t1)}
+#m7o-root .m7l-footer-meta{font-size:11px;color:var(--t3);line-height:1.5}
+#m7o-root .m7l-footer-links{font-size:11px}
+#m7o-root .m7l-footer-links a{color:var(--a2);text-decoration:none;font-weight:500}
+#m7o-root .m7l-footer-links a:hover{text-decoration:underline}
+
+/* === Flash on anchor jump === */
+#m7o-root .m7o-sec.m7o-flash{animation:m7oFlash 1.6s ease-out}
+@keyframes m7oFlash{0%{border-color:var(--a);box-shadow:0 0 0 3px rgba(108,92,231,.25)}100%{border-color:var(--bh);box-shadow:0 0 0 3px transparent}}
+
+/* === Reading progress === */
+#m7o-root .m7o-progress{position:fixed;top:0;left:0;right:0;height:3px;z-index:9990;pointer-events:none;visibility:hidden;background:rgba(108,92,231,.12)}
+#m7o-root[data-theme="light"] .m7o-progress{background:rgba(91,75,213,.07)}
+#m7o-root .m7o-progress>span{display:block;height:100%;width:0;background:linear-gradient(90deg,#7c6cf7,#5b4bd5);transition:width .08s linear;border-radius:0 3px 3px 0}
+#m7o-root .m7o-progress.m7o-visible{visibility:visible}
+
+/* === Back to top === */
+#m7o-root .m7o-top-btn{position:fixed;right:20px;bottom:20px;z-index:50;width:44px;height:44px;border-radius:50%;border:1px solid var(--bh);background:var(--sf);color:var(--t2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:inherit;padding:0;box-shadow:0 8px 24px rgba(0,0,0,.55);opacity:0;transform:translateY(12px) scale(.92);transition:opacity .25s ease,transform .25s ease,color .2s ease,background .2s ease,border-color .2s ease;pointer-events:none}
+#m7o-root[data-theme="light"] .m7o-top-btn{box-shadow:0 8px 24px rgba(91,75,213,.18)}
+#m7o-root .m7o-top-btn.m7o-visible{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+#m7o-root .m7o-top-btn:hover{color:#fff;background:var(--a);border-color:var(--a);transform:translateY(-2px) scale(1)}
+#m7o-root[data-theme="light"] .m7o-top-btn:hover{color:#fff;background:var(--a)}
+#m7o-root .m7o-top-btn:focus-visible{outline:2px solid var(--a);outline-offset:3px}
+@media(max-width:480px){#m7o-root .m7o-top-btn{right:14px;bottom:14px;width:40px;height:40px}}
+
+/* === Contribute === */
+#m7o-root .m7o-contribute{margin-top:18px;padding:20px 22px;border-radius:var(--r);border:1px solid var(--bd);background:var(--sf);transition:border-color .3s ease}
+#m7o-root .m7o-contribute:hover{border-color:var(--bh)}
+#m7o-root .m7o-contribute-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:16px}
+#m7o-root .m7o-contribute-icon{width:38px;height:38px;border-radius:11px;flex-shrink:0;background:linear-gradient(135deg,#fda4af,#fb7185);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 12px rgba(251,113,133,.4)}
+#m7o-root .m7o-contribute-head strong{display:block;font-size:14px;font-weight:600;color:var(--t1);margin-bottom:3px;letter-spacing:-.2px}
+#m7o-root .m7o-contribute-head small{font-size:11.5px;color:var(--t3);line-height:1.55;display:block}
+#m7o-root .m7o-contribute-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media(max-width:640px){#m7o-root .m7o-contribute-grid{grid-template-columns:1fr}}
+#m7o-root .m7o-contrib-item{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:var(--rs);border:1px solid var(--bd);background:var(--bg);color:var(--t2);text-decoration:none;transition:all .2s ease;cursor:pointer}
+#m7o-root .m7o-contrib-item:hover{border-color:var(--a);background:rgba(108,92,231,.08);color:var(--t1);transform:translateY(-1px)}
+#m7o-root[data-theme="light"] .m7o-contrib-item:hover{background:rgba(91,75,213,.04)}
+#m7o-root .m7o-contrib-item:active{transform:translateY(0)}
+#m7o-root .m7o-contrib-ico{width:32px;height:32px;border-radius:9px;flex-shrink:0;background:var(--sf);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;color:var(--a2);transition:all .2s ease}
+#m7o-root .m7o-contrib-item:hover .m7o-contrib-ico{background:var(--a2);color:#0b0b1a;border-color:var(--a2);transform:scale(1.05)}
+#m7o-root[data-theme="light"] .m7o-contrib-item:hover .m7o-contrib-ico{background:var(--a);color:#fff;border-color:var(--a)}
+#m7o-root .m7o-contrib-txt{flex:1;min-width:0;line-height:1.25}
+#m7o-root .m7o-contrib-txt b{display:block;font-size:12.5px;font-weight:600;color:var(--t1);margin-bottom:2px}
+#m7o-root .m7o-contrib-txt em{display:block;font-size:10.5px;font-style:normal;color:var(--t3);line-height:1.3}
+
+/* === Accept CTA (одноразовое подтверждение) === */
+#m7o-root .m7o-accept{margin-top:18px;padding:18px 22px;border-radius:var(--r);background:linear-gradient(135deg,rgba(108,92,231,.14),rgba(108,92,231,.04));border:1px solid rgba(108,92,231,.28);display:flex;align-items:center;gap:18px;flex-wrap:wrap;transition:border-color .3s ease,background .3s ease}
+#m7o-root[data-theme="light"] .m7o-accept{background:linear-gradient(135deg,rgba(91,75,213,.09),rgba(91,75,213,.04));border-color:rgba(91,75,213,.22)}
+#m7o-root .m7o-accept.m7o-finalized{background:linear-gradient(135deg,rgba(34,197,94,.2),rgba(34,197,94,.06));border-color:rgba(34,197,94,.5)}
+#m7o-root[data-theme="light"] .m7o-accept.m7o-finalized{background:linear-gradient(135deg,rgba(34,197,94,.14),rgba(34,197,94,.04));border-color:rgba(34,197,94,.45)}
+#m7o-root .m7o-accept-txt{flex:1;min-width:200px}
+#m7o-root .m7o-accept-txt strong{display:block;font-size:14px;font-weight:600;color:var(--t1);margin-bottom:3px;letter-spacing:-.2px}
+#m7o-root .m7o-accept-txt small{font-size:11.5px;color:var(--t3);line-height:1.55}
+#m7o-root .m7o-accept-btn{display:inline-flex;align-items:center;gap:7px;padding:11px 22px;border-radius:10px;border:0;background:linear-gradient(145deg,#7c6cf7,#5b4bd5);color:#fff;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;transition:transform .2s ease,box-shadow .2s ease,opacity .6s ease;box-shadow:0 4px 14px rgba(91,75,213,.32);white-space:nowrap;flex-shrink:0;position:relative;overflow:hidden}
+#m7o-root .m7o-accept-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 18px rgba(91,75,213,.42)}
+#m7o-root .m7o-accept-btn:active:not(:disabled){transform:translateY(0)}
+#m7o-root .m7o-accept-btn:focus-visible{outline:2px solid var(--a);outline-offset:3px}
+#m7o-root .m7o-accept-btn:disabled{cursor:default}
+#m7o-root .m7o-accept-btn .m7o-accept-spinner{display:none}
+#m7o-root .m7o-accept-btn.m7o-counting::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:rgba(255,255,255,.7);transform-origin:left;animation:m7oCountdown 5s linear forwards;border-radius:0 0 10px 10px}
+@keyframes m7oCountdown{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+#m7o-root .m7o-accept-btn.m7o-fading{animation:m7oFadeOut .6s ease forwards;pointer-events:none}
+@keyframes m7oFadeOut{to{opacity:0;transform:scale(.96)}}
+#m7o-root .m7o-accept-final-msg{display:none;align-items:center;gap:14px;flex:1;min-width:200px;animation:m7oFadeIn .4s ease}
+@keyframes m7oFadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+#m7o-root .m7o-accept-final-ico{width:36px;height:36px;border-radius:50%;flex-shrink:0;background:linear-gradient(145deg,#22c55e,#16a34a);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(34,197,94,.32)}
+#m7o-root .m7o-accept-final-info{flex:1;min-width:0;line-height:1.4}
+#m7o-root .m7o-accept-final-info strong{display:block;font-size:13.5px;font-weight:600;color:#4ade80;margin-bottom:3px}
+#m7o-root[data-theme="light"] .m7o-accept-final-info strong{color:#16a34a}
+#m7o-root .m7o-accept-final-info small{font-size:11.5px;color:var(--t3);line-height:1.5;display:block}
+@media(max-width:480px){#m7o-root .m7o-accept{flex-direction:column;align-items:stretch;text-align:center;gap:14px}#m7o-root .m7o-accept-btn{justify-content:center;width:100%}#m7o-root .m7o-accept-final-msg{flex-direction:column;text-align:center;gap:10px}}
+
+/* === Toast === */
+#m7o-root .m7o-toast{position:fixed;left:50%;bottom:24px;z-index:60;transform:translateX(-50%) translateY(20px);padding:10px 18px;border-radius:10px;background:#f0f0f5;color:#0b0b1a;font-size:12.5px;font-weight:500;opacity:0;pointer-events:none;transition:opacity .25s ease,transform .25s ease;box-shadow:0 10px 28px rgba(0,0,0,.6);white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis;font-family:inherit}
+#m7o-root[data-theme="light"] .m7o-toast{background:var(--t1);color:var(--bg);box-shadow:0 10px 28px rgba(0,0,0,.28)}
+#m7o-root .m7o-toast.m7o-show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:480px){#m7o-root .m7o-toast{bottom:80px;max-width:calc(100vw - 28px)}}
+
+/* === Responsive === */
+@media(min-width:1440px){
+  #m7o-root{padding:40px 64px 60px}
+  #m7o-root .m7o-hdr-title{font-size:26px}
+}
+@media(max-width:768px){
+  #m7o-root{padding:24px 18px 40px}
+  #m7o-root .m7o-hdr{flex-direction:column;align-items:flex-start}
+  #m7o-root .m7o-link{margin-left:0}
+  #m7o-root .m7o-switchers{margin-left:0}
+  #m7o-root .m7o-sec-body{padding:2px 14px 0}
+  #m7o-root .m7o-sec[open]>.m7o-sec-body{padding-bottom:16px}
+  #m7o-root .m7o-req-row{flex-direction:column;gap:2px}
+  #m7o-root .m7o-req-row span{min-width:0}
+}
+@media(max-width:480px){
+  #m7o-root{padding:20px 12px 32px}
+  #m7o-root .m7o-sec-head{padding:12px 14px;gap:10px}
+  #m7o-root .m7o-sec-title{font-size:13px}
+  #m7o-root .m7o-hdr-title{font-size:18px}
+}
+
+/* === Print === */
+@media print{
+  #m7o-root{background:#fff!important;color:#111!important;padding:0}
+  #m7o-root .m7o-sec{background:#fff!important;border-color:#ccc!important}
+  #m7o-root .m7o-sec-head{color:#111!important;cursor:auto}
+  #m7o-root .m7o-sec-title{color:#111!important}
+  #m7o-root .m7o-sec-body p,#m7o-root .m7o-sec-body li{color:#333!important}
+  #m7o-root .m7o-sec-body b{color:#111!important}
+  #m7o-root .m7o-sec-arrow,#m7o-root .m7o-actions,#m7o-root .m7o-chips,#m7o-root .m7o-switchers,
+  #m7o-root .m7o-contribute,#m7o-root .m7o-accept-txt,#m7o-root .m7o-accept-btn,
+  #m7o-root .m7o-top-btn,#m7o-root .m7o-progress,#m7o-root .m7o-toast,#m7o-root .m7o-kbd-hint{display:none!important}
+  #m7o-root .m7o-sec-body{display:block!important}
+  #m7o-root .m7o-author-card{background:#fff!important;border-color:#ccc!important}
+  #m7o-root .m7o-author-card *{color:#111!important}
+  #m7o-root .m7o-author-avatar{background:#5b4bd5!important;color:#fff!important}
+  #m7o-root .m7l-footer-block{background:#fff!important;border-color:#ccc!important}
+  #m7o-root .m7o-accept{background:#fff!important;border-color:#ccc!important}
+  #m7o-root .m7o-accept-final-msg{display:flex!important}
+  #m7o-root .m7o-accept-final-info strong{color:#111!important}
+}
+</style>
+
+<script>
+(function(){
+'use strict';
+
+/* =====================================================
+   СЛОВАРЬ ПЕРЕВОДОВ. Формат: ключ -> {en: "...", zh: "..."}
+   Русский текст (ru) — это исходная HTML-разметка элемента.
+   ===================================================== */
+var M7O_T = {
+"hdr.title":{en:"Public Offer",zh:"公开要约"},
+"hdr.sub":{en:"Public offer agreement on the provision of educational services by the Maestro7IT online programming school",zh:"Maestro7IT 在线编程学校教育服务公开要约协议"},
+"badge.edition":{en:"Edition of 01.11.2026",zh:"2026年11月1日版本"},
+"badge.active":{en:"Effective upon publication",zh:"自发布之日起生效"},
+"btn.expand":{en:"Expand all",zh:"展开全部"},
+"btn.collapse":{en:"Collapse all",zh:"收起全部"},
+"btn.print":{en:"Print",zh:"打印"},
+"chips.label":{ru:"Быстрый переход по разделам",en:"Quick navigation",zh:"快速导航"},
+"kbd.hint":{en:"Navigation: <kbd>↑</kbd> <kbd>↓</kbd>",zh:"键盘导航：<kbd>↑</kbd> <kbd>↓</kbd>"},
+"read.tmpl":{ru:"≈ {n} мин чтения",en:"≈ {n} min read",zh:"≈ {n} 分钟阅读"},
+"author.name":{en:"Dupley Maxim Igorevich, self-employed",zh:"自由职业者 杜普莱·马克西姆·伊戈列维奇"},
+"author.inn":{en:"INN (Tax ID)",zh:"纳税人识别号"},
+"author.status":{en:"Professional income tax payer",zh:"职业所得税纳税人"},
+"author.doc":{en:"Document signed with a simple e-signature",zh:"文件已通过简易电子签名签署"},
+"contrib.title":{en:"Contribute to the platform",zh:"为平台发展做出贡献"},
+"contrib.sub":{en:"Your feedback, remarks and suggestions help make learning better for everyone.",zh:"您的反馈、意见和建议能帮助所有人获得更好的学习体验。"},
+"contrib.bug.t":{en:"Found a mistake?",zh:"发现了错误？"},
+"contrib.bug.d":{en:"Report an inaccuracy in the document text",zh:"报告文档文本中的不准确之处"},
+"contrib.idea.t":{en:"Improvement idea",zh:"改进建议"},
+"contrib.idea.d":{en:"Suggest how to make the courses better",zh:"建议如何让课程变得更好"},
+"contrib.review.t":{en:"Leave a review",zh:"留下评价"},
+"contrib.review.d":{en:"Share your learning experience",zh:"分享您的学习体验"},
+"contrib.share.t":{en:"Tell your friends",zh:"告诉朋友"},
+"contrib.share.d":{en:"Share the link to the school",zh:"分享学校链接"},
+"toast.bug":{en:"Opening the bug report form…",zh:"正在打开错误报告表单…"},
+"toast.idea":{en:"Opening the suggestion form…",zh:"正在打开建议表单…"},
+"toast.review":{en:"Opening the review form…",zh:"正在打开评价表单…"},
+"accept.t":{en:"Read the offer terms?",zh:"已阅读要约条款？"},
+"accept.d":{en:"Click the button to record your consent. The button will disappear in 5 seconds, after which the confirmation becomes irreversible.",zh:"点击按钮以记录您的同意。按钮将在5秒后消失，此后确认将不可撤销。"},
+"accept.btn":{en:"I consent",zh:"我同意"},
+"accept.done":{en:"Consent confirmed",zh:"同意已确认"},
+"accept.final.t":{en:"Consent confirmed permanently",zh:"同意已永久确认"},
+"accept.final.d":{en:"The action is recorded in your browser and cannot be undone.",zh:"该操作已记录在您的浏览器中，无法撤销。"},
+"toast.accept.start":{en:"Consent recorded. The button will disappear in 5 seconds.",zh:"同意已记录。按钮将在5秒后消失。"},
+"toast.accept.done":{en:"Confirmation recorded. The button is hidden.",zh:"确认已记录。按钮已隐藏。"},
+"topbtn.aria":{en:"Scroll to top",zh:"滚动到顶部"},
+"s1.t":{en:"General Provisions and Terms",zh:"总则与术语"},
+"s1.b":{en:"<p>1.1. This document is a public offer (hereinafter — the \"Offer\") of Dupley Maxim Igorevich, self-employed taxpayer (professional income tax payer, INN 503234333170) (hereinafter — the \"Contractor\") and contains all essential terms of the provision of educational services by the Maestro7IT online programming school via the website <a href=\"https://school-maestro7it.ru/\" target=\"_blank\" rel=\"noopener\">school-maestro7it.ru</a> (hereinafter — the \"Website\").</p><p>1.2. In accordance with Article 437 of the Civil Code of the Russian Federation, payment for the Services by the Buyer means acceptance of this Offer on the terms set out below. Acceptance of the Offer constitutes conclusion of an agreement on the terms contained in the Offer (hereinafter — the \"Agreement\").</p><p>1.3. Acceptance of the Offer is the Buyer's performance of one of the following actions:</p><ul><li>payment for the Services in any of the ways provided for in Section 4 of this Offer;</li><li>registration on the Website with subsequent payment for the Services;</li><li>start of using the educational course materials received under the Agreement.</li></ul><p>1.4. Terms used in the Offer:</p><ul><li><b>Website</b> — the set of pages of school-maestro7it.ru and related resources of the Contractor, including the LMS platform;</li><li><b>Course</b> — an original educational product (online course) hosted on the Website and/or on the Stepik platform (stepik.org), including video lessons, text and practical materials;</li><li><b>Buyer</b> — any legally capable individual who has paid for the Services, or a legal entity that has concluded the Agreement;</li><li><b>Services</b> — educational services for providing access to the Courses and related consultations;</li><li><b>Access</b> — the Buyer's right to use the Course materials for personal educational purposes.</li></ul><p>1.5. The Offer comes into force upon its publication on the Website and is valid until withdrawn by the Contractor. The Contractor may amend the Offer by publishing a new version on the Website. The current version applies to relations arising after its publication.</p>",zh:"<p>1.1. 本文件为杜普莱·马克西姆·伊戈列维奇（自由职业者，职业所得税纳税人，纳税人识别号 503234333170）（以下简称\"服务商\"）的公开要约（以下简称\"要约\"），其中包含通过网站 <a href=\"https://school-maestro7it.ru/\" target=\"_blank\" rel=\"noopener\">school-maestro7it.ru</a>（以下简称\"网站\"）提供 Maestro7IT 在线编程学校教育服务的全部重要条款。</p><p>1.2. 根据《俄罗斯联邦民法典》第437条，买方支付服务费用即表示按以下条款接受本要约。接受要约即视为以要约所载条款订立合同（以下简称\"合同\"）。</p><p>1.3. 买方实施下列任一行为即构成对要约的接受：</p><ul><li>按本要约第4节规定的任一方式支付服务费用；</li><li>在网站注册并随后支付服务费用；</li><li>开始使用按合同获取的课程材料。</li></ul><p>1.4. 本要约中使用的术语：</p><ul><li><b>网站</b>——school-maestro7it.ru 页面集合及服务商的相关资源，包括LMS平台；</li><li><b>课程</b>——托管在网站和/或Stepik平台上的原创教育产品（在线课程），包括视频课程、文本和实践材料；</li><li><b>买方</b>——已支付服务费用的任何具有行为能力的自然人，或已订立合同的法人；</li><li><b>服务</b>——提供课程访问权及相关咨询的教育服务；</li><li><b>访问权</b>——买方为个人教育目的使用课程材料的权利。</li></ul><p>1.5. 本要约自网站发布之时起生效，直至服务商撤回为止。服务商可通过在网站发布新版本对要约进行修改。现行版本适用于其发布后产生的法律关系。</p>"},
+"s2.t":{en:"Subject of the Agreement",zh:"合同标的"},
+"s2.b":{en:"<p>2.1. The Contractor shall provide the Buyer with the Services in the scope corresponding to the description of the selected Course published on the Website and/or on the Stepik platform, and the Buyer shall pay for the Services in the manner and under the terms provided for in this Offer.</p><p>2.2. The Services include:</p><ul><li>granting the Buyer personal Access to the Course materials for the period specified in the Course description (if no period is specified — access is granted for the lifetime of the Course, but for at least 12 months from the date of payment);</li><li>access to additional Course materials (files, links, checklists), if provided for in the description;</li><li>consulting support in the scope provided for in the Course plan.</li></ul><p>2.3. The Course is an original work. All exclusive rights to the Course materials (videos, texts, presentations, exercises) belong to the Contractor. The materials are provided to the Buyer exclusively for personal non-commercial use.</p><p>2.4. The Contractor may change the composition and structure of the Course and update the materials, provided this does not reduce the declared scope of Services at the time of payment.</p><p>2.5. The Services do not include: turnkey individual training, employment, or a guarantee of achieving any professional result, unless expressly stated in the Course description.</p>",zh:"<p>2.1. 服务商应按网站和/或Stepik平台上所选课程说明所述范围向买方提供服务，买方应按本要约规定的方式和条件支付服务费用。</p><p>2.2. 服务内容包括：</p><ul><li>按课程说明规定的期限向买方授予课程材料的个人访问权（未指明期限的——在课程存续期内永久授予，但自付款之日起不少于12个月）；</li><li>访问课程补充材料（文件、链接、清单）（如说明中有规定）；</li><li>按课程套餐规定的范围提供咨询支持。</li></ul><p>2.3. 课程为原创作品。课程材料（视频、文本、演示文稿、练习）的一切专有权利归服务商所有。材料仅供买方个人非商业用途使用。</p><p>2.4. 服务商有权变更课程构成和结构、更新材料，前提是不降低付款时承诺的服务范围。</p><p>2.5. 服务不包括：全包式一对一培训、就业保障或任何职业成果保证（课程说明中明确注明的除外）。</p>"},
+"s3.t":{en:"Order Placement Procedure",zh:"下单流程"},
+"s3.b":{en:"<p>3.1. The order is placed by the Buyer independently on the Website and/or on the Course page on the Stepik platform by selecting the Course and clicking the payment button.</p><p>3.2. Before payment, the Buyer shall familiarize themselves with the Course description, its price and this Offer. Payment confirms the Buyer's agreement with all the terms.</p><p>3.3. After successful payment, an e-mail with access to the Course is sent to the e-mail address specified during payment. Access is opened within <b>1 business day</b> after the payment is confirmed, unless otherwise stated in the Course description.</p><p>3.4. If the Buyer has not received the access e-mail within the specified period, please contact support: <a href=\"mailto:maksimqwe42@mail.ru\">maksimqwe42@mail.ru</a> or by phone <a href=\"tel:+79150480249\">+7 915 048-02-49</a>, <a href=\"tel:+79017065176\">+7 901 706-51-76</a>.</p>",zh:"<p>3.1. 买方在网站和/或Stepik平台课程页面上自行选择课程并点击付款按钮下单。</p><p>3.2. 付款前，买方应熟悉课程说明、价格及本要约。付款即确认买方同意所有条款。</p><p>3.3. 付款成功后，系统将向付款时指定的电子邮箱发送课程访问邮件。自付款确认之时起<b>1个工作日</b>内开通访问，课程说明中另有规定的除外。</p><p>3.4. 如买方在上述期限内未收到访问邮件，请联系支持服务：<a href=\"mailto:maksimqwe42@mail.ru\">maksimqwe42@mail.ru</a>，或致电 <a href=\"tel:+79150480249\">+7 915 048-02-49</a>、<a href=\"tel:+79017065176\">+7 901 706-51-76</a>。</p>"},
+"s4.t":{en:"Cost and Payment Procedure",zh:"费用与支付方式"},
+"s4.b":{en:"<p>4.1. The cost of the Services is determined by the prices indicated on the Website and/or on the page of the relevant Course at the time of placing the order. The Contractor may change the prices; a price change does not apply to orders already paid for.</p><p>4.2. Payment is made in the following ways:</p><ul><li>by bank card via payment services connected to the Website and/or Stepik;</li><li>via payment systems (SBP and other available methods displayed in the payment form).</li></ul><p>4.3. The Buyer's payment obligation is deemed fulfilled from the moment the funds are credited to the Contractor's account (or the relevant payment agent's account).</p><p>4.4. When paying by bank card, the payment is processed on the payment service's side in accordance with the requirements of international payment systems. Card details are not stored on the Website.</p><p>4.5. Upon the Buyer's request, the Contractor sends supporting documents (receipt / certificate of services rendered) to the e-mail specified during payment. For legal entities, non-cash payment by invoice is possible — the terms are agreed by e-mail.</p>",zh:"<p>4.1. 服务费用按下单时网站和/或相应课程页面上标明的价格确定。服务商有权调整价格；价格调整不适用于已支付的订单。</p><p>4.2. 支付方式如下：</p><ul><li>通过网站和/或Stepik接入的支付服务使用银行卡支付；</li><li>通过支付系统（SBP及付款表单中显示的其他可用方式）支付。</li></ul><p>4.3. 自款项汇入服务商账户（或相应支付代理账户）之时起，视为买方已履行付款义务。</p><p>4.4. 使用银行卡支付时，付款由支付服务方按照国际支付系统的要求进行处理。网站不保存银行卡信息。</p><p>4.5. 应买方要求，服务商将向付款时指定的电子邮箱发送结算文件（收据/服务完成证明）。法人可通过发票进行非现金支付——条件通过电子邮件协商。</p>"},
+"s5.t":{en:"Refund Policy",zh:"退款政策"},
+"s5.b":{en:"<p>5.1. A Buyer — an individual — may refuse the Services at any time before they begin to be provided, and during the provision thereof, provided that the Contractor's actual expenses are reimbursed. Actual expenses mean the cost of the volume of Services actually provided at the time of refusal (opened/viewed lessons and Course materials).</p><p>5.2. A refund request is sent by the Buyer from the e-mail address specified during payment to the support e-mail <a href=\"mailto:maksimqwe42@mail.ru\">maksimqwe42@mail.ru</a> and must contain: full name, Course name, date and amount of payment, and the reason for the refund.</p><p>5.3. Funds are refunded within 10 (ten) business days from the receipt of the request, provided there are no claims regarding the volume of Services actually rendered. The refund is made in the same way as the payment was made.</p><p>5.4. No refund is made if:</p><ul><li>the Buyer has completed more than 50% of the Course materials;</li><li>the Course was purchased under a promotion/discount explicitly stating its non-refundability, agreed by the Buyer before payment;</li><li>Access to the Course was transferred to third parties or the terms of use of the materials were violated.</li></ul><p>5.5. Payment system commissions are not reimbursed upon refund.</p>",zh:"<p>5.1. 自然人买方有权在服务开始前的任何时间以及在服务提供期间拒绝接受服务，但须偿还服务商实际产生的费用。实际费用指拒绝服务时已实际提供的服务量成本（已打开/已观看的课程和课程材料）。</p><p>5.2. 退款申请由买方使用付款时指定的电子邮箱发送至支持邮箱 <a href=\"mailto:maksimqwe42@mail.ru\">maksimqwe42@mail.ru</a>，申请须包含：姓名、课程名称、付款日期和金额以及退款原因。</p><p>5.3. 自收到申请之时起10（十个）工作日内退款，且对实际已提供的服务量无异议。退款按原付款方式原路退回。</p><p>5.4. 下列情形不予退款：</p><ul><li>买方已完成超过50%的课程材料；</li><li>课程以明确注明不可退款的活动/折扣价购买，且买方在付款前已确认；</li><li>课程访问权已转让给第三方，或违反了材料使用条款。</li></ul><p>5.5. 退款时不退还支付系统佣金。</p>"},
+"s6.t":{en:"Rights and Obligations of the Parties",zh:"双方权利与义务"},
+"s6.b":{en:"<p>6.1. The Contractor shall:</p><ul><li>render the Services with high quality and in the scope corresponding to the Course description;</li><li>ensure the operability of the Website and access, except in cases of technical failures beyond the Contractor's control;</li><li>respond to Buyer inquiries within a reasonable time.</li></ul><p>6.2. The Contractor may:</p><ul><li>change the structure and materials of the Courses and update content;</li><li>restrict the Buyer's Access upon detection of a violation of the Offer terms (transferring materials to third parties, hacking attempts, insults in support chats);</li><li>send the Buyer informational and service messages related to the performance of the Agreement.</li></ul><p>6.3. The Buyer shall:</p><ul><li>pay for the Services in a timely manner;</li><li>not transfer the Course materials to third parties, not publish, copy or use them for commercial purposes;</li><li>not violate the Contractor's copyright;</li><li>provide correct contact details when paying.</li></ul><p>6.4. The Buyer may:</p><ul><li>receive the Services in the scope and within the timeframes provided for in the Offer and the Course description;</li><li>request a refund under the terms of Section 5;</li><li>ask questions about the Course materials within the scope provided for in the plan.</li></ul>",zh:"<p>6.1. 服务商应：</p><ul><li>高质量地按课程说明所述范围提供服务；</li><li>保障网站和访问的可用性，非因服务商原因导致的故障除外；</li><li>在合理期限内回复买方的咨询。</li></ul><p>6.2. 服务商有权：</p><ul><li>变更课程结构和材料、更新内容；</li><li>在发现违反要约条款的行为（向第三方转让材料、黑客攻击企图、在支持聊天中辱骂）时限制买方的访问权；</li><li>向买方发送与合同履行相关的信息和服务消息。</li></ul><p>6.3. 买方应：</p><ul><li>及时支付服务费用；</li><li>不得向第三方转让课程材料，不得发布、复制或将其用于商业目的；</li><li>不得侵犯服务商的版权；</li><li>付款时提供准确的联系方式。</li></ul><p>6.4. 买方有权：</p><ul><li>按要约和课程说明规定的范围和期限获得服务；</li><li>按第5节条款申请退款；</li><li>按套餐规定范围就课程材料提出问题。</li></ul>"},
+"s7.t":{en:"Personal Data",zh:"个人数据"},
+"s7.b":{en:"<p>7.1. By accepting the Offer, the Buyer consents to the processing of their personal data (full name, e-mail, phone number, payment and course progress data) for the purposes of performing the Agreement, informing about the Contractor's products and improving the quality of the Services, in accordance with Federal Law No. 152-FZ \"On Personal Data\".</p><p>7.2. Processing includes collection, recording, systematization, storage, clarification, use, depersonalization, blocking and deletion of data, both with and without automation tools.</p><p>7.3. The Buyer may withdraw consent to the processing of personal data by sending a request to the support e-mail. After withdrawal, the Contractor may continue processing the data necessary for the performance of the Agreement and legal requirements (including the storage of fiscal documents).</p><p>7.4. The Contractor undertakes not to transfer personal data to third parties, except in cases expressly provided for by the legislation of the Russian Federation, and to services ensuring the performance of the Agreement (payment systems, the Stepik platform, mailing services) operating under confidentiality terms.</p>",zh:"<p>7.1. 接受本要约即表示买方同意按照《俄罗斯联邦第152-FZ号联邦法\"个人数据法\"》的规定，为履行合同、告知服务商产品信息及提升服务质量之目的处理其个人数据（姓名、电子邮箱、电话号码、付款及课程学习进度数据）。</p><p>7.2. 处理包括：无论是否使用自动化工具，对数据进行收集、记录、系统化、存储、更正、使用、去标识化、封锁和删除。</p><p>7.3. 买方有权向支持邮箱发送请求，撤回对个人数据处理的同意。撤回后，服务商仍可继续处理履行合同和法律要求所必需的数据（包括财税文件的保存）。</p><p>7.4. 服务商承诺不向第三方传输个人数据，俄罗斯联邦法律明确规定的情形以及保障合同履行的服务（支付系统、Stepik平台、邮件分发服务，均在保密条件下运营）除外。</p>"},
+"s8.t":{en:"Liability of the Parties",zh:"双方责任"},
+"s8.b":{en:"<p>8.1. The Parties are released from liability for partial or complete non-performance of obligations if it resulted from force majeure circumstances: natural disasters, military actions, acts of public authorities, massive failures of communication and power supply networks arising after the conclusion of the Agreement.</p><p>8.2. The Services are educational in nature. The learning outcome depends on the Buyer's personal efforts; the Contractor does not guarantee the achievement of specific professional or financial results.</p><p>8.3. The Contractor is not liable for the inability to access the Course caused by technical problems on the Buyer's side (device, browser, Internet connection speed) or third-party services (Stepik, payment systems).</p><p>8.4. The Buyer is liable under the legislation of the Russian Federation for infringement of the Contractor's copyright (distribution of Course materials).</p><p>8.5. The Contractor's aggregate liability under the Agreement is limited to the amount actually paid by the Buyer for the relevant Course.</p>",zh:"<p>8.1. 如义务的部分或全部未履行系因订立合同后发生的不可抗力（自然灾害、军事行动、国家权力机关行为、通信和供电网络大规模故障），双方免除责任。</p><p>8.2. 服务具有教育性质。学习成果取决于买方的个人努力；服务商不保证取得任何具体的职业或财务成果。</p><p>8.3. 因买方（设备、浏览器、互联网连接速度）或第三方服务（Stepik、支付系统）的技术问题导致无法访问课程的，服务商不承担责任。</p><p>8.4. 买方侵犯服务商版权（传播课程材料）的，应按照俄罗斯联邦法律承担责任。</p><p>8.5. 服务商在本合同项下的累计责任以买方为相应课程实际支付的金额为限。</p>"},
+"s9.t":{en:"Dispute Resolution. Final Provisions",zh:"争议解决与最终条款"},
+"s9.b":{en:"<p>9.1. All disputes shall be resolved through negotiations. The pre-trial procedure is mandatory: a claim shall be sent to the Contractor's e-mail and considered within 10 business days.</p><p>9.2. If no agreement is reached, the dispute shall be referred to court at the Contractor's location in accordance with the legislation of the Russian Federation.</p><p>9.3. Recognition by a court of any provision of the Offer as invalid does not entail the invalidity of the Offer as a whole.</p><p>9.4. The law of the Russian Federation applies to the relations of the Parties.</p><p>9.5. The Offer may be withdrawn by the Contractor at any time, but this is not grounds for termination of Agreements concluded earlier.</p>",zh:"<p>9.1. 所有争议应通过协商解决。诉前程序为必经程序：索赔函应发送至服务商电子邮箱，并在10个工作日内处理。</p><p>9.2. 未达成一致意见的，争议将按照俄罗斯联邦法律移送至服务商所在地法院审理。</p><p>9.3. 法院认定要约任何条款无效，不导致整个要约无效。</p><p>9.4. 双方之间的关系适用俄罗斯联邦法律。</p><p>9.5. 服务商可随时撤回要约，但这不构成终止此前订立合同的理由。</p>"},
+"s10.t":{en:"Contractor's Details",zh:"服务商信息"},
+"s10.b":{en:"<div class=\"m7o-requisites\"><div class=\"m7o-req-row\"><span data-i18n=\"req.name\">Наименование</span><b>Maestro7IT Programming School</b></div><div class=\"m7o-req-row\"><span data-i18n=\"req.exec\">Исполнитель</span><b data-i18n=\"req.exec.v\">Самозанятый Дуплей Максим Игоревич</b></div><div class=\"m7o-req-row\"><span data-i18n=\"req.inn\">ИНН</span><b>503234333170</b></div><div class=\"m7o-req-row\"><span>E-mail</span><b><a href=\"mailto:maksimqwe42@mail.ru\">maksimqwe42@mail.ru</a></b></div><div class=\"m7o-req-row\"><span data-i18n=\"req.phone\">Телефон</span><b><a href=\"tel:+79150480249\">+7 915 048-02-49</a>, <a href=\"tel:+79017065176\">+7 901 706-51-76</a></b></div><div class=\"m7o-req-row\"><span data-i18n=\"req.site\">Сайт</span><b><a href=\"https://school-maestro7it.ru/\" target=\"_blank\" rel=\"noopener\">school-maestro7it.ru</a></b></div></div><p class=\"m7o-note\" data-i18n=\"note\">Продолжая использование Сайта...</p>",zh:"<div class=\"m7o-requisites\"><div class=\"m7o-req-row\"><span data-i18n=\"req.name\">Наименование</span><b>Maestro7IT 编程学校</b></div><div class=\"m7o-req-row\"><span data-i18n=\"req.exec\">Исполнитель</span><b data-i18n=\"req.exec.v\">Самозанятый Дуплей Максим Игоревич</b></div><div class=\"m7o-req-row\"><span data-i18n=\"req.inn\">ИНН</span><b>503234333170</b></div><div class=\"m7o-req-row\"><span>E-mail</span><b><a href=\"mailto:maksimqwe42@mail.ru\">maksimqwe42@mail.ru</a></b></div><div class=\"m7o-req-row\"><span data-i18n=\"req.phone\">Телефон</span><b><a href=\"tel:+79150480249\">+7 915 048-02-49</a>, <a href=\"tel:+79017065176\">+7 901 706-51-76</a></b></div><div class=\"m7o-req-row\"><span data-i18n=\"req.site\">Сайт</span><b><a href=\"https://school-maestro7it.ru/\" target=\"_blank\" rel=\"noopener\">school-maestro7it.ru</a></b></div></div><p class=\"m7o-note\" data-i18n=\"note\">Продолжая использование Сайта...</p>"},
+"req.name":{en:"Name",zh:"名称"},
+"req.exec":{en:"Contractor",zh:"服务商"},
+"req.exec.v":{en:"Dupley Maxim Igorevich, self-employed (professional income tax payer)",zh:"自由职业者 杜普莱·马克西姆·伊戈列维奇（职业所得税纳税人）"},
+"req.inn":{en:"INN (Tax ID)",zh:"纳税人识别号"},
+"req.phone":{en:"Phone",zh:"电话"},
+"req.site":{en:"Website",zh:"网站"},
+"note":{en:"By continuing to use the Website and paying for the Services, the Buyer confirms that they have read and fully agree with the terms of this Offer.",zh:"继续使用网站并支付服务费用，即表示买方确认已阅读并完全同意本要约的全部条款。"},
+"footer.copy":{en:"© All rights reserved, 2026",zh:"© 版权所有，2026年"},
+"footer.meta":{en:"Maestro7IT Programming School · Self-employed Dupley M. I. · INN 503234333170",zh:"Maestro7IT 编程学校 · 自由职业者 杜普莱·马克西姆·伊戈列维奇 · 纳税人识别号 503234333170"}
+};
+
+/* === Загрузка шрифта Inter === */
+var link = document.createElement("link");
+link.rel = "stylesheet";
+link.href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap";
+document.head.appendChild(link);
+
+var root = document.getElementById("m7o-root");
+if (!root) return;
+
+/* === Хранилище настроек (общие ключи для всех блоков сайта) === */
+var THEME_KEY = "m7-theme", LANG_KEY = "m7-lang";
+var LANGS = ["ru","en","zh"];
+function store(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+function load(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+
+/* === Тема: localStorage → prefers-color-scheme → light === */
+var themeBtn = document.getElementById("m7oTheme");
+function applyTheme(t){
+  root.setAttribute("data-theme", t);
+  /* иконки переключаются через CSS по data-theme */
+}
+function toggleTheme(){
+  var t = (root.getAttribute("data-theme") === "dark") ? "light" : "dark";
+  applyTheme(t); store(THEME_KEY, t);
+}
+if (themeBtn) themeBtn.addEventListener("click", toggleTheme);
+(function(){
+  var stored = load(THEME_KEY);
+  if (stored !== "light" && stored !== "dark") {
+    var prefersDark = false;
+    try { prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches; } catch(e){}
+    stored = prefersDark ? "dark" : "light";
+  }
+  applyTheme(stored);
+})();
+
+/* === Оригиналы (ru) — захватываем ДО оборачивания (без wrapper-дивов) === */
+var sections = root.querySelectorAll(".m7o-sec");
+var originals = {};
+(function captureOriginals(){
+  var els = root.querySelectorAll("[data-i18n]");
+  for (var i = 0; i < els.length; i++) {
+    var k = els[i].getAttribute("data-i18n");
+    if (!(k in originals)) originals[k] = els[i].innerHTML;
+  }
+})();
+
+/* === Оборачиваем контент секций для плавной grid-анимации === */
+function wrapBodies(){
+  for (var wi = 0; wi < sections.length; wi++) {
+    var wbody = sections[wi].querySelector(".m7o-sec-body");
+    if (!wbody) continue;
+    var inner = wbody.querySelector(".m7o-sec-body-inner");
+    if (!inner) {
+      inner = document.createElement("div");
+      inner.className = "m7o-sec-body-inner";
+      while (wbody.firstChild) inner.appendChild(wbody.firstChild);
+      wbody.appendChild(inner);
+    }
+  }
+}
+wrapBodies();
+function tr(key, l){
+  var e = M7O_T[key];
+  if (!e) return null;
+  if (l === "ru") return e.ru || originals[key] || null;
+  return e[l] || originals[key] || null;
+}
+
+/* === Язык === */
+var lang = load(LANG_KEY);
+if (LANGS.indexOf(lang) === -1) lang = "ru";
+
+function applyLang(l){
+  lang = l; store(LANG_KEY, l);
+  /* 2 прохода: второй — для вложенных data-i18n (реквизиты внутри s10.b) */
+  for (var pass = 0; pass < 2; pass++) {
+    var els = root.querySelectorAll("[data-i18n]");
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      var key = el.getAttribute("data-i18n");
+      if (!(key in originals)) originals[key] = el.innerHTML;
+      /* кнопка подтверждения: не трогаем label в процессе отсчёта/финализации */
+      if (el.classList.contains("m7o-accept-label") && el.closest(".m7o-accept-btn") && el.closest(".m7o-accept-btn").disabled) continue;
+      var v = tr(key, l);
+      if (v != null) el.innerHTML = v;
+    }
+  }
+  /* восстановить grid-обёртку (словарные bodies приходят без неё) */
+  wrapBodies();
+  document.documentElement.lang = l;
+  var chipsLbl = root.querySelector("#m7oChips");
+  if (chipsLbl) chipsLbl.setAttribute("aria-label", M7O_T["chips.label"][l]);
+  var topBtn = document.getElementById("m7oTopBtn");
+  if (topBtn) topBtn.setAttribute("aria-label", M7O_T["topbtn.aria"][l]);
+  var btns = root.querySelectorAll(".m7o-lang-btn");
+  for (var j = 0; j < btns.length; j++) {
+    btns[j].classList.toggle("m7o-on", btns[j].getAttribute("data-lang") === l);
+  }
+  buildChips();
+  updateReadBadge();
+}
+
+var langBox = document.getElementById("m7oLang");
+if (langBox) {
+  langBox.addEventListener("click", function(e) {
+    var b = e.target.closest(".m7o-lang-btn");
+    if (b) applyLang(b.getAttribute("data-lang"));
+  });
+}
+
+/* === Якоря-чипсы === */
+var chips = root.querySelector("#m7oChips");
+function buildChips(){
+  if (!chips || !sections.length) return;
+  chips.innerHTML = "";
+  var frag = document.createDocumentFragment();
+  for (var i = 0; i < sections.length; i++) {
+    var sec = sections[i];
+    var title = sec.querySelector(".m7o-sec-title");
+    if (!title) continue;
+    var a = document.createElement("a");
+    a.className = "m7o-chip";
+    a.href = "#" + sec.id;
+    a.textContent = title.textContent;
+    a.setAttribute("data-m7o-target", sec.id);
+    frag.appendChild(a);
+  }
+  chips.appendChild(frag);
+  /* восстановить scroll-spy подсветку */
+  if (spyActive) setActiveChip(spyActive);
+}
+
+/* === Делегирование: 1 обработчик на всё === */
+root.addEventListener("click", function(e) {
+  var contrib = e.target.closest(".m7o-contrib-item");
+  if (contrib && contrib.getAttribute("data-m7o-contrib")) {
+    var type = contrib.getAttribute("data-m7o-contrib");
+    var msg = M7O_T["toast." + type];
+    if (msg) showToast(msg[lang]);
+    return; /* mailto откроется штатно */
+  }
+
+  var btn = e.target.closest("[data-m7o-action]");
+  if (btn) {
+    var action = btn.getAttribute("data-m7o-action");
+    var all = root.querySelectorAll(".m7o-sec");
+    for (var i = 0; i < all.length; i++) {
+      all[i].open = (action === "expand");
+    }
+    if (action === "print") window.print();
+    return;
+  }
+
+  var chip = e.target.closest(".m7o-chip");
+  if (chip) {
+    var target = root.querySelector("#" + chip.getAttribute("data-m7o-target"));
+    if (target) {
+      e.preventDefault();
+      target.open = true;
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+      target.classList.remove("m7o-flash");
+      void target.offsetWidth;
+      target.classList.add("m7o-flash");
+      if (history.replaceState) history.replaceState(null, "", "#" + target.id);
+    }
+  }
+});
+
+/* === Глубокие ссылки: /offer#m7o-s5 === */
+function openFromHash() {
+  if (!location.hash) return;
+  var target = root.querySelector(location.hash);
+  if (target && target.classList.contains("m7o-sec")) {
+    target.open = true;
+    target.classList.add("m7o-flash");
+  }
+}
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", openFromHash);
+} else {
+  openFromHash();
+}
+window.addEventListener("hashchange", openFromHash);
+
+/* === Прогресс чтения + «Наверх» + sticky-тень === */
+var progressBar = root.querySelector("#m7oProgress");
+var progressFill = progressBar ? progressBar.firstElementChild : null;
+var topBtn = root.querySelector("#m7oTopBtn");
+var toolbar = root.querySelector(".m7o-toolbar");
+var ticking = false;
+function updateScroll() {
+  ticking = false;
+  var rect = root.getBoundingClientRect();
+  var viewportH = window.innerHeight || document.documentElement.clientHeight;
+  var inView = rect.bottom > 80 && rect.top < viewportH;
+  var scrollable = root.offsetHeight - viewportH;
+  var pct = 0;
+  if (scrollable > 0) pct = Math.min(100, Math.max(0, (-rect.top / scrollable) * 100));
+  if (progressBar) {
+    progressBar.classList.toggle("m7o-visible", inView);
+    if (progressFill) progressFill.style.width = pct + "%";
+  }
+  if (topBtn) topBtn.classList.toggle("m7o-visible", inView && -rect.top > 240);
+  if (toolbar) {
+    var tRect = toolbar.getBoundingClientRect();
+    toolbar.classList.toggle("m7o-stuck", tRect.top <= 3 && tRect.bottom > 0);
+  }
+}
+window.addEventListener("scroll", function() {
+  if (!ticking) { requestAnimationFrame(updateScroll); ticking = true; }
+}, { passive: true });
+window.addEventListener("resize", updateScroll, { passive: true });
+updateScroll();
+
+if (topBtn) {
+  topBtn.addEventListener("click", function() {
+    var top = root.getBoundingClientRect().top + window.scrollY - 70;
+    window.scrollTo({ top: top < 0 ? 0 : top, behavior: "smooth" });
+  });
+}
+
+/* === Авто-расчёт времени чтения === */
+var readBadge = root.querySelector(".m7o-badge--read");
+function updateReadBadge() {
+  if (!readBadge) return;
+  var doc = root.querySelector(".m7o-doc");
+  if (!doc) return;
+  var raw = (doc.textContent || "").trim();
+  var words = raw ? raw.split(/\s+/).length : 0;
+  var minutes = Math.max(1, Math.round(words / 200));
+  readBadge.textContent = M7O_T["read.tmpl"][lang].replace("{n}", minutes);
+}
+
+/* === Scroll-spy: подсветка активного чипса === */
+var chipEls = root.querySelectorAll(".m7o-chip");
+var spyActive = null;
+function setActiveChip(id) {
+  spyActive = id;
+  var chipsNow = root.querySelectorAll(".m7o-chip");
+  for (var si = 0; si < chipsNow.length; si++) {
+    chipsNow[si].classList.toggle("m7o-active", chipsNow[si].getAttribute("data-m7o-target") === id);
+  }
+}
+if ("IntersectionObserver" in window) {
+  var spyObserver = new IntersectionObserver(function(entries) {
+    var visible = [];
+    for (var ei = 0; ei < entries.length; ei++) {
+      if (entries[ei].isIntersecting) visible.push(entries[ei].target);
+    }
+    if (visible.length) {
+      visible.sort(function(a, b) {
+        return Math.abs(a.getBoundingClientRect().top - 100) - Math.abs(b.getBoundingClientRect().top - 100);
+      });
+      setActiveChip(visible[0].id);
+    }
+  }, { rootMargin: "-90px 0px -55% 0px", threshold: [0, 0.1] });
+  for (var oi = 0; oi < sections.length; oi++) spyObserver.observe(sections[oi]);
+}
+
+/* === Toast === */
+var toast = root.querySelector("#m7oToast");
+var toastTimer = null;
+function showToast(msg) {
+  if (!toast) return;
+  toast.textContent = msg;
+  toast.classList.add("m7o-show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() { toast.classList.remove("m7o-show"); }, 2400);
+}
+
+/* === Клавиатурная навигация: ↑/↓ (j/k), Esc, Home/End === */
+function currentSectionIdx() {
+  var closest = -1, closestDist = Infinity;
+  for (var i = 0; i < sections.length; i++) {
+    var r = sections[i].getBoundingClientRect();
+    if (r.bottom > 100 && r.top < window.innerHeight) {
+      var d = Math.abs(r.top - 120);
+      if (d < closestDist) { closestDist = d; closest = i; }
+    }
+  }
+  if (closest !== -1) return closest;
+  for (var j = 0; j < sections.length; j++) {
+    if (sections[j].getBoundingClientRect().top > 100) return Math.max(0, j - 1);
+  }
+  return sections.length - 1;
+}
+document.addEventListener("keydown", function(e) {
+  if (e.target && e.target.matches && e.target.matches("input, textarea, select")) return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  var next = null;
+  var k = e.key;
+  if (k === "ArrowDown" || k === "j" || k === "J") {
+    next = sections[Math.min(sections.length - 1, currentSectionIdx() + 1)];
+  } else if (k === "ArrowUp" || k === "k" || k === "K") {
+    next = sections[Math.max(0, currentSectionIdx() - 1)];
+  } else if (k === "Escape") {
+    for (var ei = 0; ei < sections.length; ei++) sections[ei].open = false;
+    return;
+  } else if (k === "Home") { next = sections[0]; }
+  else if (k === "End") { next = sections[sections.length - 1]; }
+  if (next) {
+    e.preventDefault();
+    next.open = true;
+    next.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (history.replaceState) history.replaceState(null, "", "#" + next.id);
+  }
+});
+
+/* === Одноразовое подтверждение согласия (5 сек → исчезает навсегда) === */
+var acceptBtn = root.querySelector("#m7oAcceptBtn");
+var acceptBox = root.querySelector(".m7o-accept");
+var FINALIZE_KEY = "m7o-accepted-final";
+var finalizeTimer = null;
+
+function finalizeAcceptance() {
+  if (!acceptBtn || !acceptBox) return;
+  if (acceptBox.classList.contains("m7o-finalized")) return;
+  acceptBtn.classList.add("m7o-fading");
+  acceptBox.classList.add("m7o-finalized");
+  setTimeout(function() {
+    acceptBtn.style.display = "none";
+    var msg = acceptBox.querySelector(".m7o-accept-final-msg");
+    if (msg) msg.hidden = false;
+  }, 600);
+  try { store(FINALIZE_KEY, "1"); } catch(e) {}
+  showToast(M7O_T["toast.accept.done"][lang]);
+}
+
+if (acceptBtn) {
+  acceptBtn.addEventListener("click", function() {
+    if (acceptBtn.disabled || (acceptBox && acceptBox.classList.contains("m7o-finalized"))) return;
+    acceptBtn.disabled = true;
+    acceptBtn.classList.add("m7o-counting");
+    showToast(M7O_T["toast.accept.start"][lang]);
+    finalizeTimer = setTimeout(finalizeAcceptance, 5000);
+  });
+
+  var alreadyFinal = false;
+  try { alreadyFinal = load(FINALIZE_KEY) === "1"; } catch(e) {}
+  if (alreadyFinal) {
+    acceptBtn.style.display = "none";
+    acceptBox.classList.add("m7o-finalized");
+    var existingMsg = acceptBox.querySelector(".m7o-accept-final-msg");
+    if (existingMsg) existingMsg.hidden = false;
+  }
+}
+
+/* === Старт === */
+applyLang(lang);
+
+})();
