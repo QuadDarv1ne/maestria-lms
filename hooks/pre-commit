@@ -1,0 +1,11 @@
+#!/bin/sh
+# Pre-commit: ESLint + typecheck для staged-файлов (lint-staged).
+# ВАЖНО: этот каталог активен (git config core.hooksPath hooks), т.к. здесь же
+# живёт post-commit с автопушем на все ремоуты. Коммит с ошибками lint/typecheck
+# блокируется ДО автопуша.
+# Пропустить одноразово: git commit --no-verify
+echo "pre-commit: lint-staged (eslint + tsc по staged-файлам)..."
+npx lint-staged || {
+  echo "pre-commit: проверка не пройдена — коммит отменён." >&2
+  exit 1
+}

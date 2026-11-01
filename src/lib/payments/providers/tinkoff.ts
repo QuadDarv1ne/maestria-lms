@@ -177,6 +177,15 @@ export class TinkoffProvider implements IPaymentProvider {
     const b = body as Record<string, unknown>;
     const { Token, ...rest } = b;
     if (!Token || typeof Token !== "string") return false;
+    // `sign()` reads the terminal password through a throwing getter. This
+    // method is called from the public webhook route, where an unconfigured
+    // merchant must produce a clean 401 instead of an uncaught Error (500).
+    if (!this.isConfigured()) {
+      log.warn("Tinkoff webhook rejected: terminal credentials are not configured", {
+        provider: ctx.provider,
+      });
+      return false;
+    }
     const expected = this.sign(rest);
     if (Token.length !== expected.length) return false;
     return crypto.timingSafeEqual(Buffer.from(Token), Buffer.from(expected));

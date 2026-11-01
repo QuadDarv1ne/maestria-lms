@@ -17,7 +17,6 @@
 
 import { env } from "@/lib/env";
 import { log } from "@/lib/logger";
-import { isIpAllowed } from "../ip-whitelist";
 import type {
   IPaymentProvider, ProviderName, PaymentMethod,
   CreatePaymentInput, PaymentResult, RefundInput, RefundResult,
@@ -173,19 +172,21 @@ export class OzonProvider implements IPaymentProvider {
       return false;
     }
 
-    if (signature) {
-      const expected = cryptoB64Hmac(secret, ctx.rawBody);
-      if (signature.length !== expected.length || signature !== expected) {
-        log.warn("Ozon webhook signature mismatch", { provider: ctx.provider });
-        return false;
-      }
-      // Signature verified — IP check is optional.
-      return true;
+    if (!signature) {
+      // Ozon publishes no generic webhook IP ranges (RANGES.OZON is empty),
+      // so isIpAllowed("OZON", …) would return true for *every* source — an
+      // unsigned request would pass verification and anyone could forge a
+      // payment.succeeded event. The HMAC signature is the only authentic
+      // signal here, so without it the request is rejected.
+      log.warn("Ozon webhook rejected: missing X-Ozon-Signature header", {
+        provider: ctx.provider,
+      });
+      return false;
     }
 
-    // No signature header but secret is configured — try IP whitelist.
-    if (!isIpAllowed("OZON", ctx.clientIp)) {
-      log.warn("Ozon webhook from disallowed IP", { ip: ctx.clientIp });
+    const expected = cryptoB64Hmac(secret, ctx.rawBody);
+    if (signature.length !== expected.length || signature !== expected) {
+      log.warn("Ozon webhook signature mismatch", { provider: ctx.provider });
       return false;
     }
     return true;

@@ -1,0 +1,5 @@
+#!/bin/sh
+# Зеркало hooks/pre-push — каталог hooks/ активен (core.hooksPath=hooks).
+# Полная проверка перед push: typecheck + тесты + check:i18n.
+# Пропустить одноразово: git push --no-verify
+npm run verify
