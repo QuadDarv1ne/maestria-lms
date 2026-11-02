@@ -1,12 +1,15 @@
-const CACHE_NAME = 'maestria-v3.7.0';
-const STATIC_CACHE = 'maestria-static-v3.7.0';
-const API_CACHE = 'maestria-api-v3.7.0';
-const DYNAMIC_CACHE = 'maestria-dynamic-v3.7.0';
+const CACHE_NAME = 'maestria-v3.7.1';
+const STATIC_CACHE = 'maestria-static-v3.7.1';
+const API_CACHE = 'maestria-api-v3.7.1';
+const DYNAMIC_CACHE = 'maestria-dynamic-v3.7.1';
 const OFFLINE_URL = '/offline';
 
 const urlsToCache = [
   '/',
   '/manifest.json',
+  '/logo.svg',
+  '/icon.svg',
+  '/maestria-logo-icon.png',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png',
   '/icons/icon-180x180.png',
@@ -30,7 +33,16 @@ self.addEventListener('install', (event) => {
     (async () => {
       try {
         const cache = await caches.open(STATIC_CACHE);
-        await cache.addAll(urlsToCache);
+        // Cache asset by asset: one missing file must not abort the whole
+        // install (cache.addAll() rejected atomically and the offline fallback
+        // below never got registered).
+        await Promise.all(urlsToCache.map(async (url) => {
+          try {
+            await cache.add(url);
+          } catch (assetError) {
+            console.warn('Pre-cache skipped for', url, assetError);
+          }
+        }));
         // Pre-cache offline fallback
         const offlineCache = await caches.open(DYNAMIC_CACHE);
         const offlineResponse = new Response(

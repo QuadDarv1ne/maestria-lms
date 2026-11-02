@@ -4,7 +4,6 @@ import { memo, Fragment, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import {
-  GraduationCap,
   Mail,
   Phone,
   MapPin,
@@ -14,6 +13,7 @@ import {
 import Link from "next/link";
 import type { Locale } from "@/lib/store";
 import { APP_VERSION, CONTACT } from "@/lib/constants";
+import { Logo } from "@/components/Logo";
 
 export const Footer = memo(function Footer() {
   const locale = useAppStore((s) => s.locale);
@@ -32,10 +32,7 @@ export const Footer = memo(function Footer() {
           {/* Колонка 1: О платформе */}
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 bg-linear-to-br from-blue-600 to-violet-600 rounded-lg flex items-center justify-center">
-                <GraduationCap className="w-4 h-4 text-white" />
-              </div>
-              <span className="text-lg font-bold">Maestria</span>
+              <Logo size={32} />
             </div>
             <p className="text-sm text-muted-foreground max-w-md mb-3">
               {t("footer.aboutDesc", locale)}

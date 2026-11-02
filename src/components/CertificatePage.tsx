@@ -8,13 +8,13 @@ import { log } from "@/lib/logger";
 import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
-  Award,
   Printer,
   ArrowLeft,
   ShieldCheck,
   AlertTriangle,
   FileDown,
 } from "lucide-react";
+import { Logo, LOGO_RASTER_SRC } from "@/components/Logo";
 
 /* ── types ───────────────────────────────────────────────────────────── */
 
@@ -356,9 +356,7 @@ export function CertificatePage({ courseId }: { courseId: string }) {
             <div className="flex flex-col items-center gap-2">
               {/* Maestria logo */}
               <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-lg bg-linear-to-br from-blue-700 to-violet-600 flex items-center justify-center">
-                  <Award className="w-6 h-6 text-white" />
-                </div>
+                <Logo src={LOGO_RASTER_SRC} size={40} withWordmark={false} />
                 <span
                   className="text-2xl font-bold tracking-widest"
                   style={{

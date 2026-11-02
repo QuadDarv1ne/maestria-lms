@@ -8,7 +8,19 @@
 
 ## [Unreleased]
 
+### Изменено
+- **Новый логотип бренда**: `public/logo.svg` (векторный мастер, 256×256, белая плитка + академическая шапочка + градиентная «M») и `public/maestria-logo-icon.png` (растровый двойник 512×512) заменили прежний `maestro7it-logo.png` в metadata (`layout.tsx`), Open Graph, JSON-LD и интерфейсе. `public/icon.svg` — копия мастера для `<link rel="icon">`
+- **Компонент `Logo`** (`src/components/Logo.tsx`): единая точка рендера знака (размер, wordmark, подпись «by Maestro7IT», выбор SVG/PNG-источника) — внедрён в `Header` (десктоп + мобильный Sheet), `Footer`, `AboutPage` (hero) и `CertificatePage` (для html2canvas используется растровая версия)
+- `theme_color` в `manifest.json` и `<meta name="theme-color">` приведены к фиолетовому бренду `#7c3aed`
+
+### Добавлено
+- **Сгенерированы отсутствовавшие брендовые ассеты**: `favicon.ico` (ICO с 16/32/48/64), `og-image.png` (1200×630), PWA-иконки 72–512 px, включая maskable-варианты 192/512. Ранее `manifest.json`, `sw.js` и `layout.tsx` ссылались на несуществующие файлы — PWA не устанавливалась, соцкарточки оставались без картинки
+- `scripts/generate-brand-assets.ps1` — воспроизводимая генерация всех размеров из мастер-PNG (System.Drawing, без внешних зависимостей)
+- Тест `src/lib/brand-assets.test.ts` (29): существование каждого файла, на который ссылаются metadata/manifest/service worker, синхронность `logo.svg`/`icon.svg` с мастером, валидность ICO-заголовка и размеров OG-картинки, обязательные размеры и maskable-иконки манифеста
+
 ### Исправлено
+- **`public/sw.js`**: `cache.addAll(urlsToCache)` падал целиком при одном отсутствующем файле, из-за чего не регистрировался и offline-fallback; теперь ассеты кэшируются по одному с warning'ом, а версия кэша поднята до `3.7.1`, чтобы старые клиенты получили новый набор
+- **`layout.tsx`**: удалены дублирующие `<link rel="icon">`/`<link rel="apple-touch-icon">` в `<head>` — иконки объявлены в `generateMetadata()`
 - **HIGH (security)**: `payments/providers/ozon.ts` — `verifyWebhook()` принимал вебхуки **без подписи**, если `OZON_WEBHOOK_SECRET` был настроен: отсутствующий заголовок `X-Ozon-Signature` проваливался в ветку IP-whitelist, а для Ozon опубликованные диапазоны не заданы (`ip-whitelist.ts` → `OZON: []`), поэтому `isIpAllowed("OZON", …)` возвращает `true` для **любого** источника. Любой, кто знал форму тела (`payment_id` + `order_id`), мог прислать неподписанное событие `payment.succeeded` на `/api/payments/webhook` и пометить собственный платёж оплаченным. Теперь подпись обязательна: без заголовка или при несовпадении HMAC — отказ; запасная IP-ветка удалена вместе с неиспользуемым импортом
 - **MEDIUM**: `payments/providers/tinkoff.ts` — `verifyWebhook()` бросал `Error("TINKOFF_PASSWORD is not configured")` при вебхуке с заголовком `Token` и ненастроенном терминале. Метод вызывается из публичного роута `/api/payments/webhook` вне `try/catch` провайдера, поэтому вместо корректного `401` сервер отвечал `500` и светил конфигурацию в логах. Добавлена проверка `isConfigured()` до пересчёта подписи — теперь чистый отказ с warn-логом
 

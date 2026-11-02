@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="mGradI" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#A855F7"/>
+      <stop offset="50%" stop-color="#7C3AED"/>
+      <stop offset="100%" stop-color="#4338CA"/>
+    </linearGradient>
+    <linearGradient id="capGradI" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#312E81"/>
+      <stop offset="100%" stop-color="#1E1B4B"/>
+    </linearGradient>
+    <linearGradient id="playGradI" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#A855F7"/>
+      <stop offset="100%" stop-color="#6D28D9"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="256" height="256" rx="48" ry="48" fill="#FFFFFF"/>
+
+  <g transform="translate(78, 32)">
+    <path d="M 50 0 L 150 30 L 50 60 L -50 30 Z" fill="url(#capGradI)"/>
+    <path d="M -10 38 L -10 70 Q -10 85 50 95 Q 110 85 110 70 L 110 38 L 50 60 Z" fill="#312E81"/>
+    <line x1="150" y1="30" x2="158" y2="80" stroke="#FBBF24" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="158" cy="85" r="6" fill="#FBBF24"/>
+
+    <path d="M -40 100 L -40 200 Q -40 210 -30 210 L 10 210 Q 20 210 20 200 L 20 100 Z" fill="url(#mGradI)"/>
+    <path d="M 80 100 L 80 200 Q 80 210 90 210 L 130 210 Q 140 210 140 200 L 140 100 Z" fill="url(#mGradI)" opacity="0.92"/>
+    <path d="M -40 100 L 20 100 L 50 165 L 80 100 L 140 100 L 60 195 L 40 195 Z" fill="url(#mGradI)" opacity="0.78"/>
+
+    <circle cx="50" cy="155" r="28" fill="url(#playGradI)"/>
+    <path d="M 40 142 L 40 168 L 63 155 Z" fill="#FFFFFF"/>
+  </g>
+</svg>

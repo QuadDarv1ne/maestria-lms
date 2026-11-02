@@ -30,6 +30,7 @@ import {
   GraduationCap,
 } from "lucide-react";
 import { CONTACT } from "@/lib/constants";
+import { Logo } from "@/components/Logo";
 
 export function AboutPage() {
   const router = useRouter();
@@ -46,6 +47,7 @@ export function AboutPage() {
         <div className="absolute -bottom-32 -left-32 w-[500px] h-[500px] bg-violet-500/10 rounded-full blur-3xl" />
         <div className="relative container mx-auto px-4 py-16 md:py-28">
           <div className="max-w-3xl mx-auto text-center">
+            <Logo size={72} withWordmark={false} className="justify-center mb-5" priority />
             <Badge className="mb-4 bg-white/20 text-white border-0 hover:bg-white/30 text-sm">
               <Sparkles className="w-3.5 h-3.5 mr-1" />
               {tr("about.platformBadge")}

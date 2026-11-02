@@ -77,7 +77,7 @@ function buildJsonLd(locale: SupportedLocale) {
     name: "Maestria",
     alternateName: "Maestria by Maestro7IT",
     url: siteUrl,
-    logo: `${siteUrl}/maestro7it-logo.png`,
+    logo: `${siteUrl}/maestria-logo-icon.png`,
     description: descriptions[locale],
     address: {
       "@type": "PostalAddress",
@@ -160,7 +160,10 @@ export async function generateMetadata(): Promise<Metadata> {
     creator: "Maestro7IT",
     publisher: "Maestro7IT",
     icons: {
-      icon: "/maestro7it-logo.png",
+      icon: [
+        { url: "/icon.svg", type: "image/svg+xml", sizes: "any" },
+        { url: "/favicon.ico", type: "image/x-icon", sizes: "any" },
+      ],
       apple: "/icons/icon-180x180.png",
     },
     manifest: "/manifest.json",
@@ -179,10 +182,10 @@ export async function generateMetadata(): Promise<Metadata> {
           alt: "Maestria — Learning Platform",
         },
         {
-          url: "/maestro7it-logo.png",
+          url: "/maestria-logo-icon.png",
           width: 512,
           height: 512,
-          alt: "Maestria Logo",
+          alt: "Maestria — логотип платформы",
         },
       ],
     },
@@ -258,10 +261,8 @@ export default async function RootLayout({
             ].join(""),
           }}
         />
-        {/* Theme color для мобильных браузеров */}
-        <meta name="theme-color" content="oklch(var(--background))" />
-        {/* PWA иконки для iOS */}
-        <link rel="apple-touch-icon" href="/icons/icon-180x180.png" />
+        {/* Theme color для мобильных браузеров (совпадает с manifest.theme_color) */}
+        <meta name="theme-color" content="#7c3aed" />
         {/* Additional SEO meta tags */}
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -270,9 +271,8 @@ export default async function RootLayout({
         <meta name="application-name" content="Maestria" />
         <meta name="msapplication-TileColor" content="#ffffff" />
         <meta name="msapplication-tap-highlight" content="no" />
-        {/* Favicon */}
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+        {/* Favicon, apple-touch-icon и Open Graph images объявлены в
+            generateMetadata(): дублирующие <link> здесь не нужны. */}
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}

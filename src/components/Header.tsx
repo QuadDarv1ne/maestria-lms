@@ -7,6 +7,7 @@ import { t } from "@/lib/i18n";
 import { getInitials } from "@/lib/utils";
 import { signOut } from "next-auth/react";
 import { log } from "@/lib/logger";
+import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -123,17 +124,7 @@ export function Header() {
           aria-label={t("nav.home", locale)}
           className="flex items-center gap-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
-           <div className="w-9 h-9 bg-linear-to-br from-blue-600 to-violet-600 rounded-lg flex items-center justify-center">
-            <GraduationCap className="w-5 h-5 text-white" />
-          </div>
-          <div className="hidden sm:block">
-            <span className="text-lg font-bold text-foreground leading-tight">
-              Maestria
-            </span>
-            <p className="text-[10px] text-muted-foreground leading-none -mt-0.5">
-              by Maestro7IT
-            </p>
-          </div>
+           <Logo size={36} withSubtitle wordmarkClassName="hidden sm:flex" />
         </Link>
 
         {/* Навигация (десктоп) */}
@@ -347,9 +338,7 @@ export function Header() {
             <SheetContent side="left" className="w-[280px] sm:w-[320px] p-0">
               <SheetHeader className="p-4 border-b">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-linear-to-br from-blue-600 to-violet-600 rounded-lg flex items-center justify-center">
-                    <GraduationCap className="w-4 h-4 text-white" />
-                  </div>
+                  <Logo size={32} withWordmark={false} />
                   <SheetTitle className="text-left">Maestria</SheetTitle>
                 </div>
               </SheetHeader>
