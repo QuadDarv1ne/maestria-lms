@@ -46,7 +46,7 @@
 **Этап 1. Данные на клиенте (7 файлов, низкий риск).**
 Заменить `useEffect(() => { void fetch() }, [])` на слой запросов:
 `@tanstack/react-query` уже в зависимостях и используется в проекте.
-`useQuery` убирает сам паттерн «эффект + setState» и даёт кэш, повторные попытки,
+`useQuery` убирает сам паттерн "эффект + setState" и даёт кэш, повторные попытки,
 `isPending` вместо ручного `loading`.
 
 Файлы: `BlogPageClient`, `LessonComments`, `LessonAttachments`, `ProfilePage`,
