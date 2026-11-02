@@ -125,13 +125,18 @@ export async function GET(
         });
         if (fresh) payment = fresh;
 
-        // Same notification path as the webhook handler.
-        const [course, user] = await Promise.all([
-          db.course.findUnique({ where: { id: payment.courseId }, select: { title: true } }),
-          db.user.findUnique({ where: { id: payment.userId }, select: { email: true, name: true } }),
-        ]);
-        if (course && user) {
-          notifyPaymentCompleted(payment, course.title, user.name, user.email);
+        // Same notification path as the webhook handler. Skip it when this
+        // sync merely observed a payment that another path (webhook or a
+        // concurrent request) had already completed — otherwise every poll
+        // could send a duplicate "payment succeeded" email.
+        if (!sync.alreadyCompleted) {
+          const [course, user] = await Promise.all([
+            db.course.findUnique({ where: { id: payment.courseId }, select: { title: true } }),
+            db.user.findUnique({ where: { id: payment.userId }, select: { email: true, name: true } }),
+          ]);
+          if (course && user) {
+            notifyPaymentCompleted(payment, course.title, user.name, user.email);
+          }
         }
       } else if (sync.status === "failed" && payment.status === "pending") {
         payment.status = "failed";

@@ -545,6 +545,14 @@ export interface PaymentSyncOutcome {
   synced: boolean;
   status: PaymentSyncStatus;
   reason?: string;
+  /**
+   * Only for status "completed": true when another path (webhook or a
+   * concurrent sync) had already completed the payment. Callers use this to
+   * avoid sending the purchase notification twice.
+   */
+  alreadyCompleted?: boolean;
+  /** Payment identity, so a batch reconciler can notify without re-reading. */
+  payment?: { id: string; userId: string; courseId: string };
 }
 
 /**
@@ -617,6 +625,8 @@ export async function syncPaymentWithProvider(paymentId: string): Promise<Paymen
       synced: true,
       status: "completed",
       reason: result.alreadyCompleted ? "already_completed" : undefined,
+      alreadyCompleted: result.alreadyCompleted,
+      payment: result.payment,
     };
   }
 

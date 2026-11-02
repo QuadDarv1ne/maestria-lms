@@ -510,6 +510,11 @@ List user's payments with pagination.
 
 Get single payment details.
 
+**Pull reconciliation:** for a `pending` payment the handler asks the provider
+for the current status before answering. This repairs a payment whose webhook
+was lost as soon as the payment page polls the endpoint. A successful sync
+completes the payment idempotently and sends the purchase notification once.
+
 ---
 
 ### POST `/api/payments/webhook`
@@ -575,6 +580,66 @@ Initialize YooKassa payment (creates payment on YooKassa side).
 ### POST `/api/payments/[id]/simulate-complete`
 
 Simulate payment completion (development only).
+
+---
+
+### POST `/api/payments/reconcile`
+
+Batch reconciliation of stale `pending` payments (cron entry point). Covers the
+case where the user closed the payment page and the provider webhook was lost:
+without this job the money is taken but the enrollment is never created.
+
+**Authentication:** requires the shared secret from `PAYMENT_RECONCILE_SECRET`.
+Send it as `Authorization: Bearer <secret>` or `X-Reconcile-Secret: <secret>`.
+When the variable is empty the endpoint is disabled (`503`); a missing or wrong
+secret returns `401`. The comparison is constant-time.
+
+**Rate limit:** 6 requests per minute.
+
+**Request (body optional):**
+```json
+{
+  "minAgeMinutes": 15,
+  "maxAgeDays": 30,
+  "batchSize": 50
+}
+```
+
+| Field | Default | Limits | Description |
+|-------|---------|--------|-------------|
+| `minAgeMinutes` | 15 | 0–1440 | Only payments older than this are checked |
+| `maxAgeDays` | 30 | 1–365 | Ignore abandoned checkouts older than this |
+| `batchSize` | 50 | 1–200 | Max payments per run |
+
+**Response (200):**
+```json
+{
+  "ok": true,
+  "scanned": 12,
+  "completed": 3,
+  "failed": 1,
+  "pending": 6,
+  "skipped": 2,
+  "unknown": 0,
+  "errors": 0,
+  "durationMs": 1840
+}
+```
+
+Payments with placeholder ids (`pending_*`, `sim_*`), an unknown/unconfigured
+provider or a non-`pending` status are counted as `skipped`. Provider errors are
+counted as `unknown` and retried on the next run. Completion goes through the
+idempotent `completePayment()`, and the purchase notification is sent only by
+the run that actually completed the payment — a concurrent webhook or payment
+page cannot cause a duplicate email.
+
+**Cron example (every 10 minutes):**
+```bash
+curl -sS -X POST https://your-domain.com/api/payments/reconcile \
+  -H "Authorization: Bearer $PAYMENT_RECONCILE_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{"minAgeMinutes":15,"batchSize":50}'
+```
 
 ---
 

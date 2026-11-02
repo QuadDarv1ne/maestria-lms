@@ -96,6 +96,15 @@ export const env = {
     return cached("paymentWebhookSecret", () => process.env.PAYMENT_WEBHOOK_SECRET);
   },
 
+  /**
+   * Shared secret for the cron endpoint that reconciles stale pending
+   * payments (POST /api/payments/reconcile). When unset the endpoint is
+   * disabled — it must never be callable without authentication.
+   */
+  get paymentReconcileSecret(): string | undefined {
+    return cached("paymentReconcileSecret", () => process.env.PAYMENT_RECONCILE_SECRET);
+  },
+
   get yooKassaShopId(): string | undefined {
     return cached("yooKassaShopId", () => process.env.YOOKASSA_SHOP_ID);
   },

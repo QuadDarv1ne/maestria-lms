@@ -350,7 +350,8 @@ describe("syncPaymentWithProvider — pull reconciliation", () => {
 
     const outcome = await syncPaymentWithProvider("pay-sync");
 
-    expect(outcome).toMatchObject({ synced: true, status: "completed" });
+    expect(outcome).toMatchObject({ synced: true, status: "completed", alreadyCompleted: false });
+    expect(outcome.payment).toEqual({ id: "pay-sync", userId: "user-1", courseId: "course-1" });
     expect(state.payment?.status).toBe("completed");
     expect(state.studentCountIncremented).toBe(1);
   });
