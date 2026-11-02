@@ -1255,6 +1255,7 @@ Seed development data. Only available in development with `ALLOW_SEED_DATA=true`
 | Course Detail | 30 | 1 min | Memory |
 | Payments POST | 20 | 1 min | Memory |
 | Payments GET | 20 | 1 min | Memory |
+| Payments reconcile | 6 | 1 min | Memory |
 | Enrollment | 10 | 1 min | Memory |
 | Progress | 60 | 1 min | Memory |
 | Review | 10 | 1 min | Memory |
@@ -1351,6 +1352,12 @@ The API uses a two-tier caching system:
 - HMAC-SHA256 signature verification
 - Constant-time comparison to prevent timing attacks
 - Configurable via `PAYMENT_WEBHOOK_SECRET`
+
+### Cron Endpoint Security
+- `POST /api/payments/reconcile` requires `PAYMENT_RECONCILE_SECRET`
+  (`Authorization: Bearer` or `X-Reconcile-Secret`)
+- Constant-time secret comparison; endpoint is disabled (`503`) when unset
+- Separate rate limit (6 requests/min)
 
 ### Rate Limiting
 - Per-endpoint rate limits with in-memory fallback

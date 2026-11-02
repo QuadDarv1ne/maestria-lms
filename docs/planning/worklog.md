@@ -2,6 +2,26 @@
 
 ---
 
+Task ID: 28
+Agent: Main Agent
+Task: Фоновая сверка зависших pending-платежей (cron) + защита от дублей уведомлений
+
+Work Log:
+- INVENTORY: Task 26 закрыл кейс «пользователь вернулся на страницу оплаты» (pull-сверка в GET /api/payments/[id]), но не кейс «закрыл вкладку навсегда»: платёж, оплаченный при потерянном вебхуке, оставался pending без enrollment. В types.ts уже был getPaymentStatus «for reconciliation cron», инфраструктуры для самого крона не было
+- FEATURE: src/lib/payments/reconcile.ts — reconcilePendingPayments({minAgeMinutes=15, maxAgeDays=30, batchSize=50, now}) выбирает pending-платежи с реальным providerPaymentId (исключая placeholder-ы pending_/sim_ и null), созданные в окне 15 мин – 30 дней, и последовательно вызывает syncPaymentWithProvider. Батч ограничен 200; ошибки изолированы по платежу; сводка scanned/completed/failed/pending/skipped/unknown/errors/durationMs
+- NOTIFY: уведомление + письмо отправляются только если сверка реально завершила платёж (!alreadyCompleted). PaymentSyncOutcome расширен полями alreadyCompleted и payment (identity из completePayment), поэтому reconcile не делает лишних перечитываний
+- FIX (MEDIUM/деньги-UX): GET /api/payments/[id] отправлял notifyPaymentCompleted на каждый completed-результат сверки, включая already_completed — при гонке вебхука и поллинга пользователь мог получить несколько писем «Оплата прошла успешно». Теперь уведомляет только победитель
+- ENDPOINT: POST /api/payments/reconcile — секрет PAYMENT_RECONCILE_SECRET (Authorization: Bearer или X-Reconcile-Secret, crypto.timingSafeEqual), при пустом секрете 503 (endpoint выключен), неверный/отсутствующий — 401, rate limit 6/мин, опциональное тело {minAgeMinutes,maxAgeDays,batchSize} через zod; env-геттер paymentReconcileSecret; .env.example обновлён
+- TEST: src/lib/payments-reconcile.test.ts (5) — where-контракт (status/createdAt/NOT placeholders/paymentProvider/orderBy/take), clamp опций, пустой результат, агрегация 7 исходов с одним уведомлением, missing course/user; src/tests/api/payments-reconcile-route.test.ts (8) — 503 без секрета, 401 без/неверным секретом (разная и одинаковая длина), Bearer, X-Reconcile-Secret + пустое тело, invalid JSON, out-of-range batchSize; payments-service.test.ts дополнен проверкой alreadyCompleted=false и payment identity
+- Проверено: npm run verify — typecheck чистый, 1140 тестов в 82 файлах зелёные (+13 к 1127), check:i18n OK; npm run lint — 0 ошибок (единственный warning react-hooks/set-state-in-effect в HelpPage.tsx — из Task 27, к платёжным файлам отношения не имеет)
+- NEXT: реальные API sberbank/vtb/mkb (ждут credentials); при необходимости — встроенный планировщик вместо внешнего cron
+
+Stage Summary:
+- Платёж, оплаченный при потерянном вебхуке и закрытой странице оплаты, восстанавливается фоновой сверкой
+- Cron-endpoint защищён общим секретом и по умолчанию выключен; повторные письма при гонке вебхука/поллинга исключены
+
+---
+
 Task ID: 27
 Agent: Main Agent
 Task: Улучшение страниц сайта фичами из Tilda (первая итерация: /help + база знаний)
