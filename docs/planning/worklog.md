@@ -2,6 +2,26 @@
 
 ---
 
+Task ID: 26
+Agent: Main Agent
+Task: Pull-сверка платежей с провайдером (reconciliation) через GET /api/payments/[id]
+
+Work Log:
+- INVENTORY (architect): GET /api/payments/[id] только читал строку БД — единственным источником истины был вебхук; при потере вебхука (сбой/рестарт/Redis eviction) оплаченный платёж навсегда зависал в pending, а страница оплаты поллила этот GET и не видела оплату
+- FEATURE: syncPaymentWithProvider() в payments/service.ts (PaymentSyncOutcome: synced/status/reason) — для pending-платежа вызывает provider.getPaymentStatus(providerPaymentId): completed → идемпотентный completePayment (вебхук-гонка безопасна: оба пути сходятся в updateMany where status=pending), failed → updateMany pending→failed, pending → no-op. Пропуски: не-pending, transactionId-плейсхолдеры (pending_<key> из create, sim_<ts> из simulate-complete), paymentProvider null, isConfigured=false; ошибка шлюза → warn + status "unknown" без изменения платежа
+- WIRE: GET /api/payments/[id] — перед ответом, если status=pending, вызывает сверку; при completed — перечитывает платёж и шлёт notifyPaymentCompleted (уведомление + email). Клиент менять не нужно — страница оплаты уже поллит GET, сверка срабатывает при возврате с платёжного редиректа
+- REFACTOR: notifyPaymentCompleted (createNotification + coursePurchaseEmail) вынесен из webhook route в service — общий путь уведомлений для вебхука и GET-сверки
+- TEST: payments-service.test.ts 7→13 — getProvider замокан через vi.mock(importOriginal) с прокси (подмена фейкового провайдера только в sync-тестах): completed→sync+studentCount, canceled→failed, pending→no-op, gateway error→unknown без изменения, плейсхолдеры pending_/sim_/null→skipped, не-pending/null-provider/не-настроенный→skipped
+- Проверено: npm run verify — typecheck чистый, 1127 тестов в 80 файлах (+6), check:i18n OK
+- NB: vitest 3 mockReset восстанавливает реализацию vi.fn(fn) — после mockReset getProvider снова проксирует в реальный реестр (использовано в тесте unconfigured-провайдера)
+- CHANGELOG.md и worklog.md обновлены
+
+Stage Summary:
+- Потерянный вебхук больше не означает зависший платёж: страница оплаты сама дотягивает статус с провайдера
+- Отложено: cron-джоба по всем pending (кейс «пользователь закрыл страницу навсегда»), реальные API sberbank/vtb/mkb (ждут credentials)
+
+---
+
 Task ID: 25
 Agent: Main Agent
 Task: Улучшение оплаты: фактический провайдер при повторном pending + погашение промокода только при оплате

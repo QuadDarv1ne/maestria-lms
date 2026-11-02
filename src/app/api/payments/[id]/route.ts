@@ -7,6 +7,7 @@ import { createNotification } from "@/lib/notifications";
 import { log } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-errors";
 import { validateParams, uuidSchema } from "@/lib/request-validation";
+import { syncPaymentWithProvider, notifyPaymentCompleted } from "@/lib/payments/service";
 
 export const runtime = "nodejs";
 
@@ -78,7 +79,7 @@ export async function GET(
 
     const userId = session.user.id;
 
-    const payment = await db.payment.findUnique({
+    let payment = await db.payment.findUnique({
       where: { id },
       include: {
         course: {
@@ -105,6 +106,36 @@ export async function GET(
         { error: "Доступ запрещён" },
         { status: 403 }
       );
+    }
+
+    // Pull-сверка с провайдером для pending-платежей: страница оплаты поллит
+    // этот эндпоинт, поэтому здесь — естественное место восстановить платёж,
+    // чей вебхук потерялся. Сверка безопасна: идемпотентна, пропускает
+    // тестовые/ненастроенные провайдеры и не ломает ответ при ошибке шлюза.
+    if (payment.status === "pending") {
+      const sync = await syncPaymentWithProvider(payment.id);
+      if (sync.status === "completed") {
+        const fresh = await db.payment.findUnique({
+          where: { id },
+          include: {
+            course: {
+              select: { id: true, title: true, image: true, price: true },
+            },
+          },
+        });
+        if (fresh) payment = fresh;
+
+        // Same notification path as the webhook handler.
+        const [course, user] = await Promise.all([
+          db.course.findUnique({ where: { id: payment.courseId }, select: { title: true } }),
+          db.user.findUnique({ where: { id: payment.userId }, select: { email: true, name: true } }),
+        ]);
+        if (course && user) {
+          notifyPaymentCompleted(payment, course.title, user.name, user.email);
+        }
+      } else if (sync.status === "failed" && payment.status === "pending") {
+        payment.status = "failed";
+      }
     }
 
     return NextResponse.json({ payment }, { status: 200 });

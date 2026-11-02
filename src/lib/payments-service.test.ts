@@ -123,12 +123,25 @@ vi.mock("@/lib/promo-code", () => ({
   redeemPromoCode: vi.fn(async () => {}),
 }));
 
+// Proxy the real registry but expose getProvider as a mock so individual
+// tests can substitute a fake provider (e.g. to stub getPaymentStatus).
+vi.mock("@/lib/payments/registry", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/payments/registry")>();
+  return {
+    ...actual,
+    getProvider: vi.fn((name: Parameters<typeof actual.getProvider>[0]) => actual.getProvider(name)),
+  };
+});
+
 import { redeemPromoCode } from "@/lib/promo-code";
+import { getProvider } from "@/lib/payments/registry";
 import {
   createCoursePayment,
   completePayment,
+  syncPaymentWithProvider,
   ServiceError,
 } from "@/lib/payments/service";
+import type { IPaymentProvider } from "@/lib/payments/types";
 
 function baseCourse(): Record<string, unknown> {
   return {
@@ -302,5 +315,102 @@ describe("completePayment — promo code redemption", () => {
     expect(result.alreadyCompleted).toBe(false);
     expect(redeemPromoCode).not.toHaveBeenCalled();
     expect(state.payment?.status).toBe("completed");
+  });
+});
+
+/** Minimal provider double: only what syncPaymentWithProvider touches. */
+function fakeProvider(
+  getPaymentStatus: (id: string) => Promise<string> | string,
+): IPaymentProvider {
+  return {
+    isConfigured: () => true,
+    getPaymentStatus: vi.fn(async (id: string) => getPaymentStatus(id)),
+  } as unknown as IPaymentProvider;
+}
+
+describe("syncPaymentWithProvider — pull reconciliation", () => {
+  function pendingPayment(overrides: Record<string, unknown> = {}) {
+    state.payment = {
+      id: "pay-sync",
+      status: "pending",
+      userId: "user-1",
+      courseId: "course-1",
+      amount: 100,
+      currency: "RUB",
+      paymentProvider: "YOOKASSA",
+      transactionId: "yoo-provider-1",
+      promoCodeId: null,
+      ...overrides,
+    };
+  }
+
+  it("completes the payment when the provider reports succeeded", async () => {
+    pendingPayment();
+    vi.mocked(getProvider).mockReturnValueOnce(fakeProvider(() => "completed"));
+
+    const outcome = await syncPaymentWithProvider("pay-sync");
+
+    expect(outcome).toMatchObject({ synced: true, status: "completed" });
+    expect(state.payment?.status).toBe("completed");
+    expect(state.studentCountIncremented).toBe(1);
+  });
+
+  it("fails the payment when the provider reports canceled", async () => {
+    pendingPayment();
+    vi.mocked(getProvider).mockReturnValueOnce(fakeProvider(() => "failed"));
+
+    const outcome = await syncPaymentWithProvider("pay-sync");
+
+    expect(outcome).toMatchObject({ synced: true, status: "failed" });
+    expect(state.payment?.status).toBe("failed");
+  });
+
+  it("leaves the payment pending when the provider has no final status yet", async () => {
+    pendingPayment();
+    vi.mocked(getProvider).mockReturnValueOnce(fakeProvider(() => "pending"));
+
+    const outcome = await syncPaymentWithProvider("pay-sync");
+
+    expect(outcome).toMatchObject({ synced: false, status: "pending" });
+    expect(state.payment?.status).toBe("pending");
+  });
+
+  it("survives a provider error without changing the payment", async () => {
+    pendingPayment();
+    vi.mocked(getProvider).mockReturnValueOnce(
+      fakeProvider(() => {
+        throw new Error("gateway down");
+      }),
+    );
+
+    const outcome = await syncPaymentWithProvider("pay-sync");
+
+    expect(outcome).toMatchObject({ synced: false, status: "unknown", reason: "provider_error" });
+    expect(state.payment?.status).toBe("pending");
+  });
+
+  it("skips placeholder transaction ids (pending_/sim_)", async () => {
+    pendingPayment({ transactionId: "pending_abcd" });
+    expect((await syncPaymentWithProvider("pay-sync")).status).toBe("skipped");
+
+    pendingPayment({ transactionId: "sim_12345" });
+    expect((await syncPaymentWithProvider("pay-sync")).status).toBe("skipped");
+
+    pendingPayment({ transactionId: null });
+    expect((await syncPaymentWithProvider("pay-sync")).status).toBe("skipped");
+  });
+
+  it("skips non-pending payments and unconfigured providers", async () => {
+    pendingPayment({ status: "completed" });
+    expect((await syncPaymentWithProvider("pay-sync")).status).toBe("skipped");
+
+    // Configured → skipped by the service layer without touching the provider.
+    pendingPayment({ paymentProvider: null });
+    expect((await syncPaymentWithProvider("pay-sync")).status).toBe("skipped");
+
+    // Real YooKassa without credentials → not configured.
+    vi.mocked(getProvider).mockReset();
+    pendingPayment();
+    expect((await syncPaymentWithProvider("pay-sync")).status).toBe("skipped");
   });
 });

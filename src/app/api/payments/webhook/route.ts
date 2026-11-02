@@ -1,18 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { db } from "@/lib/db";
-import { createNotification } from "@/lib/notifications";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
 import { env } from "@/lib/env";
 import { verifyWebhookSignature } from "@/lib/webhook-verify";
 import { rateLimit } from "@/lib/rate-limit";
-import { sendEmail } from "@/lib/email";
-import { coursePurchaseEmail } from "@/lib/emails";
 import { getRedisClient } from "@/lib/redis";
 import { getProvider, parseProviderName, detectProviderFromWebhook } from "@/lib/payments/registry";
 import type { WebhookContext, ParsedWebhook } from "@/lib/payments/types";
-import { completePayment, markPaymentRefunded, ServiceError } from "@/lib/payments/service";
+import {
+  completePayment,
+  markPaymentRefunded,
+  notifyPaymentCompleted,
+  ServiceError,
+} from "@/lib/payments/service";
 
 export const runtime = "nodejs";
 
@@ -102,33 +104,6 @@ function getClientIp(req: NextRequest): string | undefined {
   const xff = req.headers.get("x-forwarded-for");
   if (xff) return xff.split(",")[0].trim();
   return undefined;
-}
-
-// ─── Send notification + email after successful completion ──────────────────
-async function notifyUserPaymentCompleted(
-  userId: string,
-  courseId: string,
-  courseTitle: string,
-  userName: string | null,
-  userEmail: string,
-) {
-  createNotification({
-    userId,
-    type: "payment",
-    title: "Оплата прошла успешно",
-    message: `Оплата курса "${courseTitle}" подтверждена. Добро пожаловать!`,
-    link: `/course/${courseId}`,
-  }).catch((err: unknown) => log.error("Failed to send payment notification", { error: err }));
-
-  const siteUrl = env.siteUrl;
-  sendEmail({
-    to: userEmail,
-    ...coursePurchaseEmail(
-      userName || "пользователь",
-      courseTitle,
-      `${siteUrl}/course/${courseId}`,
-    ),
-  }).catch((err: unknown) => log.error("Failed to send purchase email", { error: err }));
 }
 
 // ─── POST handler ───────────────────────────────────────────────────────────
@@ -328,13 +303,7 @@ export async function POST(request: NextRequest) {
           select: { email: true, name: true },
         });
         if (course && user) {
-          await notifyUserPaymentCompleted(
-            result.payment.userId,
-            result.payment.courseId,
-            course.title,
-            user.name,
-            user.email,
-          );
+          notifyPaymentCompleted(result.payment, course.title, user.name, user.email);
         }
         log.info("Webhook: payment completed", {
           paymentId: payment.id, provider: providerName, transactionId: parsed.providerPaymentId,

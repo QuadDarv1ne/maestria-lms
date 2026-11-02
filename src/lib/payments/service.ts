@@ -13,12 +13,16 @@ import { db, Prisma } from "@/lib/db";
 import { env } from "@/lib/env";
 import { log } from "@/lib/logger";
 import { validatePromoCode, redeemPromoCode } from "@/lib/promo-code";
+import { createNotification } from "@/lib/notifications";
+import { sendEmail } from "@/lib/email";
+import { coursePurchaseEmail } from "@/lib/emails";
 import crypto from "crypto";
 import {
   type ProviderName,
   type PaymentMethod,
   type PaymentResult,
   type CreatePaymentInput,
+  type PaymentStatus,
 } from "./types";
 import { getProvider, pickProviderForMethod, parseProviderName } from "./registry";
 import { buildCourseReceipt } from "./receipts";
@@ -507,4 +511,123 @@ export function serviceErrorStatus(code: string): number {
     default:
       return 500;
   }
+}
+
+/** Fire-and-forget notification + email after a payment completes. */
+export function notifyPaymentCompleted(
+  payment: { userId: string; courseId: string },
+  courseTitle: string,
+  userName: string | null,
+  userEmail: string,
+): void {
+  createNotification({
+    userId: payment.userId,
+    type: "payment",
+    title: "Оплата прошла успешно",
+    message: `Оплата курса "${courseTitle}" подтверждена. Добро пожаловать!`,
+    link: `/course/${payment.courseId}`,
+  }).catch((err: unknown) => log.error("Failed to send payment notification", { error: err }));
+
+  sendEmail({
+    to: userEmail,
+    ...coursePurchaseEmail(
+      userName || "пользователь",
+      courseTitle,
+      `${env.siteUrl}/course/${payment.courseId}`,
+    ),
+  }).catch((err: unknown) => log.error("Failed to send purchase email", { error: err }));
+}
+
+export type PaymentSyncStatus = "completed" | "failed" | "pending" | "skipped" | "unknown";
+
+export interface PaymentSyncOutcome {
+  /** True when the provider was actually consulted and its answer applied. */
+  synced: boolean;
+  status: PaymentSyncStatus;
+  reason?: string;
+}
+
+/**
+ * Pull-based reconciliation: ask the provider for the real status of a
+ * pending payment. Webhooks are the primary source of truth, but they can be
+ * lost (network failure, restart, Redis eviction) — then a payment that was
+ * actually paid stays "pending" forever while the payment page keeps polling
+ * our GET endpoint. This helper lets that same GET endpoint consult the
+ * provider before answering.
+ *
+ * Safe to call on every request:
+ *   - non-pending payments are skipped (already finalized),
+ *   - placeholder transaction ids (pending_/sim_) and test-mode providers are
+ *     skipped — there is nothing to ask,
+ *   - provider errors are swallowed with a warn log (sync must never break
+ *     the status read),
+ *   - completion goes through the idempotent completePayment(), so a race
+ *     with a late webhook converges instead of double-granting access.
+ */
+export async function syncPaymentWithProvider(paymentId: string): Promise<PaymentSyncOutcome> {
+  const payment = await db.payment.findUnique({ where: { id: paymentId } });
+  if (!payment) {
+    return { synced: false, status: "skipped", reason: "payment_not_found" };
+  }
+  if (payment.status !== "pending") {
+    return { synced: false, status: "skipped", reason: `status_${payment.status}` };
+  }
+
+  // Placeholders written at creation time (pending_<idempotenceKey>) and by
+  // the test-mode completion route (sim_<timestamp>) identify no provider
+  // object — asking the provider for them would just fail.
+  const providerPaymentId = payment.transactionId;
+  if (
+    !providerPaymentId ||
+    providerPaymentId.startsWith("pending_") ||
+    providerPaymentId.startsWith("sim_")
+  ) {
+    return { synced: false, status: "skipped", reason: "no_provider_payment_id" };
+  }
+
+  const providerName = parseProviderName(payment.paymentProvider);
+  if (!providerName) {
+    return { synced: false, status: "skipped", reason: "unknown_provider" };
+  }
+  const provider = getProvider(providerName);
+  if (!provider.isConfigured()) {
+    return { synced: false, status: "skipped", reason: "provider_not_configured" };
+  }
+
+  let providerStatus: PaymentStatus;
+  try {
+    providerStatus = await provider.getPaymentStatus(providerPaymentId);
+  } catch (err) {
+    log.warn("Payment sync: provider status check failed", {
+      paymentId,
+      provider: providerName,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return { synced: false, status: "unknown", reason: "provider_error" };
+  }
+
+  if (providerStatus === "completed") {
+    const result = await completePayment(payment.id, providerPaymentId);
+    log.info("Payment sync: provider reports completed", {
+      paymentId,
+      provider: providerName,
+      alreadyCompleted: result.alreadyCompleted,
+    });
+    return {
+      synced: true,
+      status: "completed",
+      reason: result.alreadyCompleted ? "already_completed" : undefined,
+    };
+  }
+
+  if (providerStatus === "failed") {
+    await db.payment.updateMany({
+      where: { id: payment.id, status: "pending" },
+      data: { status: "failed" },
+    });
+    log.info("Payment sync: provider reports failed", { paymentId, provider: providerName });
+    return { synced: true, status: "failed" };
+  }
+
+  return { synced: false, status: "pending", reason: "provider_pending" };
 }
