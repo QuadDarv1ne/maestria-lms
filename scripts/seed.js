@@ -17,6 +17,9 @@ const { describeDatabaseError } = require("./lib/db-error");
 
 const ifEmpty = process.argv.includes("--if-empty");
 const force = process.argv.includes("--force");
+// Non-destructive content sync (upsert by slug): safe to run on every boot,
+// so it bypasses the emptiness guard entirely. start.sh uses this mode.
+const sync = process.argv.includes("--sync");
 
 /**
  * Decide whether seeding should run at all.
@@ -126,9 +129,18 @@ async function shouldSeed() {
     globalThis.process = require('process');
   }
 
+  const jiti = await createJiti(__filename);
+
+  // --sync: non-destructive upsert, always safe to run (no deletes inside),
+  // so the emptiness guard and its fail-closed behaviour do not apply.
+  if (sync) {
+    console.log("[seed] sync mode: upserting demo content (nothing is deleted)");
+    await jiti.import("../prisma/seed.mjs");
+    return;
+  }
+
   if (!(await shouldSeed())) return;
 
-  const jiti = await createJiti(__filename);
   await jiti.import("../prisma/seed.mjs");
 })().catch((error) => {
   console.error("[seed] Failed:", error);

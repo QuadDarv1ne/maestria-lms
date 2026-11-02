@@ -2,6 +2,27 @@
 
 ---
 
+Task ID: 24
+Agent: Main Agent
+Task: Автоматическая синхронизация статей/курсов в PostgreSQL при деплое на Amvera
+
+Work Log:
+- PROBLEM: seed в проде запускался только один раз — `start.sh` звал `node scripts/seed.js --if-empty`, а guard проверял только `course.count() > 0`. Если в БД есть курсы, но отсутствуют/устарели статьи (частичный seed, новый контент в репо), они никогда не появлялись; на Amvera контент «замирал» на состоянии первого деплоя
+- SOLUTION: не-деструктивный режим `--sync` в `prisma/seed.mjs` — идемпотентный upsert по уникальным slug: категории (category.upsert), статьи (article.upsert с сохранением `views`), курсы (syncCourse): отсутствующий курс создаётся вместе с модулями/уроками, существующий — обновляются только скалярные поля контента, метрики (`rating`, `studentCount`, `reviewCount`) и вложенные модули/уроки не трогаются (Progress/Enrollment ссылаются на lessonId — пересоздание уроков осиротило бы прогресс), новые модули дозаписываются по совпадению title. Демо-пользователь — прежняя логика (создание при отсутствии, ротация только при SEED_DEMO_PASSWORD)
+- WIRE: `start.sh` — вместо `seed.js --if-empty` теперь `seed.js --sync` на каждом старте (не-fatal, warning при сбое); `scripts/seed.js` — флаг `--sync` обходит guard пустоты (upsert безопасен всегда, fail-closed-логика guard'а не применяется); `package.json` — `db:sync` для ручного запуска. Dockerfile правок не требует (seed.js и prisma/ копируются целиком)
+- FIX (в процессе реализации): конкурентный `Promise.all` на 23 создания курсов через better-sqlite3-адаптер маскировал реальную ошибку (`TypeError: Cannot read properties of undefined (reading 'sep')` внутри рендерера локаций ошибок Prisma — исходная ошибка терялась). Создание курсов/статей переведено на последовательный цикл с логированием слага места сбоя; настоящая ошибка оказалась банальной — `for…of` по `{ create: [...] }` вместо массива (`modules is not iterable`) — исправлена нормализацией `moduleSpecs = Array.isArray(modules) ? modules : modules?.create ?? []`
+- TEST (SQLite sync-test.db): прогон 1 (пустая БД) → 6 категорий/23 курса/6 статей; мутация рантайм-состояния (views=999, rating=5.0, studentCount=777, Progress-строка) → прогон 2: 9/9 проверок — нет дублей, views/rating/studentCount/Progress сохранены, контентные поля обновлены (price), модули не задублированы; прогон 3 (`--force`, деструктивный seed) — прежнее поведение не сломано. `prisma/schema.prisma` возвращён к postgresql после тестового db push, клиент перегенерирован
+- Проверено: npm run verify — typecheck чистый, 1114 тестов в 79 файлах зелёные, check:i18n OK
+- NB: при диагностике маскировки ошибок Prisma помог `errorFormat: 'minimal'` в PrismaClient — fancy-рендерер локаций падает под jiti, теряя исходную ошибку; оставлено как приём на будущее
+- CHANGELOG.md и worklog.md обновлены
+
+Stage Summary:
+- Контент (статьи/курсы/категории) автоматически синхронизируется в PostgreSQL при каждом старте контейнера на Amvera — без риска потери пользовательских данных
+- Не-деструктивный `db:sync` доступен локально и в CI; деструктивный seed сохранён для dev/reset
+- npm run verify полностью зелёный
+
+---
+
 Task ID: 23
 Agent: Main Agent
 Task: Тесты ранее не покрытых модулей (feature-flags клиент+сервер, rate-limit async/addRateLimitHeaders)

@@ -2,6 +2,18 @@ import { PrismaClient } from '../src/generated/prisma/client.js';
 import bcrypt from 'bcryptjs';
 import { resolveSeedPassword } from '../src/lib/demo-credentials.js';
 
+// ═══════════════════════════════════════════════════════════════════════════
+// Modes:
+//   default    — destructive seed: wipe content tables, recreate demo content
+//   --sync     — non-destructive content sync: upsert categories/courses/
+//                articles by slug, create the demo user only if missing.
+//                Existing modules/lessons, enrollments, progress, payments and
+//                admin edits to other courses are NEVER touched. Runs on every
+//                production boot (start.sh) so new/updated demo content reaches
+//                the deployed PostgreSQL automatically.
+// ═══════════════════════════════════════════════════════════════════════════
+const SYNC_MODE = process.argv.includes('--sync');
+
 // Detect provider and create appropriate adapter
 const databaseUrl = process.env.DATABASE_URL || 'file:./prisma/data.db';
 let adapter;
@@ -25,26 +37,99 @@ if (databaseUrl.startsWith('postgresql') || databaseUrl.startsWith('postgres')) 
 
 const db = new PrismaClient({ adapter });
 
-async function main() {
-  console.log('Seeding database...');
+// ─── Content sync helpers ───────────────────────────────────────────────────
+// All helpers are idempotent: in --sync mode they upsert by slug so the same
+// script is safe to run on every deploy. In the default (destructive) mode the
+// tables were just wiped, so the upsert "create" branch is always taken and
+// the behaviour is identical to the previous plain create() calls.
 
-  // Clean existing data
-  console.log('Cleaning existing data...');
-  await db.assignmentSubmission.deleteMany();
-  await db.progress.deleteMany();
-  await db.enrollment.deleteMany();
-  await db.review.deleteMany();
-  await db.payment.deleteMany();
-  await db.certificate.deleteMany();
-  await db.notification.deleteMany();
-  await db.article.deleteMany();
-  await db.lesson.deleteMany();
-  await db.module.deleteMany();
-  await db.course.deleteMany();
-  await db.category.deleteMany();
-  await db.account.deleteMany();
-  await db.session.deleteMany();
-  // Keep the demo user, don't delete
+/**
+ * Upsert a category by its unique slug.
+ */
+async function upsertCategory({ data }) {
+  return db.category.upsert({
+    where: { slug: data.slug },
+    create: data,
+    update: data,
+  });
+}
+
+/**
+ * Upsert a course by its unique slug.
+ *
+ * - Missing course → created together with all modules and lessons.
+ * - Existing course → only scalar content fields are updated; runtime metrics
+ *   (rating, studentCount, reviewCount) are preserved because they are managed
+ *   by the application. Modules/lessons of an existing course are NEVER
+ *   deleted or rewritten: Progress/Enrollment rows reference lesson IDs, so
+ *   recreating them would orphan student progress. New modules from the data
+ *   are appended (matched by title) without touching existing ones.
+ */
+async function syncCourse({ data }) {
+  const { modules, ...courseData } = data;
+  // The spec stores modules in the Prisma nested-write shape ({ create: [...] });
+  // normalize it to a plain array for both branches below.
+  const moduleSpecs = Array.isArray(modules) ? modules : (modules?.create ?? []);
+  const existing = await db.course.findUnique({ where: { slug: courseData.slug } });
+
+  if (!existing) {
+    return db.course.create({ data: { ...courseData, modules: { create: moduleSpecs } } });
+  }
+
+  const { rating, studentCount, reviewCount, ...contentFields } = courseData;
+  await db.course.update({ where: { id: existing.id }, data: contentFields });
+
+  for (const moduleData of moduleSpecs) {
+    const found = await db.module.findFirst({
+      where: { courseId: existing.id, title: moduleData.title },
+    });
+    if (!found) {
+      await db.module.create({ data: { ...moduleData, courseId: existing.id } });
+    }
+  }
+
+  return db.course.findUnique({ where: { slug: courseData.slug } });
+}
+
+/**
+ * Upsert an article by its unique slug. The `views` counter is preserved on
+ * update because it accumulates real traffic.
+ */
+async function upsertArticle({ data }) {
+  const { views, ...contentFields } = data;
+  return db.article.upsert({
+    where: { slug: data.slug },
+    create: data,
+    update: contentFields,
+  });
+}
+
+async function main() {
+  console.log(SYNC_MODE ? 'Syncing content (non-destructive)...' : 'Seeding database...');
+
+  if (SYNC_MODE) {
+    // Sync mode never deletes anything: it only adds missing entities and
+    // refreshes content fields of the demo courses/articles it owns.
+    console.log('[sync] sync mode — existing data is preserved, only upserts are performed');
+  } else {
+    // Clean existing data
+    console.log('Cleaning existing data...');
+    await db.assignmentSubmission.deleteMany();
+    await db.progress.deleteMany();
+    await db.enrollment.deleteMany();
+    await db.review.deleteMany();
+    await db.payment.deleteMany();
+    await db.certificate.deleteMany();
+    await db.notification.deleteMany();
+    await db.article.deleteMany();
+    await db.lesson.deleteMany();
+    await db.module.deleteMany();
+    await db.course.deleteMany();
+    await db.category.deleteMany();
+    await db.account.deleteMany();
+    await db.session.deleteMany();
+    // Keep the demo user, don't delete
+  }
 
   // Demo user
   //
@@ -102,7 +187,7 @@ async function main() {
 
   // Categories
   const categories = await Promise.all([
-    db.category.create({
+    upsertCategory({
       data: {
         name: 'Программирование на Python',
         slug: 'python',
@@ -111,7 +196,7 @@ async function main() {
         description: 'Курсы по Python: от основ до продвинутых тем',
       },
     }),
-    db.category.create({
+    upsertCategory({
       data: {
         name: 'Веб-разработка',
         slug: 'web-development',
@@ -120,7 +205,7 @@ async function main() {
         description: 'HTML, CSS, JavaScript, фреймворки и всё для веба',
       },
     }),
-    db.category.create({
+    upsertCategory({
       data: {
         name: 'Создание игр в Roblox',
         slug: 'roblox',
@@ -129,7 +214,7 @@ async function main() {
         description: 'Разработка игр в Roblox Studio на Lua',
       },
     }),
-    db.category.create({
+    upsertCategory({
       data: {
         name: 'C++/C#',
         slug: 'cpp-csharp',
@@ -138,7 +223,7 @@ async function main() {
         description: 'Программирование на C++ и C#',
       },
     }),
-    db.category.create({
+    upsertCategory({
       data: {
         name: 'Data Science',
         slug: 'data-science',
@@ -147,7 +232,7 @@ async function main() {
         description: 'Анализ данных, машинное обучение, визуализация',
       },
     }),
-    db.category.create({
+    upsertCategory({
       data: {
         name: 'Мобильная разработка',
         slug: 'mobile-development',
@@ -160,9 +245,11 @@ async function main() {
 
   console.log(`Created ${categories.length} categories`);
 
-  // Courses
-  const courses = await Promise.all([
-    db.course.create({
+  // Courses are created sequentially instead of Promise.all: driver adapters
+  // (better-sqlite3) execute on a single connection, and a concurrent batch
+  // turned every statement failure into an opaque internal Prisma error.
+  const courseSpecs = [
+    {
       data: {
         title: 'Python с нуля до Junior Developer',
         slug: 'python-zero-to-junior',
@@ -221,8 +308,8 @@ async function main() {
           ],
         },
       },
-    }),
-    db.course.create({
+    },
+    {
       data: {
         title: 'React + Next.js: Fullstack разработка',
         slug: 'react-nextjs-fullstack',
@@ -268,8 +355,8 @@ async function main() {
           ],
         },
       },
-    }),
-    db.course.create({
+    },
+    {
       data: {
         title: 'Создание игр в Roblox Studio',
         slug: 'roblox-game-dev',
@@ -301,8 +388,8 @@ async function main() {
           ],
         },
       },
-    }),
-    db.course.create({
+    },
+    {
       data: {
         title: 'C++ для начинающих: основы программирования',
         slug: 'cpp-basics',
@@ -335,8 +422,8 @@ async function main() {
           ],
         },
       },
-    }),
-    db.course.create({
+    },
+    {
       data: {
         title: 'Data Science с Python: анализ данных',
         slug: 'data-science-python',
@@ -370,8 +457,8 @@ async function main() {
           ],
         },
       },
-    }),
-    db.course.create({
+    },
+    {
       data: {
         title: 'React Native: мобильные приложения',
         slug: 'react-native-mobile',
@@ -403,9 +490,9 @@ async function main() {
           ],
         },
       },
-    }),
+    },
     // Free course
-    db.course.create({
+    {
       data: {
         title: 'Основы HTML и CSS: бесплатный курс',
         slug: 'html-css-basics-free',
@@ -448,9 +535,9 @@ async function main() {
           ],
         },
       },
-    }),
+    },
     // QA Manual Testing
-    db.course.create({
+    {
       data: {
         title: 'QA-инженер: ручное тестирование с нуля',
         slug: 'qa-manual-testing-zero-to-hero',
@@ -505,9 +592,9 @@ async function main() {
           ],
         },
       },
-    }),
+    },
     // QA Automation
-    db.course.create({
+    {
       data: {
         title: 'Python QA: автоматизация тестирования с Playwright',
         slug: 'python-qa-automation-playwright',
@@ -563,9 +650,9 @@ async function main() {
           ],
         },
       },
-    }),
+    },
     // Python Pro
-    db.course.create({
+    {
       data: {
         title: 'Python Pro: от Junior до Middle разработчика',
         slug: 'python-pro-junior-to-middle',
@@ -609,9 +696,9 @@ async function main() {
           ],
         },
       },
-    }),
+    },
     // FastAPI
-    db.course.create({
+    {
       data: {
         title: 'FastAPI: создание REST API с нуля',
         slug: 'fastapi-rest-api-from-scratch',
@@ -654,9 +741,9 @@ async function main() {
           ],
         },
       },
-    }),
+    },
     // Frontend Pro
-    db.course.create({
+    {
       data: {
         title: 'Frontend Pro: React, TypeScript, Next.js',
         slug: 'frontend-pro-react-typescript-nextjs',
@@ -701,9 +788,9 @@ async function main() {
           ],
         },
       },
-    }),
+    },
     // Fullstack TypeScript
-    db.course.create({
+    {
       data: {
         title: 'Fullstack TypeScript: от идеи до продакшена',
         slug: 'fullstack-typescript-idea-to-production',
@@ -747,9 +834,9 @@ async function main() {
           ],
         },
       },
-    }),
+    },
     // Unity C#
-    db.course.create({
+    {
       data: {
         title: 'Unity C#: создание 2D и 3D игр',
         slug: 'unity-csharp-2d-3d-games',
@@ -792,9 +879,9 @@ async function main() {
           ],
         },
       },
-    }),
+    },
     // Unreal Engine 5
-    db.course.create({
+    {
       data: {
         title: 'Unreal Engine 5: разработка игр на C++',
         slug: 'unreal-engine-5-cpp-game-dev',
@@ -838,9 +925,9 @@ async function main() {
           ],
         },
       },
-    }),
+    },
     // Machine Learning
-    db.course.create({
+    {
       data: {
         title: 'Machine Learning: от теории к практике',
         slug: 'machine-learning-theory-to-practice',
@@ -885,9 +972,9 @@ async function main() {
           ],
         },
       },
-    }),
+    },
     // Data Analyst
-    db.course.create({
+    {
       data: {
         title: 'Аналитик данных: Excel → SQL → Python',
         slug: 'data-analyst-excel-sql-python',
@@ -930,9 +1017,9 @@ async function main() {
           ],
         },
       },
-    }),
+    },
     // DevOps
-    db.course.create({
+    {
       data: {
         title: 'DevOps для разработчиков: Docker, CI/CD, Kubernetes',
         slug: 'devops-docker-ci-cd-kubernetes',
@@ -976,9 +1063,9 @@ async function main() {
           ],
         },
       },
-    }),
+    },
     // Linux Admin
-    db.course.create({
+    {
       data: {
         title: 'Linux-администратор: от основ до продакшена',
         slug: 'linux-admin-basics-to-production',
@@ -1021,9 +1108,9 @@ async function main() {
           ],
         },
       },
-    }),
+    },
     // UI/UX Design
-    db.course.create({
+    {
       data: {
         title: 'UI/UX дизайнер: проектирование интерфейсов в Figma',
         slug: 'ui-ux-design-figma-interfaces',
@@ -1066,9 +1153,9 @@ async function main() {
           ],
         },
       },
-    }),
+    },
     // Flutter
-    db.course.create({
+    {
       data: {
         title: 'Flutter & Dart: кроссплатформенные мобильные приложения',
         slug: 'flutter-dart-cross-platform-mobile',
@@ -1112,9 +1199,9 @@ async function main() {
           ],
         },
       },
-    }),
+    },
     // Ethical Hacking
-    db.course.create({
+    {
       data: {
         title: 'Этичный хакинг: основы информационной безопасности',
         slug: 'ethical-hacking-cybersecurity-basics',
@@ -1157,9 +1244,9 @@ async function main() {
           ],
         },
       },
-    }),
+    },
     // IT Freelance
-    db.course.create({
+    {
       data: {
         title: 'IT-фриланс: как найти клиентов и зарабатывать удалённо',
         slug: 'it-freelance-find-clients-earn-remote',
@@ -1202,14 +1289,24 @@ async function main() {
           ],
         },
       },
-    }),
-  ]);
+    },
+  ];
+
+  const courses = [];
+  for (const spec of courseSpecs) {
+    try {
+      courses.push(await syncCourse(spec));
+    } catch (error) {
+      console.error(`[seed] course sync FAILED at: ${spec.data.slug}`);
+      throw error;
+    }
+  }
 
   console.log(`Created ${courses.length} courses`);
 
-  // Demo Articles for Blog
-  const articles = await Promise.all([
-    db.article.create({
+  // Demo Articles for Blog (sequential — see the courseSpecs note above)
+  const articleSpecs = [
+    {
       data: {
         title: 'Введение в современную веб-разработку: что нужно знать в 2026 году',
         slug: 'modern-web-development-2026',
@@ -1244,8 +1341,8 @@ async function main() {
         isFeatured: true,
         authorId: user.id,
       },
-    }),
-    db.article.create({
+    },
+    {
       data: {
         title: 'Тестирование ПО: полное руководство для начинающих',
         slug: 'software-testing-beginners-guide',
@@ -1286,8 +1383,8 @@ async function main() {
         isFeatured: false,
         authorId: user.id,
       },
-    }),
-    db.article.create({
+    },
+    {
       data: {
         title: 'SQL и NoSQL базы данных: когда что использовать',
         slug: 'sql-vs-nosql-databases',
@@ -1330,8 +1427,8 @@ async function main() {
         isFeatured: true,
         authorId: user.id,
       },
-    }),
-    db.article.create({
+    },
+    {
       data: {
         title: 'Искусственный интеллект в 2026: практическое применение для разработчиков',
         slug: 'ai-practical-applications-2026',
@@ -1373,8 +1470,8 @@ AI не заменяет разработчиков, а усиливает их 
         isFeatured: false,
         authorId: user.id,
       },
-    }),
-    db.article.create({
+    },
+    {
       data: {
         title: '3D-моделирование в Blender: первые шаги',
         slug: '3d-modeling-blender-first-steps',
@@ -1428,8 +1525,8 @@ Blender — мощный бесплатный инструмент для 3D-м�
         isFeatured: false,
         authorId: user.id,
       },
-    }),
-    db.article.create({
+    },
+    {
       data: {
         title: 'Кибербезопасность: базовые принципы защиты веб-приложений',
         slug: 'cybersecurity-web-application-basics',
@@ -1476,17 +1573,31 @@ Blender — мощный бесплатный инструмент для 3D-м�
         isFeatured: false,
         authorId: user.id,
       },
-    }),
-  ]);
+    },
+  ];
+
+  const articles = [];
+  for (const spec of articleSpecs) {
+    try {
+      articles.push(await upsertArticle(spec));
+    } catch (error) {
+      console.error(`[seed] article sync FAILED at: ${spec.data.slug}`);
+      throw error;
+    }
+  }
 
   console.log(`Created ${articles.length} articles`);
 
-  console.log('Database seeded successfully!');
+  console.log(
+    SYNC_MODE
+      ? 'Content sync completed successfully!'
+      : 'Database seeded successfully!',
+  );
 }
 
 main()
   .catch((e) => {
-    console.error('Seed error:', e);
+    console.error(SYNC_MODE ? 'Content sync error:' : 'Seed error:', e);
     process.exit(1);
   })
   .finally(async () => {

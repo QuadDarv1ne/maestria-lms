@@ -40,17 +40,19 @@ until node scripts/prisma-auto.js migrate deploy; do
   RETRY_DELAY=$((RETRY_DELAY * 2))
 done
 
-# ── Seed empty database ─────────────────────────
-# Only seed when the database contains no courses, so a fresh deploy
-# gets production content but existing data is never wiped.
-# NOTE: the seed must NEVER be fatal — a seed failure must not stop the
-# server from starting (otherwise the container crash-loops on Amvera).
-echo "[startup] running seed (--if-empty)..."
-if node scripts/seed.js --if-empty; then
-  echo "[startup] seed step finished (exit 0)"
+# ── Content sync (articles/courses/categories) ──
+# Non-destructive upsert of demo content by slug on EVERY boot, so new or
+# updated articles/courses from the repository reach the deployed PostgreSQL
+# automatically (previously the seed ran only once on an empty database and
+# later content changes never appeared on Amvera).
+# NOTE: the sync must NEVER be fatal — a failure must not stop the server
+# from starting (otherwise the container crash-loops on Amvera).
+echo "[startup] syncing content (categories/courses/articles)..."
+if node scripts/seed.js --sync; then
+  echo "[startup] content sync finished (exit 0)"
 else
-  seed_exit=$?
-  echo "[startup] WARNING: seed script failed with exit code ${seed_exit} — the app will start with an EMPTY database (blog/courses will seem missing). Check the seed errors above."
+  sync_exit=$?
+  echo "[startup] WARNING: content sync failed with exit code ${sync_exit} — the app will start with whatever content is already in the database. Check the sync errors above."
 fi
 
 # ── Start Application ───────────────────────────

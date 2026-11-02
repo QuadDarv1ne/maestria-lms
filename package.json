@@ -19,6 +19,7 @@
     "db:migrate": "node scripts/prisma-auto.js migrate dev",
     "db:reset": "node scripts/prisma-auto.js migrate reset",
     "db:studio": "node scripts/prisma-auto.js studio",
+    "db:sync": "node scripts/seed.js --sync",
     "db:setup:sqlite": "node scripts/db-setup.js setup --provider sqlite --force --seed",
     "db:setup:pg": "node scripts/db-setup.js setup --provider postgresql --force --seed",
     "db:setup:mysql": "node scripts/db-setup.js setup --provider mysql --force --seed",

@@ -1,0 +1,346 @@
+
+> maestria-lms@3.6.0 test:coverage
+> vitest run --coverage
+
+
+[1m[7m[36m RUN [39m[27m[22m [36mv3.1.1 [39m[90mm:/GitHub/maestria-lms[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+ [32m✓[39m src/lib/lesson-access.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m src/lib/api-integration.test.ts [2m([22m[2m79 tests[22m[2m)[22m[32m 48[2mms[22m[39m
+ [32m✓[39m src/lib/articles.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m src/lib/video-embed.test.ts [2m([22m[2m38 tests[22m[2m)[22m[32m 37[2mms[22m[39m
+ [32m✓[39m src/lib/assignment-grading.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m src/lib/refund-flow.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 40[2mms[22m[39m
+ [32m✓[39m src/lib/lesson-content.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m src/lib/payments/registry.test.ts [2m([22m[2m30 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m src/lib/sanitize.test.ts [2m([22m[2m41 tests[22m[2m)[22m[32m 33[2mms[22m[39m
+ [32m✓[39m src/lib/feature-flags.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 201[2mms[22m[39m
+ [32m✓[39m src/lib/stores.test.ts [2m([22m[2m27 tests[22m[2m)[22m[32m 72[2mms[22m[39m
+ [32m✓[39m src/lib/rate-limit-async.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 29[2mms[22m[39m
+ [32m✓[39m src/lib/cache.test.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 418[2mms[22m[39m
+   [33m[2m✓[22m[39m Cache utilities[2m > [22mgenerateCacheKey[2m > [22mshould generate consistent cache keys [33m 304[2mms[22m[39m
+ [32m✓[39m src/lib/emails/templates.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m src/lib/lesson-comments.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 105[2mms[22m[39m
+ [32m✓[39m src/lib/utils.test.ts [2m([22m[2m32 tests[22m[2m)[22m[32m 59[2mms[22m[39m
+ [32m✓[39m src/lib/payment-race-condition.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m src/lib/rate-limit.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m src/lib/api-versioning.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 41[2mms[22m[39m
+ [32m✓[39m src/lib/enrollment-flow.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m src/lib/payments/ip-whitelist.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m src/lib/email.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 62[2mms[22m[39m
+ [32m✓[39m src/lib/api-error-codes.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m src/lib/api-errors.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m src/lib/s3.test.ts [2m([22m[2m10 tests[22m[2m)[22m[33m 363[2mms[22m[39m
+ [32m✓[39m src/lib/course-validation.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m src/lib/db-provider.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 296[2mms[22m[39m
+ [32m✓[39m src/lib/cache-key.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m src/lib/storage.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m src/lib/demo-credentials.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m src/lib/payments/providers/yookassa.test.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 32[2mms[22m[39m
+ [32m✓[39m src/lib/promo-code.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m src/lib/payments/providers/cloudpayments.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m src/tests/api/payments-webhook-route.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 40[2mms[22m[39m
+ [32m✓[39m src/lib/payments/providers/tinkoff.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m✓[39m src/lib/payments.test.ts [2m([22m[2m33 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m src/lib/promo-courses.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 46[2mms[22m[39m
+ [32m✓[39m src/lib/db-provider-parity.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m src/lib/payments/receipts.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m src/lib/payment-webhook.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m src/lib/password-strength.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m src/lib/env.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m src/lib/redis.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 256[2mms[22m[39m
+ [32m✓[39m src/lib/health.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 474[2mms[22m[39m
+   [33m[2m✓[22m[39m Health & Metrics Endpoints[2m > [22mStatus page[2m > [22mshould have StatusBadge component [33m 457[2mms[22m[39m
+ [32m✓[39m src/lib/db-optimization.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m src/lib/yookassa.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m src/lib/i18n.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m src/lib/payments/providers/ozon.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m src/tests/api/enroll-route.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 50[2mms[22m[39m
+ [32m✓[39m src/lib/a11y.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 683[2mms[22m[39m
+   [33m[2m✓[22m[39m Accessibility[2m > [22mSkipLink[2m > [22mrenders a link that targets the main content anchor [33m 374[2mms[22m[39m
+ [32m✓[39m src/lib/auth.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m src/lib/payments/providers/vtb.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m src/tests/api/proxy-middleware.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m src/tests/api/payments-yookassa-route.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 44[2mms[22m[39m
+ [32m✓[39m src/lib/payments/providers/sberbank.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m src/lib/payments/providers/mkb.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m src/lib/security-headers.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m src/lib/lesson-attachments.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 59[2mms[22m[39m
+ [32m✓[39m src/lib/file-upload.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+[90mstderr[2m | src/lib/request-validation.test.ts[2m > [22m[2mwithErrorHandling[2m > [22m[2mturns thrown error into 500 response
+[22m[39m{"level":"error","message":"Внутренняя ошибка сервера","timestamp":"2026-11-01T17:26:07.844Z","context":{"name":"Error","message":"boom","stack":"Error: boom\n    at fail (m:\\GitHub\\maestria-lms\\src\\lib\\request-validation.test.ts:159:32)\n    at m:\\GitHub\\maestria-lms\\src\\lib\\request-validation.test.ts:161:7\n    at withErrorHandling (m:\\GitHub\\maestria-lms\\src\\lib\\request-validation.ts:135:10)\n    at m:\\GitHub\\maestria-lms\\src\\lib\\request-validation.test.ts:160:28\n    at file:///m:/GitHub/maestria-lms/node_modules/@vitest/runner/dist/index.js:103:11\n    at file:///m:/GitHub/maestria-lms/node_modules/@vitest/runner/dist/index.js:595:26\n    at file:///m:/GitHub/maestria-lms/node_modules/@vitest/runner/dist/index.js:877:20\n    at new Promise (<anonymous>)\n    at runWithTimeout (file:///m:/GitHub/maestria-lms/node_modules/@vitest/runner/dist/index.js:850:10)\n    at runTest (file:///m:/GitHub/maestria-lms/node_modules/@vitest/runner/dist/index.js:1345:12)"}}
+
+[90mstderr[2m | src/lib/request-validation.test.ts[2m > [22m[2mwithErrorHandling[2m > [22m[2mmaps known Prisma errors to their status
+[22m[39m{"level":"warn","message":"Запись не найдена","timestamp":"2026-11-01T17:26:07.849Z","context":{"prismaCode":"P2025","prismaMessage":"record not found"}}
+
+[90mstderr[2m | src/lib/request-validation.test.ts[2m > [22m[2mwithErrorHandling[2m > [22m[2mmaps Zod errors to 400
+[22m[39m{"level":"warn","message":"Invalid input","timestamp":"2026-11-01T17:26:07.850Z","context":{"zodIssues":[{"message":"Invalid input"}]}}
+
+ [32m✓[39m src/lib/request-validation.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 44[2mms[22m[39m
+ [32m✓[39m src/tests/api/admin-route.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32m✓[39m src/tests/api/payments-route.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 50[2mms[22m[39m
+ [32m✓[39m src/lib/feature-flags.server.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 82[2mms[22m[39m
+ [32m✓[39m src/tests/api/courses-route.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 35[2mms[22m[39m
+ [32m✓[39m src/tests/api/upload-route.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+ [32m✓[39m src/lib/webhook-retry.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m src/lib/logger.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m✓[39m src/lib/webhook-verify.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m src/lib/cors.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m src/lib/sse.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m src/lib/api-response.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 127[2mms[22m[39m
+ [32m✓[39m src/tests/api/forgot-password-route.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32m✓[39m src/lib/api-logging.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 31[2mms[22m[39m
+ [32m✓[39m src/lib/courseImage.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m src/lib/feature-flags-config.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m src/lib/notifications.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m src/lib/csrf.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m src/lib/api-validation.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m78 passed[39m[22m[90m (78)[39m
+[2m      Tests [22m [1m[32m1085 passed[39m[22m[90m (1085)[39m
+[2m   Start at [22m 20:25:49
+[2m   Duration [22m 26.26s[2m (transform 6.14s, setup 48.69s, collect 20.34s, tests 4.63s, environment 155.91s, prepare 18.97s)[22m
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   23.32 |    78.51 |   69.28 |   23.32 |                   
+ app               |       0 |        0 |       0 |       0 |                   
+  robots.ts        |       0 |        0 |       0 |       0 | 1-39              
+ app/api           |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-115             
+ .../[...catchAll] |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-45              
+ ...i/achievements |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-66              
+ ...admin/activity |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-131             
+ ...i/admin/backup |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-86              
+ ...in/cache/clear |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-26              
+ ...min/categories |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-241             
+ .../admin/courses |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-751             
+ ...d]/submissions |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-145             
+ ...[submissionId] |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-266             
+ .../feature-flags |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-76              
+ ...api/admin/logs |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-110             
+ ...admin/payments |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-97              
+ ...ts/[id]/refund |   42.25 |       75 |      50 |   42.25 |                   
+  route.ts         |   94.93 |    78.26 |     100 |   94.93 | ...62-168,175-176 
+  route.ts         |       0 |        0 |       0 |       0 | 1-197             
+ ...in/promo-codes |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-143             
+ ...omo-codes/[id] |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-175             
+ ...admin/settings |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-102             
+ ...pi/admin/stats |   46.07 |    70.83 |      50 |   46.07 |                   
+  route.ts         |   98.87 |    73.91 |     100 |   98.87 | 94                
+  route.ts         |       0 |        0 |       0 |       0 | 1-102             
+ .../student-stats |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-282             
+ ...pi/admin/users |   27.14 |    76.47 |   33.33 |   27.14 |                   
+  route.ts         |   59.37 |    81.25 |      50 |   59.37 | 47,91-92,96-152   
+  route.ts         |       0 |        0 |       0 |       0 | 1-152             
+ app/api/analytics |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-224             
+ app/api/articles  |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-249             
+ ...rticles/[slug] |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-170             
+ ...es/[slug]/view |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-76              
+ app/api/auth/2fa  |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-213             
+ .../[...nextauth] |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-27              
+ ...orgot-password |   22.12 |    69.23 |   33.33 |   22.12 |                   
+  route.ts         |   50.65 |       75 |      50 |   50.65 | 30-119,194-195    
+  route.ts         |       0 |        0 |       0 |       0 | 1-196             
+ .../auth/register |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-136             
+ ...d-verification |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-69              
+ ...h/verify-email |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-56              
+ ...i/certificates |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-75              
+ ...tificates/[id] |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-73              
+ app/api/courses   |   40.08 |    63.88 |   33.33 |   40.08 |                   
+  _validation.ts   |     100 |      100 |     100 |     100 |                   
+  _validation.ts   |       0 |        0 |       0 |       0 | 1-12              
+  route.ts         |   88.83 |    67.64 |     100 |   88.83 | ...29-138,174,183 
+  route.ts         |       0 |        0 |       0 |       0 | 1-255             
+ ...i/courses/[id] |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-342             
+ ...[assignmentId] |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-274             
+ ...es/[id]/enroll |   39.08 |       65 |      50 |   39.08 |                   
+  route.ts         |   85.35 |    65.82 |     100 |   85.35 | ...70-371,378-379 
+  route.ts         |       0 |        0 |       0 |       0 | 1-380             
+ ...ons/[lessonId] |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-401             
+ ...d]/attachments |    43.8 |       65 |   66.66 |    43.8 |                   
+  route.ts         |   95.83 |    68.42 |     100 |   95.83 | 58-59,112-113     
+  route.ts         |       0 |        0 |       0 |       0 | 1-114             
+ ...[attachmentId] |   40.56 |    58.33 |      50 |   40.56 |                   
+  route.ts         |   91.48 |    63.63 |     100 |   91.48 | 50-51,57-58       
+  route.ts         |       0 |        0 |       0 |       0 | 1-59              
+ ...onId]/comments |   42.89 |    56.52 |      25 |   42.89 |                   
+  _access.ts       |     100 |      100 |     100 |     100 |                   
+  _access.ts       |       0 |        0 |       0 |       0 | 1-5               
+  _validation.ts   |     100 |      100 |     100 |     100 |                   
+  _validation.ts   |       0 |        0 |       0 |       0 | 1-10              
+  route.ts         |   93.33 |       65 |     100 |   93.33 | 88-96,164-166     
+  route.ts         |       0 |        0 |       0 |       0 | 1-172             
+ ...ts/[commentId] |   42.75 |    57.69 |      50 |   42.75 |                   
+  route.ts         |   93.79 |       60 |     100 |   93.79 | 70-72,99-106      
+  route.ts         |       0 |        0 |       0 |       0 | 1-154             
+ .../[id]/progress |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-368             
+ ...s/[id]/reviews |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-281             
+ .../[id]/students |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-150             
+ app/api/health    |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-159             
+ app/api/metrics   |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-70              
+ .../notifications |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-99              
+ ...fications/[id] |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-121             
+ ...tions/mark-all |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-35              
+ ...ations/publish |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-71              
+ ...ifications/sse |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-72              
+ ...s/unread-count |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-40              
+ app/api/payments  |   42.81 |    61.53 |      75 |   42.81 |                   
+  route.ts         |    95.8 |       64 |     100 |    95.8 | ...27-128,175-176 
+  route.ts         |       0 |        0 |       0 |       0 | 1-177             
+ .../payments/[id] |   11.89 |    69.23 |      25 |   11.89 |                   
+  route.ts         |   27.14 |       75 |   33.33 |   27.14 | ...12-114,120-269 
+  route.ts         |       0 |        0 |       0 |       0 | 1-269             
+ .../init-provider |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-218             
+ .../init-yookassa |   44.23 |    84.61 |      50 |   44.23 |                   
+  route.ts         |   95.83 |       88 |     100 |   95.83 | 58-59,110-111     
+  route.ts         |       0 |        0 |       0 |       0 | 1-112             
+ ...ulate-complete |   40.97 |    63.63 |      50 |   40.97 |                   
+  route.ts         |    91.3 |    66.66 |     100 |    91.3 | ...00-101,111-112 
+  route.ts         |       0 |        0 |       0 |       0 | 1-113             
+ ...yments/methods |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-18              
+ ...promo/validate |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-82              
+ ...yments/webhook |   33.07 |     75.4 |      50 |   33.07 |                   
+  route.ts         |   77.22 |    76.66 |   57.14 |   77.22 | ...51-265,358-371 
+  route.ts         |       0 |        0 |       0 |       0 | 1-375             
+ app/api/seed      |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-869             
+ .../teacher/stats |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-307             
+ app/api/upload    |   43.95 |    86.66 |      50 |   43.95 |                   
+  route.ts         |     100 |    92.85 |     100 |     100 | 14                
+  route.ts         |       0 |        0 |       0 |       0 | 1-51              
+ app/api/user      |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-231             
+ ...ogress-summary |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 1-151             
+ lib               |   36.89 |    83.78 |   81.48 |   36.89 |                   
+  ...rror-codes.ts |     100 |      100 |     100 |     100 |                   
+  ...rror-codes.ts |       0 |        0 |       0 |       0 | 1-139             
+  api-errors.ts    |     100 |    93.44 |     100 |     100 | 25,93-94,99       
+  api-errors.ts    |       0 |        0 |       0 |       0 | 1-101             
+  api-logging.ts   |   97.84 |     82.6 |     100 |   97.84 | 45-46             
+  api-logging.ts   |       0 |        0 |       0 |       0 | 1-153             
+  api-response.ts  |     100 |      100 |     100 |     100 |                   
+  api-response.ts  |       0 |        0 |       0 |       0 | 1-207             
+  ...versioning.ts |   72.03 |    76.66 |     100 |   72.03 | ...73-183,185-210 
+  ...versioning.ts |       0 |        0 |       0 |       0 | 1-230             
+  articles.ts      |   98.83 |    84.21 |     100 |   98.83 | 263-264           
+  articles.ts      |       0 |        0 |       0 |       0 | 1-282             
+  ...nt-grading.ts |   94.17 |    90.56 |     100 |   94.17 | 52-53,76-77,95-96 
+  ...nt-grading.ts |       0 |        0 |       0 |       0 | 1-139             
+  cache.ts         |   65.34 |    76.66 |   88.88 |   65.34 | ...57-160,178-199 
+  cache.ts         |       0 |        0 |       0 |       0 | 1-226             
+  cors.ts          |   95.34 |     90.9 |     100 |   95.34 | 49-52             
+  cors.ts          |       0 |        0 |       0 |       0 | 1-161             
+  ...redentials.ts |   95.38 |    94.11 |     100 |   95.38 | 100-103           
+  ...redentials.ts |       0 |        0 |       0 |       0 | 1-137             
+  email.ts         |    98.8 |       90 |     100 |    98.8 | 52                
+  email.ts         |       0 |        0 |       0 |       0 | 1-111             
+  ...ags-config.ts |     100 |      100 |     100 |     100 |                   
+  ...ags-config.ts |       0 |        0 |       0 |       0 | 1-118             
+  feature-flags.ts |   93.96 |    90.56 |     100 |   93.96 | ...,42-43,130-132 
+  feature-flags.ts |       0 |        0 |       0 |       0 | 1-179             
+  file-upload.ts   |   96.42 |     87.5 |     100 |   96.42 | 97-98,114-115     
+  file-upload.ts   |       0 |        0 |       0 |       0 | 1-146             
+  i18n.ts          |   84.37 |    44.44 |     100 |   84.37 | 34-38             
+  i18n.ts          |       0 |        0 |       0 |       0 | 1-45              
+  lesson-access.ts |     100 |    98.24 |     100 |     100 | 117               
+  lesson-access.ts |       0 |        0 |       0 |       0 | 1-143             
+  ...on-content.ts |     100 |      100 |     100 |     100 |                   
+  ...on-content.ts |       0 |        0 |       0 |       0 | 1-88              
+  ...d-strength.ts |     100 |      100 |     100 |     100 |                   
+  ...d-strength.ts |       0 |        0 |       0 |       0 | 1-15              
+  rate-limit.ts    |    87.8 |    72.85 |   88.88 |    87.8 | ...24-125,183-186 
+  rate-limit.ts    |       0 |        0 |       0 |       0 | 1-335             
+  s3.ts            |     100 |    77.77 |     100 |     100 | 58-59             
+  s3.ts            |       0 |        0 |       0 |       0 | 1-61              
+  sanitize.ts      |   81.46 |       78 |   66.66 |   81.46 | ...02-208,238-240 
+  sanitize.ts      |       0 |        0 |       0 |       0 | 1-252             
+  ...ty-headers.ts |      98 |    95.23 |     100 |      98 | 63-64             
+  ...ty-headers.ts |       0 |        0 |       0 |       0 | 1-137             
+  utils.ts         |   84.52 |       72 |   83.33 |   84.52 | 25-26,38-47,68,83 
+  utils.ts         |       0 |        0 |       0 |       0 | 1-99              
+  video-embed.ts   |     100 |    85.55 |     100 |     100 | ...04,111,118,122 
+  video-embed.ts   |       0 |        0 |       0 |       0 | 1-224             
+ lib/emails        |   40.37 |       80 |   82.35 |   40.37 |                   
+  index.ts         |       0 |        0 |       0 |       0 | 1-14              
+  templates.ts     |   89.86 |    88.88 |   93.33 |   89.86 | 205-226           
+  templates.ts     |       0 |        0 |       0 |       0 | 1-252             
+ lib/payments      |   29.16 |    77.27 |   84.37 |   29.16 |                   
+  ip-whitelist.ts  |     100 |    93.93 |     100 |     100 | 63-64             
+  ip-whitelist.ts  |       0 |        0 |       0 |       0 | 1-98              
+  receipts.ts      |     100 |      100 |     100 |     100 |                   
+  receipts.ts      |       0 |        0 |       0 |       0 | 1-82              
+  registry.ts      |     100 |    97.14 |     100 |     100 | 141,171           
+  registry.ts      |       0 |        0 |       0 |       0 | 1-185             
+  service.ts       |   77.08 |    58.62 |     100 |   77.08 | ...09-417,472,474 
+  service.ts       |       0 |        0 |       0 |       0 | 1-476             
+  types.ts         |       0 |        0 |       0 |       0 | 1-175             
+ ...ents/providers |   38.89 |     91.3 |   91.76 |   38.89 |                   
+  cloudpayments.ts |     100 |    96.66 |     100 |     100 | 67,70             
+  cloudpayments.ts |       0 |        0 |       0 |       0 | 1-217             
+  mkb.ts           |     100 |      100 |     100 |     100 |                   
+  mkb.ts           |       0 |        0 |       0 |       0 | 1-83              
+  ozon.ts          |     100 |    90.76 |     100 |     100 | ...05,207,217,229 
+  ozon.ts          |       0 |        0 |       0 |       0 | 1-240             
+  sberbank.ts      |     100 |     90.9 |     100 |     100 | 82,84             
+  sberbank.ts      |       0 |        0 |       0 |       0 | 1-108             
+  tinkoff.ts       |     100 |    88.05 |     100 |     100 | ...06,135,166,190 
+  tinkoff.ts       |       0 |        0 |       0 |       0 | 1-232             
+  vtb.ts           |     100 |      100 |     100 |     100 |                   
+  vtb.ts           |       0 |        0 |       0 |       0 | 1-93              
+  yookassa.ts      |     100 |    93.58 |     100 |     100 | ...14,277,288-290 
+  yookassa.ts      |       0 |        0 |       0 |       0 | 1-326             
+-------------------|---------|----------|---------|---------|-------------------
+ERROR: Coverage for lines (23.32%) does not meet global threshold (24%)
+ERROR: Coverage for statements (23.32%) does not meet global threshold (24%)
+ERROR: Coverage for lines (36.31%) does not meet "src/lib/**" threshold (75%)
+ERROR: Coverage for statements (36.31%) does not meet "src/lib/**" threshold (75%)
