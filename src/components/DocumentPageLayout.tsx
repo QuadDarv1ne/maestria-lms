@@ -44,7 +44,7 @@ function ReadingProgressBar() {
    
    Включает:
    - ReadingProgressBar — полоска прогресса чтения вверху
-   - ScrollToTopButton — кнопка «Наверх»
+   - ScrollToTopButton — кнопка "Наверх"
    - Стандартную структуру: хлебные крошки, заголовок с иконкой, содержание
    ═══════════════════════════════════════════════════════════════════════ */
 
@@ -87,7 +87,7 @@ export function DocumentPageLayout({
       {/* Прогресс-бар чтения — специфичен для документов */}
       <ReadingProgressBar />
 
-      {/* Кнопка «Наверх» — глобальная (GlobalScrollToTop в page.tsx) */}
+      {/* Кнопка "Наверх" — глобальная (GlobalScrollToTop в page.tsx) */}
 
       {/* Основной контейнер документа */}
       <div className="container mx-auto px-4 py-8 max-w-4xl">

@@ -47,7 +47,7 @@ export class VtbProvider implements IPaymentProvider {
   verifyWebhook(ctx: WebhookContext, _body: unknown): boolean {
     // ВТБ подписывает уведомления, но алгоритм доступен только после
     // подключения эквайринга. До этого момента отклоняем все вебхуки:
-    // принимать их «как есть» означало бы позволить кому угодно
+    // принимать их "как есть" означало бы позволить кому угодно
     // подтвердить оплату без денег.
     log.warn("VTB webhook rejected: verification not implemented yet", { provider: ctx.provider });
     return false;

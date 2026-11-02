@@ -35,7 +35,7 @@ function baseInput(overrides: Partial<CreatePaymentInput> = {}): CreatePaymentIn
     idempotenceKey: "idem-1",
     amount: 1990,
     currency: "RUB",
-    description: "Курс «TypeScript»",
+    description: "Курс \"TypeScript\"",
     returnUrl: "https://maestria.edu/payment/internal-pay-1",
     method: "CARD",
     customer: { email: "student@example.com" },
@@ -110,7 +110,7 @@ describe("not-implemented operations fail loudly without network calls", () => {
 
 describe("verifyWebhook", () => {
   it("rejects every webhook while verification is not implemented", () => {
-    // Принимать неподписанные уведомления «как есть» означало бы позволить
+    // Принимать неподписанные уведомления "как есть" означало бы позволить
     // кому угодно подтвердить оплату без денег — потому жёсткий отказ.
     expect(provider.verifyWebhook(webhookCtx(), {})).toBe(false);
     expect(provider.verifyWebhook(webhookCtx(), {})).toBe(false);

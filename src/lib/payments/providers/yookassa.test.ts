@@ -45,7 +45,7 @@ function baseInput(overrides: Partial<CreatePaymentInput> = {}): CreatePaymentIn
     idempotenceKey: "idem-1",
     amount: 4990.5,
     currency: "RUB",
-    description: "Курс «TypeScript»",
+    description: "Курс \"TypeScript\"",
     returnUrl: "https://maestria.edu/payment/internal-pay-1",
     method: "CARD",
     customer: { email: "student@example.com" },
@@ -130,7 +130,7 @@ describe("createPayment", () => {
       type: "redirect",
       return_url: "https://maestria.edu/payment/internal-pay-1",
     });
-    expect(body.description).toBe("Курс «TypeScript»");
+    expect(body.description).toBe("Курс \"TypeScript\"");
     expect(body.metadata).toEqual({ paymentId: "internal-pay-1", courseId: "c1" });
     expect(body.payment_method_data).toEqual({ type: "bank_card" });
     expect(res).toMatchObject({

@@ -154,7 +154,7 @@ export async function POST(
         idempotenceKey,
         amount: payment.amount,
         currency: "RUB",
-        description: `Оплата курса «${payment.course.title}»`,
+        description: `Оплата курса "${payment.course.title}"`,
         returnUrl: `${env.siteUrl}/payment/${payment.id}`,
         method,
         receipt,

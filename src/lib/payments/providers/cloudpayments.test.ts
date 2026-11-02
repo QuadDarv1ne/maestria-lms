@@ -61,7 +61,7 @@ function baseInput(overrides: Partial<CreatePaymentInput> = {}): CreatePaymentIn
     idempotenceKey: "idem-1",
     amount: 4990.5,
     currency: "RUB",
-    description: "Курс «TypeScript»",
+    description: "Курс \"TypeScript\"",
     returnUrl: "https://maestria.edu/payment/internal-pay-1",
     method: "CARD",
     customer: { email: "student@example.com", phone: "+79990000000" },

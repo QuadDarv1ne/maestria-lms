@@ -405,7 +405,7 @@ export function CertificatePage({ courseId }: { courseId: string }) {
 
               {/* course title */}
               <h3 className="text-2xl sm:text-3xl font-bold text-blue-800">
-                «{course.title}»
+                "{course.title}"
               </h3>
             </div>
 

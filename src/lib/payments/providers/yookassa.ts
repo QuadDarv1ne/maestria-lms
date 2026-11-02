@@ -257,7 +257,7 @@ export class YooKassaProvider implements IPaymentProvider {
     const obj = b.object ?? { id: "", status: "" };
     // ЮKassa всегда присылает `event`, но старый generic-формат (и часть
     // интеграций) передаёт только `status` — поддерживаем оба варианта.
-    // `||` (не `??`): пустая строка в object.status означает «статуса нет»,
+    // `||` (не `??`): пустая строка в object.status означает "статуса нет",
     // иначе она затеняла бы top-level `status` из generic-полезной нагрузки.
     const event = b.event ?? legacyEventName(obj.status || b.status);
     const status = obj.status || b.status;

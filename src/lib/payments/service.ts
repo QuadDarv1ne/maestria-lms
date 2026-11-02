@@ -240,7 +240,7 @@ export async function createCoursePayment(opts: CreatePaymentOptions): Promise<C
     idempotenceKey,
     amount: finalAmount,
     currency: "RUB",
-    description: `Оплата курса «${course.title}» — ${env.siteUrl}`,
+    description: `Оплата курса "${course.title}" — ${env.siteUrl}`,
     returnUrl: `${env.siteUrl}/payment/${createdPaymentId}`,
     method,
     receipt,
