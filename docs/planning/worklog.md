@@ -2,6 +2,26 @@
 
 ---
 
+Task ID: 27
+Agent: Main Agent
+Task: Улучшение страниц сайта фичами из Tilda (первая итерация: /help + база знаний)
+
+Work Log:
+- SKILL: modern-web-guidance — retrieved scroll-progress-indicator / scroll-position-aware-elements / state-aware-sticky-headers (CSS scroll-timeline + scroll-state queries; фолбэки — rAF scroll listener, что уже реализовано в useScrollProgress)
+- INVENTORY: ReadingProgressBar (DocumentPageLayout), GlobalScrollToTop, TableOfContents (scroll-spy в статьях) уже портированы. Уникальное на Tilda: knowledge-base.html (FAQ с живым поиском/категориями/deep links — на сайте только базовый HelpPage) и public-offer.html (огромный набор: mini-TOC, focus mode, per-section reading time, accept-CTA, вклад-блок, keyboard nav — следующая итерация)
+- FEATURE (HelpPage.tsx): deep links /help#faq-N — useEffect при монтировании открывает вопрос из hash и scrollIntoView (rAF), toggleItem пишет/чистит hash через history.replaceState; счётчик «Найдено: N из M» (help.foundCount, role=status) при активном поиске/фильтре; кнопка очистки поиска (X, aria-label); FAQItem.answerLink — ссылка в ответе (внутренний route через next/link или прямой href для mailto)
+- CONTENT: 6 новых вопросов из knowledge-base, адаптированных под LMS (Stepik-ссылки → внутренние страницы, «доступ в течение дня» → мгновенный доступ после оплаты): 16 доступ после оплаты (payment), 17 чек/документы (payment), 18 безнал по счёту юрлицам с mailto-ссылкой (payment), 19 вопросы преподавателю (learning), 20 скачивание материалов запрещено + /terms (technical), 21 устройства (technical)
+- I18N: help.faq.16q/a..21q/a + 18link/20link + help.foundCount + help.clearSearch во всех трёх локалях; NB: в zh.json кавычки внутри строк — только экранированные или 「», иначе JSON ломается
+- Проверено: check:i18n OK (все ключи в 3 локалях), typecheck чистый, dev-сервер: GET /help 200; verify 1127 тестов зелёные
+- NEXT (принято от пользователя, план на след. итерацию — портировать фичи оферты public-offer.html на юридические страницы LMS): mini-TOC с точками и tooltip'ами (desktop), чипсы-разделы со scroll-spy и отметками «прочитано», focus mode (один раздел) с localStorage, разворачивание/сворачивание всех + счётчик открытых, per-section ≈N мин чтения, процент прочитанного, accept-CTA согласия с офертой (localStorage + отзыв), вклад-блок (ошибка/идея/отзыв/поделиться/copy-link), keyboard navigation (↑/↓/j/k/Escape/Home/End, L — язык), sticky toolbar с тенью, toast-уведомления, reveal-анимации + prefers-reduced-motion, print-стили
+- CHANGELOG.md и worklog.md обновлены
+
+Stage Summary:
+- /help: deep links, счётчик, очистка поиска, ссылки в ответах, +6 вопросов из базы знаний (3 локали)
+- Следующая итерация: портирование UX-набора оферты (mini-TOC, focus mode, reading time, accept-CTA) на юридические страницы
+
+---
+
 Task ID: 26
 Agent: Main Agent
 Task: Pull-сверка платежей с провайдером (reconciliation) через GET /api/payments/[id]

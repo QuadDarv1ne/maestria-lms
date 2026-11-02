@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import type { Locale } from "@/lib/store";
@@ -23,6 +24,7 @@ import {
   MessageCircle,
   Mail,
   Phone,
+  X,
 } from "lucide-react";
 import { CONTACT } from "@/lib/constants";
 
@@ -31,6 +33,8 @@ interface FAQItem {
   question: string;
   answer: string;
   category: string;
+  /** Optional trailing link (internal route or absolute/mailto href). */
+  answerLink?: { label: string; route?: string; href?: string };
 }
 
 function getFaqItems(locale: Locale): FAQItem[] {
@@ -50,6 +54,49 @@ function getFaqItems(locale: Locale): FAQItem[] {
     { id: "faq-13", question: t("help.faq.13q", locale), answer: t("help.faq.13a", locale), category: "technical" },
     { id: "faq-14", question: t("help.faq.14q", locale), answer: t("help.faq.14a", locale), category: "technical" },
     { id: "faq-15", question: t("help.faq.15q", locale), answer: t("help.faq.15a", locale), category: "technical" },
+    // Questions ported from the public knowledge base (tilda/knowledge-base.html),
+    // adapted for the Maestria LMS (instant access after payment, internal pages).
+    {
+      id: "faq-16",
+      question: t("help.faq.16q", locale),
+      answer: t("help.faq.16a", locale),
+      category: "payment",
+    },
+    {
+      id: "faq-17",
+      question: t("help.faq.17q", locale),
+      answer: t("help.faq.17a", locale),
+      category: "payment",
+    },
+    {
+      id: "faq-18",
+      question: t("help.faq.18q", locale),
+      answer: t("help.faq.18a", locale),
+      category: "payment",
+      answerLink: {
+        label: t("help.faq.18link", locale),
+        href: `mailto:${CONTACT.personalEmail}`,
+      },
+    },
+    {
+      id: "faq-19",
+      question: t("help.faq.19q", locale),
+      answer: t("help.faq.19a", locale),
+      category: "learning",
+    },
+    {
+      id: "faq-20",
+      question: t("help.faq.20q", locale),
+      answer: t("help.faq.20a", locale),
+      category: "technical",
+      answerLink: { label: t("help.faq.20link", locale), route: "terms" },
+    },
+    {
+      id: "faq-21",
+      question: t("help.faq.21q", locale),
+      answer: t("help.faq.21a", locale),
+      category: "technical",
+    },
   ];
 }
 
@@ -91,11 +138,36 @@ export function HelpPage() {
   const toggleItem = (id: string) => {
     setOpenItems((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+        // Remove the deep link from the URL so copying the address does not
+        // advertise a closed question.
+        if (typeof window !== "undefined" && window.location.hash === `#${id}`) {
+          history.replaceState(null, "", window.location.pathname + window.location.search);
+        }
+      } else {
+        next.add(id);
+        history.replaceState(null, "", `#${id}`);
+      }
       return next;
     });
   };
+
+  // Deep links: /help#faq-5 opens the question directly (feature ported from
+  // the public knowledge base). requestAnimationFrame gives the first paint
+  // time to settle so scrollIntoView targets the rendered element.
+  useEffect(() => {
+    const hash = window.location.hash.replace("#", "");
+    if (!hash) return;
+    const exists = getFaqItems(locale).some((item) => item.id === hash);
+    if (!exists) return;
+    setOpenItems((prev) => new Set(prev).add(hash));
+    requestAnimationFrame(() => {
+      document.getElementById(hash)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    // Runs once per mount; locale is only used for the existence check.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -125,8 +197,19 @@ export function HelpPage() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder={t("help.searchPlaceholder", locale)}
-          className="pl-10 h-12 text-base"
+          aria-label={t("help.searchPlaceholder", locale)}
+          className="pl-10 h-12 text-base pr-10"
         />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => setSearchQuery("")}
+            aria-label={t("help.clearSearch", locale)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-muted hover:bg-muted/70 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
 
       {/* Category filters */}
@@ -152,6 +235,15 @@ export function HelpPage() {
           </Button>
         ))}
       </div>
+
+      {/* Found counter (ported from the knowledge base) */}
+      {(activeCategory !== null || searchQuery.trim()) && (
+        <p className="text-sm text-muted-foreground text-center mb-4" role="status">
+          {t("help.foundCount", locale)
+            .replace("{n}", String(filteredItems.length))
+            .replace("{total}", String(faqItems.length))}
+        </p>
+      )}
 
       {/* FAQ items */}
       {filteredItems.length === 0 ? (
@@ -182,9 +274,31 @@ export function HelpPage() {
                   </div>
                 </button>
                 {isOpen && (
-                  <div className="px-4 pb-4 pl-15">
+                  <div id={item.id} className="px-4 pb-4 pl-15 scroll-mt-24">
                     <div className="ml-11 prose text-sm text-muted-foreground leading-relaxed">
-                      <p>{item.answer}</p>
+                      <p>
+                        {item.answer}
+                        {item.answerLink && (
+                          <>
+                            {" "}
+                            {item.answerLink.route ? (
+                              <Link
+                                href={`/${item.answerLink.route}`}
+                                className="text-blue-700 hover:text-blue-800 underline underline-offset-2"
+                              >
+                                {item.answerLink.label}
+                              </Link>
+                            ) : (
+                              <a
+                                href={item.answerLink.href}
+                                className="text-blue-700 hover:text-blue-800 underline underline-offset-2"
+                              >
+                                {item.answerLink.label}
+                              </a>
+                            )}
+                          </>
+                        )}
+                      </p>
                     </div>
                   </div>
                 )}
