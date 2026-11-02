@@ -13,6 +13,13 @@
 - Создание курсов/статей в seed переведено с `Promise.all` на последовательное выполнение: конкурентный батч на драйвер-адаптерах (better-sqlite3) превращал любую ошибку запроса в непрозрачный внутренний сбой рендеринга ошибок Prisma (masked `TypeError: … 'sep'`); теперь место сбоя логируется слагом (`[seed] course sync FAILED at: <slug>`)
 - Хелперы `syncCourse`/`upsertArticle`/`upsertCategory` в `prisma/seed.mjs` — единая точка создания контента для обоих режимов (деструктивный seed и `--sync`)
 
+### Исправлено
+- **MEDIUM (деньги/UX)**: `payments/service.ts` — повторная попытка оплаты существующего pending-платежа возвращала провайдера и метод **из текущего запроса**, а не фактические (`existingAsCreated`): пользователь, создавший оплату через ЮKassa SBP и повторивший запрос картой через Tinkoff, получал confirmationUrl ЮKassa с меткой «Tinkoff», а `init-provider` мог завести вторую оплату у другого шлюза для той же строки. Теперь возвращаются `paymentProvider`/`paymentMethod` из БД (fallback на запрошенную пару — только для легаси-строк без сохранённого провайдера)
+- **MEDIUM (справедливость)**: промокод больше не сжигается при создании платежа. Ранее `redeemPromoCode` вызывался сразу после принятия платежа провайдером (статус pending), и отмена платежа (webhook `payment.canceled`) навсегда тратила попытку пользователя. Теперь погашение происходит только при фактическом завершении оплаты: в `completePayment` (вебхук-путь, идемпотентно по userId) и зеркально в `/api/payments/[id]/simulate-complete` (тестовый путь) — оба пути завершения больше не расходятся
+
+### Добавлено
+- Тесты `payments-service.test.ts` (7): существующий pending возвращает фактического провайдера/метод из БД (и fallback для легаси-строк), ALREADY_PAID при completed, `promoCodeId`/`discountAmount` сохраняются на строке платежа **без** вызова `redeemPromoCode` (attempt не сжигается), `completePayment` гасит промокод только при реальном завершении и не делает этого для already-completed/без промокода
+
 ### Изменено
 - **Новый логотип бренда**: `public/logo.svg` (векторный мастер, 256×256, белая плитка + академическая шапочка + градиентная «M») и `public/maestria-logo-icon.png` (растровый двойник 512×512) заменили прежний `maestro7it-logo.png` в metadata (`layout.tsx`), Open Graph, JSON-LD и интерфейсе. `public/icon.svg` — копия мастера для `<link rel="icon">`
 - **Компонент `Logo`** (`src/components/Logo.tsx`): единая точка рендера знака (размер, wordmark, подпись «by Maestro7IT», выбор SVG/PNG-источника) — внедрён в `Header` (десктоп + мобильный Sheet), `Footer`, `AboutPage` (hero) и `CertificatePage` (для html2canvas используется растровая версия)

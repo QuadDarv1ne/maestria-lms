@@ -2,6 +2,25 @@
 
 ---
 
+Task ID: 25
+Agent: Main Agent
+Task: Улучшение оплаты: фактический провайдер при повторном pending + погашение промокода только при оплате
+
+Work Log:
+- INVENTORY: платёжный слой зрел (мультигейтвей, идемпотентные вебхуки 3 слоя, race-safe completePayment). Найдены 2 реальных дефекта в service.ts; заявленная в worklog-23 цифра «yookassa 44%» устарела — провайдер уже покрыт 28 тестами полностью
+- FIX (MEDIUM/деньги-UX): src/lib/payments/service.ts — existingAsCreated возвращала provider/method из ТЕКУЩЕГО запроса вместо фактических paymentProvider/paymentMethod строки. Повтор оплаты существующего pending другим методом (ЮKassa SBP → повтор картой через Tinkoff) давал confirmationUrl ЮKassa с меткой Tinkoff, а init-provider мог завести вторую оплату у другого шлюза. Теперь фактические значения из БД (parseProviderName/parsePaymentMethod), fallback на запрошенную пару только для легаси-строк с null
+- FIX (MEDIUM/справедливость): redeemPromoCode вызывался на шаге 10 createCoursePayment — сразу после принятия платежа провайдером (pending). Отмена платежа (payment.canceled webhook) сжигала попытку промокода навсегда. Перенесено: completePayment гасит промокод (promoCodeId из строки платежа) только при фактическом завершении (!alreadyCompleted), идемпотентно (redeemPromoCode сам пропускает повторных пользователей); simulate-complete route — зеркальный вызов, чтобы тестовый путь завершения не расходился с webhook-путём
+- TEST: src/lib/payments-service.test.ts (7) — in-memory fake Prisma-поверхности (course/payment/user/enrollment/$transaction), реальный registry с env-без-credentials → testMode без сети: existing pending → фактический YOOKASSA/SBP при запросе TINKOFF/CARD; fallback для легаси-строк (null provider/method); ALREADY_PAID при completed; промокод сохраняется (promoCodeId/discountAmount/amount=90) но redeemPromoCode НЕ вызван; completePayment гасит промокод только при реальном завершении, не гасит для already-completed и работает без промокода. NB: vi.clearAllMocks() в beforeEach — иначе история вызовов мока перетекает между тестами
+- Проверено: npm run verify — typecheck чистый, 1121 тест в 80 файлах (+7), check:i18n OK
+- CHANGELOG.md и worklog.md обновлены
+
+Stage Summary:
+- Повторная попытка оплаты показывает честного провайдера/метод существующего платежа
+- Отмена платежа больше не сжигает попытку промокода; оба пути завершения (webhook/simulate) симметричны
+- Осталось: реализация реальных API-вызовов sberbank/vtb/mkb (ждут credentials), reconciliation-джоба по getPaymentStatus
+
+---
+
 Task ID: 24
 Agent: Main Agent
 Task: Автоматическая синхронизация статей/курсов в PostgreSQL при деплое на Amvera

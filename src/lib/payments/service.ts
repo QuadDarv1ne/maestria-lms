@@ -141,13 +141,17 @@ export async function createCoursePayment(opts: CreatePaymentOptions): Promise<C
   // 3. Check existing pending/completed payment (race-safe via transaction below)
   const existing = await db.payment.findFirst({
     where: { userId, courseId, status: { in: ["pending", "completed"] } },
+    select: {
+      id: true, amount: true, currency: true, status: true,
+      paymentMethod: true, paymentProvider: true, paymentData: true,
+    },
   });
   if (existing?.status === "completed") {
     throw new ServiceError("ALREADY_PAID", "Курс уже оплачен");
   }
   if (existing?.status === "pending") {
     // Return existing payment's confirmation data if we still have it.
-    return existingAsCreated(existing, providerName, method);
+    return existingAsCreated(existing, { provider: providerName, method });
   }
 
   // 4. Generate idempotency key + payment id up-front
@@ -183,7 +187,7 @@ export async function createCoursePayment(opts: CreatePaymentOptions): Promise<C
   });
 
   if (created.existing) {
-    return existingAsCreated(created.existing, providerName, method);
+    return existingAsCreated(created.existing, { provider: providerName, method });
   }
 
   // Use the id of the row that was actually persisted (matters when the
@@ -283,12 +287,11 @@ export async function createCoursePayment(opts: CreatePaymentOptions): Promise<C
     },
   });
 
-  // 10. Promo code redemption (only after provider accepted the payment)
-  if (promoCodeId) {
-    await redeemPromoCode(promoCodeId, userId).catch((err: unknown) => {
-      log.error("Promo code redemption failed", { paymentId: createdPaymentId, promoCodeId, error: String(err) });
-    });
-  }
+  // 10. NOTE: the promo code is NOT redeemed here. Redemption used to happen
+  //     as soon as the provider accepted the payment creation, but a payment
+  //     that is later canceled (payment.canceled webhook) burned the user's
+  //     attempt anyway. completePayment() redeems the code only when the
+  //     money has actually arrived (promoCodeId is stored on the row).
 
   return {
     id: createdPaymentId,
@@ -304,9 +307,15 @@ export async function createCoursePayment(opts: CreatePaymentOptions): Promise<C
 }
 
 function existingAsCreated(
-  existing: { id: string; amount: number; currency: string; paymentMethod: string; paymentData: string | null },
-  providerName: ProviderName,
-  method: PaymentMethod,
+  existing: {
+    id: string;
+    amount: number;
+    currency: string;
+    paymentMethod: string | null;
+    paymentProvider: string | null;
+    paymentData: string | null;
+  },
+  fallback: { provider: ProviderName; method: PaymentMethod },
 ): CreatedPayment {
   let confirmationUrl: string | undefined;
   let qrCode: string | undefined;
@@ -319,13 +328,22 @@ function existingAsCreated(
       // ignore
     }
   }
+
+  // A pending payment belongs to the provider/method it was created with.
+  // Labeling it with the values of the CURRENT request would present a
+  // YooKassa redirect as "Tinkoff" when the user retries with another method
+  // and send the client to the wrong gateway. Fall back to the requested
+  // pair only for legacy rows without a stored provider.
+  const provider = parseProviderName(existing.paymentProvider) ?? fallback.provider;
+  const method = parsePaymentMethod(existing.paymentMethod) ?? fallback.method;
+
   return {
     id: existing.id,
     amount: existing.amount,
     currency: existing.currency,
     status: "pending",
     paymentMethod: method,
-    provider: providerName,
+    provider,
     confirmationUrl,
     qrCode,
     existing: true,
@@ -382,6 +400,22 @@ export async function completePayment(internalPaymentId: string, transactionId: 
 
     return { alreadyCompleted: false, payment };
   });
+
+  // Redeem the promo code only after the money has actually arrived. The call
+  // is idempotent (redeemPromoCode skips users already recorded in usedBy),
+  // so a repeated completion attempt cannot burn the attempt twice — and a
+  // canceled payment never reaches this point, which keeps the attempt intact.
+  if (!result.alreadyCompleted && result.payment?.promoCodeId) {
+    await redeemPromoCode(result.payment.promoCodeId, result.payment.userId).catch(
+      (err: unknown) => {
+        log.error("Promo code redemption failed", {
+          paymentId: result.payment?.id,
+          promoCodeId: result.payment?.promoCodeId,
+          error: String(err),
+        });
+      },
+    );
+  }
 
   return {
     alreadyCompleted: result.alreadyCompleted,

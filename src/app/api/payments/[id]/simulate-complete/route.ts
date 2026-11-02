@@ -6,6 +6,7 @@ import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
 import { env } from "@/lib/env";
 import { validateParams, uuidSchema } from "@/lib/request-validation";
+import { redeemPromoCode } from "@/lib/promo-code";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -98,6 +99,15 @@ export async function POST(
 
     if (result.alreadyCompleted) {
       return NextResponse.json({ error: "Платёж уже обработан" }, { status: 400 });
+    }
+
+    // Mirror completePayment(): the promo code is redeemed only when the
+    // payment actually completes, so a canceled pending payment never burns
+    // the user's attempt. redeemPromoCode is idempotent per user.
+    if (payment.promoCodeId) {
+      await redeemPromoCode(payment.promoCodeId, payment.userId).catch((err: unknown) =>
+        log.error("Promo code redemption failed (simulated payment)", { paymentId: id, error: String(err) }),
+      );
     }
 
     log.info("Payment simulated complete", {
