@@ -9,6 +9,7 @@ export {
   achievementEmail,
   paymentNotificationEmail,
   enrollmentNotificationEmail,
+  refundNotificationEmail,
 } from "./templates";
 
 export type { EmailTemplate } from "./templates";

@@ -60,6 +60,10 @@ export const env = {
     return cached("emailFrom", () => process.env.EMAIL_FROM ?? "Maestria LMS <noreply@maestria.edu>");
   },
 
+  get emailQueueSecret(): string | undefined {
+    return cached("emailQueueSecret", () => process.env.EMAIL_QUEUE_SECRET);
+  },
+
   get redisUrl(): string | undefined {
     return cached("redisUrl", () => process.env.REDIS_URL);
   },
