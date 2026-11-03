@@ -14,7 +14,7 @@ import { env } from "@/lib/env";
 import { log } from "@/lib/logger";
 import { validatePromoCode, redeemPromoCode } from "@/lib/promo-code";
 import { createNotification } from "@/lib/notifications";
-import { sendEmail } from "@/lib/email";
+import { dispatchEmail } from "@/lib/email-dispatch";
 import { coursePurchaseEmail } from "@/lib/emails";
 import crypto from "crypto";
 import {
@@ -528,13 +528,14 @@ export function notifyPaymentCompleted(
     link: `/course/${payment.courseId}`,
   }).catch((err: unknown) => log.error("Failed to send payment notification", { error: err }));
 
-  sendEmail({
+  dispatchEmail({
     to: userEmail,
     ...coursePurchaseEmail(
       userName || "пользователь",
       courseTitle,
       `${env.siteUrl}/course/${payment.courseId}`,
     ),
+    priority: "high",
   }).catch((err: unknown) => log.error("Failed to send purchase email", { error: err }));
 }
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { sendEmail } from "@/lib/email";
+import { dispatchEmail } from "@/lib/email-dispatch";
 import { handleApiError } from "@/lib/api-errors";
 import { env } from "@/lib/env";
 import { randomBytes, createHash } from "node:crypto";
@@ -57,9 +57,10 @@ export async function POST(request: NextRequest) {
     const baseUrl = env.siteUrl;
     const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${rawToken}`;
 
-    await sendEmail({
+    await dispatchEmail({
       to: user.email,
       ...verifyEmailEmail(user.name || "пользователь", verifyUrl),
+      priority: "high",
     });
 
     return NextResponse.json({ message: "Письмо с подтверждением отправлено" });

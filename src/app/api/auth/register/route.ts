@@ -6,7 +6,7 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
 import { env } from "@/lib/env";
-import { sendEmail } from "@/lib/email";
+import { dispatchEmail } from "@/lib/email-dispatch";
 import { verifyEmailEmail, welcomeEmail } from "@/lib/emails";
 
 import { z } from "zod";
@@ -103,20 +103,25 @@ export async function POST(request: NextRequest) {
     const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${rawToken}`;
 
     // Fire-and-forget welcome email — delivery failure is logged but doesn't block response
-    sendEmail({
+    dispatchEmail({
       to: user.email,
       ...welcomeEmail(user.name || "пользователь", `${baseUrl}/catalog`),
+      priority: "normal",
     }).catch((err: unknown) => log.error("Welcome email could not be sent", { email: user.email, error: String(err) }));
 
-    // Await verification email with built-in retry — failures are logged but don't
-    // block the registration response
-    const emailSent = await sendEmail({
+    // Verification mail is queued rather than awaited: the previous direct
+    // send blocked the 201 response for the whole Resend retry sequence (up to
+    // ~7s of backoff). The queue retries 5 times over 90 minutes and logs the
+    // failure, which the boolean below only ever fed into log.error — the
+    // response itself must stay 201 to avoid user enumeration.
+    const emailQueued = await dispatchEmail({
       to: user.email,
       ...verifyEmailEmail(user.name || "пользователь", verifyUrl),
+      priority: "high",
     });
 
-    if (!emailSent) {
-      log.error("Verification email could not be sent after retries", { email: user.email });
+    if (!emailQueued) {
+      log.error("Verification email could not be queued or sent", { email: user.email });
     }
 
     return NextResponse.json(

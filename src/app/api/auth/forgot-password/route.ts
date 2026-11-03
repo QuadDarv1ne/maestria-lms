@@ -7,7 +7,7 @@ import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
-import { sendEmail } from "@/lib/email";
+import { dispatchEmail } from "@/lib/email-dispatch";
 import { passwordStrengthSchema } from "@/lib/password-strength";
 import { MS } from "@/lib/constants";
 import { passwordResetEmail } from "@/lib/emails";
@@ -96,15 +96,17 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Await email send with built-in retry — delivery failures are logged but
-    // do not cause a 500 response (which would enable user enumeration).
-    const emailSent = await sendEmail({
+    // Queued rather than awaited: the direct path held the response for the
+    // whole Resend retry sequence. The queue retries with backoff and logs the
+    // failure; the response stays 200 either way to avoid user enumeration.
+    const emailQueued = await dispatchEmail({
       to: email,
       ...passwordResetEmail(resetUrl),
+      priority: "high",
     });
 
-    if (!emailSent) {
-      log.error("Password reset email could not be sent after retries", { email });
+    if (!emailQueued) {
+      log.error("Password reset email could not be queued or sent", { email });
     }
 
     return NextResponse.json(

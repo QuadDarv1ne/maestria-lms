@@ -3,7 +3,7 @@ import { db, Prisma } from "@/lib/db";
 import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
-import { sendEmail } from "@/lib/email";
+import { dispatchEmail } from "@/lib/email-dispatch";
 import { enrollmentNotificationEmail } from "@/lib/emails";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
@@ -356,7 +356,7 @@ export async function POST(
             select: { email: true, name: true, emailVerified: true },
           });
           if (teacher?.email && teacher.emailVerified) {
-            await sendEmail({
+            await dispatchEmail({
               to: teacher.email,
               ...enrollmentNotificationEmail(
                 teacher.name || "преподаватель",

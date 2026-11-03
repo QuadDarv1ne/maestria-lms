@@ -6,7 +6,7 @@ import { createNotification } from "@/lib/notifications";
 import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
 import { parsePagination } from "@/lib/utils";
-import { sendEmail } from "@/lib/email";
+import { dispatchEmail } from "@/lib/email-dispatch";
 import { reviewNotificationEmail } from "@/lib/emails";
 import { env } from "@/lib/env";
 import { z } from "zod";
@@ -257,7 +257,7 @@ export async function POST(
         select: { id: true, name: true, email: true, emailVerified: true },
       });
       if (teacher?.email && teacher.emailVerified) {
-        sendEmail({
+        dispatchEmail({
           to: teacher.email,
           ...reviewNotificationEmail(
             teacher.name || "преподаватель",

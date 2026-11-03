@@ -8,7 +8,7 @@ import { handleApiError } from "@/lib/api-errors";
 import { log } from "@/lib/logger";
 import { CERTIFICATE_PREFIX } from "@/lib/constants";
 import { env } from "@/lib/env";
-import { sendEmail } from "@/lib/email";
+import { dispatchEmail } from "@/lib/email-dispatch";
 import { certificateEmail } from "@/lib/emails";
 import { validateParams, idOrSlugSchema, uuidSchema } from "@/lib/request-validation";
 
@@ -376,7 +376,7 @@ export async function POST(
 
         if (courseData?.hasCertificate && session.user.email) {
           const siteUrl = env.siteUrl;
-          sendEmail({
+          dispatchEmail({
             to: session.user.email,
             ...certificateEmail(
               session.user.name || "пользователь",
