@@ -331,5 +331,8 @@ export const RATE_LIMITS = {
   twoFactor: { windowMs: 60_000, maxRequests: 10 },
   sendVerification: { windowMs: 60_000, maxRequests: 3 },
   sse: { windowMs: 60_000, maxRequests: 5 },
+  // Public (unauthenticated) endpoint — limits are per IP and deliberately
+  // tight: the response contains a graduate's name, so it must not be scrapable.
+  certificateVerify: { windowMs: 60_000, maxRequests: 10 },
   default: { windowMs: 60_000, maxRequests: 30 },
 } as const;

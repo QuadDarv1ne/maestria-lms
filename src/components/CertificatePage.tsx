@@ -448,6 +448,21 @@ export function CertificatePage({ courseId }: { courseId: string }) {
         </div>
       </div>
 
+      {/* verification hint – only for certificates actually stored in the DB */}
+      {certificate && (
+        <div className="print:hidden max-w-5xl mx-auto mt-4 flex flex-col sm:flex-row items-center justify-center gap-2 text-sm text-muted-foreground">
+          <ShieldCheck className="w-4 h-4 text-green-600 shrink-0" />
+          <span>{t("cert.verifyDesc", locale)}</span>
+          <Button
+            variant="link"
+            className="h-auto p-0 text-sm font-medium"
+            onClick={() => router.push(`/verify-certificate/${certificateNumber}`)}
+          >
+            {t("cert.verifyLink", locale)}
+          </Button>
+        </div>
+      )}
+
       {/* print styles injected once */}
       <style jsx global>{`
         @media print {

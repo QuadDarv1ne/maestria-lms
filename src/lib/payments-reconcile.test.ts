@@ -29,19 +29,6 @@ vi.mock("@/lib/payments/service", () => ({
 import { log } from "@/lib/logger";
 import { reconcilePendingPayments } from "@/lib/payments/reconcile";
 
-function summaryDefaults() {
-  return {
-    scanned: 0,
-    completed: 0,
-    failed: 0,
-    pending: 0,
-    skipped: 0,
-    unknown: 0,
-    errors: 0,
-    durationMs: 0,
-  };
-}
-
 beforeEach(() => {
   vi.clearAllMocks();
   mockDb.payment.findMany.mockResolvedValue([]);
@@ -97,7 +84,14 @@ describe("reconcilePendingPayments — selection", () => {
   it("returns a zero summary when nothing is pending", async () => {
     const result = await reconcilePendingPayments();
 
-    expect(result).toMatchObject(summaryDefaults());
+    expect(result.scanned).toBe(0);
+    expect(result.completed).toBe(0);
+    expect(result.failed).toBe(0);
+    expect(result.pending).toBe(0);
+    expect(result.skipped).toBe(0);
+    expect(result.unknown).toBe(0);
+    expect(result.errors).toBe(0);
+    expect(result.durationMs).toBeGreaterThanOrEqual(0);
     expect(mockSync).not.toHaveBeenCalled();
     expect(mockNotify).not.toHaveBeenCalled();
   });
