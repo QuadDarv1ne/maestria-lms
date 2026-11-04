@@ -9,6 +9,10 @@
 
 <h1 align="center">🎓 Maestria — Образовательная платформа нового поколения</h1>
 
+![Главная страница](<img/Maestria LMS.png>)
+
+![О проекте](<img/Maestria LMS - about.png>)
+
 <p align="center">
   <strong>by Maestro7IT / MentorHUB</strong><br>
   Аналог Stepik с современным интерфейсом, админ-панелью и полной локализацией
