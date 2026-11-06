@@ -70,7 +70,9 @@ NEXTAUTH_URL=http://localhost:${appPort}
 NEXTAUTH_SECRET=
 
 # ─── CDN & Assets ───
-NEXT_PUBLIC_CDN_URL=https://ui3adtb308.a.trbcdn.net
+# Leave EMPTY unless you actually run a CDN for /courses assets — a wrong host
+# rewrites every local course cover to an unreachable URL.
+NEXT_PUBLIC_CDN_URL=
 NEXT_PUBLIC_SITE_URL=https://maestria.edu
 
 # ─── S3 Storage (optional) ───

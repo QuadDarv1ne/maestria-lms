@@ -32,14 +32,26 @@ import { PrismaPg } from "@prisma/adapter-pg";
 // CLI
 // --------------------------------------------------------------------------- //
 function parseArgs(argv) {
-  const args = { apply: false, publish: false, dump: null, slug: null, keepPrice: false };
+  const args = {
+    apply: false,
+    publish: false,
+    replace: false,
+    dump: null,
+    slug: null,
+    image: null,
+    tags: null,
+    keepPrice: false,
+  };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === "--apply") args.apply = true;
     else if (arg === "--publish") args.publish = true;
+    else if (arg === "--replace") args.replace = true;
     else if (arg === "--keep-price") args.keepPrice = true;
     else if (arg === "--dump") args.dump = argv[++i];
     else if (arg === "--slug") args.slug = argv[++i];
+    else if (arg === "--image") args.image = argv[++i];
+    else if (arg === "--tags") args.tags = argv[++i];
     else if (arg === "--help" || arg === "-h") args.help = true;
     else if (!arg.startsWith("-")) args.dump = arg;
   }
@@ -53,9 +65,14 @@ if (args.help) {
   <путь>            каталог выгрузки (по умолчанию downloads/stepik_course_<STEPIK_COURSE_ID>)
   --dump <путь>     то же самое
   --slug <slug>     переопределить slug курса
+  --image <путь>    обложка курса (по умолчанию ищется /courses/<slug>.jpg)
+  --tags <список>   теги через запятую (в дампе Stepik лежат только числовые id)
   --keep-price      сохранить цену Stepik (по умолчанию курс бесплатный)
   --apply           записать в базу (по умолчанию только собрать JSON)
-  --publish         опубликовать курс`);
+  --publish         опубликовать курс
+  --replace         заменить уже существующий курс с тем же slug
+                    (удаляет его модули/уроки вместе с заданиями — прогресс
+                    студентов по этому курсу будет потерян)`);
   process.exit(0);
 }
 
@@ -170,6 +187,29 @@ function quizFromStep(step, index) {
   };
 }
 
+/**
+ * Разбирает requirements/acquired_assets в список строк.
+ *
+ * Stepik отдаёт их как одну HTML-строку с пунктами через <p>, а UI Maestria
+ * рендерит каждый элемент массива как простой текст (без HTML). Поэтому теги
+ * снимаются, а пункты разрезаются по абзацам и ведущим маркерам.
+ */
+function splitRichList(value) {
+  const raw = Array.isArray(value) ? value.join("\n") : String(value || "");
+  return raw
+    .replace(/<\/(p|li|div|h[1-6])>/gi, "\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .split("\n")
+    .map((line) => htmlToText(line).replace(/^[•\-–—*✤❐❏\s]+/, "").trim())
+    .filter((line) => line.length > 1);
+}
+
+/** Резервная обложка курса, если её не передали явно. */
+function defaultCourseImage(slug) {
+  const candidate = path.join(ROOT, "public", "courses", `${slug}.jpg`);
+  return fs.existsSync(candidate) ? `/courses/${slug}.jpg` : undefined;
+}
+
 /** free-answer -> essay (проверяется преподавателем). */
 function essayFromStep(step, index) {
   const question = htmlToText(step.html);
@@ -278,20 +318,20 @@ function buildPayload() {
     }
   }
 
-  const requirements = Array.isArray(course.requirements)
-    ? course.requirements
-    : course.requirements
-      ? [String(course.requirements)]
-      : [];
-  const skills = Array.isArray(course.acquired_skills)
-    ? course.acquired_skills
-    : course.acquired_skills
-      ? [String(course.acquired_skills)]
-      : [];
+  const requirements = splitRichList(course.requirements);
+  const skills = splitRichList(course.acquired_skills);
+
+  const slug = args.slug || slugify(`${title}-${source.course_id}`) || `stepik-${source.course_id}`;
+  // Stepik's public API returns bare numeric tag ids, so they carry no meaning
+  // for the catalogue — pass real labels with --tags instead.
+  const tagIds = Array.isArray(course.tags) ? course.tags : [];
+  const tags = args.tags ?? (tagIds.length ? `stepik,${tagIds.join(",")}` : "stepik");
+  const image = args.image || defaultCourseImage(slug);
 
   const payload = {
     title: truncate(title, 200),
-    slug: args.slug || slugify(`${title}-${source.course_id}`) || `stepik-${source.course_id}`,
+    slug,
+    image,
     description: truncate(descriptionHtml, 5000),
     shortDesc: truncate(htmlToText(course.summary || course.description || title), 500),
     price: args.keepPrice ? Number(course.price) || 0 : 0,
@@ -302,11 +342,9 @@ function buildPayload() {
     isPublished: args.publish,
     isFeatured: false,
     hasCertificate: Boolean(course.with_certificate),
-    tags: Array.isArray(course.tags)
-      ? course.tags.map((tag) => tag.title || tag.name || tag).join(",").slice(0, 500)
-      : undefined,
-    requirements: JSON.stringify(requirements.filter(Boolean)),
-    whatYouLearn: JSON.stringify(skills.filter(Boolean)),
+    tags: truncate(tags, 500),
+    requirements: JSON.stringify(requirements),
+    whatYouLearn: JSON.stringify(skills),
     language: course.language === "en" ? "en" : "ru",
     visibility: "public",
     modules,
@@ -331,11 +369,24 @@ async function apply(payload) {
   const prisma = createPrisma();
   try {
     const existing = await prisma.course.findUnique({ where: { slug: payload.slug } });
-    if (existing) {
+    if (existing && !args.replace) {
       throw new Error(
         `Курс со slug "${payload.slug}" уже существует (id ${existing.id}). ` +
-        `Укажите другой --slug или удалите существующий курс.`,
+        `Укажите другой --slug, удалите существующий курс или запустите с --replace, ` +
+        `чтобы перезалить его вместе с модулями и уроками.`,
       );
+    }
+    if (existing) {
+      // Modules/lessons are replaced wholesale, so any enrollment progress that
+      // points at the old lesson ids is invalidated by the cascade.
+      const enrollments = await prisma.enrollment.count({ where: { courseId: existing.id } });
+      if (enrollments > 0) {
+        console.warn(
+          `  ! у курса ${enrollments} записей на курс — их прогресс будет потерян при --replace`,
+        );
+      }
+      await prisma.course.delete({ where: { id: existing.id } });
+      console.log(`Удалён прежний курс ${existing.id} (--replace)`);
     }
 
     let teacher = await prisma.user.findFirst({ where: { role: "teacher" } });
@@ -348,6 +399,7 @@ async function apply(payload) {
       data: {
         title: payload.title,
         slug: payload.slug,
+        image: payload.image ?? null,
         description: payload.description,
         shortDesc: payload.shortDesc,
         price: payload.price,
@@ -423,6 +475,8 @@ console.log(`Модулей: ${payload.modules.length}`);
 console.log(`Уроков: ${payload.modules.reduce((n, m) => n + m.lessons.length, 0)}`);
 console.log(`Заданий: ${payload.modules.reduce((n, m) => n + m.lessons.reduce((k, l) => k + (l.assignments?.length || 0), 0), 0)}`);
 console.log(`Шагов-текстов: ${stats.textSteps}, квизов: ${stats.quizzes}, эссе: ${stats.essays}`);
+console.log(`Обложка: ${payload.image || "нет (положите public/courses/<slug>.jpg или передайте --image)"}`);
+console.log(`Теги: ${payload.tags}`);
 if (stats.skipped.length) {
   console.log(`\nПредупреждения (${stats.skipped.length}):`);
   for (const note of stats.skipped.slice(0, 20)) console.log(`  - ${note}`);

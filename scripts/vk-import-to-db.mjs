@@ -4,6 +4,7 @@ import "dotenv/config";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { normalizeArticleLinks } from "../src/lib/vk-link-normalize.ts";
 
 const databaseUrl = process.env.DATABASE_URL || "file:./prisma/data.db";
 let adapter;
@@ -263,6 +264,18 @@ async function main() {
   const okArticles = articles.filter((a) => a.status !== "error");
   console.log(`Importing ${okArticles.length} articles...\n`);
 
+  // Ссылки внутри статей приходят в формате VK (away.php и /@science_geeks-<slug>)
+  // и ведут на несуществующие маршруты LMS. Чтобы внутренние ссылки на уже
+  // импортированные статьи работали, нужен полный список slug'ов: и тех, что
+  // есть в базе, и тех, что импортируются в этом же прогоне.
+  const knownSlugs = new Set(
+    (await prisma.article.findMany({ select: { slug: true } })).map((a) => a.slug)
+  );
+  for (const art of okArticles) {
+    const slug = (art.slug || "").replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").slice(0, 80);
+    if (slug) knownSlugs.add(slug);
+  }
+
   // Find system user
   let user = await prisma.user.findFirst({ where: { role: "admin" } });
   if (!user) user = await prisma.user.findFirst({ where: { role: "teacher" } });
@@ -314,6 +327,11 @@ async function main() {
     if (art.attachments && art.attachments.length > 0) {
       contentToSave += buildAttachmentsHtml(art.attachments);
     }
+
+    // Rewrite VK-only links (away.php redirects, /@science_geeks-<slug>) so the
+    // article body does not contain links that 404 inside the LMS. Runs after
+    // the attachments are appended, because those carry VK links too.
+    contentToSave = normalizeArticleLinks(contentToSave, knownSlugs);
 
     const category = art.category || mapCategory(art.title || "", textContent || contentToSave);
     const readTime = art.readTime || estimateReadTime(textContent || contentToSave);

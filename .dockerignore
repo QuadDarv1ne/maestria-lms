@@ -6,7 +6,9 @@ node_modules
 # Build output
 /.next
 /out
-/public/uploads
+# NOTE: /public/uploads is deliberately NOT ignored. Imported VK articles
+# reference their images as /uploads/vk/<slug>/NN.jpg, so excluding the
+# directory shipped the pages without any pictures in production.
 
 # Testing
 /coverage

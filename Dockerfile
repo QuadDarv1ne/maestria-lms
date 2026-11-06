@@ -37,6 +37,22 @@ RUN --mount=type=cache,target=/root/.npm \
       lightningcss-linux-x64-musl@1.30.2 \
       --no-save --omit=dev --no-audit --no-fund 2>/dev/null || true
 
+# sharp powers /_next/image (resizing and AVIF/WebP conversion). Next.js ships
+# it as an *optional* dependency, so the `npm ci --no-optional` above skips it
+# and every optimized image request fails with "Module `sharp` not found" — the
+# catalogue, blog and course pages then render without a single cover. Install
+# sharp together with its prebuilt libvips binaries for linux-x64-musl (Alpine),
+# the same way Tailwind oxide and lightningcss are handled above. The platform
+# packages are optional dependencies of sharp itself, so they are named
+# explicitly and `--no-optional` keeps the binaries for the other platforms
+# (darwin, win32, glibc) out of the image.
+RUN --mount=type=cache,target=/root/.npm \
+    npm install \
+      sharp@0.35.5 \
+      @img/sharp-linuxmusl-x64@0.35.5 \
+      @img/sharp-libvips-linuxmusl-x64@1.3.4 \
+      --no-save --no-optional --omit=dev --no-audit --no-fund --engine-strict=false
+
 # ============================================================
 # Stage 3: builder — install dev deps and compile
 # ============================================================

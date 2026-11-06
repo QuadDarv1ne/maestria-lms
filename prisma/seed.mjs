@@ -253,6 +253,7 @@ async function main() {
       data: {
         title: 'Python с нуля до Junior Developer',
         slug: 'python-zero-to-junior',
+        image: '/courses/python.png',
         description: 'Полный курс Python для начинающих. Изучите основы программирования, ООП, работу с библиотеками и создадите 5 проектов для портфолио.',
         shortDesc: 'Полный курс Python для начинающих',
         price: 4990,
@@ -313,6 +314,7 @@ async function main() {
       data: {
         title: 'React + Next.js: Fullstack разработка',
         slug: 'react-nextjs-fullstack',
+        image: '/courses/web-dev-new.png',
         description: 'Научитесь создавать современные веб-приложения с React и Next.js. SSR, SSG, API routes, аутентификация и деплой.',
         shortDesc: 'Fullstack разработка на React и Next.js',
         price: 7990,
@@ -360,6 +362,7 @@ async function main() {
       data: {
         title: 'Создание игр в Roblox Studio',
         slug: 'roblox-game-dev',
+        image: '/courses/roblox.png',
         description: 'Создавайте собственные игры в Roblox Studio с использованием Lua. От основ до публикации игры в каталоге Roblox.',
         shortDesc: 'Разработка игр в Roblox на Lua',
         price: 3990,
@@ -393,6 +396,7 @@ async function main() {
       data: {
         title: 'C++ для начинающих: основы программирования',
         slug: 'cpp-basics',
+        image: '/courses/cpp-new.png',
         description: 'Изучите C++ с нуля. Переменные, функции, ООП, STL, указатели и работа с памятью.',
         shortDesc: 'Основы программирования на C++',
         price: 5490,
@@ -427,6 +431,7 @@ async function main() {
       data: {
         title: 'Data Science с Python: анализ данных',
         slug: 'data-science-python',
+        image: '/courses/data-science.png',
         description: 'Pandas, NumPy, Matplotlib, Seaborn. Анализ и визуализация данных, статистика и основы машинного обучения.',
         shortDesc: 'Анализ данных и визуализация с Python',
         price: 6990,
@@ -462,6 +467,7 @@ async function main() {
       data: {
         title: 'React Native: мобильные приложения',
         slug: 'react-native-mobile',
+        image: '/courses/react-native.png',
         description: 'Создавайте кроссплатформенные мобильные приложения для iOS и Android с помощью React Native.',
         shortDesc: 'Кроссплатформенные приложения на React Native',
         price: 8490,
@@ -496,6 +502,7 @@ async function main() {
       data: {
         title: 'Основы HTML и CSS: бесплатный курс',
         slug: 'html-css-basics-free',
+        image: '/courses/web-dev.png',
         description: 'Бесплатный курс по основам HTML и CSS. Научитесь создавать веб-страницы с нуля.',
         shortDesc: 'Бесплатный курс по HTML и CSS',
         price: 0,
@@ -541,6 +548,7 @@ async function main() {
       data: {
         title: 'QA-инженер: ручное тестирование с нуля',
         slug: 'qa-manual-testing-zero-to-hero',
+        image: '/courses/testing-qa.jpg',
         description: 'Научитесь тестировать веб-приложения, работать с API через Postman, писать SQL-запросы, оформлять баг-репорты в Яндекс Трекере и работать в Test IT. Исследовательское тестирование, тест-дизайн и анализ логов.',
         shortDesc: 'Ручное тестирование: Postman, SQL, API, Test IT',
         price: 4990,
@@ -598,6 +606,7 @@ async function main() {
       data: {
         title: 'Python QA: автоматизация тестирования с Playwright',
         slug: 'python-qa-automation-playwright',
+        image: '/courses/testing-qa.jpg',
         description: 'Пишите автотесты на Python с Playwright и requests. Проектируйте тестовый фреймворк (Page Object, фикстуры, параметризация). Настраивайте CI/CD через GitHub Actions, работайте с Allure, Git и Docker.',
         shortDesc: 'Автотесты на Python: Playwright, CI/CD, Allure',
         price: 8990,
@@ -656,6 +665,7 @@ async function main() {
       data: {
         title: 'Python Pro: от Junior до Middle разработчика',
         slug: 'python-pro-junior-to-middle',
+        image: '/courses/python.png',
         description: 'Углублённое изучение Python: асинхронность, декораторы, генераторы, работа с БД, паттерны проектирования, тестирование и деплой.',
         shortDesc: 'Продвинутый Python: async, паттерны, деплой',
         price: 7490,
@@ -702,6 +712,7 @@ async function main() {
       data: {
         title: 'FastAPI: создание REST API с нуля',
         slug: 'fastapi-rest-api-from-scratch',
+        image: '/courses/python.png',
         description: 'Создавайте современные API на FastAPI: маршруты, валидация Pydantic, асинхронные endpoints, SQLAlchemy, JWT аутентификация, Docker.',
         shortDesc: 'REST API на FastAPI: Pydantic, SQLAlchemy, JWT',
         price: 6990,
@@ -747,6 +758,7 @@ async function main() {
       data: {
         title: 'Frontend Pro: React, TypeScript, Next.js',
         slug: 'frontend-pro-react-typescript-nextjs',
+        image: '/courses/web-dev-new.png',
         description: 'Полный курс фронтенда: React 19, Server Components, TypeScript, Next.js App Router, Zustand, Tailwind, тестирование с Vitest.',
         shortDesc: 'React 19, TypeScript, Next.js, Server Components',
         price: 9990,
@@ -794,6 +806,7 @@ async function main() {
       data: {
         title: 'Fullstack TypeScript: от идеи до продакшена',
         slug: 'fullstack-typescript-idea-to-production',
+        image: '/courses/web-dev-new.png',
         description: 'Создайте полноценное приложение: Next.js + tRPC + Prisma + PostgreSQL. Аутентификация, платежи, деплой на Vercel, CI/CD.',
         shortDesc: 'Next.js + tRPC + Prisma + PostgreSQL',
         price: 11990,
@@ -840,6 +853,7 @@ async function main() {
       data: {
         title: 'Unity C#: создание 2D и 3D игр',
         slug: 'unity-csharp-2d-3d-games',
+        image: '/courses/csharp.jpg',
         description: 'Создавайте игры на Unity с C#: физика, анимации, UI, сохранение прогресса, публикация на itch.io.',
         shortDesc: 'Игры на Unity: физика, анимации, публикация',
         price: 5990,
@@ -885,6 +899,7 @@ async function main() {
       data: {
         title: 'Unreal Engine 5: разработка игр на C++',
         slug: 'unreal-engine-5-cpp-game-dev',
+        image: '/courses/cpp-new.png',
         description: 'Создавайте AAA-игры на UE5: Blueprints + C++, система частиц, AI, мультиплеер, Nanite и Lumen.',
         shortDesc: 'AAA-игры на UE5: Blueprints, C++, Nanite, Lumen',
         price: 7990,
@@ -931,6 +946,7 @@ async function main() {
       data: {
         title: 'Machine Learning: от теории к практике',
         slug: 'machine-learning-theory-to-practice',
+        image: '/courses/data-science.png',
         description: 'Scikit-learn, TensorFlow, нейронные сети, компьютерное зрение, NLP. Реальные проекты с датасетами.',
         shortDesc: 'ML: Scikit-learn, TensorFlow, нейронные сети',
         price: 8490,
@@ -978,6 +994,7 @@ async function main() {
       data: {
         title: 'Аналитик данных: Excel → SQL → Python',
         slug: 'data-analyst-excel-sql-python',
+        image: '/courses/powerbi.jpg',
         description: 'Полный стек аналитика: продвинутый Excel, SQL-запросы, визуализация в Tableau/Power BI, Python (Pandas, Matplotlib).',
         shortDesc: 'Excel, SQL, Python, Tableau для аналитики',
         price: 5990,
@@ -1023,6 +1040,7 @@ async function main() {
       data: {
         title: 'DevOps для разработчиков: Docker, CI/CD, Kubernetes',
         slug: 'devops-docker-ci-cd-kubernetes',
+        image: '/courses/docker-step.png',
         description: 'Контейнеризация с Docker, оркестрация Kubernetes, CI/CD пайлайны (GitHub Actions, GitLab CI), мониторинг (Prometheus, Grafana).',
         shortDesc: 'Docker, Kubernetes, CI/CD, мониторинг',
         price: 7490,
@@ -1069,6 +1087,7 @@ async function main() {
       data: {
         title: 'Linux-администратор: от основ до продакшена',
         slug: 'linux-admin-basics-to-production',
+        image: '/courses/linux-admin-real.jpg',
         description: 'Установка Linux, командная строка, bash-скриптинг, настройка серверов (Nginx, Apache), безопасность, мониторинг.',
         shortDesc: 'Linux: CLI, bash, Nginx, безопасность',
         price: 4990,
@@ -1114,6 +1133,7 @@ async function main() {
       data: {
         title: 'UI/UX дизайнер: проектирование интерфейсов в Figma',
         slug: 'ui-ux-design-figma-interfaces',
+        image: '/courses/ui-ux-figma.jpg',
         description: 'Принципы UX, прототипирование, дизайн-системы, компоненты в Figma, user research, usability-тестирование.',
         shortDesc: 'Figma, прототипирование, дизайн-системы, UX',
         price: 5490,
@@ -1159,6 +1179,7 @@ async function main() {
       data: {
         title: 'Flutter & Dart: кроссплатформенные мобильные приложения',
         slug: 'flutter-dart-cross-platform-mobile',
+        image: '/courses/mobile-dev-new.png',
         description: 'Создавайте приложения для iOS и Android на Flutter: виджеты, навигация, работа с API, state management (Riverpod), публикация.',
         shortDesc: 'Flutter: виджеты, Riverpod, публикация в сторах',
         price: 7990,
@@ -1205,6 +1226,7 @@ async function main() {
       data: {
         title: 'Этичный хакинг: основы информационной безопасности',
         slug: 'ethical-hacking-cybersecurity-basics',
+        image: '/courses/cybersecurity.jpg',
         description: 'OWASP Top 10, пентест веб-приложений, Kali Linux, Burp Suite, сетевая безопасность, криптография.',
         shortDesc: 'Пентест: OWASP, Kali Linux, Burp Suite',
         price: 6990,
@@ -1250,6 +1272,7 @@ async function main() {
       data: {
         title: 'IT-фриланс: как найти клиентов и зарабатывать удалённо',
         slug: 'it-freelance-find-clients-earn-remote',
+        image: '/courses/it-freelance.jpg',
         description: 'Биржи фриланса, создание портфолио, оценка проектов, переговоры, тайм-менеджмент, юридические аспекты.',
         shortDesc: 'Фриланс в IT: портфолио, клиенты, переговоры',
         price: 2990,
@@ -1310,6 +1333,7 @@ async function main() {
       data: {
         title: 'Введение в современную веб-разработку: что нужно знать в 2026 году',
         slug: 'modern-web-development-2026',
+        image: '/courses/web-dev-new.png',
         excerpt: 'Обзор ключевых технологий и инструментов для веб-разработчиков в 2026 году: React, Next.js, TypeScript, Tailwind CSS и многое другое.',
         content: `# Введение в современную веб-разработку
 
@@ -1346,6 +1370,7 @@ async function main() {
       data: {
         title: 'Тестирование ПО: полное руководство для начинающих',
         slug: 'software-testing-beginners-guide',
+        image: '/courses/testing-qa.jpg',
         excerpt: 'Всё о тестировании программного обеспечения: виды тестов, методологии, инструменты и лучшие практики для начинающих QA-инженеров.',
         content: `# Тестирование ПО: полное руководство
 
@@ -1388,6 +1413,7 @@ async function main() {
       data: {
         title: 'SQL и NoSQL базы данных: когда что использовать',
         slug: 'sql-vs-nosql-databases',
+        image: '/courses/databases.jpg',
         excerpt: 'Сравнение реляционных и нереляционных баз данных: PostgreSQL, MongoDB, Redis, ClickHouse. Практические рекомендации по выбору.',
         content: `# SQL vs NoSQL: выбор базы данных
 
@@ -1432,6 +1458,7 @@ async function main() {
       data: {
         title: 'Искусственный интеллект в 2026: практическое применение для разработчиков',
         slug: 'ai-practical-applications-2026',
+        image: '/courses/neural-n8n.jpg',
         excerpt: 'Как разработчики используют AI для повышения продуктивности: code generation, автоматизация, AI-ассистенты и нейросети.',
         content: `# AI для разработчиков в 2026
 
@@ -1475,6 +1502,7 @@ AI не заменяет разработчиков, а усиливает их 
       data: {
         title: '3D-моделирование в Blender: первые шаги',
         slug: '3d-modeling-blender-first-steps',
+        image: '/courses/blender-3d.jpg',
         excerpt: 'Введение в 3D-моделирование с помощью Blender: интерфейс, базовые инструменты, создание первой модели и рендеринг.',
         content: `# 3D-моделирование в Blender
 
@@ -1530,6 +1558,7 @@ Blender — мощный бесплатный инструмент для 3D-м�
       data: {
         title: 'Кибербезопасность: базовые принципы защиты веб-приложений',
         slug: 'cybersecurity-web-application-basics',
+        image: '/courses/cybersecurity.jpg',
         excerpt: 'Основы безопасности веб-приложений: OWASP Top 10, XSS, CSRF, SQL-инъекции и методы защиты от распространенных атак.',
         content: `# Кибербезопасность веб-приложений
 
