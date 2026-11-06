@@ -334,5 +334,8 @@ export const RATE_LIMITS = {
   // Public (unauthenticated) endpoint — limits are per IP and deliberately
   // tight: the response contains a graduate's name, so it must not be scrapable.
   certificateVerify: { windowMs: 60_000, maxRequests: 10 },
+  // Browser telemetry beacon: one batch per page load, generous enough for
+  // navigation-heavy sessions but still bounded.
+  webVitals: { windowMs: 60_000, maxRequests: 60 },
   default: { windowMs: 60_000, maxRequests: 30 },
 } as const;

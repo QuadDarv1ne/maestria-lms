@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { handleApiError } from "@/lib/api-errors";
 import { getAuthSession, requireAdmin, adminErrorResponse } from "@/lib/auth";
 import { rateLimitAsync, RATE_LIMITS } from "@/lib/rate-limit";
+import { getWebVitalsSummary } from "@/lib/web-vitals";
 
 export const runtime = "nodejs";
 
@@ -41,6 +42,9 @@ export async function GET(request: Request) {
 
     const memoryUsage = process.memoryUsage();
     const uptime = process.uptime();
+    // Real-user Core Web Vitals collected by the browser beacon. Reading it is
+    // cheap (one small sorted-set fetch per metric) and never throws.
+    const webVitals = await getWebVitalsSummary();
 
     return NextResponse.json({
       system: {
@@ -62,6 +66,7 @@ export async function GET(request: Request) {
         publishedArticles: articleCount,
         unreadNotifications: notificationCount,
       },
+      webVitals,
       timestamp: new Date().toISOString(),
     });
   } catch (error: unknown) {

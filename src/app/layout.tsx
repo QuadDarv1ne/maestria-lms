@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "@/components/Providers";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { SkipLink } from "@/components/SkipLink";
+import { WebVitalsReporter } from "@/components/WebVitalsReporter";
 import { log } from "@/lib/logger";
 import { env } from "@/lib/env";
 
@@ -278,6 +279,7 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
         <SkipLink />
+        <WebVitalsReporter />
         <ErrorBoundary>
           <Providers>
             <div tabIndex={-1}>
