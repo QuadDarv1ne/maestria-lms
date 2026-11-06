@@ -4,9 +4,9 @@
  *
  * Two properties matter more than the happy path:
  *
- * 1. writing never throws тАФ a broken audit table must not fail the mutation
+ * 1. writing never throws -- a broken audit table must not fail the mutation
  *    it is auditing;
- * 2. metadata is sanitised before it is stored тАФ secrets are redacted and an
+ * 2. metadata is sanitised before it is stored -- secrets are redacted and an
  *    oversized blob is dropped instead of being truncated mid-structure.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -112,7 +112,7 @@ describe("sanitizeAuditMetadata", () => {
 
   it("discards an oversized blob rather than truncating it", () => {
     // Long values are already capped per string, so size can only blow up
-    // through sheer key count тАФ which is exactly the case worth dropping.
+    // through sheer key count -- which is exactly the case worth dropping.
     const huge: Record<string, unknown> = {};
     for (let i = 0; i < 200; i++) huge[`field${i}`] = "z".repeat(40);
 

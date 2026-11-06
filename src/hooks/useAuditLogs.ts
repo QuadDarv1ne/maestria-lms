@@ -37,7 +37,7 @@ export interface AuditLogResponse {
  * Reads the admin audit trail.
  *
  * `keepPreviousData` keeps the current page on screen while the next one
- * loads тАФ without it every filter change flashes the empty state.
+ * loads -- without it every filter change flashes the empty state.
  */
 export function useAuditLogs(filters: AuditLogFilters = {}) {
   const params = new URLSearchParams();

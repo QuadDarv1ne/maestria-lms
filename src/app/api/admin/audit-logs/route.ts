@@ -62,7 +62,7 @@ function parseRequiredDate(value: string | null): { ok: true; date: Date | null 
  *
  * Query params: page, limit, action, actorId, entityType, entityId, search,
  * from, to (ISO dates). Unknown `action` values are rejected rather than
- * silently returning an empty list тАФ a typo in an investigation filter should
+ * silently returning an empty list -- a typo in an investigation filter should
  * be visible.
  */
 export async function GET(request: NextRequest) {

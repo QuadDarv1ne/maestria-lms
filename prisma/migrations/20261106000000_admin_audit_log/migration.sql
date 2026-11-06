@@ -31,12 +31,12 @@ CREATE TABLE "AuditLog" (
 CREATE INDEX "AuditLog_createdAt_idx" ON "AuditLog"("createdAt");
 
 -- CreateIndex
--- "what did this admin do" тАФ the main investigation query.
+-- "what did this admin do" -- the main investigation query.
 CREATE INDEX "AuditLog_actorId_idx" ON "AuditLog"("actorId");
 
 -- CreateIndex
 CREATE INDEX "AuditLog_action_idx" ON "AuditLog"("action");
 
 -- CreateIndex
--- "history of this object" тАФ e.g. every change to one course.
+-- "history of this object" -- e.g. every change to one course.
 CREATE INDEX "AuditLog_entityType_entityId_idx" ON "AuditLog"("entityType", "entityId");

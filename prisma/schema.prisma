@@ -541,7 +541,7 @@ model AuditLog {
   actorId    String?
   actorEmail String?
   actorName  String?
-  // Dotted, stable identifier тАФ see AUDIT_ACTIONS in src/lib/audit-log.ts.
+  // Dotted, stable identifier -- see AUDIT_ACTIONS in src/lib/audit-log.ts.
   action     String
   entityType String?
   entityId   String?

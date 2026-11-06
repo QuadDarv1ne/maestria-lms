@@ -61,7 +61,7 @@ export function isAuditAction(value: unknown): value is AuditAction {
 /** Entries older than this are dropped by `cleanupOldAuditLogs`. */
 export const AUDIT_LOG_RETENTION_DAYS = 365;
 
-/** Hard cap on the stored metadata blob тАФ the trail must not become a payload dump. */
+/** Hard cap on the stored metadata blob -- the trail must not become a payload dump. */
 const MAX_METADATA_BYTES = 4096;
 
 /**
@@ -214,7 +214,7 @@ export function auditActorFromSession(
 /**
  * Read a page of the trail, newest first.
  *
- * `search` matches the actor e-mail and the affected object label тАФ the two
+ * `search` matches the actor e-mail and the affected object label -- the two
  * fields an investigator actually knows. It stays case-insensitive on
  * PostgreSQL (where `contains` is case-sensitive) and degrades to a plain
  * `contains` elsewhere, mirroring `/api/admin/users`.
@@ -299,7 +299,7 @@ export async function cleanupOldAuditLogs(
 }
 
 /**
- * Manually purge the trail тАФ everything older than `before`, or all of it when
+ * Manually purge the trail -- everything older than `before`, or all of it when
  * `before` is null. The caller records the purge itself afterwards, so the
  * entry that documents the wipe is written last and survives it.
  */
