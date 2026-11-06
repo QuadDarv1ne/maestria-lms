@@ -1,4 +1,5 @@
 import { resolveDatabaseProvider } from "@/lib/db-provider";
+import { parseAdminIpEnforcement, type AdminIpEnforcement } from "@/lib/admin-ip-allowlist";
 
 /**
  * Centralized environment configuration with validation.
@@ -185,6 +186,26 @@ export const env = {
 
   get allowSeedData(): boolean {
     return cached("allowSeedData", () => process.env.ALLOW_SEED_DATA === "true");
+  },
+
+  /**
+   * Optional IP allowlist for /admin and /api/admin (comma-separated IPs and
+   * CIDR ranges). Unset means "no restriction" — authentication alone guards
+   * the panel, which is the pre-existing behaviour.
+   */
+  get adminIpAllowlist(): string | undefined {
+    return cached("adminIpAllowlist", () => process.env.ADMIN_IP_ALLOWLIST);
+  },
+
+  /**
+   * "warn" logs an admin request that the allowlist would refuse and lets it
+   * through; any other value (including a typo) enforces. Use "warn" to confirm
+   * that the proxy forwards the client address before locking the panel down.
+   */
+  get adminIpAllowlistMode(): AdminIpEnforcement {
+    return cached("adminIpAllowlistMode", () =>
+      parseAdminIpEnforcement(process.env.ADMIN_IP_ALLOWLIST_MODE),
+    );
   },
 
   get databaseProvider(): string {

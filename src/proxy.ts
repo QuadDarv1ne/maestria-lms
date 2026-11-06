@@ -4,6 +4,8 @@ import { getToken } from "next-auth/jwt";
 import { csrfProtection } from "@/lib/csrf";
 import { env } from "@/lib/env";
 import { applySecurityHeaders } from "@/lib/security-headers";
+import { evaluateAdminIpAccess, isAdminPath, resolveClientIp } from "@/lib/admin-ip-allowlist";
+import { log } from "@/lib/logger";
 
 // Validate required environment variables at startup (middleware is always loaded)
 env.validate();
@@ -90,6 +92,54 @@ export async function proxy(request: NextRequest) {
       const response = NextResponse.rewrite(url);
       applySecurityHeaders(response, pathname);
       return response;
+    }
+  }
+
+  // ── Admin IP allowlist ─────────────────────────────────────────────────
+  // Optional second factor for the admin area (ADMIN_IP_ALLOWLIST). Deliberately
+  // placed before the locale bootstrap and the auth check: the locale branch
+  // returns early for a cookie-less request, and a stolen session cookie used
+  // from an unlisted network should never reach token verification.
+  if (isAdminPath(pathname)) {
+    const clientIp = resolveClientIp(request.headers);
+    const decision = evaluateAdminIpAccess(clientIp, env.adminIpAllowlist, env.adminIpAllowlistMode);
+
+    if (!decision.allowed) {
+      log.warn("Admin access blocked by IP allowlist", {
+        pathname,
+        clientIp: clientIp ?? "unknown",
+        reason: decision.reason,
+      });
+
+      if (API_ROUTE_PATTERN.test(pathname)) {
+        const response = NextResponse.json(
+          {
+            error:
+              decision.reason === "invalid-config"
+                ? "Admin IP allowlist is misconfigured"
+                : "Forbidden",
+            code: "FORBIDDEN",
+          },
+          { status: 403 },
+        );
+        applySecurityHeaders(response, pathname);
+        return response;
+      }
+
+      const response = NextResponse.rewrite(new URL("/forbidden", request.url), { status: 403 });
+      applySecurityHeaders(response, pathname);
+      return response;
+    }
+
+    // Warn mode is the dry run that proves the proxy forwards the address. Without
+    // this line a deployment would never learn that enforce mode would lock it out.
+    if (decision.reason === "would-block") {
+      log.warn("Admin access would be blocked by IP allowlist (warn mode)", {
+        pathname,
+        clientIp: clientIp ?? "unknown",
+        wouldBlock: decision.wouldBlock,
+        hint: "switch ADMIN_IP_ALLOWLIST_MODE to enforce once the client IP is correct here",
+      });
     }
   }
 

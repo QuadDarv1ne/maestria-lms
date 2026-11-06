@@ -2,6 +2,29 @@
 
 ---
 
+Task ID: 33
+Agent: Main Agent
+Task: IP-allowlist для админ-панели (второй фактор поверх аутентификации)
+
+Work Log:
+- MOTIVATION: `/admin` и `/api/admin` были доступны с любого адреса, пока валидна сессия. Украденный cookie администратора = полный контроль над LMS (пользователи, платежи, курсы). Аудит-лог (Task 32) фиксирует злонамеренные действия, но не мешает им случиться — нужен превентивный фильтр по сети
+- DECISION (почему не `getClientIp()` из `src/lib/rate-limit.ts`): тот отбрасывает приватные диапазоны 10/8, 172.16/12, 192.168/16, 127/8, ::1, потому что они плохие бакеты для rate limiting. Для allowlist это ровно те адреса, которые выдаёт офисный NAT и VPN → фильтр отверг бы всех легитимных админов. Написан свой `resolveClientIp()` с той же моделью доверия к первому hop `X-Forwarded-For`, но без отсечения приватных сетей
+- DECISION (fail closed): значение, из которого не распарсировался ни один адрес (`ADMIN_IP_ALLOWLIST=office`), означает «запретить всем» + `log.warn`, а не «фильтр выключен». Опечатка не должна молча снимать защиту. Пустое значение = `disabled` (обратная совместимость, поведение до этой задачи)
+- PLACEMENT: проверка в `src/proxy.ts` стоит **до** locale-bootstrap и до проверки токена. Locale-ветка делает ранний `return` на запросе без cookie, поэтому фильтр, поставленный после неё, объезжался первым же запросом к `/admin` (найдено и покрыто тестом). До `getToken()` — чтобы украденная сессия с чужого адреса не проходила даже верификацию JWT
+- LIB: `src/lib/admin-ip-allowlist.ts` — `parseAdminIpAllowlist()` → `disabled | enforced | invalid`, `parseAdminIpEnforcement()`, `resolveClientIp()`, `isAdminIpAllowed()`, `evaluateAdminIpAccess()`, `isAdminPath()`. Парсинг адресов свой (bigint, битовые маски), CIDR для IPv4 и IPv6, сжатые формы, zone index, IPv4-mapped (`::ffff:10.0.0.1` сравнивается как IPv4, иначе запись `10.0.0.0/8` не работала бы на dual-stack сокете Node). Разделители — запятая/точка с запятой/пробел, `#комментарии` пропускаются
+- ROLLOUT: `ADMIN_IP_ALLOWLIST_MODE=warn` логирует «что было бы заблокировано» и пропускает запрос. Нужен, потому что если платформа не пробрасывает адрес клиента, `enforce` мгновенно запер бы администратора вне собственной панели; warn даёт проверить это по логам до включения. Неизвестное значение → `enforce`
+- UI/API: страница → `403` + rewrite на существующую `/forbidden`; API → JSON `{ error, code: "FORBIDDEN" }` (отдельное сообщение при `invalid-config`). В обеих ветках `applySecurityHeaders()`
+- ENV: `adminIpAllowlist` / `adminIpAllowlistMode` в `src/lib/env.ts`, документация в `.env.example` и в чеклист перед продакшеном в `DEPLOYMENT.md`
+- TEST: `admin-ip-allowlist.test.ts` (43) + 12 новых в `proxy-middleware.test.ts` (блокировка страницы и API, отсутствие `getToken()` при блокировке, обход locale-bootstrap, warn-режим, неизменяемость поведения без allowlist)
+- ПРОВЕРЕНО: `npm run verify` — typecheck чистый, **1340 тестов в 93 файлах** (+55), check:i18n OK; `npm run build` — «Compiled successfully», в выводе «Proxy (Middleware)»; eslint по изменённым файлам — 0 замечаний
+
+Stage Summary:
+- Админка получилась привязанной к сетям: сессию можно украсть, адрес офиса — нет
+- Фильтр включается без риска lockout (warn → enforce) и не ломает существующие деплои (пустой allowlist = как раньше)
+- NEXT: Sentry, CAPTCHA на регистрации, web push backend (`/api/push/subscribe` отсутствует, `syncEnrollments`/`syncProgress` в `public/sw.js` — заглушки)
+
+---
+
 Task ID: 32
 Agent: Main Agent
 Task: Аудит-лог административных действий (вместо демо-данных в разделе «Логи»)

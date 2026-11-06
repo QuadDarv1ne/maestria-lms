@@ -17,6 +17,9 @@ const { mockEnv, mockGetToken, mockCsrfProtection } = vi.hoisted(() => ({
     cdnUrl: "",
     s3Endpoint: "",
     isProduction: false,
+    logLevel: "error",
+    adminIpAllowlist: undefined as string | undefined,
+    adminIpAllowlistMode: "enforce" as "enforce" | "warn",
   },
   mockGetToken: vi.fn(),
   mockCsrfProtection: vi.fn(),
@@ -28,8 +31,11 @@ vi.mock("@/lib/csrf", () => ({ csrfProtection: (...args: unknown[]) => mockCsrfP
 
 import { proxy, config } from "@/proxy";
 
-function request(pathname: string, init?: { method?: string; cookies?: Record<string, string> }) {
-  const headers = new Headers();
+function request(
+  pathname: string,
+  init?: { method?: string; cookies?: Record<string, string>; headers?: Record<string, string> },
+) {
+  const headers = new Headers(init?.headers);
   if (init?.cookies) {
     headers.set("cookie", Object.entries(init.cookies).map(([k, v]) => `${k}=${v}`).join("; "));
   }
@@ -41,6 +47,8 @@ const CSP = "Content-Security-Policy";
 beforeEach(() => {
   vi.clearAllMocks();
   delete process.env.MAINTENANCE_MODE;
+  mockEnv.adminIpAllowlist = undefined;
+  mockEnv.adminIpAllowlistMode = "enforce";
   mockCsrfProtection.mockReturnValue(null);
   mockGetToken.mockResolvedValue(null);
 });
@@ -166,5 +174,160 @@ describe("proxy middleware — security headers", () => {
     expect(matcher).toContain("_next/static");
     expect(matcher).toContain("api/notifications/sse");
     expect(matcher).toContain("favicon.ico");
+  });
+});
+
+describe("proxy middleware — admin IP allowlist", () => {
+  it("blocks an admin page from an unlisted network with a 403", async () => {
+    mockEnv.adminIpAllowlist = "10.0.0.0/8";
+    mockGetToken.mockResolvedValue({ role: "admin" });
+
+    const res = await proxy(
+      request("/admin", {
+        cookies: { "maestria-locale": "ru" },
+        headers: { "x-forwarded-for": "203.0.113.7" },
+      }),
+    );
+
+    expect(res.status).toBe(403);
+    expect(res.headers.get("x-middleware-rewrite") ?? "").toContain("/forbidden");
+    expect(res.headers.get(CSP)).toContain("default-src 'self'");
+  });
+
+  it("never verifies the token for a blocked request", async () => {
+    mockEnv.adminIpAllowlist = "10.0.0.0/8";
+
+    await proxy(
+      request("/admin", { cookies: { "maestria-locale": "ru" }, headers: { "x-real-ip": "8.8.8.8" } }),
+    );
+
+    expect(mockGetToken).not.toHaveBeenCalled();
+  });
+
+  it("lets a listed admin through to the normal auth flow", async () => {
+    mockEnv.adminIpAllowlist = "10.0.0.0/8";
+    mockGetToken.mockResolvedValue({ role: "admin" });
+
+    const res = await proxy(
+      request("/admin", {
+        cookies: { "maestria-locale": "ru" },
+        headers: { "x-forwarded-for": "10.1.2.3" },
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(mockGetToken).toHaveBeenCalled();
+  });
+
+  it("returns a JSON 403 for admin API routes", async () => {
+    mockEnv.adminIpAllowlist = "10.0.0.0/8";
+
+    const res = await proxy(
+      request("/api/admin/users", { headers: { "x-forwarded-for": "203.0.113.7" } }),
+    );
+
+    expect(res.status).toBe(403);
+    expect(await res.json()).toMatchObject({ code: "FORBIDDEN" });
+    expect(res.headers.get(CSP)).toContain("default-src 'self'");
+  });
+
+  it("reports a misconfigured allowlist instead of opening the panel", async () => {
+    mockEnv.adminIpAllowlist = "office";
+    mockGetToken.mockResolvedValue({ role: "admin" });
+
+    const res = await proxy(
+      request("/api/admin/users", { headers: { "x-forwarded-for": "10.1.2.3" } }),
+    );
+
+    expect(res.status).toBe(403);
+    expect(await res.json()).toMatchObject({ error: "Admin IP allowlist is misconfigured" });
+  });
+
+  it("blocks an admin request whose IP cannot be determined", async () => {
+    mockEnv.adminIpAllowlist = "10.0.0.0/8";
+
+    const res = await proxy(request("/admin", { cookies: { "maestria-locale": "ru" } }));
+
+    expect(res.status).toBe(403);
+  });
+
+  it("blocks a cookie-less admin request", async () => {
+    // Regression: the locale bootstrap returns early when the locale cookie is
+    // absent, so the allowlist has to run before it — otherwise a first request
+    // to /admin from an unlisted network escaped the filter entirely.
+    mockEnv.adminIpAllowlist = "10.0.0.0/8";
+
+    const res = await proxy(request("/admin", { headers: { "x-forwarded-for": "203.0.113.7" } }));
+
+    expect(res.status).toBe(403);
+    expect(res.headers.get("x-middleware-rewrite") ?? "").toContain("/forbidden");
+    expect(mockGetToken).not.toHaveBeenCalled();
+  });
+
+  it("leaves non-admin routes untouched", async () => {
+    mockEnv.adminIpAllowlist = "10.0.0.0/8";
+
+    const res = await proxy(request("/courses", { headers: { "x-forwarded-for": "203.0.113.7" } }));
+
+    expect(res.status).toBe(200);
+  });
+
+  it("warn mode reports the refusal without blocking the page", async () => {
+    mockEnv.adminIpAllowlist = "10.0.0.0/8";
+    mockEnv.adminIpAllowlistMode = "warn";
+    mockGetToken.mockResolvedValue({ role: "admin" });
+
+    const res = await proxy(
+      request("/admin", {
+        cookies: { "maestria-locale": "ru" },
+        headers: { "x-forwarded-for": "203.0.113.7" },
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("x-middleware-rewrite")).toBeNull();
+    expect(mockGetToken).toHaveBeenCalled();
+  });
+
+  it("warn mode reports the refusal for an admin API route without blocking it", async () => {
+    mockEnv.adminIpAllowlist = "10.0.0.0/8";
+    mockEnv.adminIpAllowlistMode = "warn";
+
+    const res = await proxy(
+      request("/api/admin/users", { headers: { "x-forwarded-for": "203.0.113.7" } }),
+    );
+
+    expect(res.status).toBe(200);
+  });
+
+  it("warn mode lets the request through so the filter can be rolled out safely", async () => {
+    // The point of warn mode: an admin on a proxy that does not forward the
+    // client address must be able to verify that before enforce locks them out.
+    mockEnv.adminIpAllowlist = "10.0.0.0/8";
+    mockEnv.adminIpAllowlistMode = "warn";
+    mockGetToken.mockResolvedValue({ role: "admin" });
+
+    const res = await proxy(
+      request("/admin", {
+        cookies: { "maestria-locale": "ru" },
+        headers: { "x-forwarded-for": "203.0.113.7" },
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(mockGetToken).toHaveBeenCalled();
+  });
+
+  it("does not restrict anything when the allowlist is unset", async () => {
+    mockGetToken.mockResolvedValue({ role: "admin" });
+
+    const res = await proxy(
+      request("/admin", {
+        cookies: { "maestria-locale": "ru" },
+        headers: { "x-forwarded-for": "203.0.113.7" },
+      }),
+    );
+
+    expect(res.status).toBe(200);
   });
 });
