@@ -109,6 +109,14 @@ export const Footer = memo(function Footer() {
                   {t("footer.certificates", locale)}
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/verify-certificate"
+                  className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
+                >
+                  {t("cert.verify", locale)}
+                </Link>
+              </li>
             </ul>
             </nav>
           </div>

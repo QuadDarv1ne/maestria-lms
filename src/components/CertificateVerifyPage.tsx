@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 import { t } from "@/lib/i18n";
@@ -8,7 +8,6 @@ import { useAppStore } from "@/lib/store";
 import { log } from "@/lib/logger";
 import { formatDate } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -38,17 +37,11 @@ export function CertificateVerifyPage({
 }: CertificateVerifyPageProps) {
   const router = useRouter();
   const locale = useAppStore((s) => s.locale);
-  const [number, setNumber] = useState(initialNumber ?? "");
+  const [number, setNumber] = useState(() => (initialNumber ?? "").toUpperCase());
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<"found" | "notfound" | null>(null);
   const [data, setData] = useState<CertificateData | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (initialNumber) {
-      setNumber(initialNumber.toUpperCase());
-    }
-  }, [initialNumber]);
 
   const verify = useCallback(async () => {
     const trimmed = number.trim().toUpperCase();
@@ -69,7 +62,7 @@ export function CertificateVerifyPage({
         if (res.status === 404) {
           setResult("notfound");
         } else {
-          setError("Server error");
+          setError(t("cert.verifyError", locale));
         }
         return;
       }
@@ -82,7 +75,7 @@ export function CertificateVerifyPage({
       }
     } catch (e: unknown) {
       log.error("Certificate verification failed", { error: e instanceof Error ? e.message : String(e) });
-      setError("Network error");
+      setError(t("cert.verifyError", locale));
     } finally {
       setLoading(false);
     }
@@ -175,12 +168,12 @@ export function CertificateVerifyPage({
             </div>
 
             <div className="space-y-3">
-              {/* user name */}
+              {/* holder */}
               <div className="flex items-start gap-3">
                 <ShieldCheck className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-sm text-muted-foreground">
-                    {t("cert.completedCourse", locale)}
+                    {t("cert.verifyGraduate", locale)}
                   </p>
                   <p className="font-semibold text-lg">{data.userName}</p>
                 </div>
@@ -191,16 +184,18 @@ export function CertificateVerifyPage({
                 <div className="w-5 h-5 shrink-0" />
                 <div>
                   <p className="text-sm text-muted-foreground">
-                    {t("cert.toCourse", locale)}
+                    {t("cert.verifyCourse", locale)}
                   </p>
                   <p className="font-semibold">{data.courseTitle}</p>
-                  <a
-                    href={`/course/${data.courseSlug}`}
-                    className="text-sm text-blue-600 hover:underline inline-flex items-center gap-1 mt-1"
-                  >
-                    {data.courseSlug}
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
+                  {data.courseSlug && (
+                    <a
+                      href={`/course/${data.courseSlug}`}
+                      className="text-sm text-blue-600 hover:underline inline-flex items-center gap-1 mt-1"
+                    >
+                      {t("cert.toCourse", locale)}
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
                 </div>
               </div>
 
@@ -209,12 +204,12 @@ export function CertificateVerifyPage({
                 <div className="w-5 h-5 shrink-0" />
                 <div>
                   <p className="text-sm text-muted-foreground">
-                    {t("cert.issueDate", locale)}
+                    {t("cert.verifyNumber", locale)}
                   </p>
                   <p className="font-mono text-sm">{data.number}</p>
-                  <Badge variant="outline" className="mt-1">
-                    {formatDate(data.issuedAt, locale)}
-                  </Badge>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {t("cert.issueDate", locale)} {formatDate(data.issuedAt, locale)}
+                  </p>
                 </div>
               </div>
             </div>

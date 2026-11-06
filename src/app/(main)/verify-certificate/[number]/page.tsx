@@ -13,5 +13,6 @@ export default function Page({
   params: Promise<{ number: string }>;
 }) {
   const { number } = use(params);
-  return <CertificateVerifyPage certificateNumber={number} />;
+  // key resets component state when the number in the URL changes
+  return <CertificateVerifyPage key={number} certificateNumber={number} />;
 }
