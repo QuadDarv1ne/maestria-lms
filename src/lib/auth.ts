@@ -267,4 +267,4 @@ export function adminErrorResponse() {
   );
 }
 
-export { hashPassword };
+export { hashPassword, verifyPassword };

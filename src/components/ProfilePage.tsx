@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { ProfileSkeleton } from "@/components/skeletons/ProfileSkeleton";
 import { PaymentHistory } from "@/components/PaymentHistory";
+import { DeleteAccountSection } from "@/components/DeleteAccountSection";
 import { AchievementsPage } from "@/components/AchievementsPage";
 import { StudentDashboard } from "@/components/StudentDashboard";
 
@@ -865,6 +866,7 @@ export function ProfilePage() {
 
         <TabsContent value="payments" className="mt-4">
           <PaymentHistory />
+          <DeleteAccountSection />
         </TabsContent>
 
         <TabsContent value="statistics" className="mt-4">

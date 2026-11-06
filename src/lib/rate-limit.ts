@@ -337,5 +337,7 @@ export const RATE_LIMITS = {
   // Browser telemetry beacon: one batch per page load, generous enough for
   // navigation-heavy sessions but still bounded.
   webVitals: { windowMs: 60_000, maxRequests: 60 },
+  // Irreversible action: slow enough to make password guessing useless.
+  accountDelete: { windowMs: 60_000, maxRequests: 5 },
   default: { windowMs: 60_000, maxRequests: 30 },
 } as const;
