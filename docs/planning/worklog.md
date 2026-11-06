@@ -2,6 +2,35 @@
 
 ---
 
+Task ID: 32
+Agent: Main Agent
+Task: Аудит-лог административных действий (вместо демо-данных в разделе «Логи»)
+
+Work Log:
+- INVENTORY: вкладка «Логи» в админке (`src/components/admin/AdminLogs.tsx`) рендерила `demoActivityLog` из `src/data/demo-data.ts` — то есть выдуманные записи. Реальный источник был только `server.log` (`GET /api/admin/logs`), а файл ротируется и не является доказательством: «кто выдал админа» по нему не восстановить
+- DESIGN (ключевое решение): актор в записи хранится **снимком** (`actorId`/`actorEmail`/`actorName`), а не связью с `User`. Внешний ключ либо заблокировал бы удаление аккаунта (GDPR ст. 17), либо каскадом унёс бы весь журнал; после анонимизации пользователя (`src/lib/account-erasure.ts`) запись осталась бы вообще без читаемого автора. Дублирование трёх полей решает оба случая
+- DESIGN (второе правило): запись в журнал **никогда не бросает исключение**. Отказ в возврате средств из-за переполненной таблицы логов хуже, чем потерянная запись, поэтому `recordAuditEvent()` логирует сбой через `log.warn` и возвращает управление
+- MODEL: `AuditLog` в `prisma/schema.prisma` — `actorId?`/`actorEmail?`/`actorName?`, `action`, `entityType?`/`entityId?`/`targetLabel?`, `metadata Json?`, `ip?`/`userAgent?`, `createdAt`; индексы `createdAt` (лента + retention), `actorId` (что делал конкретный админ), `action`, составной `(entityType, entityId)` (история одного объекта)
+- MIGRATION: `prisma/migrations/20261106000000_admin_audit_log/migration.sql` — без внешних ключей, `metadata JSONB`
+- LIB: `src/lib/audit-log.ts` — каталог `AUDIT_ACTIONS` (22 стабильных идентификатора вида `entity.verb`), `isAuditAction()` для закрытого набора фильтров, `sanitizeAuditMetadata()` (редактирование ключей вида `pass|secret|token|hash|apikey|authorization|cookie` на любой глубине, обрезка строк до 500 символов, массивов до 20 элементов, отказ от блоба > 4 КБ вместо обрезки посреди структуры), `recordAuditEvent()`, `auditActorFromSession()`, `listAuditLogs()` (фильтры + пагинация, поиск по актору/объекту/действию), `cleanupOldAuditLogs()` (retention 365 дней), `purgeAuditLogs()`
+- API: `GET /api/admin/audit-logs` — пагинация (по умолчанию 50, максимум 200), фильтры `action`/`actorId`/`entityType`/`entityId`/`search`/`from`/`to`, неизвестный `action` → `400` (опечатка в фильтре расследования должна быть видна, а не давать пустой список), `Cache-Control: no-store`, оппортунистическая чистка retention не чаще раза в час (у Amvera нет планировщика). `DELETE /api/admin/audit-logs` — требует `?confirm=true`, `?before=` ограничивает удаление; **непарсящаяся дата → `400`, а не «удалить всё»**; сам факт очистки пишется в журнал уже после удаления
+- INSTRUMENTATION (13 роутов): `users` (снимок «до» и diff `role`/`isActive`/`name` — повторный идентичный PUT не считается изменением), `courses` (POST/PUT/DELETE; публикация и снятие с публикации выделены отдельными действиями, при удалении сохраняется заголовок — строки уже нет), `categories` (POST/PUT/DELETE), `promo-codes` (POST/PATCH/DELETE + деактивация использованного кода), `payments/[id]/refund` (сумма, валюта, `providerRefundId`, признак ручного возврата), `settings` (только имена изменённых полей), `feature-flags`, `cache/clear`, `backup`, `courses/[id]/submissions/[submissionId]` (оценка)
+- UI: `AdminLogs.tsx` переписан на реальные данные — таблица (действие / объект / администратор+IP / детали / дата), фильтр по действию, поиск по Enter, пагинация, обновление, состояния загрузки/ошибки/пустоты. Метаданные рендерятся как `key: value`, объекты `{from,to}` схлопываются в `from → to`; схема на действие не выдумывается
+- HOOK: `src/hooks/useAuditLogs.ts` — react-query с `keepPreviousData`, иначе каждая смена фильтра мигает пустым состоянием
+- CONSTANTS: `AUDIT_ACTION_LABELS` / `AUDIT_ACTION_COLORS` / `auditActionIcon()` в `src/lib/constants.tsx` (по аналогии с `activityIcon`)
+- I18N: 48 ключей `adminAudit.*` в ru/en/zh. Файлы локалей хранятся с CRLF и без завершающего перевода строки — ключи вставлены текстом, а не пересборкой JSON (пересборка переписала бы все 2200 строк)
+- NB: `getClientIp()` в `src/lib/rate-limit.ts` экспортирован, чтобы аудит переиспользовал уже существующую модель доверия к `X-Forwarded-For`, а не заводил вторую
+- TEST: `audit-log.test.ts` (23) — уникальность и формат каталога, редактирование секретов на глубине, отбрасывание `undefined`, обрезка строк/массивов, отказ от огромного блоба, сериализация `Date`, точный набор полей записи, отсутствие актора/запроса, обрезка `user-agent` до 300, **проглатывание сбоя БД**, маппинг строк в ISO, все фильтры, поиск по четырём полям, `totalPages`, retention по умолчанию и кастомный, purge с границей и без; `audit-logs-route.test.ts` (13) — 401/403, отдача страницы, проброс всех фильтров, `400` на неизвестное действие, trim+cap поиска, игнор непарсящейся даты в GET, `500` через общий обработчик, `400` без `confirm`, `400` на битый `before` (защита от «удалить всё»), запись о самой очистке
+- Проверено: `npm run verify` — typecheck чистый, **1285 тестов в 92 файлах** зелёные (+36), check:i18n OK; `npx eslint` по всем изменённым файлам — 0 проблем; `npm run build` — «Compiled successfully», маршрут `/api/admin/audit-logs` присутствует
+- NEXT: Sentry (нулевой мониторинг ошибок в проде), CAPTCHA на регистрации, IP-allowlist для админки
+
+Stage Summary:
+- Журнал административных действий стал настоящим: 13 мутирующих роутов пишут записи, вкладка «Логи» показывает их вместо демо-данных
+- Записи переживают удаление и анонимизацию аккаунта (снимок актора, без внешнего ключа)
+- Очистка журнала требует явного подтверждения и сама попадает в журнал
+
+---
+
 Task ID: 31
 Agent: Main Agent
 Task: Удаление аккаунта по GDPR ст. 17 / 152-ФЗ (анонимизация вместо удаления строки)
