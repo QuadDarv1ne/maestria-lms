@@ -4,6 +4,7 @@ import { FEATURE_FLAGS } from "@/lib/feature-flags-config";
 import { getAllFeatureFlags, setServerFeatureFlag } from "@/lib/feature-flags";
 import { handleApiError } from "@/lib/api-errors";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { AUDIT_ACTIONS, auditActorFromSession, recordAuditEvent } from "@/lib/audit-log";
 import { z } from "zod";
 
 const checkAdminRateLimit = rateLimit("admin", RATE_LIMITS.admin);
@@ -63,6 +64,16 @@ export async function PATCH(request: NextRequest) {
 
     // Set server-side override in memory (per-process, no process.env mutation)
     setServerFeatureFlag(key as keyof typeof FEATURE_FLAGS, enabled);
+
+    await recordAuditEvent({
+      action: AUDIT_ACTIONS.featureFlagUpdate,
+      actor: auditActorFromSession(session),
+      entityType: "feature_flag",
+      entityId: key,
+      targetLabel: key,
+      metadata: { enabled },
+      request,
+    });
 
     return NextResponse.json({
       message: `Feature flag ${key} updated`,

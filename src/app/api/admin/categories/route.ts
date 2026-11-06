@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getAuthSession, requireAdmin, adminErrorResponse } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
+import { AUDIT_ACTIONS, auditActorFromSession, recordAuditEvent } from "@/lib/audit-log";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -93,11 +94,20 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    await recordAuditEvent({
+      action: AUDIT_ACTIONS.categoryCreate,
+      actor: auditActorFromSession(session),
+      entityType: "category",
+      entityId: category.id,
+      targetLabel: category.name,
+      metadata: { slug: category.slug },
+      request,
+    });
+
     return NextResponse.json(
       { message: "Категория создана", category },
       { status: 201 }
-    );
-  } catch (error: unknown) {
+    );  } catch (error: unknown) {
     return handleApiError(error, { route: "admin/categories POST" });
   }
 }
@@ -174,6 +184,16 @@ export async function PUT(request: NextRequest) {
       },
     });
 
+    await recordAuditEvent({
+      action: AUDIT_ACTIONS.categoryUpdate,
+      actor: auditActorFromSession(session),
+      entityType: "category",
+      entityId: category.id,
+      targetLabel: category.name,
+      metadata: { slug: category.slug },
+      request,
+    });
+
     return NextResponse.json(
       { message: "Категория обновлена", category },
       { status: 200 }
@@ -229,6 +249,16 @@ export async function DELETE(request: NextRequest) {
 
     await db.category.delete({
       where: { id: categoryId },
+    });
+
+    await recordAuditEvent({
+      action: AUDIT_ACTIONS.categoryDelete,
+      actor: auditActorFromSession(session),
+      entityType: "category",
+      entityId: categoryId,
+      targetLabel: existing.name,
+      metadata: { slug: existing.slug },
+      request,
     });
 
     return NextResponse.json(

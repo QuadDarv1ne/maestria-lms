@@ -4,6 +4,7 @@ import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { validateParams, uuidSchema, idOrSlugSchema } from "@/lib/request-validation";
+import { AUDIT_ACTIONS, auditActorFromSession, recordAuditEvent } from "@/lib/audit-log";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -254,6 +255,22 @@ export async function PUT(
         message: `Ваша работа "${submission.assignment.title}" получила оценку${score !== undefined ? ` ${score}/100` : ""}`,
         link: `/course/${courseId}`,
       },
+    });
+
+    await recordAuditEvent({
+      action: AUDIT_ACTIONS.submissionGrade,
+      actor: auditActorFromSession(session),
+      entityType: "submission",
+      entityId: submissionId,
+      targetLabel: submission.assignment.title,
+      metadata: {
+        courseId,
+        studentId: submission.userId,
+        score: score ?? null,
+        grade: grade ?? null,
+        status: status ?? null,
+      },
+      request,
     });
 
     return NextResponse.json(

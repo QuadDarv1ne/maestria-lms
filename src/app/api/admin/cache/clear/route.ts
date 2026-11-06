@@ -3,6 +3,7 @@ import { getAuthSession, requireAdmin, adminErrorResponse } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-errors";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { flushAll } from "@/lib/cache";
+import { AUDIT_ACTIONS, auditActorFromSession, recordAuditEvent } from "@/lib/audit-log";
 
 export const runtime = "nodejs";
 
@@ -16,6 +17,14 @@ export async function POST(request: NextRequest) {
     if (!requireAdmin(session)) return adminErrorResponse();
 
     await flushAll();
+
+    await recordAuditEvent({
+      action: AUDIT_ACTIONS.cacheClear,
+      actor: auditActorFromSession(session),
+      entityType: "cache",
+      targetLabel: "all",
+      request,
+    });
 
     return NextResponse.json({
       message: "Кэш очищен",

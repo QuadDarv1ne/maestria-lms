@@ -5,6 +5,7 @@ import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { parsePagination } from "@/lib/utils";
+import { AUDIT_ACTIONS, auditActorFromSession, recordAuditEvent } from "@/lib/audit-log";
 
 export const runtime = "nodejs";
 
@@ -129,6 +130,13 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    // Snapshot before the write: the audit entry records what actually changed,
+    // and a re-sent identical PUT should not read as a change.
+    const previousUser = await db.user.findUnique({
+      where: { id: userId },
+      select: { role: true, isActive: true, name: true, email: true },
+    });
+
     const updatedUser = await db.user.update({
       where: { id: userId },
       data: updateData,
@@ -140,6 +148,38 @@ export async function PUT(request: NextRequest) {
         isActive: true,
         image: true,
       },
+    });
+
+    // One entry per meaningful change, so "who made this user an admin" is
+    // answerable without diffing snapshots by hand.
+    const changes: Record<string, unknown> = {};
+    if (previousUser) {
+      if (updateData.role && updateData.role !== previousUser.role) {
+        changes.role = { from: previousUser.role, to: updateData.role };
+      }
+      if (updateData.isActive !== undefined && updateData.isActive !== previousUser.isActive) {
+        changes.isActive = { from: previousUser.isActive, to: updateData.isActive };
+      }
+      if (updateData.name !== undefined && updateData.name !== previousUser.name) {
+        changes.name = { from: previousUser.name, to: updateData.name };
+      }
+    }
+
+    const action =
+      changes.role !== undefined
+        ? AUDIT_ACTIONS.userRoleChange
+        : changes.isActive !== undefined
+          ? AUDIT_ACTIONS.userStatusChange
+          : AUDIT_ACTIONS.userUpdate;
+
+    await recordAuditEvent({
+      action,
+      actor: auditActorFromSession(session),
+      entityType: "user",
+      entityId: userId,
+      targetLabel: updatedUser.email,
+      metadata: { changes },
+      request,
     });
 
     return NextResponse.json(

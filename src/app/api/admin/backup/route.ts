@@ -4,6 +4,7 @@ import { addRateLimitHeaders, rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { log } from "@/lib/logger";
 import { execFileSync } from "child_process";
 import { env } from "@/lib/env";
+import { AUDIT_ACTIONS, auditActorFromSession, recordAuditEvent } from "@/lib/audit-log";
 import path from "path";
 
 const checkRateLimit = rateLimit("admin", RATE_LIMITS.admin);
@@ -55,6 +56,14 @@ export async function POST(request: NextRequest) {
       compress,
       retain,
       durationMs: duration,
+    });
+
+    await recordAuditEvent({
+      action: AUDIT_ACTIONS.backupCreate,
+      actor: auditActorFromSession(session),
+      entityType: "backup",
+      metadata: { compress, retain, durationMs: duration },
+      request,
     });
 
     return NextResponse.json(

@@ -5,6 +5,7 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { z } from "zod";
 import { getRedisClient } from "@/lib/redis";
 import { log } from "@/lib/logger";
+import { AUDIT_ACTIONS, auditActorFromSession, recordAuditEvent } from "@/lib/audit-log";
 
 export const runtime = "nodejs";
 
@@ -94,6 +95,15 @@ export async function PATCH(request: NextRequest) {
         { status: 503 }
       );
     }
+
+    await recordAuditEvent({
+      action: AUDIT_ACTIONS.settingsUpdate,
+      actor: auditActorFromSession(session),
+      entityType: "settings",
+      targetLabel: "platform",
+      metadata: { changed: Object.keys(validation.data) },
+      request,
+    });
 
     return NextResponse.json(updated);
   } catch (error: unknown) {

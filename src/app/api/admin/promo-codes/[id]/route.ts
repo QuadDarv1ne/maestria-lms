@@ -4,6 +4,7 @@ import { getAuthSession, requireAdmin, adminErrorResponse, authErrorResponse } f
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { validateParams, uuidSchema } from "@/lib/request-validation";
+import { AUDIT_ACTIONS, auditActorFromSession, recordAuditEvent } from "@/lib/audit-log";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -121,6 +122,18 @@ export async function PATCH(
       data: updateData,
     });
 
+    await recordAuditEvent({
+      action: AUDIT_ACTIONS.promoCodeUpdate,
+      actor: auditActorFromSession(session),
+      entityType: "promo_code",
+      entityId: promoCode.id,
+      targetLabel: promoCode.code,
+      // Keys only: the values of an edit are already in the row, and the trail
+      // stays useful without becoming a second copy of the promo table.
+      metadata: { fields: Object.keys(updateData) },
+      request,
+    });
+
     return NextResponse.json({ promoCode });
   } catch (error: unknown) {
     return handleApiError(error, { route: "admin/promo-codes/[id] PATCH" });
@@ -151,7 +164,7 @@ export async function DELETE(
     // Check if promo code has been used
     const promoCode = await db.promoCode.findUnique({
       where: { id },
-      select: { usedCount: true },
+      select: { usedCount: true, code: true },
     });
 
     if (!promoCode) {
@@ -164,10 +177,29 @@ export async function DELETE(
         where: { id },
         data: { isActive: false },
       });
+      await recordAuditEvent({
+        action: AUDIT_ACTIONS.promoCodeDeactivate,
+        actor: auditActorFromSession(session),
+        entityType: "promo_code",
+        entityId: id,
+        targetLabel: promoCode.code,
+        metadata: { reason: "already_used", usedCount: promoCode.usedCount },
+        request,
+      });
       return NextResponse.json({ message: "Promo code deactivated (already used)" });
     }
 
     await db.promoCode.delete({ where: { id } });
+
+    await recordAuditEvent({
+      action: AUDIT_ACTIONS.promoCodeDelete,
+      actor: auditActorFromSession(session),
+      entityType: "promo_code",
+      entityId: id,
+      targetLabel: promoCode.code,
+      request,
+    });
+
     return NextResponse.json({ message: "Promo code deleted" });
   } catch (error: unknown) {
     return handleApiError(error, { route: "admin/promo-codes/[id] DELETE" });

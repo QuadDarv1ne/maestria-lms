@@ -8,6 +8,7 @@ import { createCourseSchema, type ModuleInput, validatePrices } from "@/lib/cour
 import { sanitizeContent } from "@/lib/sanitize";
 import { cacheInvalidateByTag } from "@/lib/cache";
 import { log } from "@/lib/logger";
+import { AUDIT_ACTIONS, auditActorFromSession, recordAuditEvent } from "@/lib/audit-log";
 
 export const runtime = "nodejs";
 
@@ -259,6 +260,16 @@ export async function POST(request: NextRequest) {
     // Invalidate course list caches when a new course is created
     cacheInvalidateByTag("courses").catch((err: unknown) => log.warn("Cache invalidation failed (courses)", { error: err }));
     cacheInvalidateByTag("catalog").catch((err: unknown) => log.warn("Cache invalidation failed (catalog)", { error: err }));
+
+    await recordAuditEvent({
+      action: isPublished ? AUDIT_ACTIONS.coursePublish : AUDIT_ACTIONS.courseCreate,
+      actor: auditActorFromSession(session),
+      entityType: "course",
+      entityId: course.id,
+      targetLabel: course.title,
+      metadata: { slug: course.slug, price: parsedPrice, isPublished },
+      request,
+    });
 
     return NextResponse.json(
       { message: isPublished ? "Курс опубликован" : "Курс сохранён как черновик", course },
@@ -665,6 +676,27 @@ export async function PUT(request: NextRequest) {
     });
 
     updateSucceeded = true;
+
+    // Publishing is the operation worth calling out by name: a silent
+    // "course.update" would hide the moment a draft became visible.
+    const publishChanged = existingCourse.isPublished !== isPublished;
+    await recordAuditEvent({
+      action: publishChanged
+        ? (isPublished ? AUDIT_ACTIONS.coursePublish : AUDIT_ACTIONS.courseUnpublish)
+        : AUDIT_ACTIONS.courseUpdate,
+      actor: auditActorFromSession(session),
+      entityType: "course",
+      entityId: courseId,
+      targetLabel: updatedCourse?.title ?? title,
+      metadata: {
+        slug,
+        ...(oldSlug !== slug ? { previousSlug: oldSlug } : {}),
+        price: parsedPrice,
+        ...(publishChanged ? { publishedFrom: existingCourse.isPublished, publishedTo: isPublished } : {}),
+      },
+      request,
+    });
+
     return NextResponse.json(
       { message: isPublished ? "Курс обновлён и опубликован" : "Курс обновлён", course: updatedCourse },
       { status: 200 }
@@ -740,6 +772,18 @@ export async function DELETE(request: NextRequest) {
     }
     cacheInvalidateByTag("courses").catch((err: unknown) => log.warn("Cache invalidation failed (courses)", { error: err }));
     cacheInvalidateByTag("catalog").catch((err: unknown) => log.warn("Cache invalidation failed (catalog)", { error: err }));
+
+    // Recorded after the delete succeeded, and with the title captured before
+    // it: the row is gone, so this label is the only remaining human anchor.
+    await recordAuditEvent({
+      action: AUDIT_ACTIONS.courseDelete,
+      actor: auditActorFromSession(session),
+      entityType: "course",
+      entityId: courseId,
+      targetLabel: existingCourse.title,
+      metadata: { slug: existingCourse.slug, wasPublished: existingCourse.isPublished },
+      request,
+    });
 
     return NextResponse.json(
       { message: "Курс удалён" },

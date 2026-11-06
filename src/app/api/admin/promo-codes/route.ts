@@ -5,6 +5,7 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { parsePagination } from "@/lib/utils";
 import { generatePromoCode } from "@/lib/promo-code";
+import { AUDIT_ACTIONS, auditActorFromSession, recordAuditEvent } from "@/lib/audit-log";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -134,6 +135,21 @@ export async function POST(request: NextRequest) {
         isActive: data.isActive,
         courseId: data.courseId || null,
       },
+    });
+
+    await recordAuditEvent({
+      action: AUDIT_ACTIONS.promoCodeCreate,
+      actor: auditActorFromSession(session),
+      entityType: "promo_code",
+      entityId: promoCode.id,
+      targetLabel: promoCode.code,
+      metadata: {
+        discountType: promoCode.discountType,
+        discountValue: promoCode.discountValue,
+        maxUses: promoCode.maxUses,
+        courseId: promoCode.courseId,
+      },
+      request,
     });
 
     return NextResponse.json({ promoCode }, { status: 201 });

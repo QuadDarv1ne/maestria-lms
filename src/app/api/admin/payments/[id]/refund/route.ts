@@ -6,6 +6,7 @@ import { handleApiError } from "@/lib/api-errors";
 import { createNotification } from "@/lib/notifications";
 import { log } from "@/lib/logger";
 import { validateParams, uuidSchema } from "@/lib/request-validation";
+import { AUDIT_ACTIONS, auditActorFromSession, recordAuditEvent } from "@/lib/audit-log";
 import { createRefund, isYooKassaConfigured, formatYooKassaAmount } from "@/lib/yookassa";
 import { z } from "zod";
 
@@ -176,6 +177,25 @@ export async function POST(
       paymentId: payment.id,
       adminId: session.user.id,
       providerRefundId,
+    });
+
+    // Money leaving the platform is the single most important audit entry:
+    // amount, currency and provider reference are copied, not referenced.
+    await recordAuditEvent({
+      action: AUDIT_ACTIONS.paymentRefund,
+      actor: auditActorFromSession(session),
+      entityType: "payment",
+      entityId: payment.id,
+      targetLabel: payment.course.title,
+      metadata: {
+        amount: refundAmount,
+        currency: payment.currency,
+        userId: payment.userId,
+        providerRefundId,
+        providerRefundStatus: providerStatus,
+        manual: !providerRefundId,
+      },
+      request,
     });
 
     return NextResponse.json(

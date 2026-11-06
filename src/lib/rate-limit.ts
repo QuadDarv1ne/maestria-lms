@@ -23,7 +23,8 @@ const defaultConfig: RateLimitConfig = {
 // NOTE: X-Forwarded-For is only trusted behind a reverse proxy that strips/overwrites it
 // (Amvera, Cloudflare, nginx). For unauthenticated routes, prefer userId-based rate limiting
 // when possible to avoid IP spoofing bypass.
-function getClientIp(request: Request): string {
+// Exported so the audit trail reuses this one trust model instead of inventing a second.
+export function getClientIp(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) {
     const firstIp = forwarded.split(",")[0].trim();

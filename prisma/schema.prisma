@@ -529,3 +529,32 @@ model WebhookEvent {
   @@index([type])
   @@index([createdAt])
 }
+
+// ============ ADMIN AUDIT LOG ============
+
+// The actor is stored as a snapshot (id + email + name) rather than a relation:
+// the trail must survive account deletion (GDPR art.17 anonymises the User row)
+// and must not block it with a foreign key. `actorEmail` is also what makes an
+// entry readable once the account is gone.
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?
+  actorEmail String?
+  actorName  String?
+  // Dotted, stable identifier тАФ see AUDIT_ACTIONS in src/lib/audit-log.ts.
+  action     String
+  entityType String?
+  entityId   String?
+  // Human-readable name of the affected object (course title, user email,
+  // promo code). Not translated: it is data, not UI copy.
+  targetLabel String?
+  metadata   Json?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([actorId])
+  @@index([action])
+  @@index([entityType, entityId])
+}
