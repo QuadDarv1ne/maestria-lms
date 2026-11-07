@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { resolveCourseImageUrl, getLocalFallbackImage } from "@/lib/courseImage";
+import { resolveCourseImageUrl, getLocalFallbackImage, isVectorImage } from "@/lib/courseImage";
 
 interface CourseImageProps {
   src: string | null | undefined;
@@ -35,6 +35,7 @@ export function CourseImage({
       className={className}
       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
       loading={loading}
+      unoptimized={isVectorImage(finalSrc)}
       onError={() => setFailed(true)}
     />
   );

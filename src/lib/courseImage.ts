@@ -36,3 +36,16 @@ export function resolveCourseImageUrl(url: string | null | undefined): string | 
 export function getLocalFallbackImage(): string {
   return "/courses/placeholder.svg";
 }
+
+/**
+ * True for vector assets, which must bypass the Next.js image optimizer.
+ *
+ * The optimizer refuses to serve SVG unless `dangerouslyAllowSVG` is enabled
+ * globally, and the local fallback is an SVG — so routing it through
+ * `/_next/image` returns 400 and the user sees an empty box instead of the
+ * placeholder. `Logo.tsx` already opts out for the same reason.
+ */
+export function isVectorImage(src: string | null | undefined): boolean {
+  if (!src) return false;
+  return /\.svg(?:$|[?#])/i.test(src.trim());
+}
