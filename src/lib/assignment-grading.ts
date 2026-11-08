@@ -59,17 +59,19 @@ function gradeMatching(answer: unknown, correctAnswer: string | null): GradingRe
   const correctParsed = JSON.parse(correctAnswer);
 
   if (Array.isArray(userAnswer) && Array.isArray(correctParsed) && correctParsed.length > 0) {
-    const isCorrect = userAnswer.every(
-      (pair: { left: string; right: string }, idx: number) =>
-        pair.left === correctParsed[idx]?.left && pair.right === correctParsed[idx]?.right,
-    );
+    // An empty answer must not score 100: `[].every(...)` is true, so without
+    // this guard a POST with `{"answer": []}` used to grade as fully correct.
+    if (userAnswer.length === 0) return { status: "graded", score: 0 };
+
+    const isPairCorrect = (pair: { left: string; right: string }, idx: number) =>
+      pair?.left === correctParsed[idx]?.left && pair?.right === correctParsed[idx]?.right;
+
+    const isCorrect =
+      userAnswer.length === correctParsed.length && userAnswer.every(isPairCorrect);
     if (isCorrect) {
       return { status: "graded", score: 100 };
     }
-    const correctCount = userAnswer.filter(
-      (pair: { left: string; right: string }, idx: number) =>
-        pair.left === correctParsed[idx]?.left && pair.right === correctParsed[idx]?.right,
-    ).length;
+    const correctCount = userAnswer.filter(isPairCorrect).length;
     return { status: "graded", score: clampScore((correctCount / correctParsed.length) * 100) };
   }
 
@@ -83,7 +85,12 @@ function gradeOrdering(answer: unknown, correctAnswer: string | null): GradingRe
   const correctParsed = JSON.parse(correctAnswer);
 
   if (Array.isArray(userAnswer) && Array.isArray(correctParsed) && correctParsed.length > 0) {
-    const isCorrect = userAnswer.every((item: string, idx: number) => item === correctParsed[idx]);
+    // Same empty-array guard as matching: `[].every(...)` would return 100.
+    if (userAnswer.length === 0) return { status: "graded", score: 0 };
+
+    const isCorrect =
+      userAnswer.length === correctParsed.length &&
+      userAnswer.every((item: string, idx: number) => item === correctParsed[idx]);
     if (isCorrect) {
       return { status: "graded", score: 100 };
     }

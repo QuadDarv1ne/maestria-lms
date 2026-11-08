@@ -130,5 +130,30 @@ describe("gradeAssignment", () => {
       expect(gradeAssignment("quiz", 1, "{not json")).toEqual({ status: "submitted", score: null });
       expect(gradeAssignment("drag_drop", { a: "b" }, "not json")).toEqual({ status: "submitted", score: null });
     });
+
+    // `[].every(...)` is true, so an empty array used to grade as fully correct
+    // and a POST with `{"answer": []}` scored 100 without any work.
+    it("scores an empty matching answer as 0, not 100", () => {
+      const correct = JSON.stringify([{ left: "a", right: "1" }, { left: "b", right: "2" }]);
+      expect(gradeAssignment("matching", [], correct)).toEqual({ status: "graded", score: 0 });
+    });
+
+    it("scores an empty ordering answer as 0, not 100", () => {
+      const correct = JSON.stringify(["first", "second", "third"]);
+      expect(gradeAssignment("ordering", [], correct)).toEqual({ status: "graded", score: 0 });
+    });
+
+    // A short answer that happens to match as a prefix must not read as complete.
+    it("does not award full marks to a prefix of the correct sequence", () => {
+      const correct = JSON.stringify(["first", "second", "third"]);
+      expect(gradeAssignment("ordering", ["first"], correct))
+        .toEqual({ status: "graded", score: 33 });
+    });
+
+    it("does not award full marks to a prefix of the correct pairs", () => {
+      const correct = JSON.stringify([{ left: "a", right: "1" }, { left: "b", right: "2" }]);
+      expect(gradeAssignment("matching", [{ left: "a", right: "1" }], correct))
+        .toEqual({ status: "graded", score: 50 });
+    });
   });
 });
