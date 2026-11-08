@@ -25,6 +25,11 @@ model User {
   pendingTwoFactorSecret String?
   emailVerified     DateTime?
   isActive      Boolean   @default(true)
+  // Bumped on every credential change (password reset/change, 2FA on/off).
+  // A JWT carries the value it was issued with, and the jwt callback rejects
+  // any token whose version is behind — that is what kills sessions that were
+  // stolen before the password was rotated.
+  sessionVersion Int      @default(0)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

@@ -10,7 +10,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 import { createHash } from "node:crypto";
 
-const { mockDb, mockTx, mockHandleApiError } = vi.hoisted(() => ({
+const { mockDb, mockTx, mockHandleApiError, mockInvalidateJwtUserCache } = vi.hoisted(() => ({
   mockDb: {
     user: { findUnique: vi.fn(), update: vi.fn() },
     verificationToken: { findUnique: vi.fn(), delete: vi.fn(), deleteMany: vi.fn(), create: vi.fn() },
@@ -18,13 +18,18 @@ const { mockDb, mockTx, mockHandleApiError } = vi.hoisted(() => ({
   },
   mockTx: {
     user: { update: vi.fn() },
+    session: { deleteMany: vi.fn() },
     verificationToken: { deleteMany: vi.fn() },
   },
   mockHandleApiError: vi.fn(),
+  mockInvalidateJwtUserCache: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({ db: mockDb }));
 vi.mock("@/lib/auth", () => ({ hashPassword: vi.fn().mockResolvedValue("new-hash") }));
+vi.mock("@/lib/jwt-user-cache", () => ({
+  invalidateJwtUserCache: (...args: unknown[]) => mockInvalidateJwtUserCache(...args),
+}));
 vi.mock("@/lib/env", () => ({ env: { siteUrl: "http://localhost:3000", isProduction: false } }));
 vi.mock("@/lib/rate-limit", () => ({
   rateLimit: () => () => null,
@@ -65,14 +70,15 @@ beforeEach(() => {
     expires: new Date(Date.now() + 3_600_000),
   });
   mockDb.verificationToken.delete.mockResolvedValue({});
-  mockTx.user.update.mockResolvedValue({});
+  mockTx.user.update.mockResolvedValue({ id: "user-1" });
+  mockTx.session.deleteMany.mockResolvedValue({ count: 2 });
   mockTx.verificationToken.deleteMany.mockResolvedValue({ count: 1 });
   mockDb.$transaction.mockImplementation(async (fn: (tx: unknown) => unknown) => fn(mockTx));
   mockHandleApiError.mockReturnValue(new Response(JSON.stringify({ error: "internal" }), { status: 500 }));
 });
 
 describe("PUT /api/auth/forgot-password", () => {
-  it("rotates the password and clears outstanding reset tokens atomically", async () => {
+  it("rotates the password, revokes sessions and clears reset tokens atomically", async () => {
     const res = await PUT(putRequest({ token: TOKEN, password: PASSWORD }));
     expect(res.status).toBe(200);
 
@@ -81,13 +87,23 @@ describe("PUT /api/auth/forgot-password", () => {
     expect(typeof mockDb.$transaction.mock.calls[0][0]).toBe("function");
     expect(mockTx.user.update).toHaveBeenCalledWith({
       where: { email: EMAIL },
-      data: { passwordHash: "new-hash" },
+      data: { passwordHash: "new-hash", sessionVersion: { increment: 1 } },
+      select: { id: true },
     });
+    // Tokens issued before the reset must die with the password they were
+    // minted under; the version bump alone only covers JWTs.
+    expect(mockTx.session.deleteMany).toHaveBeenCalledWith({ where: { userId: "user-1" } });
     expect(mockTx.verificationToken.deleteMany).toHaveBeenCalledWith({
       where: { identifier: `reset-password:${EMAIL}` },
     });
     // user.update must not be issued outside the transaction
     expect(mockDb.user.update).not.toHaveBeenCalled();
+  });
+
+  it("drops the cached role/status for the user so the new version takes effect", async () => {
+    await PUT(putRequest({ token: TOKEN, password: PASSWORD }));
+
+    expect(mockInvalidateJwtUserCache).toHaveBeenCalledWith("user-1");
   });
 
   it("rejects an unknown token", async () => {

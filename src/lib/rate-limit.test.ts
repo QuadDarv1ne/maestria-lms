@@ -76,6 +76,8 @@ describe("rateLimit", () => {
   });
 
   it("should share rate-limit bucket across different spoofed private IPs", () => {
+    // Requests without any browser headers share the bare `ip:anonymous`
+    // bucket — there is nothing to fingerprint them by.
     const limiter = rateLimit("test-spoof-shared", { windowMs: 60_000, maxRequests: 2 });
 
     // Different private IPs should share the same bucket
@@ -114,6 +116,54 @@ describe("rateLimit", () => {
     expect(limiter(request, "user-2")).toBeNull();
     expect(limiter(request, "user-2")).toBeNull();
     expect(limiter(request, "user-2")).not.toBeNull(); // user-2 exceeded
+  });
+
+  it("should isolate the anonymous bucket per client fingerprint", () => {
+    // No usable client address: every request falls back to the anonymous
+    // bucket. Without fingerprinting, one client would exhaust the quota for
+    // all of them.
+    const limiter = rateLimit("test-anon-fingerprint", { windowMs: 60_000, maxRequests: 2 });
+
+    const clientA = () =>
+      new Request("http://localhost/api/test", {
+        headers: { "user-agent": "Mozilla/5.0 (A)", "accept-language": "ru" },
+      });
+    const clientB = () =>
+      new Request("http://localhost/api/test", {
+        headers: { "user-agent": "Mozilla/5.0 (B)", "accept-language": "en" },
+      });
+
+    // Client A exhausts its own bucket…
+    expect(limiter(clientA())).toBeNull();
+    expect(limiter(clientA())).toBeNull();
+    expect(limiter(clientA())).not.toBeNull();
+
+    // …and client B is unaffected.
+    expect(limiter(clientB())).toBeNull();
+  });
+
+  it("should share one bucket when the fingerprint is identical", () => {
+    const limiter = rateLimit("test-anon-shared", { windowMs: 60_000, maxRequests: 1 });
+    const sameClient = () =>
+      new Request("http://localhost/api/test", {
+        headers: { "user-agent": "Mozilla/5.0 (A)", "accept-language": "ru" },
+      });
+
+    expect(limiter(sameClient())).toBeNull();
+    expect(limiter(sameClient())).not.toBeNull();
+  });
+
+  it("should treat private IPv4-mapped addresses as anonymous", () => {
+    const limiter = rateLimit("test-mapped-private", { windowMs: 60_000, maxRequests: 1 });
+    const request = () =>
+      new Request("http://localhost/api/test", {
+        headers: { "x-forwarded-for": "::ffff:192.168.1.5", "user-agent": "Mozilla/5.0" },
+      });
+
+    // A dual-stack socket reports IPv4 clients this way; it must not become its
+    // own bucket, or every private address would get a fresh quota.
+    expect(limiter(request())).toBeNull();
+    expect(limiter(request())).not.toBeNull();
   });
 
   it("should isolate rate limits between different routeIds", () => {

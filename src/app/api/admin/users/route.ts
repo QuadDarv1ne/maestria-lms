@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, Prisma, getDatabaseProvider } from "@/lib/db";
 import { getAuthSession, requireAdmin, adminErrorResponse } from "@/lib/auth";
+import { invalidateJwtUserCache } from "@/lib/jwt-user-cache";
 import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
@@ -137,6 +138,34 @@ export async function PUT(request: NextRequest) {
       select: { role: true, isActive: true, name: true, email: true },
     });
 
+    if (!previousUser) {
+      return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
+    }
+
+    // A demoted or deactivated admin stops being able to manage the platform.
+    // When they are the last active one, that leaves nobody in control — the
+    // same invariant account erasure already enforces (see account-erasure.ts).
+    // Self-demotion is rejected earlier, so this only catches the last *other*
+    // admin being removed.
+    const losesAdminRights =
+      (previousUser.role === "admin" && updateData.role !== undefined && updateData.role !== "admin") ||
+      (previousUser.role === "admin" && updateData.isActive === false);
+
+    if (losesAdminRights) {
+      const otherActiveAdmins = await db.user.count({
+        where: { role: "admin", isActive: true, id: { not: userId } },
+      });
+      if (otherActiveAdmins === 0) {
+        return NextResponse.json(
+          {
+            error:
+              "Нельзя понизить или заблокировать последнего администратора — платформа останется без управления.",
+          },
+          { status: 409 },
+        );
+      }
+    }
+
     const updatedUser = await db.user.update({
       where: { id: userId },
       data: updateData,
@@ -153,16 +182,14 @@ export async function PUT(request: NextRequest) {
     // One entry per meaningful change, so "who made this user an admin" is
     // answerable without diffing snapshots by hand.
     const changes: Record<string, unknown> = {};
-    if (previousUser) {
-      if (updateData.role && updateData.role !== previousUser.role) {
-        changes.role = { from: previousUser.role, to: updateData.role };
-      }
-      if (updateData.isActive !== undefined && updateData.isActive !== previousUser.isActive) {
-        changes.isActive = { from: previousUser.isActive, to: updateData.isActive };
-      }
-      if (updateData.name !== undefined && updateData.name !== previousUser.name) {
-        changes.name = { from: previousUser.name, to: updateData.name };
-      }
+    if (updateData.role && updateData.role !== previousUser.role) {
+      changes.role = { from: previousUser.role, to: updateData.role };
+    }
+    if (updateData.isActive !== undefined && updateData.isActive !== previousUser.isActive) {
+      changes.isActive = { from: previousUser.isActive, to: updateData.isActive };
+    }
+    if (updateData.name !== undefined && updateData.name !== previousUser.name) {
+      changes.name = { from: previousUser.name, to: updateData.name };
     }
 
     const action =
@@ -171,6 +198,13 @@ export async function PUT(request: NextRequest) {
         : changes.isActive !== undefined
           ? AUDIT_ACTIONS.userStatusChange
           : AUDIT_ACTIONS.userUpdate;
+
+    // The role/status cache otherwise keeps the old answer for up to 5 minutes,
+    // so a demotion or a block would not take effect until then. Dropping the
+    // entry makes the very next request read the new row.
+    if (changes.role !== undefined || changes.isActive !== undefined) {
+      invalidateJwtUserCache(userId);
+    }
 
     await recordAuditEvent({
       action,

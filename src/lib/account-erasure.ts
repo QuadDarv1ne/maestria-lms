@@ -23,6 +23,7 @@
 
 import { db } from "@/lib/db";
 import { log } from "@/lib/logger";
+import { invalidateJwtUserCache } from "@/lib/jwt-user-cache";
 
 export interface EraseAccountResult {
   erased: boolean;
@@ -107,6 +108,12 @@ export async function eraseAccount(userId: string): Promise<EraseAccountResult> 
     });
 
     log.info("Account erased (anonymized)", { userId, previousRole: user.role });
+
+    // The JWT callback caches isActive for up to five minutes; without this the
+    // erased account would keep working for that long. Dropping the entry makes
+    // the very next request see the deactivated row.
+    invalidateJwtUserCache(userId);
+
     return { erased: true };
   } catch (error: unknown) {
     log.error("Failed to erase account", {

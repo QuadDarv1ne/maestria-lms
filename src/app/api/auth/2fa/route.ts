@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
+import { invalidateJwtUserCache } from "@/lib/jwt-user-cache";
 import { z } from "zod";
 import { authenticator } from "otplib";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
@@ -143,17 +144,29 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Неверный код подтверждения" }, { status: 400 });
     }
 
-    // Activate 2FA with server-side secret
+    // Activate 2FA with server-side secret.
+    // The version bump retires tokens minted while the account had only one
+    // factor: if one of those was stolen, it must not outlive the hardening.
     await db.user.update({
       where: { id: userId },
       data: {
         twoFactorSecret: storedSecret,
         twoFactorEnabled: true,
         pendingTwoFactorSecret: null,
+        sessionVersion: { increment: 1 },
       },
     });
+    invalidateJwtUserCache(userId);
 
-    return NextResponse.json({ message: "Двухфакторная аутентификация успешно включена" }, { status: 200 });
+    return NextResponse.json(
+      {
+        message: "Двухфакторная аутентификация успешно включена",
+        // Every other session (and this token) is now stale — the client has to
+        // sign in again to obtain a token that carries the new version.
+        reauthenticationRequired: true,
+      },
+      { status: 200 },
+    );
   } catch (error: unknown) {
     return handleApiError(error, { route: "auth/2fa PUT" });
   }
@@ -201,12 +214,25 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Неверный код подтверждения" }, { status: 400 });
     }
 
+    // Disabling is a security downgrade: sessions opened under the stronger
+    // policy must not survive it, so the version is bumped here too.
     await db.user.update({
       where: { id: userId },
-      data: { twoFactorEnabled: false, twoFactorSecret: null },
+      data: {
+        twoFactorEnabled: false,
+        twoFactorSecret: null,
+        sessionVersion: { increment: 1 },
+      },
     });
+    invalidateJwtUserCache(userId);
 
-    return NextResponse.json({ message: "Двухфакторная аутентификация отключена" }, { status: 200 });
+    return NextResponse.json(
+      {
+        message: "Двухфакторная аутентификация отключена",
+        reauthenticationRequired: true,
+      },
+      { status: 200 },
+    );
   } catch (error: unknown) {
     return handleApiError(error, { route: "auth/2fa DELETE" });
   }

@@ -9,15 +9,22 @@ import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { log } from "@/lib/logger";
 import { NextResponse } from "next/server";
+import {
+  getJwtUserCache,
+  invalidateJwtUserCache,
+  setJwtUserCache,
+} from "@/lib/jwt-user-cache";
 
 interface ExtendedUser {
   id: string;
   role: string;
+  sessionVersion: number;
 }
 
 interface ExtendedJWT extends JWT {
   role?: string;
   id?: string;
+  sessionVersion?: number;
 }
 
 export interface ExtendedSession extends Session {
@@ -47,40 +54,11 @@ const TIMING_EQUALIZER_HASH =
 // Short-lived cache for JWT callback DB lookups — avoids a query per request
 // while still catching role/deactivation changes within 5 minutes.
 // Note: this means a user demoted from admin to student will retain admin
-// access for up to 5 minutes. If stricter real-time enforcement is needed,
-// reduce JWT_CACHE_TTL or disable the cache entirely.
-const jwtUserCache = new Map<string, { role: string; isActive: boolean; expiresAt: number }>();
-const JWT_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-const JWT_CACHE_MAX = 500;
-
-// Periodic cleanup of expired cache entries to prevent memory leaks
-let jwtCacheCleanupInterval: ReturnType<typeof setInterval> | null = null;
-
-function startJwtCacheCleanup() {
-  if (jwtCacheCleanupInterval) return;
-  jwtCacheCleanupInterval = setInterval(() => {
-    const now = Date.now();
-    for (const [key, entry] of jwtUserCache.entries()) {
-      if (entry.expiresAt <= now) {
-        jwtUserCache.delete(key);
-      }
-    }
-  }, 60_000); // Clean up every minute
-  if (jwtCacheCleanupInterval && typeof jwtCacheCleanupInterval === "object" && "unref" in jwtCacheCleanupInterval) {
-    (jwtCacheCleanupInterval as NodeJS.Timeout).unref();
-  }
-}
-
-startJwtCacheCleanup();
-
-function jwtCacheSet(id: string, data: { role: string; isActive: boolean }) {
-  if (jwtUserCache.size >= JWT_CACHE_MAX) {
-    // Evict oldest entry
-    const firstKey = jwtUserCache.keys().next().value;
-    if (firstKey) jwtUserCache.delete(firstKey);
-  }
-  jwtUserCache.set(id, { ...data, expiresAt: Date.now() + JWT_CACHE_TTL });
-}
+// access for up to 5 minutes unless the entry is invalidated explicitly. Every
+// path that changes a cached field (password reset/change, 2FA toggle, admin
+// demotion, account erasure) calls `invalidateJwtUserCache`, so a stolen token
+// dies immediately rather than within the TTL.
+// The cache lives in its own module so those paths do not import NextAuth.
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -134,6 +112,7 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           role: user.role,
           image: user.image,
+          sessionVersion: user.sessionVersion,
         };
       },
     }),
@@ -148,32 +127,38 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         extendedToken.role = (user as ExtendedUser).role;
         extendedToken.id = user.id;
+        extendedToken.sessionVersion = (user as ExtendedUser).sessionVersion;
       }
       // Refresh role from DB to catch demotions/deactivations (cached 5 min)
       if (extendedToken.id) {
-        const now = Date.now();
-        const cached = jwtUserCache.get(extendedToken.id);
-        let dbUser: { role: string; isActive: boolean } | null = null;
+        let dbUser = getJwtUserCache(extendedToken.id);
 
-        if (cached && cached.expiresAt > now) {
-          dbUser = cached;
-        } else {
+        if (!dbUser) {
           const fresh = await db.user.findUnique({
             where: { id: extendedToken.id },
-            select: { role: true, isActive: true },
+            select: { role: true, isActive: true, sessionVersion: true },
           });
           if (fresh) {
             dbUser = fresh;
-            jwtCacheSet(extendedToken.id, fresh);
+            setJwtUserCache(extendedToken.id, fresh);
           } else {
-            jwtUserCache.delete(extendedToken.id);
+            invalidateJwtUserCache(extendedToken.id);
           }
         }
 
         if (!dbUser || !dbUser.isActive) {
-          jwtUserCache.delete(extendedToken.id);
+          invalidateJwtUserCache(extendedToken.id);
           return {} as ExtendedJWT;
         }
+
+        // A password reset or a 2FA change bumps the version, which retires
+        // every token issued before it. Tokens minted before this field existed
+        // have no version and are treated as stale for the same reason.
+        if (extendedToken.sessionVersion !== dbUser.sessionVersion) {
+          invalidateJwtUserCache(extendedToken.id);
+          return {} as ExtendedJWT;
+        }
+
         extendedToken.role = dbUser.role;
       }
       return extendedToken;

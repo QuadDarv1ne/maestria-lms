@@ -9,7 +9,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockDb, mockTx } = vi.hoisted(() => ({
+const { mockDb, mockTx, mockInvalidateJwtUserCache } = vi.hoisted(() => ({
   mockDb: {
     user: { findUnique: vi.fn(), count: vi.fn() },
     $transaction: vi.fn(),
@@ -21,11 +21,17 @@ const { mockDb, mockTx } = vi.hoisted(() => ({
     notification: { deleteMany: vi.fn() },
     user: { update: vi.fn() },
   },
+  mockInvalidateJwtUserCache: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({ db: mockDb }));
 vi.mock("@/lib/logger", () => ({
   log: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() },
+}));
+// The erasure deactivates the account, so the cached isActive snapshot has to
+// be dropped — otherwise the erased user keeps working for up to five minutes.
+vi.mock("@/lib/jwt-user-cache", () => ({
+  invalidateJwtUserCache: (...args: unknown[]) => mockInvalidateJwtUserCache(...args),
 }));
 
 import {
@@ -113,6 +119,12 @@ describe("eraseAccount", () => {
     await eraseAccount(USER_ID);
 
     expect(mockTx.notification.deleteMany).toHaveBeenCalledWith({ where: { userId: USER_ID } });
+  });
+
+  it("drops the cached status so the deactivation takes effect immediately", async () => {
+    await eraseAccount(USER_ID);
+
+    expect(mockInvalidateJwtUserCache).toHaveBeenCalledWith(USER_ID);
   });
 
   it("does not delete the user row, so payments keep their foreign key", async () => {

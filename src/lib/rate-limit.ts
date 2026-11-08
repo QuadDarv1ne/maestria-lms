@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createHash } from "node:crypto";
 import type Redis from "ioredis";
 import { log } from "@/lib/logger";
 import { getRedisClient } from "@/lib/redis";
@@ -34,41 +35,74 @@ export function getClientIp(request: Request): string {
   }
   const realIp = request.headers.get("x-real-ip");
   if (realIp && isValidPublicIp(realIp)) return realIp;
-  return "anonymous";
+  return ANONYMOUS_IP;
+}
+
+/** Sentinel returned by `getClientIp` when no usable public address is present. */
+export const ANONYMOUS_IP = "anonymous";
+
+/**
+ * Bucket key for a request whose client address could not be determined.
+ *
+ * A single global `ip:anonymous` bucket meant that one unauthenticated caller
+ * could spend the whole quota of every anonymous route (login, registration,
+ * password reset) and lock everybody else out — a free denial of service.
+ * Fingerprinting the few headers a browser always sends splits that bucket into
+ * per-client ones.
+ *
+ * This is a fairness measure, not a security boundary: an attacker can rotate
+ * the fingerprint just like they can rotate a spoofed X-Forwarded-For. The real
+ * boundary is the reverse proxy overwriting the header; when it does, a public
+ * address is available and this path is never reached.
+ */
+export function anonymousBucketKey(request: Request): string {
+  const userAgent = request.headers.get("user-agent") ?? "";
+  const language = request.headers.get("accept-language") ?? "";
+  const encoding = request.headers.get("accept-encoding") ?? "";
+  if (!userAgent && !language && !encoding) return "ip:anonymous";
+  const digest = createHash("sha256")
+    .update(`${userAgent}\u0000${language}\u0000${encoding}`)
+    .digest("hex")
+    .slice(0, 16);
+  return `ip:anonymous:${digest}`;
+}
+
+function isPrivateIpv4(octets: number[]): boolean {
+  const [a, b] = octets;
+  if (a === 10) return true;
+  if (a === 172 && b >= 16 && b <= 31) return true;
+  if (a === 192 && b === 168) return true;
+  if (a === 127) return true;
+  if (a === 0) return true;
+  if (a === 169 && b === 254) return true;
+  return false;
+}
+
+function parseIpv4(ip: string): number[] | null {
+  const match = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(ip);
+  if (!match) return null;
+  const octets = match.slice(1).map(Number);
+  // Reject impossible octets — the regex alone accepted e.g. 999.999.999.999,
+  // and any string that passes as a "public" IP becomes its own bucket.
+  if (octets.some((octet) => octet > 255)) return null;
+  return octets;
 }
 
 function isValidPublicIp(ip: string): boolean {
-  const ipv4Match = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(ip);
-  if (ipv4Match) {
-    const octets = ipv4Match.slice(1).map(Number);
-    // Reject impossible octets — the regex alone accepted e.g. 999.999.999.999,
-    // and any string that passes as a "public" IP becomes its own bucket.
-    if (octets.some((octet) => octet > 255)) return false;
-    const [a, b] = octets;
-
-    if (a === 10) return false;
-    if (a === 172 && b >= 16 && b <= 31) return false;
-    if (a === 192 && b === 168) return false;
-    if (a === 127) return false;
-    if (a === 0) return false;
-    if (a === 169 && b === 254) return false;
-
-    return true;
-  }
+  const ipv4 = parseIpv4(ip);
+  if (ipv4) return !isPrivateIpv4(ipv4);
 
   const normalizedIp = ip.toLowerCase();
 
   if (normalizedIp === "::1" || normalizedIp === "::") return false;
-  if (normalizedIp.startsWith("::ffff:7f")) return false;
-  if (normalizedIp.startsWith("::ffff:10.")) return false;
-  if (normalizedIp.startsWith("::ffff:192.168.")) return false;
-  if (normalizedIp.startsWith("::ffff:a9fe.")) return false;
 
-  const ipv4MappedMatch = /^::ffff:(\d{1,3})\.(\d{1,3})/.exec(normalizedIp);
-  if (ipv4MappedMatch) {
-    const a = Number(ipv4MappedMatch[1]);
-    const b = Number(ipv4MappedMatch[2]);
-    if (a === 172 && b >= 16 && b <= 31) return false;
+  // IPv4-mapped addresses (::ffff:10.0.0.1) are what a dual-stack socket
+  // reports for an IPv4 client. Classify them as the IPv4 address they really
+  // are, so no private range slips through as its own bucket.
+  const mappedMatch = /^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/.exec(normalizedIp);
+  if (mappedMatch) {
+    const mapped = parseIpv4(mappedMatch[1]);
+    return mapped ? !isPrivateIpv4(mapped) : false;
   }
 
   if (normalizedIp.startsWith("fc") || normalizedIp.startsWith("fd")) return false;
@@ -164,13 +198,11 @@ async function checkRedisLimit(
 
 function checkMemoryLimit(
   routeId: string,
-  ip: string,
-  userId: string | null,
+  key: string,
   windowMs: number,
   maxRequests: number,
 ): RateLimitResult {
   const now = Date.now();
-  const key = userId ? `user:${userId}` : `ip:${ip}`;
   const resetAt = now + windowMs;
 
   if (!memoryStores.has(routeId)) {
@@ -207,8 +239,7 @@ function checkMemoryLimit(
 }
 
 // Build rate limit response headers
-function createRateLimitResponse(result: RateLimitResult): NextResponse {
-  const retryAfter = Math.ceil((result.resetAt - Date.now()) / 1000);
+function createRateLimitResponse(result: RateLimitResult): NextResponse {  const retryAfter = Math.ceil((result.resetAt - Date.now()) / 1000);
   return NextResponse.json(
     { error: "Слишком много запросов. Пожалуйста, повторите позже." },
     {
@@ -223,6 +254,17 @@ function createRateLimitResponse(result: RateLimitResult): NextResponse {
   );
 }
 
+/** Bucket key for a request: per-user when signed in, per-client otherwise. */
+function bucketKey(request: Request, userId: string | null): string {
+  if (userId) return `user:${userId}`;
+  const ip = getClientIp(request);
+  // `getClientIp` returns a sentinel when the address is unusable (missing
+  // header, private range, spoofed garbage). Those requests must not all land
+  // in one bucket, or a single client exhausts the quota for everyone.
+  if (ip === ANONYMOUS_IP) return anonymousBucketKey(request);
+  return `ip:${ip}`;
+}
+
 // Sync rate limiter (uses in-memory, returns null or 429 response)
 // Prefer userId-based rate limiting for authenticated users to avoid IP spoofing
 export function rateLimit(
@@ -232,14 +274,13 @@ export function rateLimit(
   const { windowMs, maxRequests } = { ...defaultConfig, ...config };
 
   return (request: Request, userId?: string | null): NextResponse | null => {
-    const ip = getClientIp(request);
     const effectiveUserId = userId ?? null;
 
     // Prefer userId-based rate limiting for authenticated users
     // This is more accurate than IP-based and prevents IP spoofing bypasses
-    const key = effectiveUserId ? `user:${effectiveUserId}` : `ip:${ip}`;
+    const key = bucketKey(request, effectiveUserId);
 
-    const result = checkMemoryLimit(routeId, key, effectiveUserId, windowMs, maxRequests);
+    const result = checkMemoryLimit(routeId, key, windowMs, maxRequests);
 
     if (result.limited) {
       return createRateLimitResponse(result);
@@ -258,12 +299,11 @@ export function addRateLimitHeaders(
 ): void {
   const config = RATE_LIMITS[routeId as keyof typeof RATE_LIMITS] ?? RATE_LIMITS.default;
   const { windowMs, maxRequests } = { ...defaultConfig, ...config };
-  const ip = getClientIp(request);
   const effectiveUserId = userId ?? null;
 
   // Prefer userId-based rate limiting for authenticated users
-  const key = effectiveUserId ? `user:${effectiveUserId}` : `ip:${ip}`;
-  const result = checkMemoryLimit(routeId, key, effectiveUserId, windowMs, maxRequests);
+  const key = bucketKey(request, effectiveUserId);
+  const result = checkMemoryLimit(routeId, key, windowMs, maxRequests);
 
   headers.set("X-RateLimit-Limit", String(result.limit));
   headers.set("X-RateLimit-Remaining", String(result.remaining));
@@ -279,8 +319,7 @@ export async function rateLimitAsync(
   config: Partial<RateLimitConfig> & { userId?: string | null } = {},
 ): Promise<{ response: NextResponse | null; headers: Record<string, string> }> {
   const { windowMs, maxRequests, userId } = { ...defaultConfig, userId: null as string | null, ...config };
-  const ip = getClientIp(request);
-  const key = userId ? `user:${userId}:${routeId}` : `ip:${ip}:${routeId}`;
+  const key = `${bucketKey(request, userId)}:${routeId}`;
 
   const redis = getRedisClient();
   let result: RateLimitResult;
@@ -292,10 +331,10 @@ export async function rateLimitAsync(
       log.warn("Redis rate check failed, falling back to memory", {
         error: error instanceof Error ? error.message : String(error),
       });
-      result = checkMemoryLimit(routeId, ip, userId, windowMs, maxRequests);
+      result = checkMemoryLimit(routeId, key, windowMs, maxRequests);
     }
   } else {
-    result = checkMemoryLimit(routeId, ip, userId, windowMs, maxRequests);
+    result = checkMemoryLimit(routeId, key, windowMs, maxRequests);
   }
 
   const headers = {
@@ -340,5 +379,8 @@ export const RATE_LIMITS = {
   webVitals: { windowMs: 60_000, maxRequests: 60 },
   // Irreversible action: slow enough to make password guessing useless.
   accountDelete: { windowMs: 60_000, maxRequests: 5 },
+  // Credential rotation: the current password is verified on every call, so the
+  // window must be tight enough to make guessing through this route pointless.
+  passwordChange: { windowMs: 60_000, maxRequests: 5 },
   default: { windowMs: 60_000, maxRequests: 30 },
 } as const;

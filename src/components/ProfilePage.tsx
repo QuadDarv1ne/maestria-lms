@@ -26,6 +26,7 @@ import {
 import { ProfileSkeleton } from "@/components/skeletons/ProfileSkeleton";
 import { PaymentHistory } from "@/components/PaymentHistory";
 import { DeleteAccountSection } from "@/components/DeleteAccountSection";
+import { ChangePasswordSection } from "@/components/ChangePasswordSection";
 import { AchievementsPage } from "@/components/AchievementsPage";
 import { StudentDashboard } from "@/components/StudentDashboard";
 
@@ -866,6 +867,7 @@ export function ProfilePage() {
 
         <TabsContent value="payments" className="mt-4">
           <PaymentHistory />
+          <ChangePasswordSection />
           <DeleteAccountSection />
         </TabsContent>
 

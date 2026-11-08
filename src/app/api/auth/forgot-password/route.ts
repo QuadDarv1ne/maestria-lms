@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHash, randomUUID } from "node:crypto";
 import { db } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
+import { invalidateJwtUserCache } from "@/lib/jwt-user-cache";
 import { env } from "@/lib/env";
 import { z } from "zod";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
@@ -175,18 +176,28 @@ export async function PUT(request: NextRequest) {
     // Хешируем новый пароль
     const passwordHash = await hashPassword(password);
 
-    // Атомарно: обновляем пароль и удаляем ВСЕ токены для этого email
+    // Атомарно: обновляем пароль, отзываем все выданные сессии и удаляем ВСЕ
+    // токены для этого email.
+    // `sessionVersion++` — единственный способ погасить уже выданные JWT
+    // (они живут 30 дней и не проверяются по БД): jwt-callback отвергнет токен,
+    // версия которого отстала от строки пользователя. Без этого украденная
+    // cookie продолжала работать после «восстановления» аккаунта.
     // Interactive transaction: the array form requires Prisma-native promises,
     // which the lazy `db` proxy cannot produce (it returns ordinary promises).
-    await db.$transaction(async (tx) => {
-      await tx.user.update({
+    const rotatedUser = await db.$transaction(async (tx) => {
+      const updated = await tx.user.update({
         where: { email },
-        data: { passwordHash },
+        data: { passwordHash, sessionVersion: { increment: 1 } },
+        select: { id: true },
       });
+      await tx.session.deleteMany({ where: { userId: updated.id } });
       await tx.verificationToken.deleteMany({
         where: { identifier: `reset-password:${email}` },
       });
+      return updated;
     });
+
+    invalidateJwtUserCache(rotatedUser.id);
 
     return NextResponse.json(
       { message: "Пароль успешно изменён" },
