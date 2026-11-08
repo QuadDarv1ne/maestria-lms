@@ -6,6 +6,7 @@ import { handleApiError } from "@/lib/api-errors";
 import { validateParams, idOrSlugSchema, uuidSchema } from "@/lib/request-validation";
 import { z } from "zod";
 import { gradeAssignment } from "@/lib/assignment-grading";
+import { createSubmissionWithinAttemptLimit } from "@/lib/assignment-submission";
 
 export const runtime = "nodejs";
 
@@ -88,34 +89,59 @@ export async function POST(
           courseId: resolvedCourseId,
         },
       },
+      select: { status: true },
     });
 
-    if (!enrollment) {
+    // `cancelled` must not pass. The check used to be `if (!enrollment)`, so a
+    // student whose enrollment was cancelled (refund, admin action) kept
+    // submitting work for a course they no longer had access to — every other
+    // route in the app checks `status === "active"`.
+    if (!enrollment || enrollment.status !== "active") {
       return NextResponse.json(
-        { error: "Вы не записаны на этот курс" },
+        { error: "Необходима активная запись на курс", code: "enrollment_required" },
         { status: 403 }
       );
     }
 
-    // Проверяем лимит попыток
-    if (assignment.maxAttempts > 0) {
-      const attemptCount = await db.assignmentSubmission.count({
-        where: {
-          assignmentId,
-          userId: session.user.id,
-        },
-      });
+    // The countdown used to live only in StepAssignment, so reloading the page
+    // reset it and a direct POST had no clock at all. The server now measures
+    // from the earliest recorded activity — the first submission or the last
+    // access to the lesson — and refuses anything past the deadline.
+    //
+    // Known gap: a student who has never interacted has no anchor, so the first
+    // attempt is still unbounded. Closing that properly needs a "started" row
+    // (per user+assignment) rather than a new column on an existing table.
+    if (assignment.timeLimit && assignment.timeLimit > 0) {
+      const [firstAttempt, lessonAccess] = await Promise.all([
+        db.assignmentSubmission.findFirst({
+          where: { assignmentId, userId: session.user.id },
+          orderBy: { submittedAt: "asc" },
+          select: { submittedAt: true },
+        }),
+        db.progress.findUnique({
+          where: { userId_lessonId: { userId: session.user.id, lessonId: assignment.lesson.id } },
+          select: { lastAccessed: true },
+        }),
+      ]);
 
-      if (attemptCount >= assignment.maxAttempts) {
-        return NextResponse.json(
-          {
-            error: `Превышен лимит попыток для этого задания (максимум ${assignment.maxAttempts})`,
-            code: "attempt_limit_exceeded",
-            maxAttempts: assignment.maxAttempts,
-            attemptCount,
-          },
-          { status: 403 }
-        );
+      const anchors = [firstAttempt?.submittedAt, lessonAccess?.lastAccessed]
+        .filter((d): d is Date => d instanceof Date);
+      const startedAt = anchors.length > 0
+        ? new Date(Math.min(...anchors.map((d) => d.getTime())))
+        : null;
+
+      if (startedAt) {
+        const deadline = startedAt.getTime() + assignment.timeLimit * 60_000;
+        if (Date.now() > deadline) {
+          return NextResponse.json(
+            {
+              error: `Время на выполнение задания истекло (${assignment.timeLimit} мин)`,
+              code: "time_limit_exceeded",
+              timeLimit: assignment.timeLimit,
+            },
+            { status: 403 }
+          );
+        }
       }
     }
 
@@ -135,20 +161,32 @@ export async function POST(
     // Определяем статус и score в зависимости от типа задания
     const { status, score } = gradeAssignment(assignment.type, answer, assignment.correctAnswer);
 
-    // Создаём новую запись (каждая попытка — отдельный row)
-    const submission = await db.assignmentSubmission.create({
-      data: {
-        assignmentId,
-        userId: session.user.id,
-        answer: answerStr,
-        status,
-        score,
-        maxScore: 100,
-      },
+    // The attempt limit used to be a plain count-then-create: two parallel
+    // POSTs both read "1 of 3" and both inserted, so a student could submit any
+    // number of times by firing the requests together. The check and the insert
+    // now share a Serializable transaction, which makes the second transaction
+    // fail to serialise instead of silently exceeding the limit.
+    const outcome = await createSubmissionWithinAttemptLimit({
+      assignmentId,
+      userId: session.user.id,
+      maxAttempts: assignment.maxAttempts,
+      data: { answer: answerStr, status, score },
     });
 
+    if ("limitExceeded" in outcome) {
+      return NextResponse.json(
+        {
+          error: `Превышен лимит попыток для этого задания (максимум ${assignment.maxAttempts})`,
+          code: "attempt_limit_exceeded",
+          maxAttempts: assignment.maxAttempts,
+          attemptCount: outcome.attemptCount,
+        },
+        { status: 403 }
+      );
+    }
+
     return NextResponse.json(
-      { message: "Ответ сохранён", submission },
+      { message: "Ответ сохранён", submission: outcome.submission },
       { status: 200 }
     );
   } catch (error: unknown) {
@@ -224,11 +262,13 @@ export async function GET(
           courseId: resolvedCourseId,
         },
       },
+      select: { status: true },
     });
 
-    if (!enrollment) {
+    // Same rule as POST: a cancelled enrollment has no access to the work.
+    if (!enrollment || enrollment.status !== "active") {
       return NextResponse.json(
-        { error: "Вы не записаны на этот курс" },
+        { error: "Необходима активная запись на курс", code: "enrollment_required" },
         { status: 403 }
       );
     }
