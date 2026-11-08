@@ -1050,6 +1050,7 @@
   "cert.progressText": "Your progress",
   "cert.continueLearning": "Continue learning",
   "cert.noCertificate": "This course does not provide a certificate",
+  "cert.pendingIssue": "The course is completed — the certificate is being issued",
   "cert.issuedBy": "Issued",
   "cert.loginToAccess": "Sign in to view certificate",
   "cert.loadError": "Error loading course data",

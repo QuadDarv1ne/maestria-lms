@@ -20,7 +20,9 @@ const { mockDb, mockTx, mockHandleApiError, mockCreateNotification, mockSendEmai
   mockTx: {
     course: { findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     enrollment: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
-    payment: { create: vi.fn() },
+    payment: { create: vi.fn(), findFirst: vi.fn() },
+    lesson: { count: vi.fn() },
+    progress: { count: vi.fn() },
   },
   mockHandleApiError: vi.fn(),
   mockCreateNotification: vi.fn(),
@@ -131,6 +133,11 @@ beforeEach(() => {
   }
   mockTx.course.findUnique.mockResolvedValue(baseCourse);
   mockTx.enrollment.findUnique.mockResolvedValue(null);
+  // No stale pending payments by default; individual tests override this.
+  mockTx.payment.findFirst.mockResolvedValue(null);
+  // recomputeProgress() reads these when a cancelled enrolment is restored
+  mockTx.lesson.count.mockResolvedValue(0);
+  mockTx.progress.count.mockResolvedValue(0);
 
   mockDb.$transaction.mockImplementation(async (fn: (tx: unknown) => unknown) => fn(mockTx));
 });
@@ -249,7 +256,7 @@ describe("POST /api/courses/[id]/enroll", () => {
     expect(mockTx.enrollment.create).not.toHaveBeenCalled();
   });
 
-  it("applies a valid promo code to the payment and redeems it", async () => {
+  it("applies a valid promo code to the payment (redeem deferred to completion)", async () => {
     const paidCourse = { ...baseCourse, price: 5000 };
     mockDb.course.findFirst.mockResolvedValue(paidCourse);
     mockTx.course.findUnique.mockResolvedValue(paidCourse);
@@ -270,7 +277,23 @@ describe("POST /api/courses/[id]/enroll", () => {
     const createArgs = mockTx.payment.create.mock.calls[0][0];
     expect(createArgs.data.discountAmount).toBe(1000);
     expect(createArgs.data.promoCodeId).toBe("promo-1");
-    expect(vi.mocked(redeemPromoCode)).toHaveBeenCalledWith("promo-1", "user-1");
+    // Promo code is NOT redeemed here — redeems in completePayment() so a
+    // cancelled pending payment never burns the user's attempt.
+    expect(vi.mocked(redeemPromoCode)).not.toHaveBeenCalled();
+  });
+
+  it("redeems promo code for a free-course enrollment (no payment path)", async () => {
+    mockTx.enrollment.create.mockResolvedValue({ id: "enroll-1", status: "active" });
+    vi.mocked(validatePromoCode).mockResolvedValue({
+      valid: true,
+      finalPrice: 0,
+      discountAmount: 5000,
+      promoCode: { id: "promo-2" },
+    } as never);
+
+    const res = await POST(enrollRequest({ promoCode: "FULL" }), enrollContext());
+    expect(res.status).toBe(201);
+    expect(vi.mocked(redeemPromoCode)).toHaveBeenCalledWith("promo-2", "user-1");
   });
 
   it("rejects an invalid promo code before creating a payment", async () => {
@@ -318,5 +341,98 @@ describe("POST /api/courses/[id]/enroll", () => {
     const res = await POST(enrollRequest(), enrollContext());
     expect(res.status).toBe(201);
     expect(mockDb.$transaction).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects paid re-enrollment when the course is full", async () => {
+    const paidCourse = { ...baseCourse, price: 5000, maxStudents: 10, studentCount: 10 };
+    mockDb.course.findFirst.mockResolvedValue(paidCourse);
+    mockTx.course.findUnique.mockResolvedValue(paidCourse);
+    mockTx.enrollment.findUnique.mockResolvedValue({ id: "enroll-0", status: "cancelled" });
+
+    const res = await POST(enrollRequest(), enrollContext());
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain("лимит");
+    expect(mockTx.payment.create).not.toHaveBeenCalled();
+  });
+
+  it("grants free access when a 100%-off promo code is applied to a paid course", async () => {
+    const paidCourse = { ...baseCourse, price: 5000 };
+    mockDb.course.findFirst.mockResolvedValue(paidCourse);
+    mockTx.course.findUnique.mockResolvedValue(paidCourse);
+    mockTx.enrollment.create.mockResolvedValue({ id: "enroll-3", status: "active" });
+    vi.mocked(validatePromoCode).mockResolvedValue({
+      valid: true,
+      finalPrice: 0,
+      discountAmount: 5000,
+      promoCode: { id: "promo-3" },
+    } as never);
+
+    const res = await POST(enrollRequest({ promoCode: "FULL" }), enrollContext());
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.message).toContain("по промокоду");
+    expect(body.enrollment).toEqual({ id: "enroll-3", status: "active" });
+    expect(mockTx.payment.create).not.toHaveBeenCalled();
+    expect(vi.mocked(redeemPromoCode)).toHaveBeenCalledWith("promo-3", "user-1");
+  });
+
+  it("reuses an existing pending payment for a new enrolment", async () => {
+    const paidCourse = { ...baseCourse, price: 5000 };
+    mockDb.course.findFirst.mockResolvedValue(paidCourse);
+    mockTx.course.findUnique.mockResolvedValue(paidCourse);
+    mockTx.payment.findFirst.mockResolvedValue({
+      id: "payment-old",
+      amount: 5000,
+      currency: "RUB",
+      paymentMethod: "sbp",
+      paymentProvider: "YOOKASSA",
+    });
+
+    const res = await POST(enrollRequest(), enrollContext());
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.requiresPayment).toBe(true);
+    expect(body.paymentId).toBe("payment-old");
+    expect(body.existing).toBe(true);
+    expect(mockTx.payment.create).not.toHaveBeenCalled();
+  });
+
+  it("reuses an existing pending payment on paid re-enrollment", async () => {
+    const paidCourse = { ...baseCourse, price: 5000 };
+    mockDb.course.findFirst.mockResolvedValue(paidCourse);
+    mockTx.course.findUnique.mockResolvedValue(paidCourse);
+    mockTx.enrollment.findUnique.mockResolvedValue({ id: "enroll-0", status: "cancelled" });
+    mockTx.payment.findFirst.mockResolvedValue({
+      id: "payment-old",
+      amount: 5000,
+      currency: "RUB",
+      paymentMethod: "sbp",
+      paymentProvider: "YOOKASSA",
+    });
+
+    const res = await POST(enrollRequest(), enrollContext());
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.requiresPayment).toBe(true);
+    expect(body.paymentId).toBe("payment-old");
+    expect(body.existing).toBe(true);
+    expect(mockTx.payment.create).not.toHaveBeenCalled();
+  });
+
+  it("restores the stored progress when a cancelled free enrolment is reactivated", async () => {
+    mockTx.enrollment.findUnique.mockResolvedValue({ id: "enroll-0", status: "cancelled" });
+    mockTx.enrollment.update.mockResolvedValue({ id: "enroll-0", status: "active" });
+    // 3 of 4 lessons still carry a completed Progress row
+    mockTx.lesson.count.mockResolvedValue(4);
+    mockTx.progress.count.mockResolvedValue(3);
+
+    const res = await POST(enrollRequest(), enrollContext());
+    expect(res.status).toBe(200);
+
+    const updateArgs = mockTx.enrollment.update.mock.calls[0][0];
+    expect(updateArgs.data.progress).toBe(75);
+    expect(updateArgs.data.status).toBe("active");
+    expect(updateArgs.data.completedAt).toBeNull();
   });
 });

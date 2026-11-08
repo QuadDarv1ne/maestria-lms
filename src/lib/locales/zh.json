@@ -1050,6 +1050,7 @@
   "cert.progressText": "您的进度",
   "cert.continueLearning": "继续学习",
   "cert.noCertificate": "此课程不提供证书",
+  "cert.pendingIssue": "课程已完成——证书正在签发",
   "cert.issuedBy": "颁发日期",
   "cert.loginToAccess": "登录查看证书",
   "cert.loadError": "加载课程数据出错",

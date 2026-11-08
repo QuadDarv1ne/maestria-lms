@@ -102,7 +102,14 @@ vi.mock("@/lib/db", () => ({
             updateMany: vi.fn(async () => ({ count: 0 })),
           },
           course: {
-            updateMany: vi.fn(async () => {
+            findUnique: vi.fn(async () => state.course),
+            updateMany: vi.fn(async ({ where }: { where?: { studentCount?: { lt?: number } } }) => {
+              // Honour the atomic seat guard the service relies on: when a
+              // limit is set, the update only claims a seat if the counter is
+              // still below it.
+              const limit = where?.studentCount?.lt;
+              const current = Number(state.course?.studentCount ?? 0);
+              if (limit !== undefined && current >= limit) return { count: 0 };
               state.studentCountIncremented += 1;
               return { count: 1 };
             }),
@@ -413,5 +420,38 @@ describe("syncPaymentWithProvider — pull reconciliation", () => {
     vi.mocked(getProvider).mockReset();
     pendingPayment();
     expect((await syncPaymentWithProvider("pay-sync")).status).toBe("skipped");
+  });
+});
+
+describe("createCoursePayment — course is full", () => {
+  it("rejects payment creation when maxStudents limit is reached", async () => {
+    state.course = {
+      ...baseCourse(),
+      maxStudents: 10,
+      studentCount: 10,
+    };
+
+    await expect(
+      createCoursePayment({ userId: "user-1", courseId: "course-1", method: "CARD" }),
+    ).rejects.toMatchObject({
+      code: "COURSE_FULL",
+    } satisfies Partial<ServiceError>);
+  });
+
+  it("allows payment when there is still one free seat", async () => {
+    state.course = {
+      ...baseCourse(),
+      maxStudents: 10,
+      studentCount: 9,
+    };
+
+    const result = await createCoursePayment({
+      userId: "user-1",
+      courseId: "course-1",
+      method: "CARD",
+    });
+
+    expect(result.testMode).toBe(true);
+    expect(state.createdPayments).toHaveLength(1);
   });
 });

@@ -84,18 +84,13 @@ export function CertificatePage({ courseId }: { courseId: string }) {
     return () => { cancelled = true; };
   }, [courseId, locale]);
 
-  function generateCertificateNumber(): string {
-    if (certificate) return certificate.certificateNumber;
-    if (!user) return "";
-    const h = `${courseId}${user.id}`.split("").reduce((a, c) => ((a << 5) - a + c.charCodeAt(0)) | 0, 0);
-    const hash = Math.abs(h).toString(16).toUpperCase().padStart(8, "0");
-    return `MAE-${new Date().getFullYear()}-${hash.slice(0, 8)}`;
-  }
-
   /* derived state */
   const isCompleted = course?.enrollmentStatus === "completed" || course?.enrollmentProgress === 100;
   const isEnrolled = course?.isEnrolled;
-  const certificateNumber = generateCertificateNumber();
+  // Only ever show the number the server issued. A client-side hash looked
+  // like a real MAE-YYYY-XXXXXXXX code but /api/certificates/verify has no
+  // such row, so the "verify this certificate" link always answered 404.
+  const certificateNumber = certificate?.certificateNumber ?? "";
   const completionDate = certificate?.issuedAt || new Date().toISOString();
   const userName = certificate?.userName || user?.name || user?.email || "";
 
@@ -230,6 +225,28 @@ export function CertificatePage({ courseId }: { courseId: string }) {
         <h2 className="text-xl font-semibold mb-2">
           {t("cert.noCertificate", locale)}
         </h2>
+        <Button variant="outline" onClick={() => router.push(`/course/${courseId}`)}>
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          {t("cert.backToCourse", locale)}
+        </Button>
+      </div>
+    );
+  }
+
+  // Course is finished and certifies, but there is no Certificate row yet —
+  // it is issued when the last lesson is marked complete. Showing the
+  // document with a fabricated number here only produced codes that the
+  // public verification endpoint reports as "not found".
+  if (!certificate) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <ShieldCheck className="w-16 h-16 text-blue-500 mx-auto mb-4" />
+        <h2 className="text-xl font-semibold mb-2">
+          {t("cert.pendingIssue", locale)}
+        </h2>
+        <p className="text-muted-foreground mb-4">
+          {t("cert.instructions", locale)}
+        </p>
         <Button variant="outline" onClick={() => router.push(`/course/${courseId}`)}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           {t("cert.backToCourse", locale)}

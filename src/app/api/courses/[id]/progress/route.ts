@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import { db } from "@/lib/db";
 import { getAuthSession, requireAuth, authErrorResponse } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { validateParams, idOrSlugSchema } from "@/lib/request-validation";
+import { CERTIFICATE_PREFIX } from "@/lib/constants";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -339,14 +341,55 @@ export async function PATCH(
         ? Math.round((completedCount / totalLessonCount) * 100)
         : 0;
 
-    // Update enrollment progress
+    // Update enrollment progress + auto-issue certificate (mirrors POST
+    // /api/courses/[id]/lessons/[lessonId] to keep the two paths consistent)
+    const [courseData, wasAlreadyCompleted] = await Promise.all([
+      db.course.findUnique({
+        where: { id: resolvedCourseId },
+        select: {
+          id: true,
+          title: true,
+          hasCertificate: true,
+        },
+      }),
+      db.enrollment.findUnique({
+        where: { id: enrollment.id },
+        select: { status: true },
+      }),
+    ]);
+
+    const wasCompleted = wasAlreadyCompleted?.status === "completed";
+
     await db.enrollment.update({
       where: { id: enrollment.id },
       data: {
         progress: courseProgress,
-        ...(courseProgress === 100 && { completedAt: new Date() }),
+        status: courseProgress === 100 ? "completed" : "active",
+        completedAt: courseProgress === 100 ? new Date() : null,
       },
     });
+
+    // Auto-create certificate on first-time completion (inside transaction to
+    // prevent duplicates)
+    if (courseProgress === 100 && !wasCompleted && courseData?.hasCertificate) {
+      const existingCert = await db.certificate.findUnique({
+        where: { userId_courseId: { userId, courseId: resolvedCourseId } },
+        select: { id: true },
+      });
+
+      if (!existingCert) {
+        const year = new Date().getFullYear();
+        const uniqueSuffix = crypto.randomUUID().slice(0, 8).toUpperCase();
+        const certNumber = `${CERTIFICATE_PREFIX}-${year}-${uniqueSuffix}`;
+        await db.certificate.create({
+          data: {
+            userId,
+            courseId: resolvedCourseId,
+            certificateNumber: certNumber,
+          },
+        });
+      }
+    }
 
     return NextResponse.json({
       progress: {

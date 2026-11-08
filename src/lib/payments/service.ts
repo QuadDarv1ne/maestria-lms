@@ -127,6 +127,12 @@ export async function createCoursePayment(opts: CreatePaymentOptions): Promise<C
   if (course.price === 0) {
     throw new ServiceError("FREE_COURSE", "Этот курс бесплатный — оплата не требуется");
   }
+  // Reject a full course before the provider is involved: enrollment cannot be
+  // granted afterwards (the money has already been captured), and silently
+  // overbooking would make maxStudents decorative for this entry point.
+  if (course.maxStudents && course.studentCount >= course.maxStudents) {
+    throw new ServiceError("COURSE_FULL", "Достигнут лимит студентов на курсе");
+  }
 
   // 2. Promo code
   let finalAmount = course.price;
@@ -505,6 +511,7 @@ export function serviceErrorStatus(code: string): number {
     case "FREE_COURSE":
     case "PRIVATE_COURSE":
     case "PROMO_INVALID":
+    case "COURSE_FULL":
       return 400;
     case "PROVIDER_ERROR":
       return 502;

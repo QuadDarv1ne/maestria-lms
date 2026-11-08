@@ -21,6 +21,77 @@ const checkRateLimit = rateLimit("enrollment", RATE_LIMITS.enrollment);
 const paymentMethodSchema = z
   .enum(["card", "sbp", "yookassa", "tinkoff"])
   .default("sbp");
+
+/** True while the course still has room. Courses without a limit are always open. */
+function hasFreeSeat(maxStudents: number | null, studentCount: number): boolean {
+  return !maxStudents || maxStudents <= 0 || studentCount < maxStudents;
+}
+
+/**
+ * Claim a seat, atomically. The `studentCount < maxStudents` guard lives in the
+ * UPDATE itself, so two concurrent enrollments cannot both pass a read-then-write
+ * check and push the counter past the limit. Returns false when the course is full.
+ */
+async function takeSeat(
+  tx: Prisma.TransactionClient,
+  courseId: string,
+  maxStudents: number | null,
+): Promise<boolean> {
+  if (maxStudents && maxStudents > 0) {
+    const updated = await tx.course.updateMany({
+      where: { id: courseId, studentCount: { lt: maxStudents } },
+      data: { studentCount: { increment: 1 } },
+    });
+    return updated.count > 0;
+  }
+  await tx.course.update({
+    where: { id: courseId },
+    data: { studentCount: { increment: 1 } },
+  });
+  return true;
+}
+
+const SEAT_LIMIT_ERROR = "Достигнут лимит студентов на курсе";
+
+/**
+ * Return an existing pending payment for this user+course (if any), or null.
+ * Without this guard every retried checkout added a fresh pending row for the
+ * same user+course, so the user ended up with several unpaid attempts and the
+ * payment page could confirm a row the client never rendered.
+ */
+async function reusePendingPayment(tx: Prisma.TransactionClient, userId: string, courseId: string) {
+  return tx.payment.findFirst({
+    where: { userId, courseId, status: "pending" },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      amount: true,
+      currency: true,
+      paymentMethod: true,
+      paymentProvider: true,
+    },
+  });
+}
+
+/**
+ * Percentage of completed lessons recomputed from the Progress rows.
+ * Re-enrollment must not reset the counter to 0: the Progress rows were kept
+ * while the enrollment was cancelled, and the next completed lesson triggers a
+ * recount from them — a hard 0 made the visible progress jump backwards.
+ */
+async function recomputeProgress(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  courseId: string,
+): Promise<number> {
+  const [totalLessons, completedLessons] = await Promise.all([
+    tx.lesson.count({ where: { module: { courseId } } }),
+    tx.progress.count({
+      where: { userId, lesson: { module: { courseId } }, completed: true },
+    }),
+  ]);
+  return totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+}
 // POST: Записаться на курс
 export async function POST(
   request: NextRequest,
@@ -205,8 +276,32 @@ export async function POST(
           return { error: "Вы уже записаны на этот курс", status: 400 as const };
         }
         if (existingEnrollment.status === "cancelled") {
-          if (txCourse.price > 0) {
-            // Paid course re-enrollment requires a new payment
+          if (txCourse.price > 0 && finalAmount > 0) {
+            // Платный курс: место не занимаем — счётчик увеличивает завершение
+            // платежа (completePayment / simulate-complete). Здесь лишь
+            // отбиваем заведомо переполненный курс, чтобы не выставлять счёт
+            // провайдера за место, которого нет.
+            if (!hasFreeSeat(txCourse.maxStudents, txCourse.studentCount)) {
+              return { error: SEAT_LIMIT_ERROR, status: 400 as const };
+            }
+            // Промокод не погашаем — это делает completePayment, когда деньги
+            // действительно поступили; отменённый pending не сжигает попытку.
+            // Повторный клик не должен плодить pending-платежи: отдаём
+            // существующий, если он ещё не истёк.
+            const reused = await reusePendingPayment(tx, userId, resolvedCourseId);
+            if (reused) {
+              return {
+                message: "У вас уже есть ожидающий платёж",
+                requiresPayment: true,
+                paymentId: reused.id,
+                paymentProvider: reused.paymentProvider ?? paymentProvider,
+                paymentMethod: reused.paymentMethod ?? paymentMethod,
+                amount: reused.amount,
+                currency: reused.currency,
+                existing: true,
+                status: 200 as const,
+              };
+            }
             const payment = await tx.payment.create({
               data: {
                 userId,
@@ -226,31 +321,28 @@ export async function POST(
               paymentId: payment.id,
               paymentProvider,
               paymentMethod,
+              amount: finalAmount,
+              currency: txCourse.currency,
               status: 200 as const,
             };
           }
-          if (txCourse.maxStudents && txCourse.maxStudents > 0) {
-            const canReenroll = await tx.course.updateMany({
-              where: {
-                id: resolvedCourseId,
-                studentCount: { lt: txCourse.maxStudents },
-              },
-              data: { studentCount: { increment: 1 } },
-            });
-            if (canReenroll.count === 0) {
-              return { error: "Достигнут лимит студентов на курсе", status: 400 as const };
-            }
-          } else {
-            await tx.course.update({
-              where: { id: resolvedCourseId },
-              data: { studentCount: { increment: 1 } },
-            });
+          // Бесплатный курс (или полная скидка): занимаем место и активируем
+          // запись. Прогресс не обнуляем — строки Progress остаются, и сброс
+          // enrollment.progress ронял процент до первого завершённого урока.
+          if (!(await takeSeat(tx, resolvedCourseId, txCourse.maxStudents))) {
+            return { error: SEAT_LIMIT_ERROR, status: 400 as const };
           }
+          const restoredProgress = await recomputeProgress(
+            tx,
+            userId,
+            resolvedCourseId,
+          );
           await tx.enrollment.update({
             where: { id: existingEnrollment.id },
             data: {
               status: "active",
-              progress: 0,
+              progress: restoredProgress,
+              completedAt: null,
               enrolledAt: new Date(),
             },
           });
@@ -263,23 +355,8 @@ export async function POST(
 
       // Для бесплатных курсов: проверяем лимит и создаём запись
       if (txCourse.price === 0) {
-        if (txCourse.maxStudents && txCourse.maxStudents > 0) {
-          const incremented = await tx.course.updateMany({
-            where: {
-              id: resolvedCourseId,
-              studentCount: { lt: txCourse.maxStudents },
-            },
-            data: { studentCount: { increment: 1 } },
-          });
-          if (incremented.count === 0) {
-            return { error: "Достигнут лимит студентов на курсе", status: 400 as const };
-          }
-        } else {
-          // Курс без лимита — всегда увеличиваем счётчик
-          await tx.course.update({
-            where: { id: resolvedCourseId },
-            data: { studentCount: { increment: 1 } },
-          });
+        if (!(await takeSeat(tx, resolvedCourseId, txCourse.maxStudents))) {
+          return { error: SEAT_LIMIT_ERROR, status: 400 as const };
         }
 
         const enrollment = await tx.enrollment.create({
@@ -297,7 +374,46 @@ export async function POST(
         };
       }
 
+      // Полная скидка: доступ выдаём сразу. Платёж на 0 создавать нельзя —
+      // провайдер его отклоняет, и пользователь оставался бы без доступа и
+      // без способа его получить.
+      if (finalAmount === 0) {
+        if (!(await takeSeat(tx, resolvedCourseId, txCourse.maxStudents))) {
+          return { error: SEAT_LIMIT_ERROR, status: 400 as const };
+        }
+
+        const enrollment = await tx.enrollment.create({
+          data: {
+            userId,
+            courseId: resolvedCourseId,
+            status: "active",
+            progress: 0,
+          },
+        });
+        return {
+          message: "Вы успешно записаны на курс по промокоду",
+          enrollment,
+          status: 201 as const,
+        };
+      }
+
       // Для платных курсов — создаём платёж без увеличения studentCount
+      // (сначала переиспользуем незакрытый pending того же пользователя)
+      const reused = await reusePendingPayment(tx, userId, resolvedCourseId);
+      if (reused) {
+        return {
+          message: "У вас уже есть ожидающий платёж",
+          requiresPayment: true,
+          paymentId: reused.id,
+          paymentProvider: reused.paymentProvider ?? paymentProvider,
+          paymentMethod: reused.paymentMethod ?? paymentMethod,
+          amount: reused.amount,
+          currency: reused.currency,
+          existing: true,
+          status: 200 as const,
+        };
+      }
+
       const payment = await tx.payment.create({
         data: {
           userId,
@@ -324,12 +440,8 @@ export async function POST(
       };
     });
 
-    // Redeem promo code after a successful payment creation
-    if ("requiresPayment" in result && result.requiresPayment && promoCodeId) {
-      await redeemPromoCode(promoCodeId, userId);
-    }
-
-    // Return response based on transaction result
+    // Return early on transaction failure — promo code must not burn on
+    // rejected requests ("already enrolled", seat limit, etc.).
     if ("error" in result) {
       return NextResponse.json(
         { error: result.error },
@@ -337,9 +449,23 @@ export async function POST(
       );
     }
 
-    // Send server notification for successful enrollment (free courses only)
-    // course object from outside transaction still has the correct title
-    if (course.price === 0) {
+    // Redeem promo code after any path that grants INSTANT access (free
+    // enrollment, full-discount enrollment, or re-enrollment).  Paid paths
+    // (requiresPayment: true) redeem in completePayment() so a cancelled
+    // pending payment never burns the user's attempt.
+    if (promoCodeId && !("requiresPayment" in result && result.requiresPayment)) {
+      await redeemPromoCode(promoCodeId, userId).catch((err: unknown) =>
+        log.error("Promo code redemption failed", {
+          promoCodeId, userId, error: String(err),
+        }),
+      );
+    }
+
+    // Send server notification for successful enrollment (free courses and
+    // full-discount enrollments).  Paid paths with requiresPayment have no
+    // enrollment row yet so there is nothing to notify about.
+    const grantsInstantAccess = !("requiresPayment" in result && result.requiresPayment);
+    if (grantsInstantAccess) {
       await createNotification({
         userId,
         type: "enrollment",
