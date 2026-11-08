@@ -28,8 +28,12 @@ export interface AssignmentData {
   title: string;
   description: string;
   type: string;
+  /**
+   * Renderable data for the exercise. For matching/ordering/drag_drop the
+   * server rewrites this into an answer-free projection (see
+   * `lib/assignment-options.ts`) — the stored payload contains the answer key.
+   */
   options: string | null;
-  correctAnswer: string | null;
   points: number;
   maxAttempts?: number;
   timeLimit?: number | null;

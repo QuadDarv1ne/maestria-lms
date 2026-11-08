@@ -11,12 +11,13 @@ import { env } from "@/lib/env";
 import { dispatchEmail } from "@/lib/email-dispatch";
 import { certificateEmail } from "@/lib/emails";
 import { validateParams, idOrSlugSchema, uuidSchema } from "@/lib/request-validation";
+import { publicAssignmentOptions } from "@/lib/assignment-options";
+import { computeLessonScore } from "@/lib/lesson-score";
 
 export const runtime = "nodejs";
 
 const updateProgressSchema = z.object({
   completed: z.boolean().optional(),
-  score: z.number().int().min(0).max(100).optional().nullable(),
   timeSpent: z.number().int().min(0).optional(),
 });
 
@@ -167,7 +168,13 @@ export async function GET(
         ? allLessonsFlat[currentFlatIndex + 1].id
         : null;
 
-    const assignments = lesson.assignments;
+    // `options` carries the answer key for matching/ordering/drag_drop (the
+    // course editor writes the correct pairs, sequence and groups there), so
+    // the stored payload must be projected before it reaches the browser.
+    const assignments = lesson.assignments.map((assignment) => ({
+      ...assignment,
+      options: publicAssignmentOptions(assignment.type, assignment.options),
+    }));
 
     return NextResponse.json({
       lesson: {
@@ -269,7 +276,12 @@ export async function POST(
       );
     }
 
-    const { completed, score, timeSpent } = validation.data;
+    const { completed, timeSpent } = validation.data;
+
+    // The score is derived from graded submissions, never taken from the body:
+    // `{"score": 100}` in a PATCH was enough to publish a perfect result that
+    // no assignment backed up.
+    const score = completed ? await computeLessonScore(userId, lessonId) : undefined;
 
     // Обновляем или создаём прогресс
     const progress = await db.progress.upsert({

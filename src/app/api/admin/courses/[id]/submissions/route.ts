@@ -11,8 +11,12 @@ export const runtime = "nodejs";
 
 const checkRateLimit = rateLimit("grading", RATE_LIMITS.admin);
 
+// The stored values are draft/submitted/graded/failed (see AssignmentSubmission
+// in the schema). The old enum ("pending"/"approved"/"rejected") matched nothing,
+// so every `?status=` filter returned an empty list — a teacher asking for the
+// work awaiting review saw an empty page instead of their queue.
 const submissionsQuerySchema = z.object({
-  status: z.enum(["pending", "approved", "rejected"]).optional(),
+  status: z.enum(["draft", "submitted", "graded", "failed"]).optional(),
   assignmentId: z.string().uuid().optional(),
 });
 

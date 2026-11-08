@@ -46,10 +46,14 @@ export function StepFileUpload({ step, locale, onSubmitAssignment }: StepCompone
           setUploadProgress(Math.round((evt.loaded / evt.total) * 100));
         }
       });
-      await new Promise<void>((resolve, reject) => {
+      const uploadedFile = await new Promise<{ key?: string; url?: string; size?: number }>((resolve, reject) => {
         xhr.addEventListener("load", () => {
           if (xhr.status >= 200 && xhr.status < 300) {
-            resolve();
+            try {
+              resolve(JSON.parse(xhr.responseText));
+            } catch {
+              resolve({});
+            }
           } else {
             try {
               const data = JSON.parse(xhr.responseText);
@@ -66,7 +70,18 @@ export function StepFileUpload({ step, locale, onSubmitAssignment }: StepCompone
 
       const assignment = step.assignments?.[0];
       if (assignment) {
-        await onSubmitAssignment(assignment.id, { fileName: selectedFile.name, uploaded: true });
+        // The teacher reviews the submission later, so the stored answer must
+        // carry the file itself — the previous `{ uploaded: true }` was
+        // unreviewable: the uploaded object was orphaned and the submission
+        // said nothing about which file the student meant.
+        const result = await onSubmitAssignment(assignment.id, {
+          fileName: selectedFile.name,
+          size: selectedFile.size,
+          type: selectedFile.type,
+          key: uploadedFile.key ?? null,
+          url: uploadedFile.url ?? null,
+        });
+        if (!result) return;
       }
       setUploaded(true);
       toast.success(t("course.step.fileSent", locale));

@@ -1040,6 +1040,8 @@
   "course.step.minimum": "最少",
   "course.step.orderingExercise": "排序练习",
   "course.step.orderAllItems": "排列所有项目",
+  "course.step.moveUp": "上移",
+  "course.step.moveDown": "下移",
   "course.step.matchAllPairs": "匹配所有配对",
   "course.step.fileSent": "文件已发送",
   "course.step.fileTooLarge": "文件太大",

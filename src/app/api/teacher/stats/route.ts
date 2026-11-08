@@ -96,6 +96,9 @@ export async function GET(request: NextRequest) {
     }> = [];
 
     // Batch-fetch pending assignments (essays to review)
+    // The status enum is draft/submitted/graded/failed — "pending" was never
+    // written by anything, so the "на проверке" counter always showed 0 and
+    // teachers had no signal that work was waiting for them.
     const pendingAssignments = await db.assignmentSubmission.findMany({
       where: {
         assignment: {
@@ -104,9 +107,8 @@ export async function GET(request: NextRequest) {
               course: { teacherId },
             },
           },
-          type: "essay",
         },
-        status: "pending",
+        status: "submitted",
       },
       include: {
         assignment: {

@@ -1039,6 +1039,8 @@
   "course.step.minimum": "минимум",
   "course.step.orderingExercise": "Упражнение на упорядочивание",
   "course.step.orderAllItems": "Упорядочьте все элементы",
+  "course.step.moveUp": "Переместить выше",
+  "course.step.moveDown": "Переместить ниже",
   "course.step.matchAllPairs": "Сопоставьте все пары",
   "course.step.fileSent": "Файл отправлен",
   "course.step.fileTooLarge": "Файл слишком большой",

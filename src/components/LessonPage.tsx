@@ -41,7 +41,6 @@ interface AssignmentItem {
   description: string;
   type: string;
   points: number;
-  correctAnswer?: string | null;
   options?: string | null;
 }
 
@@ -230,7 +229,6 @@ export function LessonPage({
       description: a.description,
       type: a.type,
       options: a.options ?? null,
-      correctAnswer: a.correctAnswer ?? null,
       points: a.points,
     })),
     progress: lesson.progress ? {

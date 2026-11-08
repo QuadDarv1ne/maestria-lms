@@ -23,16 +23,23 @@ import { toast } from "sonner";
 import { t } from "@/lib/i18n";
 import { LessonContent } from "./LessonContent";
 import type { StepComponentProps } from "./StepTypes";
-import { shuffleArray } from "./StepTypes";
 
 interface DragDropItem {
   id: string;
   text: string;
-  group: string;
 }
 
 const POOL_ID = "__pool__";
 const zoneId = (group: string) => `zone:${group}`;
+
+function gradedScore(result: unknown): number | null {
+  const submission = (result as { submission?: { score?: number | null } } | null)?.submission;
+  return typeof submission?.score === "number" ? submission.score : null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
 function DraggableDragItem({
   item,
@@ -101,6 +108,7 @@ function DroppableGroup({
 export function StepDragDrop({ step, locale, submittingAssignment, onSubmitAssignment }: StepComponentProps) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [score, setScore] = useState<number | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [activeItem, setActiveItem] = useState<DragDropItem | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
@@ -110,17 +118,32 @@ export function StepDragDrop({ step, locale, submittingAssignment, onSubmitAssig
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } }),
   );
 
-  const { items, groups } = useMemo(() => {
+  const { items, groups } = useMemo((): { items: DragDropItem[]; groups: string[] } => {
     const assignment = step?.assignments?.[0];
     const options = assignment?.options;
-    if (!options) return { items: [] as DragDropItem[], groups: [] as string[] };
+    if (!options) return { items: [], groups: [] };
     try {
-      const parsed: DragDropItem[] = JSON.parse(options);
+      const parsed: unknown = JSON.parse(options);
+      // Current shape from the server: items without their bucket plus the set
+      // of bucket names. `group` used to travel with each item, which handed
+      // the whole answer to the browser.
+      if (isRecord(parsed) && Array.isArray(parsed.items) && Array.isArray(parsed.groups)) {
+        return {
+          items: parsed.items as DragDropItem[],
+          groups: parsed.groups.map(String),
+        };
+      }
+      // Legacy shape: an array of { id, text, group }. The buckets are still
+      // needed to render the drop zones, but the item's own bucket is dropped.
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return { items: shuffleArray([...parsed]), groups: [...new Set(parsed.map((i) => i.group))] };
+        const legacy = parsed as (DragDropItem & { group?: unknown })[];
+        return {
+          items: legacy.map(({ id, text }) => ({ id, text })),
+          groups: [...new Set(legacy.map((i) => String(i.group)))],
+        };
       }
     } catch { /* ignore */ }
-    return { items: [] as DragDropItem[], groups: [] as string[] };
+    return { items: [], groups: [] };
   }, [step]);
 
   // Reset local state when step changes (React-render-time reset pattern)
@@ -128,6 +151,7 @@ export function StepDragDrop({ step, locale, submittingAssignment, onSubmitAssig
   if (step?.id !== prevStepId) {
     setAnswers({});
     setSubmitted(false);
+    setScore(null);
     setSelectedItemId(null);
     setActiveItem(null);
     setDragOverId(null);
@@ -189,6 +213,7 @@ export function StepDragDrop({ step, locale, submittingAssignment, onSubmitAssig
     const result = await onSubmitAssignment(assignment.id, answers);
     if (result) {
       setSubmitted(true);
+      setScore(gradedScore(result));
       toast.success(t("course.step.answerSent", locale));
     }
   }, [items, answers, step, onSubmitAssignment, locale]);
@@ -255,16 +280,10 @@ export function StepDragDrop({ step, locale, submittingAssignment, onSubmitAssig
                 </div>
                 {groups.map((group, gi) => {
                   const itemsInGroup = items.filter((item) => answers[item.id] === group);
-                  const correctItemsInGroup = items.filter((item) => item.group === group && answers[item.id] === group);
                   return (
                     <DroppableGroup key={`${group}-${gi}`} group={group} isOver={dragOverId === zoneId(group)}>
                       <div className="flex items-center justify-between mb-2">
                         <p className="text-sm font-semibold text-purple-700 dark:text-purple-400">{group}</p>
-                        {submitted && (
-                          <Badge className={correctItemsInGroup.length === itemsInGroup.length && itemsInGroup.length > 0 ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"}>
-                            {itemsInGroup.length > 0 ? `${correctItemsInGroup.length}/${itemsInGroup.length}` : "-"}
-                          </Badge>
-                        )}
                       </div>
                       <div
                         className="flex flex-wrap gap-2 min-h-[28px] cursor-pointer"
@@ -278,11 +297,13 @@ export function StepDragDrop({ step, locale, submittingAssignment, onSubmitAssig
                         {itemsInGroup.map((item) => (
                           <div
                             key={item.id}
+                            // Correctness per item is not shown: the item's own
+                            // bucket is no longer part of the payload, so the
+                            // client cannot tell a right placement from a wrong
+                            // one. The graded score is displayed instead.
                             className={`flex items-center gap-1 rounded-md px-3 py-1.5 text-sm select-none border ${
                               submitted
-                                ? item.group === group
-                                  ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800"
-                                  : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800"
+                                ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800"
                                 : "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800"
                             }`}
                             onClick={(e) => e.stopPropagation()}
@@ -319,9 +340,16 @@ export function StepDragDrop({ step, locale, submittingAssignment, onSubmitAssig
                       {t("course.step.submitDragDrop", locale)}
                     </Button>
                   ) : (
-                    <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-0">
-                      {t("course.step.sent", locale)}
-                    </Badge>
+                    <>
+                      <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-0">
+                        {t("course.step.sent", locale)}
+                      </Badge>
+                      {score !== null && (
+                        <Badge variant="outline">
+                          {t("course.step.result", locale)}: {score}%
+                        </Badge>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

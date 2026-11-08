@@ -11,10 +11,31 @@ import { t } from "@/lib/i18n";
 import { LessonContent } from "./LessonContent";
 import type { StepComponentProps } from "./StepTypes";
 
+interface SubmissionResponse {
+  submission?: { score?: number | null; status?: string };
+}
+
+/**
+ * Read the graded result the server returned.
+ *
+ * This component used to print a canned console — "> Hello, World! > Program
+ * completed successfully" — next to a green "Success" badge. Nothing executes
+ * the submitted code, so that text was pure fiction: a student whose program
+ * does not compile saw a passing run. The platform has no sandbox, so the
+ * honest outcome is the submission status: auto-graded against the reference
+ * answer when the teacher provided one, otherwise queued for review.
+ */
+function readOutcome(result: unknown): { score: number | null; status: string | null } {
+  const submission = (result as SubmissionResponse | null)?.submission;
+  return {
+    score: typeof submission?.score === "number" ? submission.score : null,
+    status: typeof submission?.status === "string" ? submission.status : null,
+  };
+}
+
 export function StepCoding({ step, locale, submittingAssignment, onSubmitAssignment }: StepComponentProps) {
   const [codeValue, setCodeValue] = useState("");
-  const [codeOutput, setCodeOutput] = useState("");
-  const [codeSubmitted, setCodeSubmitted] = useState(false);
+  const [outcome, setOutcome] = useState<{ score: number | null; status: string | null } | null>(null);
 
   const handleSubmit = useCallback(async () => {
     if (!codeValue.trim()) {
@@ -25,11 +46,13 @@ export function StepCoding({ step, locale, submittingAssignment, onSubmitAssignm
     if (!assignment) return;
     const result = await onSubmitAssignment(assignment.id, codeValue);
     if (result) {
-      setCodeSubmitted(true);
-      setCodeOutput("// Execution result...\n> Hello, World!\n> Program completed successfully");
+      setOutcome(readOutcome(result));
       toast.success(t("course.step.codeSent", locale));
     }
   }, [codeValue, step, onSubmitAssignment, locale]);
+
+  const submitted = outcome !== null;
+  const score = outcome?.score ?? null;
 
   return (
     <div className="space-y-4 mb-6">
@@ -51,7 +74,7 @@ export function StepCoding({ step, locale, submittingAssignment, onSubmitAssignm
             <Code2 className="w-4 h-4 text-green-400" />
             <span className="text-sm text-gray-300 font-medium">{t("course.step.codeEditor", locale)}</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" aria-hidden="true">
             <div className="w-3 h-3 rounded-full bg-red-500" />
             <div className="w-3 h-3 rounded-full bg-yellow-500" />
             <div className="w-3 h-3 rounded-full bg-green-500" />
@@ -61,25 +84,27 @@ export function StepCoding({ step, locale, submittingAssignment, onSubmitAssignm
           <Textarea
             className="font-mono text-sm bg-gray-900 text-green-400 border-0 rounded-none min-h-[200px] resize-y focus-visible:ring-0 focus-visible:ring-offset-0"
             placeholder={t("course.step.codePlaceholder", locale)}
+            aria-label={t("course.step.codeEditor", locale)}
             value={codeValue}
             onChange={(e) => setCodeValue(e.target.value)}
-            disabled={codeSubmitted}
+            disabled={submitted}
           />
         </CardContent>
       </Card>
 
-      {codeSubmitted && (
-        <Card className="border-0 shadow-sm overflow-hidden">
-          <div className="bg-gray-800 px-4 py-2 flex items-center justify-between">
-            <span className="text-sm text-gray-300 font-medium">{t("course.step.executionResult", locale)}</span>
-            <Badge className="bg-green-500/20 text-green-400 border-0 text-xs">
-              {t("course.step.success", locale)}
-            </Badge>
-          </div>
-          <CardContent className="p-0">
-            <pre className="p-4 text-sm text-green-400 font-mono bg-gray-900 whitespace-pre-wrap">
-              {codeOutput}
-            </pre>
+      {submitted && (
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-4 flex items-center justify-between">
+            <span className="text-sm font-medium">{t("course.step.executionResult", locale)}</span>
+            {score !== null ? (
+              <Badge className={score >= 60 ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-0"}>
+                {t("course.step.result", locale)}: {score}%
+              </Badge>
+            ) : (
+              <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-0">
+                {t("course.step.awaitingReview", locale)}
+              </Badge>
+            )}
           </CardContent>
         </Card>
       )}
@@ -88,13 +113,13 @@ export function StepCoding({ step, locale, submittingAssignment, onSubmitAssignm
         <Button
           className="bg-amber-600 hover:bg-amber-700 text-white"
           onClick={handleSubmit}
-          disabled={codeSubmitted || submittingAssignment}
+          disabled={submitted || submittingAssignment}
         >
           <Send className="w-4 h-4 mr-2" />
-          {codeSubmitted ? t("course.step.sent", locale) : t("course.step.submitCode", locale)}
+          {submitted ? t("course.step.sent", locale) : t("course.step.submitCode", locale)}
         </Button>
-        {codeSubmitted && (
-          <Button variant="outline" onClick={() => { setCodeSubmitted(false); setCodeOutput(""); }}>
+        {submitted && (
+          <Button variant="outline" onClick={() => setOutcome(null)}>
             <RotateCcw className="w-4 h-4 mr-2" />
             {t("course.step.tryAgain", locale)}
           </Button>

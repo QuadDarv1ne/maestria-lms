@@ -5,6 +5,7 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { validateParams, uuidSchema, idOrSlugSchema } from "@/lib/request-validation";
 import { AUDIT_ACTIONS, auditActorFromSession, recordAuditEvent } from "@/lib/audit-log";
+import { computeLessonScore } from "@/lib/lesson-score";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -46,8 +47,11 @@ export async function GET(
     if ("response" in paramCheck) return paramCheck.response;
 
     // Проверяем что курс принадлежит преподавателю или пользователь админ
-    const course = await db.course.findUnique({
-      where: { id: courseId },
+    // Accept both UUID and slug, like the submissions list route does: looking
+    // the course up by `id` alone made every slug-based URL a 404.
+    const course = await db.course.findFirst({
+      where: { OR: [{ id: courseId }, { slug: courseId }] },
+      select: { id: true, teacherId: true },
     });
 
     if (!course) {
@@ -70,7 +74,7 @@ export async function GET(
         assignment: {
           lesson: {
             module: {
-              courseId,
+              courseId: course.id,
             },
           },
         },
@@ -156,8 +160,9 @@ export async function PUT(
     if ("response" in paramCheck) return paramCheck.response;
 
     // Проверяем что курс принадлежит преподавателю
-    const course = await db.course.findUnique({
-      where: { id: courseId },
+    const course = await db.course.findFirst({
+      where: { OR: [{ id: courseId }, { slug: courseId }] },
+      select: { id: true, teacherId: true },
     });
 
     if (!course) {
@@ -193,14 +198,14 @@ export async function PUT(
         assignment: {
           lesson: {
             module: {
-              courseId,
+              courseId: course.id,
             },
           },
         },
       },
       include: {
         assignment: {
-          select: { title: true },
+          select: { title: true, lessonId: true },
         },
       },
     });
@@ -253,9 +258,24 @@ export async function PUT(
         type: "completion",
         title: "Работа оценена",
         message: `Ваша работа "${submission.assignment.title}" получила оценку${score !== undefined ? ` ${score}/100` : ""}`,
-        link: `/course/${courseId}`,
+        link: `/course/${course.id}`,
       },
     });
+
+    // `Progress.score` is derived from graded submissions, and it was computed
+    // when the lesson was marked complete — which usually happens *before* the
+    // teacher grades an essay. Without this refresh the student's card would
+    // keep showing "—" for a lesson that now has a result.
+    if (submission.status === "graded" || status === "graded") {
+      const lessonId = submission.assignment.lessonId;
+      const refreshedScore = await computeLessonScore(submission.userId, lessonId);
+      if (refreshedScore !== null) {
+        await db.progress.updateMany({
+          where: { userId: submission.userId, lessonId },
+          data: { score: refreshedScore },
+        });
+      }
+    }
 
     await recordAuditEvent({
       action: AUDIT_ACTIONS.submissionGrade,

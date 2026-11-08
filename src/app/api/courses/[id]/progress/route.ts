@@ -6,6 +6,7 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { handleApiError } from "@/lib/api-errors";
 import { validateParams, idOrSlugSchema } from "@/lib/request-validation";
 import { CERTIFICATE_PREFIX } from "@/lib/constants";
+import { computeLessonScore } from "@/lib/lesson-score";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -15,7 +16,6 @@ const checkRateLimit = rateLimit("progress", RATE_LIMITS.progress);
 const patchProgressSchema = z.object({
   lessonId: z.string().uuid(),
   completed: z.boolean().optional(),
-  score: z.number().int().min(0).max(100).optional().nullable(),
   timeSpent: z.number().int().min(0).optional(),
 });
 
@@ -276,7 +276,7 @@ export async function PATCH(
       );
     }
 
-    const { lessonId, completed, score, timeSpent } = parsed.data;
+    const { lessonId, completed, timeSpent } = parsed.data;
 
     // Verify lesson belongs to this course
     const lesson = await db.lesson.findUnique({
@@ -295,6 +295,11 @@ export async function PATCH(
         { status: 404 }
       );
     }
+
+    // The score is derived from graded submissions, never taken from the body:
+    // the client cannot know the answer key, and accepting `score` here let a
+    // student publish any result they liked.
+    const score = completed ? await computeLessonScore(userId, lessonId) : undefined;
 
     // Upsert progress
     const progress = await db.progress.upsert({

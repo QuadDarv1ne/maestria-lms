@@ -9,31 +9,38 @@ import { toast } from "sonner";
 import { t } from "@/lib/i18n";
 import { LessonContent } from "./LessonContent";
 import type { StepComponentProps } from "./StepTypes";
-import { shuffleArray } from "./StepTypes";
+
+function gradedScore(result: unknown): number | null {
+  const submission = (result as { submission?: { score?: number | null } } | null)?.submission;
+  return typeof submission?.score === "number" ? submission.score : null;
+}
 
 export function StepOrdering({ step, locale, submittingAssignment, onSubmitAssignment }: StepComponentProps) {
-  const [items, setItems] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState(false);
+  const [score, setScore] = useState<number | null>(null);
 
-  // Derive initial items from step props
+  // The server already returns the items in a deranged order: the stored
+  // sequence *is* the answer key, so shuffling on the client (or showing the
+  // stored order) would either leak it or hand the student a solved exercise.
   const initialItems = useMemo(() => {
-    const assignment = step?.assignments?.[0];
-    const options = assignment?.options;
+    const options = step?.assignments?.[0]?.options;
     if (!options) return [];
     try {
-      const parsed: string[] = JSON.parse(options);
-      return Array.isArray(parsed) && parsed.length > 0 ? shuffleArray(parsed) : [];
+      const parsed = JSON.parse(options);
+      return Array.isArray(parsed) ? parsed.map(String) : [];
     } catch {
       return [];
     }
   }, [step?.assignments]);
 
+  const [items, setItems] = useState<string[]>([]);
   // Reset local state when step changes (React-render-time reset pattern)
   const [prevStepId, setPrevStepId] = useState(step?.id);
   const [initialized, setInitialized] = useState(false);
   if (step?.id !== prevStepId || (!initialized && initialItems.length > 0)) {
     setItems(initialItems);
     setSubmitted(false);
+    setScore(null);
     setPrevStepId(step?.id);
     setInitialized(true);
   }
@@ -58,6 +65,7 @@ export function StepOrdering({ step, locale, submittingAssignment, onSubmitAssig
     const result = await onSubmitAssignment(assignment.id, items);
     if (result) {
       setSubmitted(true);
+      setScore(gradedScore(result));
       toast.success(t("course.step.answerSent", locale));
     }
   }, [items, step, onSubmitAssignment, locale]);
@@ -94,6 +102,7 @@ export function StepOrdering({ step, locale, submittingAssignment, onSubmitAssig
                       variant="ghost"
                       size="sm"
                       className="h-6 w-6 p-0"
+                      aria-label={t("course.step.moveUp", locale)}
                       disabled={idx === 0 || submitted}
                       onClick={() => moveItem(idx, "up")}
                     >
@@ -103,6 +112,7 @@ export function StepOrdering({ step, locale, submittingAssignment, onSubmitAssig
                       variant="ghost"
                       size="sm"
                       className="h-6 w-6 p-0"
+                      aria-label={t("course.step.moveDown", locale)}
                       disabled={idx === items.length - 1 || submitted}
                       onClick={() => moveItem(idx, "down")}
                     >
@@ -123,9 +133,16 @@ export function StepOrdering({ step, locale, submittingAssignment, onSubmitAssig
                     {t("course.step.submitAnswer", locale)}
                   </Button>
                 ) : (
-                  <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-0">
-                    {t("course.step.sent", locale)}
-                  </Badge>
+                  <>
+                    <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-0">
+                      {t("course.step.sent", locale)}
+                    </Badge>
+                    {score !== null && (
+                      <Badge variant="outline">
+                        {t("course.step.result", locale)}: {score}%
+                      </Badge>
+                    )}
+                  </>
                 )}
               </div>
             </div>
